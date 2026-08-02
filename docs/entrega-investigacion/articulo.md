@@ -1,21 +1,16 @@
-# Diseñar la seguridad, peritar el daño
+# Estás obligado y no lo sabías
 
-### El rol profesional en temas de ciberseguridad: las dos tareas que el Estado argentino le reserva al título de informática, qué responsabilidad traen y qué pasa con ellas en el Chaco
+### El rol profesional en temas de ciberseguridad: qué le reservó el Estado argentino a nuestro título, qué obligaciones trae y qué pasa con ellas en el Chaco
 
-**Trabajo de investigación — Unidad Temática 5: *Peritaje, arbitraje y tasaciones***
-**Tema asignado al Grupo 6: el rol profesional en temas de ciberseguridad**
+**Trabajo de investigación — Unidad Temática 5: *Peritaje, arbitraje y tasaciones*** · **Grupo 6**
+Seminario Integrador · UTN-FRRe · Resistencia, Chaco · agosto de 2026
 
-Seminario Integrador · Universidad Tecnológica Nacional, Facultad Regional Resistencia
-Resistencia, Chaco · agosto de 2026
-
-**Autores — Grupo 6:** Brites, Elisa Alejandra · Cettour, Ivo Claudio · Gonzalez, Matías Exequiel · Maldonado, Leandro Adrian · Martin Rodich, Victoria · Moray, Maria Paz · Ozuna Veron, Augusto Lautaro
+**Autores:** Brites, Elisa Alejandra · Cettour, Ivo Claudio · Gonzalez, Matías Exequiel · Maldonado, Leandro Adrian · Martin Rodich, Victoria · Moray, Maria Paz · Ozuna Veron, Augusto Lautaro
 
 ---
 
-> **CÓMO USAR ESTE ARCHIVO**
-> Este archivo se genera automáticamente desde `web/index.html`, así que **las dos versiones dicen siempre lo mismo**. Si hay que corregir algo, se corrige en el HTML y se regenera.
-> El texto corrido es el artículo tal como debe quedar. Los bloques `> ### Figura N` traen el epígrafe literal, el «cómo leerlo» y la tabla de datos de cada gráfico, para poder rearmarlos en papel.
-> El cuaderno de trabajo, con el material que no entró, es `investigacion.md`.
+> Este archivo se genera automáticamente desde `web/index.html`; no editarlo a mano.
+> Las diapositivas de la exposición están en `web/exposicion.html` (se regeneran con `build_all.py`).
 
 ---
 
@@ -186,11 +181,15 @@ Hasta acá todo lo que dijimos se apoya en textos. Podría objetarse, con razón
 
 Lo encontramos, y está más cerca de lo que pensábamos.
 
-Para inscribirse como **perito ante la Justicia Nacional**, un egresado de nuestra carrera tiene que pasar por el COPITEC, el Consejo Profesional de Ingeniería de Telecomunicaciones, Electrónica y Computación, creado por el Decreto-Ley 6070/58 y ratificado por la Ley 14.467. El Consejo admite expresamente a «ingenieros electromecánicos, electrónicos, en telecomunicaciones, en sistemas, en informática o en computación, Analistas y Licenciados en Sistemas / Informática / Computación». Y les pide dos cosas: matrícula al día sin sanciones, y que el título **acredite explícitamente competencia para «realizar pericias y tasaciones»**. Por eso exige, junto al diploma, el plan de estudios y el papel de alcances e incumbencias.
+Para inscribirse como **perito ante la Justicia Nacional**, un egresado de nuestra carrera tiene que pasar por el COPITEC, el Consejo Profesional de Ingeniería de Telecomunicaciones, Electrónica y Computación, creado por el Decreto-Ley 6070/58 y ratificado por la Ley 14.467. El Consejo admite en esa nómina a «ingenieros en sistemas, en informática o en computación, Analistas y Licenciados en Sistemas / Informática / Computación», entre otros títulos afines, con matrícula al día y sin sanciones.
 
-> ### Acá se cierra el argumento
-> Alguien sentado en una oficina del Poder Judicial abre el papel de incumbencias de un egresado de sistemas y **busca ahí la actividad reservada n.º 11**. Si no está, no lo inscribe.
-> Todo lo que veníamos sosteniendo tiene ahí su comprobación más directa. No hizo falta que lo dijera un doctrinario: lo verifica un empleado judicial cada vez que alguien se anota.
+Al principio contamos esto mal, y la corrección es más interesante que el error. Habíamos escrito que un empleado judicial abre el papel de incumbencias del título y busca ahí la actividad reservada n.º 11. No es así. La **Acordada 02/2014** de la Corte Suprema es explícita: la inscripción de peritos «sólo puede ser efectuada de conformidad con los **títulos** que acrediten fehacientemente los peticionantes», y «**no corresponde validar inscripciones por incumbencias de las carreras**». Lo que abre la puerta no es la línea del anexo: es el título entero.
+
+> ### Por qué esto igual prueba lo que queríamos probar
+> Que el peritaje informático ante la justicia esté **reservado a un conjunto cerrado de títulos**, y que un consejo profesional controle la entrada, es la comprobación de que la actividad reservada n.º 11 no es letra muerta. El mecanismo no es leer una línea; es exigir el título que esa línea define.
+> Dicho más simple: la reserva y la matrícula son dos capas de la misma idea. La resolución de 2009 dice qué vale el título; COPITEC exige el título para dejarte peritar. Se sostienen entre sí.
+
+De paso, eso nos obligó a otra corrección. Habíamos escrito que no existe colegiación nacional del profesional informático. No es cierto: existe COPITEC, con jurisdicción nacional. Lo que no hay es un consejo único. La matrícula se reparte entre COPITEC y los consejos provinciales, y quien ejerce tiene que averiguar cuál le toca.
 
 De paso, eso nos obligó a corregirnos. Habíamos escrito que no existe colegiación nacional del profesional informático. No es cierto: existe COPITEC, con jurisdicción nacional. Lo que no hay es un consejo único. La matrícula se reparte entre COPITEC y los consejos provinciales, y quien ejerce tiene que averiguar cuál le toca.
 
@@ -274,7 +273,7 @@ Hay trabajo, entonces. Y el que lo tome va a estar bastante solo.
 3. **Se contratan medios, no resultados.** Nadie puede garantizar que no habrá incidentes. Lo que sí hay que poder acreditar es haber aplicado el estado del arte, y eso se prueba únicamente con documentación.
 4. **La ley nos delega la parte técnica.** El artículo 9 de la Ley 25.326 exige «medidas técnicas y organizativas» sin decir cuáles. El que las define es el que responde si eligió mal, y por eso los estándares dejan de ser opcionales.
 5. **El principal ámbito de ejercicio es el Estado.** Seis de cada diez incidentes que atendió el CERT.ar en 2024 golpearon a organismos públicos, que son los mayores custodios de datos sensibles del país.
-6. **La actividad reservada n.º 11 tiene efecto comprobable.** Para peritar ante la Justicia Nacional hay que presentar el papel de incumbencias del título y que esa línea figure ahí. De ella depende que a uno lo inscriban.
+6. **La actividad reservada n.º 11 tiene efecto comprobable.** El peritaje informático ante la justicia está reservado a un conjunto cerrado de títulos, y un consejo nacional (COPITEC) controla la entrada. No deja peritar a cualquiera: exige el título que la reserva define.
 7. **En el Chaco la institución existe, pero no mira hacia esta profesión.** La Ley 2955-C alcanza a «la ingeniería en todas las ramas y especialidades», hace obligatoria la matrícula bajo pena de ejercicio ilegal y cuenta las pericias como ejercicio profesional. Lo que falta no es la norma sino su aplicación.
 
 De todo esto sale una recomendación concreta, y más barata que la que habíamos previsto. **No hace falta crear un consejo nuevo.** Alcanza con que COPIPACH abra el área de informática que su propio artículo 45 le permite abrir, con un código de ética escrito para la disciplina, y con que la facultad les avise a sus egresados que la matrícula provincial probablemente los alcance.
@@ -329,7 +328,7 @@ Decreto 941/2025, que crea el Centro Nacional de Ciberseguridad. Decisión Admin
 
 ### Matrícula y peritaje
 
-Decreto-Ley 6070/58, ratificado por la Ley 14.467, que crea el COPITEC, con jurisdicción nacional. Requisitos de inscripción como auxiliar de la justicia de la Nación publicados por el propio Consejo, año 2026.
+Decreto-Ley 6070/58, ratificado por la Ley 14.467, que crea el COPITEC, con jurisdicción nacional. Requisitos de inscripción como auxiliar de la justicia de la Nación publicados por el propio Consejo, año 2026. Acordada 02/2014 de la Corte Suprema de Justicia de la Nación, sobre validación de peritos por título.
 
 Ley 2955-C de la Provincia del Chaco, «Ejercicio profesional de la ingeniería y creación del Consejo Profesional de la Ingeniería y Profesiones Afines», artículos 1, 2, 4, 7, 8, 31 y 45, transcriptos del texto publicado por el propio Consejo. Fuente: Dirección de Información Parlamentaria de la Legislatura del Chaco.
 
@@ -367,7 +366,7 @@ ISO/IEC 27001, 27002, 27032 y 27037. NIST *Cybersecurity Framework*. OWASP *Top 
 - Decreto 941/2025, que crea el Centro Nacional de Ciberseguridad. Decisión Administrativa 641/2021. Disposiciones 1/2021, 8/2021, 3/2023 y 1/2026 del CERT.ar y del Centro Nacional de Ciberseguridad.
 
 ### Matrícula y peritaje
-- Decreto-Ley 6070/58, ratificado por la Ley 14.467, que crea el COPITEC, con jurisdicción nacional. Requisitos de inscripción como auxiliar de la justicia de la Nación publicados por el propio Consejo, año 2026.
+- Decreto-Ley 6070/58, ratificado por la Ley 14.467, que crea el COPITEC, con jurisdicción nacional. Requisitos de inscripción como auxiliar de la justicia de la Nación publicados por el propio Consejo, año 2026. Acordada 02/2014 de la Corte Suprema de Justicia de la Nación, sobre validación de peritos por título.
 - Ley 2955-C de la Provincia del Chaco, «Ejercicio profesional de la ingeniería y creación del Consejo Profesional de la Ingeniería y Profesiones Afines», artículos 1, 2, 4, 7, 8, 31 y 45, transcriptos del texto publicado por el propio Consejo. Fuente: Dirección de Información Parlamentaria de la Legislatura del Chaco.
 - Ley 11.291 de la Provincia de Santa Fe, que crea el Colegio de Ingenieros Especialistas, citada como evidencia comparada.
 

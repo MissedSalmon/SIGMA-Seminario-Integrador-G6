@@ -99,6 +99,10 @@ h1{
   font-size:clamp(1.05rem,1.9vw,1.25rem); line-height:1.5; color:var(--ink-2);
 }
 .stamp{ font-family:var(--sans); font-size:1rem; color:var(--ink); margin:1.5rem 0 0; }
+.expo-link{ display:inline-block; font-family:var(--sans); font-weight:700; text-decoration:none;
+  background:var(--pill); color:var(--pill-ink); padding:.35em .8em; border-radius:6px;
+  border:none; font-size:.95rem; }
+.expo-link:hover{ background:var(--pill-ink); color:var(--page); }
 
 .credits{
   margin:2.75rem auto 0; padding-top:1.5rem; border-top:1px solid var(--rule);
@@ -379,7 +383,7 @@ hr.sep{ border:none; border-top:1px solid var(--rule); margin:clamp(2.5rem,5vw,3
   <p class="kicker">Trabajo de investigación · Unidad Temática 5</p>
   <h1>Estás obligado<br>y no lo sabías</h1>
   <p class="dek">El Estado argentino le reservó a nuestro título dos tareas: diseñar la seguridad de los sistemas y peritar el daño cuando fallan. Nadie nos lo había dicho, y viene con obligaciones que ya están corriendo.</p>
-  <p class="stamp">Agosto de 2026</p>
+  <p class="stamp">Agosto de 2026 &nbsp;·&nbsp; <a class="expo-link" href="exposicion.html">▶ Exposición (diapositivas)</a></p>
 
   <div class="credits">
     <div><b>Grupo 6</b>Brites, Elisa Alejandra · Cettour, Ivo Claudio · Gonzalez, Matías Exequiel · Maldonado, Leandro Adrian · Martin Rodich, Victoria · Moray, Maria Paz · Ozuna Veron, Augusto Lautaro</div>
@@ -675,13 +679,17 @@ hr.sep{ border:none; border-top:1px solid var(--rule); margin:clamp(2.5rem,5vw,3
 
 <p>Lo encontramos, y está más cerca de lo que pensábamos.</p>
 
-<p>Para inscribirse como <strong>perito ante la Justicia Nacional</strong>, un egresado de nuestra carrera tiene que pasar por el COPITEC, el Consejo Profesional de Ingeniería de Telecomunicaciones, Electrónica y Computación, creado por el Decreto-Ley 6070/58 y ratificado por la Ley 14.467. El Consejo admite expresamente a «ingenieros electromecánicos, electrónicos, en telecomunicaciones, en sistemas, en informática o en computación, Analistas y Licenciados en Sistemas / Informática / Computación». Y les pide dos cosas: matrícula al día sin sanciones, y que el título <strong>acredite explícitamente competencia para «realizar pericias y tasaciones»</strong>. Por eso exige, junto al diploma, el plan de estudios y el papel de alcances e incumbencias.</p>
+<p>Para inscribirse como <strong>perito ante la Justicia Nacional</strong>, un egresado de nuestra carrera tiene que pasar por el COPITEC, el Consejo Profesional de Ingeniería de Telecomunicaciones, Electrónica y Computación, creado por el Decreto-Ley 6070/58 y ratificado por la Ley 14.467. El Consejo admite en esa nómina a «ingenieros en sistemas, en informática o en computación, Analistas y Licenciados en Sistemas / Informática / Computación», entre otros títulos afines, con matrícula al día y sin sanciones.</p>
+
+<p>Al principio contamos esto mal, y la corrección es más interesante que el error. Habíamos escrito que un empleado judicial abre el papel de incumbencias del título y busca ahí la actividad reservada n.º 11. No es así. La <strong>Acordada 02/2014</strong> de la Corte Suprema es explícita: la inscripción de peritos «sólo puede ser efectuada de conformidad con los <strong>títulos</strong> que acrediten fehacientemente los peticionantes», y «<strong>no corresponde validar inscripciones por incumbencias de las carreras</strong>». Lo que abre la puerta no es la línea del anexo: es el título entero.</p>
 
 <div class="plain">
-  <h4>Acá se cierra el argumento</h4>
-  <p>Alguien sentado en una oficina del Poder Judicial abre el papel de incumbencias de un egresado de sistemas y <strong>busca ahí la actividad reservada n.º 11</strong>. Si no está, no lo inscribe.</p>
-  <p>Todo lo que veníamos sosteniendo tiene ahí su comprobación más directa. No hizo falta que lo dijera un doctrinario: lo verifica un empleado judicial cada vez que alguien se anota.</p>
+  <h4>Por qué esto igual prueba lo que queríamos probar</h4>
+  <p>Que el peritaje informático ante la justicia esté <strong>reservado a un conjunto cerrado de títulos</strong>, y que un consejo profesional controle la entrada, es la comprobación de que la actividad reservada n.º 11 no es letra muerta. El mecanismo no es leer una línea; es exigir el título que esa línea define.</p>
+  <p>Dicho más simple: la reserva y la matrícula son dos capas de la misma idea. La resolución de 2009 dice qué vale el título; COPITEC exige el título para dejarte peritar. Se sostienen entre sí.</p>
 </div>
+
+<p>De paso, eso nos obligó a otra corrección. Habíamos escrito que no existe colegiación nacional del profesional informático. No es cierto: existe COPITEC, con jurisdicción nacional. Lo que no hay es un consejo único. La matrícula se reparte entre COPITEC y los consejos provinciales, y quien ejerce tiene que averiguar cuál le toca.</p>
 
 <p>De paso, eso nos obligó a corregirnos. Habíamos escrito que no existe colegiación nacional del profesional informático. No es cierto: existe COPITEC, con jurisdicción nacional. Lo que no hay es un consejo único. La matrícula se reparte entre COPITEC y los consejos provinciales, y quien ejerce tiene que averiguar cuál le toca.</p>
 
@@ -781,7 +789,7 @@ hr.sep{ border:none; border-top:1px solid var(--rule); margin:clamp(2.5rem,5vw,3
   <li><strong>Se contratan medios, no resultados.</strong> Nadie puede garantizar que no habrá incidentes. Lo que sí hay que poder acreditar es haber aplicado el estado del arte, y eso se prueba únicamente con documentación.</li>
   <li><strong>La ley nos delega la parte técnica.</strong> El artículo 9 de la Ley 25.326 exige «medidas técnicas y organizativas» sin decir cuáles. El que las define es el que responde si eligió mal, y por eso los estándares dejan de ser opcionales.</li>
   <li><strong>El principal ámbito de ejercicio es el Estado.</strong> Seis de cada diez incidentes que atendió el CERT.ar en 2024 golpearon a organismos públicos, que son los mayores custodios de datos sensibles del país.</li>
-  <li><strong>La actividad reservada n.º 11 tiene efecto comprobable.</strong> Para peritar ante la Justicia Nacional hay que presentar el papel de incumbencias del título y que esa línea figure ahí. De ella depende que a uno lo inscriban.</li>
+  <li><strong>La actividad reservada n.º 11 tiene efecto comprobable.</strong> El peritaje informático ante la justicia está reservado a un conjunto cerrado de títulos, y un consejo nacional (COPITEC) controla la entrada. No deja peritar a cualquiera: exige el título que la reserva define.</li>
   <li><strong>En el Chaco la institución existe, pero no mira hacia esta profesión.</strong> La Ley 2955-C alcanza a «la ingeniería en todas las ramas y especialidades», hace obligatoria la matrícula bajo pena de ejercicio ilegal y cuenta las pericias como ejercicio profesional. Lo que falta no es la norma sino su aplicación.</li>
 </ol>
 
@@ -826,7 +834,7 @@ hr.sep{ border:none; border-top:1px solid var(--rule); margin:clamp(2.5rem,5vw,3
   <p>Decreto 941/2025, que crea el Centro Nacional de Ciberseguridad. Decisión Administrativa 641/2021. Disposiciones 1/2021, 8/2021, 3/2023 y 1/2026 del CERT.ar y del Centro Nacional de Ciberseguridad.</p>
 
   <h3>Matrícula y peritaje</h3>
-  <p>Decreto-Ley 6070/58, ratificado por la Ley 14.467, que crea el COPITEC, con jurisdicción nacional. Requisitos de inscripción como auxiliar de la justicia de la Nación publicados por el propio Consejo, año 2026.</p>
+  <p>Decreto-Ley 6070/58, ratificado por la Ley 14.467, que crea el COPITEC, con jurisdicción nacional. Requisitos de inscripción como auxiliar de la justicia de la Nación publicados por el propio Consejo, año 2026. Acordada 02/2014 de la Corte Suprema de Justicia de la Nación, sobre validación de peritos por título.</p>
   <p>Ley 2955-C de la Provincia del Chaco, «Ejercicio profesional de la ingeniería y creación del Consejo Profesional de la Ingeniería y Profesiones Afines», artículos 1, 2, 4, 7, 8, 31 y 45, transcriptos del texto publicado por el propio Consejo. Fuente: Dirección de Información Parlamentaria de la Legislatura del Chaco.</p>
   <p>Ley 11.291 de la Provincia de Santa Fe, que crea el Colegio de Ingenieros Especialistas, citada como evidencia comparada.</p>
 

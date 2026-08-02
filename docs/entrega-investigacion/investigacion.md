@@ -19,11 +19,28 @@
 
 | Archivo | Qué es | Para qué se usa |
 |---|---|---|
-| **`web/index.html`** | **El artículo.** Es la fuente: acá se corrige. Página de scroll vertical con las ocho figuras armadas. Se levanta con `npm run dev` (puerto 3001) o se abre con doble clic. | Es lo que se muestra |
-| **`articulo.md`** | El mismo artículo en markdown, **generado automáticamente desde el HTML**. Las figuras vienen como bloque con epígrafe, «cómo leerlo» y tabla de datos, para rearmarlas en papel. | Es lo que se entrega impreso |
-| `investigacion.md` | Este documento. El **cuaderno de trabajo**: lo relevado, incluido lo que no entró al artículo, y las marcas ❓. | Es de dónde salió todo |
+| **`web/index.html`** | **La fuente de verdad.** El artículo. Acá y sólo acá se corrige. Página de scroll vertical con las seis figuras. | Se muestra / se lee |
+| **`web/exposicion.html`** | **Las diapositivas** (36), navegables con las flechas. Enlazadas desde el artículo con el vínculo «Exposición». | Se proyecta en la defensa |
+| `articulo.md` | El artículo en markdown, **generado** desde el HTML. | Se imprime |
+| `web/build_all.py` | Regenera `articulo.md` **y** `exposicion.html` desde `index.html`. | Mantenimiento |
+| `investigacion.md` | Este cuaderno de trabajo. | De dónde salió todo |
 
-> **Regla para no confundirlos.** El texto canónico vive en `web/index.html`. `articulo.md` se regenera desde ahí, así que **nunca hay que editarlo a mano**: se pisa en la próxima generación.
+> ### ⚠️ ORDEN DE SINCRONÍA
+> `web/index.html` es la única base de la información. **Cada vez que se toca el artículo, hay que correr:**
+>
+> ```
+> cd docs/entrega-investigacion/web && python3 build_all.py
+> ```
+>
+> Eso actualiza el markdown y las diapositivas de una. **Nunca** editar `articulo.md` ni `exposicion.html` a mano: se pisan en la próxima generación. Las seis figuras del deck se extraen del artículo, así que no se desincronizan.
+
+### Levantar en local
+
+```
+cd docs/entrega-investigacion/web
+npm run dev          # → http://localhost:3001  (artículo)
+```
+El artículo tiene arriba el vínculo «Exposición» que abre `exposicion.html`. Ambos se abren también con doble clic.
 
 ### ⭐ El hallazgo que dio vuelta el trabajo (2026-07-21)
 
@@ -48,9 +65,9 @@ Existe un consejo **nacional** que matricula computación e informática: el **C
 Y lo más importante: para inscribirse como **perito ante la Justicia Nacional**, COPITEC admite a «ingenieros electromecánicos, electrónicos, en telecomunicaciones, **en sistemas, en informática o en computación, Analistas y Licenciados en Sistemas / Informática / Computación**», y exige dos cosas:
 
 1. **Matrícula al día**, sin sanciones vigentes.
-2. Que el título **acredite explícitamente competencia para «realizar pericias y tasaciones»** — por eso pide el plan de estudios y el documento de alcances e incumbencias junto al diploma.
+2. Entre la documentación pide el plan de estudios y los alcances del título, pero la **validación es por el título**, no por las incumbencias (Acordada 02/2014).
 
-**Por qué importa tanto:** alguien en una oficina judicial abre el papel de incumbencias de un egresado de sistemas y busca ahí la actividad reservada n.º 11. Si no está, no lo inscribe. Es la comprobación empírica de que la tesis del trabajo no es teórica.
+**Por qué importa tanto (versión corregida):** el borrador decía que un empleado judicial lee las incumbencias y busca la actividad n.º 11. Es FALSO. La **Acordada 02/2014** de la Corte es explícita: la inscripción se valida «de conformidad con los **títulos**… no corresponde validar inscripciones por incumbencias de las carreras». Lo que abre la puerta es el título entero. Igual comprueba la tesis: el peritaje informático está reservado a un conjunto cerrado de títulos y un consejo controla la entrada. La reserva define qué vale el título; COPITEC exige el título.
 
 **Efecto sobre la pregunta del Chaco:** ya no es «¿existe alguna matrícula para nuestro título?» (existe) sino «¿cuál rige para ejercer y peritar dentro de la provincia?». COPIPACH tiene «el manejo exclusivo de la matrícula» en jurisdicción provincial, así que la respuesta probablemente sea COPIPACH, pero eso sigue siendo nuestra lectura.
 
@@ -66,7 +83,7 @@ Al aplicar la regla «toda norma entre comillas se transcribe del texto publicad
 
 Todas corregidas. Está declarado en la sección de Declaraciones del artículo.
 
-### Las ocho figuras
+### Las seis figuras (en el artículo-relato)
 
 | # | Figura | Forma | Fuente |
 |---|--------|-------|--------|
@@ -74,10 +91,10 @@ Todas corregidas. Está declarado en la sección de Declaraciones del artículo.
 | 2 | Línea de tiempo normativa 1988–2026 | Diagrama, color por quién dictó la norma | Compilado del CNC |
 | 3 | Reportes UFECI 2021–2024 | Columnas, énfasis en 2024 | UFECI 2024 |
 | 4 | Modalidades reportadas en 2024 | Barras, una por categoría | UFECI 2024 |
-| 5 | Accesos ilegítimos por plataforma | Barras, rampa de un tono | UFECI 2024 |
-| 6 | Incidentes CERT.ar por sector | Medidor de una razón | CERT.ar 2024 |
-| 7 | Ataques semanales por organización | Barras, énfasis en Argentina | Check Point, mayo 2026 |
-| 8 | Brecha mundial de profesionales | Barra de hueco | ISC2 |
+| 5 | Incidentes CERT.ar por sector | Medidor de una razón | CERT.ar 2024 |
+| 6 | Brecha mundial de profesionales | Barra de hueco | ISC2 |
+
+Nota: los datos de plataformas y de ataques semanales por país se relevaron pero no entraron en el artículo-relato; quedan en este cuaderno por si hacen falta.
 
 Paleta categórica validada contra el fondo de las tarjetas. Cada figura trae su tabla de datos desplegable, que es lo que exige la regla de relieve cuando el color no llega al contraste mínimo.
 
