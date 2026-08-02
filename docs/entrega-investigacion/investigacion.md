@@ -17,30 +17,14 @@
 
 ### Los archivos de la entrega
 
-| Archivo | Qué es | Para qué se usa |
-|---|---|---|
-| **`web/index.html`** | **La fuente de verdad.** El artículo. Acá y sólo acá se corrige. Página de scroll vertical con las seis figuras. | Se muestra / se lee |
-| **`web/exposicion.html`** | **Las diapositivas** (36), navegables con las flechas. Enlazadas desde el artículo con el vínculo «Exposición». | Se proyecta en la defensa |
-| `articulo.md` | El artículo en markdown, **generado** desde el HTML. | Se imprime |
-| `web/build_all.py` | Regenera `articulo.md` **y** `exposicion.html` desde `index.html`. | Mantenimiento |
-| `investigacion.md` | Este cuaderno de trabajo. | De dónde salió todo |
+| Archivo | Qué es |
+|---|---|
+| **`web/index.html`** | **Todo en un solo archivo.** El artículo (scroll) y, embebida en la misma página, la **presentación de diapositivas**: arriba hay un enlace «Ver como presentación» que entra al modo diapositivas (flechas ← →, `O` índice, `Esc` vuelve al artículo, `F` pantalla completa). Es la fuente de verdad; acá se corrige. |
+| `web/package.json` | Sólo para servirlo: `npm run dev` → http://localhost:3001. También abre con doble clic. |
+| `articulo.md` | Versión en texto del artículo, para imprimir. Instantánea de `index.html` (sin figuras ni diapositivas). |
+| `investigacion.md` | Este cuaderno de trabajo. |
 
-> ### ⚠️ ORDEN DE SINCRONÍA
-> `web/index.html` es la única base de la información. **Cada vez que se toca el artículo, hay que correr:**
->
-> ```
-> cd docs/entrega-investigacion/web && python3 build_all.py
-> ```
->
-> Eso actualiza el markdown y las diapositivas de una. **Nunca** editar `articulo.md` ni `exposicion.html` a mano: se pisan en la próxima generación. Las seis figuras del deck se extraen del artículo, así que no se desincronizan.
-
-### Levantar en local
-
-```
-cd docs/entrega-investigacion/web
-npm run dev          # → http://localhost:3001  (artículo)
-```
-El artículo tiene arriba el vínculo «Exposición» que abre `exposicion.html`. Ambos se abren también con doble clic.
+> El artículo y las diapositivas viven en **el mismo archivo**, así que no se pueden desincronizar. Los títulos del artículo y de las diapositivas están en forma de **pregunta** (registro de presentación universitaria). Las 6 figuras se usan tanto en el artículo como en el deck.
 
 ### ⭐ El hallazgo que dio vuelta el trabajo (2026-07-21)
 
