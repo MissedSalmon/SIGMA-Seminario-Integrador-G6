@@ -14,12 +14,29 @@
 
 ## Git
 
-- Cada integrante trabaja en **su propia rama**.
-- El trabajo se integra a `main` con **pull request**, para que otro lo revise antes.
-- Rama principal: `main`. Remoto: `origin`.
+Hay tres niveles de ramas:
+
+```
+main            rama principal. Sólo entra lo que ya está probado.
+ └── Develop         donde se junta el trabajo de todos.
+      └── <nombre>   una rama por integrante.
+```
+
+**Cómo circula el trabajo:**
+
+1. Cada integrante trabaja en **su propia rama**, que sale de `Develop`.
+2. Cuando termina, abre un **pull request** hacia `Develop`, para que otro lo revise
+   antes de integrarlo.
+3. Cuando `Develop` está estable, se integra a `main`.
+
+Remoto: `origin`.
 
 > ⚠️ **En este repositorio no se hace commit ni push automático.** Sólo cuando alguien lo
 > pide explícitamente.
+
+> 📌 **Pendiente de definir con el grupo:** si conviene una rama por integrante para todo
+> el cuatrimestre, o una rama por historia de usuario. La segunda hace que cada pull
+> request quede atado a un issue y sea más corto de revisar.
 
 ---
 
