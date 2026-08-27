@@ -60,17 +60,49 @@ _“Todo tu mantenimiento, sumado.”_
 
 ## 🚀 Cómo correrlo
 
-El prototipo es **estático** (HTML/CSS/JS + `localStorage`), sin build:
+Requisito: **Node.js 22**.
 
 ```bash
-cd prototipo
-npm run dev          # → http://localhost:3000
+npm install
 ```
 
-> 💡 También podés abrir `prototipo/index.html` directo en el navegador.
-> Los datos se guardan en tu navegador; el botón **“⟲ Reiniciar datos demo”** restablece el set de ejemplo.
+Después copiá las plantillas de variables de entorno y completá los valores:
 
-**Deploy:** listo para **Vercel** (estático, *Root Directory* = `prototipo`).
+- `backend/.env.example` → `backend/.env`
+- `frontend/.env.local.example` → `frontend/.env.local`
+
+Y levantá el proyecto:
+
+```bash
+npm run dev
+```
+
+| | Dirección |
+|---|---|
+| Frontend | http://localhost:3000 |
+| API | http://localhost:4000/api/salud |
+
+**Otros comandos:**
+
+| Comando | Qué hace |
+|---|---|
+| `npm run dev:frontend` | Sólo las pantallas. |
+| `npm run dev:backend` | Sólo la API. |
+| `npm run build` | Compila el frontend. |
+| `npm run lint` | Revisa el estilo del código. |
+
+---
+
+## 🧰 Stack
+
+| Capa | Tecnología |
+|---|---|
+| Frontend | Next.js 16 · React 19 |
+| Backend | Node.js 22 · Express 5 |
+| Base de datos | Supabase (PostgreSQL) |
+| Despliegue | Vercel + Supabase |
+
+Todo en **JavaScript con módulos ES**, monorepo con **npm workspaces**.
 
 ---
 
@@ -78,16 +110,27 @@ npm run dev          # → http://localhost:3000
 
 ```
 SIGMA-Seminario-Integrador-G6/
-├── contexto.md              # 📖 Fuente de verdad (dominio, glosario, modelo, roadmap)
-├── prototipo/               # 🖥️ Prototipo funcional navegable
-│   ├── index.html
-│   ├── styles.css           #    Estética iOS / Apple-like
-│   └── app.js               #    Capa de datos (localStorage) + vistas + CRUD
-└── docs/
-    └── entrega-17-07/       # 📄 Comparativa de HU antes/después (HTML + PDF)
+├── frontend/                # 🖥️ Next.js 16 + React 19
+│   ├── public/
+│   └── src/
+│       ├── app/             #    pantallas (App Router)
+│       ├── componentes/     #    piezas reutilizables
+│       ├── lib/             #    conexión a Supabase (navegador)
+│       └── servicios/       #    cliente HTTP hacia el backend
+│
+├── backend/                 # ⚙️ API REST con Express 5
+│   └── src/
+│       ├── config/          #    variables de entorno + Supabase
+│       ├── rutas/
+│       ├── controladores/
+│       ├── servicios/
+│       └── middlewares/
+│
+├── base-de-datos/           # 🗄️ scripts SQL (migraciones y semillas)
+│
+├── .claude/contexto/        # 📖 contexto del proyecto por tema
+└── contexto.md              # 📖 documento histórico del grupo
 ```
-
-> 🧭 Dentro del prototipo, el botón **`❯ HU`** (arriba del logo) abre el índice de las 34 historias y te lleva a la pantalla donde cada una está implementada.
 
 ---
 
@@ -104,8 +147,8 @@ SIGMA-Seminario-Integrador-G6/
 
 | Documento | Contenido |
 |---|---|
-| [`contexto.md`](contexto.md) | Situación, glosario, modelo de tablas + correcciones, roadmap de HU, automatizaciones. |
-| [`docs/entrega-17-07/hu-antes-despues.pdf`](docs/entrega-17-07/hu-antes-despues.pdf) | Comparativa de HU antes/después de la corrección de cátedra. |
+| [`.claude/contexto/`](.claude/contexto/) | Contexto general: proyecto, dominio, arquitectura y forma de trabajo. |
+| [`contexto.md`](contexto.md) | Documento histórico: situación, glosario, modelo de tablas, roadmap de HU, automatizaciones. |
 
 ---
 
