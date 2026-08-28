@@ -1,0 +1,16 @@
+# Unifica el fin de linea en todo el equipo.
+# Sin esto, quien trabaja en Windows y quien trabaja en Mac o Linux generan
+# diferencias falsas: git marca archivos enteros como modificados aunque
+# nadie haya cambiado una linea.
+
+* text=auto eol=lf
+
+# Archivos binarios: git no debe tocarlos.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.woff binary
+*.woff2 binary

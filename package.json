@@ -1,0 +1,27 @@
+{
+  "name": "sigma",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SIGMA - Sistema Integral de Gestion de Mantenimiento de Activos. UTN-FRRe, Seminario Integrador, Grupo 6.",
+  "type": "module",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
+  },
+  "scripts": {
+    "dev": "concurrently -n backend,frontend -c blue,magenta \"npm:dev:backend\" \"npm:dev:frontend\"",
+    "dev:backend": "npm run dev --workspace backend",
+    "dev:frontend": "npm run dev --workspace frontend",
+    "build": "npm run build --workspace frontend",
+    "start:backend": "npm run start --workspace backend",
+    "start:frontend": "npm run start --workspace frontend",
+    "lint": "npm run lint --workspace frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}
