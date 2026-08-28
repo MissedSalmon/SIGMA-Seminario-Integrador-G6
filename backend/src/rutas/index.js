@@ -11,8 +11,12 @@
  * <modulo>.controlador.js en ../controladores y <modulo>.servicio.js en ../servicios.
  */
 import { Router } from 'express';
+import rutasEdificios from './edificios.rutas.js';
 
 const router = Router();
+
+// Rutas de los módulos
+router.use('/edificios', rutasEdificios);
 
 // Sirve para verificar que la API esta viva. No consulta la base de datos.
 router.get('/salud', (req, res) => {
