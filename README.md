@@ -126,7 +126,7 @@ SIGMA-Seminario-Integrador-G6/
 │       ├── servicios/
 │       └── middlewares/
 │
-├── base-de-datos/           # 🗄️ scripts SQL (migraciones y semillas)
+├── supabase/migrations/     # 🗄️ scripts SQL (migraciones gestionadas por Supabase CLI)
 │
 ├── .claude/contexto/        # 📖 contexto del proyecto por tema
 └── contexto.md              # 📖 documento histórico del grupo
