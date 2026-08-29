@@ -43,4 +43,14 @@ export const navegacion = [
     direccion: '/areas',
     icono: cilSitemap,
   },
+  {
+    tipo: 'titulo',
+    texto: 'Gestión de Activos',
+  },
+  {
+    tipo: 'item',
+    texto: 'Tipos de Activos',
+    direccion: '/tipos-activos',
+    icono: cilSitemap,
+  },
 ];
