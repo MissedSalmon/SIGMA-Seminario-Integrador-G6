@@ -84,7 +84,6 @@ export default function PantallaEdificios() {
     <>
       <EncabezadoPagina
         titulo="Edificios"
-        descripcion="Los edificios de la facultad. Adentro de cada uno se cargan los espacios."
         accion={{ texto: 'Agregar edificio', direccion: '/edificios/agregar' }}
       />
 

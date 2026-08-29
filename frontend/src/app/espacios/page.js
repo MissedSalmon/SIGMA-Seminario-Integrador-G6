@@ -103,7 +103,6 @@ export default function PantallaEspacios() {
     <>
       <EncabezadoPagina
         titulo="Espacios"
-        descripcion="Aulas, laboratorios, oficinas y pasillos de cada edificio."
         accion={{ texto: 'Agregar espacio', direccion: '/espacios/agregar' }}
       />
 

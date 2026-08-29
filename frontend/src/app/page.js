@@ -36,7 +36,7 @@ const MODULOS = [
   },
   {
     clave: 'areas',
-    titulo: 'Areas',
+    titulo: 'Áreas',
     direccion: '/areas',
     icono: cilSitemap,
     color: 'warning',
