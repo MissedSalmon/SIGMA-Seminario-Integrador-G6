@@ -24,16 +24,36 @@ export const api = axios.create({
   timeout: 15000,
 });
 
-// Si el backend responde con error, dejamos un mensaje entendible
-// en lugar del error crudo de axios.
+// Si algo sale mal, dejamos un mensaje entendible en lugar del error crudo de
+// axios. Las pantallas lo muestran tal cual, asi que tiene que decir que paso y,
+// si se puede, que hacer.
 api.interceptors.response.use(
   (respuesta) => respuesta,
   (error) => {
-    const mensaje =
-      error.response?.data?.mensaje ??
-      error.message ??
-      'No se pudo conectar con el servidor.';
+    // Caso 1: el backend contesto, pero con un error. El mensaje ya viene
+    // escrito por el ("El nombre del edificio es obligatorio.").
+    if (error.response) {
+      const mensaje =
+        error.response.data?.mensaje ??
+        `La API respondio con el error ${error.response.status}.`;
 
-    return Promise.reject(new Error(mensaje));
+      return Promise.reject(new Error(mensaje));
+    }
+
+    // Caso 2: el pedido salio pero nadie contesto a tiempo.
+    if (error.code === 'ECONNABORTED') {
+      return Promise.reject(
+        new Error(`La API (${baseURL}) tardo demasiado en responder.`)
+      );
+    }
+
+    // Caso 3: el pedido no llego a ningun lado. Axios dice solo "Network Error",
+    // que no ayuda a nadie. Casi siempre es que el backend no esta levantado.
+    return Promise.reject(
+      new Error(
+        `No se pudo conectar con la API (${baseURL}). ` +
+          'Fijate que el backend este levantado: npm run dev'
+      )
+    );
   }
 );

@@ -1,10 +1,16 @@
+/**
+ * Direcciones del modulo de edificios (HU-1).
+ * Se montan bajo /api/edificios (ver rutas/index.js).
+ */
 import { Router } from 'express';
-import * as edificiosControlador from '../controladores/edificios.controlador.js';
+import * as edificios from '../controladores/edificios.controlador.js';
 
 const router = Router();
 
-// Definición de las rutas del módulo
-router.get('/', edificiosControlador.listar);
-router.post('/', edificiosControlador.crear);
+router.get('/', edificios.listar);
+router.get('/:id', edificios.obtener);
+router.post('/', edificios.crear);
+router.put('/:id', edificios.actualizar);
+router.delete('/:id', edificios.eliminar);
 
 export default router;

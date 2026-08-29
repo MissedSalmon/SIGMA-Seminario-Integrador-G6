@@ -28,12 +28,19 @@ usa una versión distinta, aparecen errores que no se pueden reproducir.
 | **CORS / Dotenv / Nodemon** | 2.8.6 / 17.4.2 / 3.1.14 |
 | **ESLint** | 9.39.5 |
 | **Concurrently** | 10.0.5 |
+| **@coreui/react** | 5.13.0 |
+| **@coreui/coreui** | 5.9.0 |
+| **@coreui/icons / icons-react** | 3.1.0 / 2.3.0 |
 
 Decisiones tomadas:
 
 - **JavaScript con módulos ES** (`import`/`export`), no TypeScript ni `require`.
 - **Monorepo con npm workspaces:** un solo `npm install` en la raíz instala todo.
 - **Todo en español**, incluidas carpetas, archivos, variables y nombres de tablas.
+- **Decisión del 28/08/2026: la interfaz usa CoreUI**, la plantilla de administración
+  gratuita (barra lateral, encabezado, tablas, formularios). Se armó sobre Next.js en
+  `frontend/src/componentes/layout/`; no se copió el proyecto de CoreUI, que viene
+  hecho para Vite y React Router.
 
 > ESLint queda en la línea 9 a propósito: es la versión con la que está construido
 > `eslint-config-next` 16. Al instalar aparece un aviso de que la 9 es antigua. Es sólo
@@ -98,6 +105,53 @@ src/app/tickets/page.js          →  /tickets
 src/app/tickets/agregar/page.js  →  /tickets/agregar
 src/app/tickets/[id]/page.js     →  /tickets/5
 ```
+
+---
+
+### El armazón de las pantallas
+
+Todas las pantallas viven dentro del panel de administración de CoreUI. El armazón se
+aplica una sola vez en `frontend/src/app/layout.js`, así que una pantalla nueva sólo
+escribe su contenido y ya aparece con la barra lateral y el encabezado.
+
+```
+frontend/src/componentes/
+├── layout/
+│   ├── LayoutAdmin.js       # junta las cuatro piezas de abajo
+│   ├── BarraLateral.js      # el menú de la izquierda
+│   ├── Encabezado.js        # botón del menú + ruta de migas
+│   ├── PieDePagina.js
+│   ├── navegacion.js        # ⬅ acá se agrega cada opción del menú
+│   └── ContextoLayout.js    # si la barra lateral está abierta o cerrada
+├── BotonEnlace.js           # un <Link> con estilo de botón
+├── EncabezadoPagina.js      # título + botón de acción
+├── Aviso.js                 # cartel de error o de éxito
+├── DialogoEliminar.js       # confirmación antes de una baja
+└── EstadoTabla.js           # "cargando..." y "no hay datos"
+```
+
+**Dos trampas de CoreUI con Next.js**, que ya costaron un rato:
+
+- `CNavItem` usa su prop `as` para el `<li>` de afuera, no para el enlace. El `<Link>`
+  de Next va en el `CNavLink` de adentro.
+- `CButton`, cuando recibe `href`, ignora el `as` y arma un `<a>` común: cada clic
+  recarga toda la aplicación. Para eso está `BotonEnlace`.
+
+---
+
+## Datos de prueba (temporal)
+
+⬜ **La base de datos todavía no existe** (el modelo se está rehaciendo). Mientras tanto
+los módulos de edificios, espacios y áreas trabajan contra `backend/src/datos-mock/`, que
+guarda todo en memoria: los datos se pierden al reiniciar el servidor.
+
+Por eso el backend **arranca sin las claves de Supabase**: si faltan, avisa y sigue.
+
+Cuando esté la base hay que deshacer las tres cosas:
+
+1. Reemplazar en `backend/src/servicios/` las funciones del mock por consultas a Supabase.
+2. Borrar la carpeta `backend/src/datos-mock/`.
+3. En `backend/src/config/env.js`, volver a cortar el arranque si faltan las variables.
 
 ---
 
