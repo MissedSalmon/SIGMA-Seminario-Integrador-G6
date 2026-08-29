@@ -70,7 +70,7 @@ SIGMA-Seminario-Integrador-G6/
 │   └── src/
 │       ├── app/              # las pantallas (cada carpeta es una dirección)
 │       ├── componentes/      # piezas reutilizables
-│       ├── lib/supabase.js   # conexión a Supabase (clave pública)
+│       ├── utils/supabase/   # conexión a Supabase con SSR (server, client, middleware)
 │       └── servicios/api.js  # cliente para hablar con el backend
 │
 ├── backend/                  # Express 5
@@ -85,7 +85,7 @@ SIGMA-Seminario-Integrador-G6/
 │       ├── servicios/        # reglas de negocio y consultas
 │       └── middlewares/      # errores y ruta no encontrada
 │
-└── base-de-datos/            # scripts SQL (migraciones y semillas)
+└── supabase/                 # configuración de Supabase CLI y migraciones SQL
 ```
 
 ### Cómo se agrega un módulo
@@ -188,13 +188,14 @@ Copiar las plantillas de variables de entorno y completarlas:
 
 | Comando | Qué hace |
 |---|---|
-| `npm run dev` | Levanta backend y frontend juntos. |
-| `npm run dev:backend` | Sólo la API, en `http://localhost:4000`. |
-| `npm run dev:frontend` | Sólo las pantallas, en `http://localhost:3000`. |
+| `npm run dev:all` | Levanta backend y frontend juntos. |
+| `npm run dev:backend` | Sólo la API, en `http://localhost:3000`. |
+| `npm run dev:frontend` | Sólo las pantallas, en `http://localhost:4000`. |
 | `npm run build` | Compila el frontend. |
 | `npm run lint` | Revisa el estilo del código. |
+| `npm run db:push` | Sube los cambios de la BD local (`supabase/migrations/`) a Supabase remoto. |
 
-Para probar que la API está viva: `http://localhost:4000/api/salud`
+Para probar que la API está viva: `http://localhost:3000/api/salud`
 
 ### Formato de las respuestas de la API
 
