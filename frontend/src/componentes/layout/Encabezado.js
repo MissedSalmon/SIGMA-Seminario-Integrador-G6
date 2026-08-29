@@ -11,13 +11,7 @@ import {
   CBreadcrumbItem,
   CContainer,
   CHeader,
-  CHeaderToggler,
-  CHeaderNav,
 } from '@coreui/react';
-import CIcon from '@coreui/icons-react';
-import { cilMenu } from '@coreui/icons';
-
-import { useLayout } from './ContextoLayout.js';
 
 /** Como se muestra cada tramo de la direccion en las migas. */
 const NOMBRES = {
@@ -53,33 +47,26 @@ function armarMigas(direccion) {
 }
 
 export default function Encabezado() {
-  const { barraVisible, setBarraVisible } = useLayout();
   const direccionActual = usePathname();
   const migas = armarMigas(direccionActual);
 
   return (
     <CHeader position="sticky" className="mb-4 p-0">
-      <CContainer className="border-bottom px-4" fluid>
-        <CHeaderToggler onClick={() => setBarraVisible(!barraVisible)}>
-          <CIcon icon={cilMenu} size="lg" />
-        </CHeaderToggler>
-
-        <CHeaderNav className="d-none d-md-flex">
-          <CBreadcrumb className="my-0">
-            <CBreadcrumbItem href="/">Inicio</CBreadcrumbItem>
-            {migas.map((miga) =>
-              miga.ultima ? (
-                <CBreadcrumbItem key={miga.direccion} active>
-                  {miga.texto}
-                </CBreadcrumbItem>
-              ) : (
-                <CBreadcrumbItem key={miga.direccion}>
-                  <Link href={miga.direccion}>{miga.texto}</Link>
-                </CBreadcrumbItem>
-              )
-            )}
-          </CBreadcrumb>
-        </CHeaderNav>
+      <CContainer className="border-bottom px-4 py-3" fluid>
+        <CBreadcrumb className="my-0 fs-5 fw-semibold">
+          <CBreadcrumbItem href="/" className="text-decoration-none">Inicio</CBreadcrumbItem>
+          {migas.map((miga) =>
+            miga.ultima ? (
+              <CBreadcrumbItem key={miga.direccion} active>
+                {miga.texto}
+              </CBreadcrumbItem>
+            ) : (
+              <CBreadcrumbItem key={miga.direccion}>
+                <Link href={miga.direccion} className="text-decoration-none">{miga.texto}</Link>
+              </CBreadcrumbItem>
+            )
+          )}
+        </CBreadcrumb>
       </CContainer>
     </CHeader>
   );

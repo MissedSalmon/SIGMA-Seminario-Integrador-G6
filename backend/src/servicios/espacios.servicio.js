@@ -1,16 +1,4 @@
-/**
- * Reglas de negocio de los espacios (HU-2).
- *
- * Un espacio es un lugar dentro de un edificio: aula, laboratorio, oficina,
- * pasillo o area comun. Siempre pertenece a un edificio.
- *
- * TEMPORAL: trabaja contra src/datos-mock/ hasta que exista la base de datos.
- */
-import {
-  tablas,
-  proximoId,
-  TIPOS_DE_ESPACIO,
-} from '../datos-mock/estructuraEdilicia.js';
+import { supabase } from '../config/supabase.js';
 import { datoInvalido, noEncontrado, conflicto } from '../utiles/errores.js';
 
 function limpiar(texto) {
@@ -19,145 +7,108 @@ function limpiar(texto) {
   return limpio === '' ? null : limpio;
 }
 
-function mismoNombre(a, b) {
-  return a.trim().toLowerCase() === b.trim().toLowerCase();
+export async function obtenerTodos(idEdificio = null) {
+  let query = supabase.from('espacio').select(`
+    edificioid,
+    espacionum,
+    areaid,
+    espaciopiso,
+    edificio (
+      edificionom
+    )
+  `);
+  
+  if (idEdificio) {
+    query = query.eq('edificioid', idEdificio);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+
+  return data.map(espacio => ({
+    idEdificio: espacio.edificioid,
+    espacioNum: espacio.espacionum,
+    areaId: espacio.areaid,
+    espacioPiso: espacio.espaciopiso,
+    nombreEdificio: espacio.edificio ? espacio.edificio.edificionom : '(edificio eliminado)'
+  }));
 }
 
-function validar({ idEdificio, nombre, tipo, piso, numero, dimensiones }, idIgnorado = null) {
-  const nombreLimpio = limpiar(nombre);
-  const tipoLimpio = limpiar(tipo);
-  const edificio = Number(idEdificio);
+export async function obtenerPorId(edificioId, espacioNum) {
+  const { data, error } = await supabase.from('espacio')
+    .select('*, edificio(edificionom)')
+    .eq('edificioid', edificioId)
+    .eq('espacionum', espacioNum)
+    .single();
 
-  if (!nombreLimpio) {
-    throw datoInvalido('El nombre del espacio es obligatorio.');
-  }
-
-  if (!Number.isInteger(edificio)) {
-    throw datoInvalido('Hay que elegir a que edificio pertenece el espacio.');
-  }
-
-  const existeEdificio = tablas.edificios.some((fila) => fila.idEdificio === edificio);
-  if (!existeEdificio) {
-    throw datoInvalido(`No existe el edificio ${edificio}.`);
-  }
-
-  if (!tipoLimpio) {
-    throw datoInvalido('Hay que elegir el tipo de espacio.');
-  }
-
-  if (!TIPOS_DE_ESPACIO.includes(tipoLimpio)) {
-    throw datoInvalido(
-      `El tipo "${tipoLimpio}" no es valido. Opciones: ${TIPOS_DE_ESPACIO.join(', ')}.`
-    );
-  }
-
-  // Dos espacios pueden llamarse igual si estan en edificios distintos
-  // (Aula 1 del Central y Aula 1 del Anexo), pero no dentro del mismo.
-  const duplicado = tablas.espacios.some(
-    (espacio) =>
-      espacio.idEspacio !== idIgnorado &&
-      espacio.idEdificio === edificio &&
-      mismoNombre(espacio.nombre, nombreLimpio)
-  );
-
-  if (duplicado) {
-    throw conflicto(`Ese edificio ya tiene un espacio llamado "${nombreLimpio}".`);
-  }
+  if (error || !data) throw noEncontrado(`No existe el espacio ${espacioNum} en el edificio ${edificioId}.`);
 
   return {
-    idEdificio: edificio,
-    nombre: nombreLimpio,
-    tipo: tipoLimpio,
-    piso: limpiar(piso),
-    numero: limpiar(numero),
-    dimensiones: limpiar(dimensiones),
+    idEdificio: data.edificioid,
+    espacioNum: data.espacionum,
+    areaId: data.areaid,
+    espacioPiso: data.espaciopiso,
+    nombreEdificio: data.edificio ? data.edificio.edificionom : ''
   };
-}
-
-/**
- * Le agrega a un espacio el nombre de su edificio.
- * El listado lo necesita para no mostrar un numero suelto.
- */
-function conEdificio(espacio) {
-  const edificio = tablas.edificios.find((fila) => fila.idEdificio === espacio.idEdificio);
-  return { ...espacio, nombreEdificio: edificio?.nombre ?? '(edificio eliminado)' };
-}
-
-/**
- * Lista los espacios.
- * @param {number} [idEdificio] - si viene, devuelve solo los de ese edificio.
- */
-export async function obtenerTodos(idEdificio = null) {
-  const filas = idEdificio
-    ? tablas.espacios.filter((espacio) => espacio.idEdificio === idEdificio)
-    : tablas.espacios;
-
-  return filas
-    .map(conEdificio)
-    .sort(
-      (a, b) =>
-        a.nombreEdificio.localeCompare(b.nombreEdificio, 'es') ||
-        a.nombre.localeCompare(b.nombre, 'es')
-    );
-}
-
-export async function obtenerPorId(idEspacio) {
-  const espacio = tablas.espacios.find((fila) => fila.idEspacio === idEspacio);
-
-  if (!espacio) {
-    throw noEncontrado(`No existe el espacio ${idEspacio}.`);
-  }
-
-  return conEdificio(espacio);
 }
 
 export async function crear(datos) {
-  const validados = validar(datos);
+  const edificio = Number(datos.idEdificio);
+  const numeroLimpio = limpiar(datos.numero) || limpiar(datos.espacioNum);
+  const pisoLimpio = limpiar(datos.piso) || limpiar(datos.espacioPiso);
+  const area = datos.areaId ? Number(datos.areaId) : null;
 
-  const nuevo = {
-    idEspacio: proximoId('espacios', 'idEspacio'),
-    ...validados,
-  };
+  if (!Number.isInteger(edificio)) throw datoInvalido('El edificioId es obligatorio.');
+  if (!numeroLimpio) throw datoInvalido('El numero de espacio es obligatorio.');
 
-  tablas.espacios.push(nuevo);
-  return conEdificio(nuevo);
+  const { data: existeEdificio } = await supabase.from('edificio').select('edificioid').eq('edificioid', edificio).maybeSingle();
+  if (!existeEdificio) throw datoInvalido(`No existe el edificio ${edificio}.`);
+
+  const { data: duplicado } = await supabase.from('espacio')
+    .select('espacionum')
+    .eq('edificioid', edificio)
+    .eq('espacionum', numeroLimpio)
+    .maybeSingle();
+
+  if (duplicado) throw conflicto(`El espacio ${numeroLimpio} ya existe en el edificio ${edificio}.`);
+
+  const { data, error } = await supabase.from('espacio').insert({
+    edificioid: edificio,
+    espacionum: numeroLimpio,
+    espaciopiso: pisoLimpio,
+    areaid: area
+  }).select().single();
+
+  if (error) throw new Error(error.message);
+
+  return data;
 }
 
-export async function actualizar(idEspacio, datos) {
-  const espacio = tablas.espacios.find((fila) => fila.idEspacio === idEspacio);
+export async function actualizar(edificioIdViejo, espacioNumViejo, datos) {
+  const pisoLimpio = limpiar(datos.piso) || limpiar(datos.espacioPiso);
+  const area = datos.areaId ? Number(datos.areaId) : null;
 
-  if (!espacio) {
-    throw noEncontrado(`No existe el espacio ${idEspacio}.`);
-  }
+  const { data, error } = await supabase.from('espacio').update({
+    espaciopiso: pisoLimpio,
+    areaid: area
+  }).eq('edificioid', edificioIdViejo).eq('espacionum', espacioNumViejo).select().single();
 
-  Object.assign(espacio, validar(datos, idEspacio));
-  return conEdificio(espacio);
+  if (error || !data) throw noEncontrado(`No existe el espacio.`);
+
+  return data;
 }
 
-/** No se puede borrar un espacio que tiene areas asociadas. */
-export async function eliminar(idEspacio) {
-  const espacio = tablas.espacios.find((fila) => fila.idEspacio === idEspacio);
+export async function eliminar(edificioId, espacioNum) {
+  const { data, error } = await supabase.from('espacio').delete()
+    .eq('edificioid', edificioId)
+    .eq('espacionum', espacioNum)
+    .select().single();
+    
+  if (error || !data) throw noEncontrado(`No existe el espacio.`);
 
-  if (!espacio) {
-    throw noEncontrado(`No existe el espacio ${idEspacio}.`);
-  }
-
-  const areasDelEspacio = tablas.areas.filter((area) => area.idEspacio === idEspacio).length;
-
-  if (areasDelEspacio > 0) {
-    throw conflicto(
-      `No se puede eliminar "${espacio.nombre}" porque tiene ${areasDelEspacio} ` +
-        'area(s) asociada(s). Elimina primero las areas.'
-    );
-  }
-
-  const posicion = tablas.espacios.indexOf(espacio);
-  tablas.espacios.splice(posicion, 1);
-
-  return espacio;
+  return data;
 }
 
-/** La lista de tipos, para que el formulario arme el desplegable. */
 export async function obtenerTipos() {
-  return TIPOS_DE_ESPACIO;
+  return [];
 }

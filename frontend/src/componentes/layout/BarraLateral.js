@@ -24,6 +24,7 @@ import {
   CNavTitle,
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
+import { cilMenu } from '@coreui/icons';
 
 import { navegacion } from './navegacion.js';
 import { useLayout } from './ContextoLayout.js';
@@ -52,10 +53,16 @@ export default function BarraLateral() {
       visible={barraVisible}
       onVisibleChange={(visible) => setBarraVisible(visible)}
     >
-      <CSidebarHeader className="border-bottom">
+      <CSidebarHeader className="border-bottom d-flex align-items-center justify-content-between">
         <CSidebarBrand as={Link} href="/" className="text-decoration-none">
           <span className="sigma-marca">SIGMA</span>
         </CSidebarBrand>
+        <button 
+          className="btn btn-link text-white p-0 d-md-none" 
+          onClick={() => setBarraVisible(false)}
+        >
+          <CIcon icon={cilMenu} size="lg" />
+        </button>
       </CSidebarHeader>
 
       <CSidebarNav>

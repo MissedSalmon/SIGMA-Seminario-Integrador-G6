@@ -88,11 +88,6 @@ export default function PantallaInicio() {
           </CCol>
         ))}
       </CRow>
-
-      <p className="text-body-secondary mt-4 mb-0">
-        Los datos que se ven son de prueba: la base de datos todavia no esta creada y se
-        pierden cada vez que se reinicia el backend.
-      </p>
     </>
   );
 }

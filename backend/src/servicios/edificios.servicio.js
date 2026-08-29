@@ -1,109 +1,97 @@
-/**
- * Reglas de negocio de los edificios (HU-1).
- *
- * TEMPORAL: trabaja contra src/datos-mock/ porque la base de datos todavia no
- * existe. Cuando este, se reemplazan estas funciones por consultas a Supabase
- * y el resto del sistema no se entera: los controladores siguen igual.
- */
-import { tablas, proximoId } from '../datos-mock/estructuraEdilicia.js';
+import { supabase } from '../config/supabase.js';
 import { datoInvalido, noEncontrado, conflicto } from '../utiles/errores.js';
 
-/** Limpia un texto que llega del formulario. Devuelve null si queda vacio. */
 function limpiar(texto) {
   if (typeof texto !== 'string') return null;
   const limpio = texto.trim();
   return limpio === '' ? null : limpio;
 }
 
-/** Compara nombres sin distinguir mayusculas ni espacios de mas. */
-function mismoNombre(a, b) {
-  return a.trim().toLowerCase() === b.trim().toLowerCase();
-}
-
-/**
- * Valida los datos de un edificio.
- * @param {number|null} idIgnorado - al editar, el propio edificio no cuenta
- *   como duplicado de si mismo.
- */
-function validar({ nombre, direccion }, idIgnorado = null) {
-  const nombreLimpio = limpiar(nombre);
-
-  if (!nombreLimpio) {
-    throw datoInvalido('El nombre del edificio es obligatorio.');
-  }
-
-  const duplicado = tablas.edificios.some(
-    (edificio) =>
-      edificio.idEdificio !== idIgnorado && mismoNombre(edificio.nombre, nombreLimpio)
-  );
-
-  if (duplicado) {
-    throw conflicto(`Ya existe un edificio con el nombre "${nombreLimpio}".`);
-  }
-
-  return { nombre: nombreLimpio, direccion: limpiar(direccion) };
-}
-
-/** Lista todos los edificios, ordenados por nombre. */
 export async function obtenerTodos() {
-  return [...tablas.edificios].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  const { data, error } = await supabase.from('edificio').select('*').order('edificionom', { ascending: true });
+  if (error) throw new Error(error.message);
+  
+  return data.map(edificio => ({
+    idEdificio: edificio.edificioid,
+    nombre: edificio.edificionom,
+    direccion: edificio.edificiodir
+  }));
 }
 
-/** Busca un edificio por su id. Si no esta, lanza 404. */
 export async function obtenerPorId(idEdificio) {
-  const edificio = tablas.edificios.find((fila) => fila.idEdificio === idEdificio);
-
-  if (!edificio) {
-    throw noEncontrado(`No existe el edificio ${idEdificio}.`);
-  }
-
-  return edificio;
-}
-
-/** Da de alta un edificio. */
-export async function crear(datos) {
-  const validados = validar(datos);
-
-  const nuevo = {
-    idEdificio: proximoId('edificios', 'idEdificio'),
-    ...validados,
+  const { data, error } = await supabase.from('edificio').select('*').eq('edificioid', idEdificio).single();
+  if (error || !data) throw noEncontrado(`No existe el edificio ${idEdificio}.`);
+  
+  return {
+    idEdificio: data.edificioid,
+    nombre: data.edificionom,
+    direccion: data.edificiodir
   };
-
-  tablas.edificios.push(nuevo);
-  return nuevo;
 }
 
-/** Modifica un edificio existente. */
+export async function crear(datos) {
+  const nombreLimpio = limpiar(datos.nombre);
+  const direccion = limpiar(datos.direccion);
+
+  if (!nombreLimpio) throw datoInvalido('El nombre del edificio es obligatorio.');
+
+  const { data: existente } = await supabase.from('edificio').select('edificioid').ilike('edificionom', nombreLimpio).maybeSingle();
+  if (existente) throw conflicto(`Ya existe un edificio con el nombre "${nombreLimpio}".`);
+
+  const { data: lastIdData } = await supabase.from('edificio').select('edificioid').order('edificioid', { ascending: false }).limit(1);
+  const nextId = lastIdData && lastIdData.length > 0 ? lastIdData[0].edificioid + 1 : 1;
+
+  const { data, error } = await supabase.from('edificio').insert({
+    edificioid: nextId,
+    edificionom: nombreLimpio,
+    edificiodir: direccion
+  }).select().single();
+
+  if (error) throw new Error(error.message);
+
+  return {
+    idEdificio: data.edificioid,
+    nombre: data.edificionom,
+    direccion: data.edificiodir
+  };
+}
+
 export async function actualizar(idEdificio, datos) {
-  const edificio = await obtenerPorId(idEdificio);
-  const validados = validar(datos, idEdificio);
+  const nombreLimpio = limpiar(datos.nombre);
+  const direccion = limpiar(datos.direccion);
 
-  Object.assign(edificio, validados);
-  return edificio;
+  if (!nombreLimpio) throw datoInvalido('El nombre del edificio es obligatorio.');
+
+  const { data: existente } = await supabase.from('edificio').select('edificioid').ilike('edificionom', nombreLimpio).neq('edificioid', idEdificio).maybeSingle();
+  if (existente) throw conflicto(`Ya existe un edificio con el nombre "${nombreLimpio}".`);
+
+  const { data, error } = await supabase.from('edificio').update({
+    edificionom: nombreLimpio,
+    edificiodir: direccion
+  }).eq('edificioid', idEdificio).select().single();
+
+  if (error || !data) throw noEncontrado(`No existe el edificio ${idEdificio}.`);
+
+  return {
+    idEdificio: data.edificioid,
+    nombre: data.edificionom,
+    direccion: data.edificiodir
+  };
 }
 
-/**
- * Da de baja un edificio.
- *
- * No se puede borrar un edificio que todavia tiene espacios cargados: se
- * perderia la ubicacion de los activos que estan en esos espacios.
- */
 export async function eliminar(idEdificio) {
-  const edificio = await obtenerPorId(idEdificio);
-
-  const espaciosDelEdificio = tablas.espacios.filter(
-    (espacio) => espacio.idEdificio === idEdificio
-  ).length;
-
-  if (espaciosDelEdificio > 0) {
-    throw conflicto(
-      `No se puede eliminar "${edificio.nombre}" porque tiene ${espaciosDelEdificio} ` +
-        'espacio(s) cargado(s). Elimina primero los espacios.'
-    );
+  const { data: espacios, error: errorEspacios } = await supabase.from('espacio').select('espacionum').eq('edificioid', idEdificio);
+  
+  if (espacios && espacios.length > 0) {
+    throw conflicto(`No se puede eliminar porque tiene ${espacios.length} espacio(s) cargado(s). Elimina primero los espacios.`);
   }
 
-  const posicion = tablas.edificios.indexOf(edificio);
-  tablas.edificios.splice(posicion, 1);
+  const { data, error } = await supabase.from('edificio').delete().eq('edificioid', idEdificio).select().single();
+  if (error || !data) throw noEncontrado(`No existe el edificio ${idEdificio}.`);
 
-  return edificio;
+  return {
+    idEdificio: data.edificioid,
+    nombre: data.edificionom,
+    direccion: data.edificiodir
+  };
 }

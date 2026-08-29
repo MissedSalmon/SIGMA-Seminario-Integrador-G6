@@ -8,27 +8,22 @@ dotenv.config();
 /**
  * Variables que necesita la conexion a Supabase.
  *
- * TEMPORAL: mientras la base de datos no exista, faltar estas variables NO
- * frena el arranque, solo avisa. Los modulos del Sprint 1 trabajan con los
- * datos de prueba de src/datos-mock/, asi que el equipo puede levantar la API
- * sin tener las claves.
- *
- * CUANDO ESTE LA BASE: volver a cortar el arranque (process.exit(1)) si falta
- * alguna. Es preferible fallar aca, al inicio, que fallar mas tarde con un
- * error confuso.
+ * Como ya no trabajamos con datos en memoria (mocks), si faltan estas
+ * variables el servidor debe cortarse, ya que no podria operar la base de datos.
  */
 const DE_SUPABASE = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
 
 const faltantes = DE_SUPABASE.filter((nombre) => !process.env[nombre]);
-const haySupabase = faltantes.length === 0;
 
-if (!haySupabase) {
-  console.warn('\nAviso: la API arranca SIN conexion a Supabase.');
-  faltantes.forEach((nombre) => console.warn(`  - falta ${nombre}`));
-  console.warn('Los datos que devuelve son de prueba (backend/src/datos-mock/)');
-  console.warn('y se pierden al reiniciar el servidor.');
-  console.warn('Para conectar la base: copia backend/.env.example a backend/.env.\n');
+if (faltantes.length > 0) {
+  console.error('\n❌ ERROR CRITICO: Faltan credenciales de Supabase en backend/.env');
+  faltantes.forEach((nombre) => console.error(`   Falta -> ${nombre}`));
+  console.error('Buscalas en Project Settings -> API en el panel de Supabase.');
+  console.error('El servidor backend no puede arrancar.\n');
+  process.exit(1);
 }
+
+const haySupabase = true;
 
 export const env = {
   entorno: process.env.NODE_ENV ?? 'development',
