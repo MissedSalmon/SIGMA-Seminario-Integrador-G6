@@ -1,41 +1,71 @@
 /*
   Estilos globales de SIGMA.
-  Los colores institucionales del proyecto se definen aca como variables
-  para que todas las pantallas los usen igual.
+
+  La base es la plantilla de administracion de CoreUI, que se importa en
+  src/app/layout.js. Aca solo van los ajustes propios del proyecto: los
+  colores institucionales y algun retoque puntual.
+
+  Regla practica: antes de escribir CSS a mano, fijarse si CoreUI ya tiene una
+  clase que haga lo mismo (mb-3, text-body-secondary, d-flex...). Cuanto menos
+  CSS propio, menos cosas que mantener.
 */
 
 :root {
   --sigma-teal: #0b6b8c;
   --sigma-amber: #f08a24;
   --sigma-ink: #0c2733;
-
-  --fondo: #ffffff;
-  --texto: var(--sigma-ink);
 }
 
-* {
-  box-sizing: border-box;
+/* La marca de la barra lateral. */
+.sigma-marca {
+  color: #fff;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
 }
 
-html,
-body {
+/* Barra lateral con el color institucional en lugar del gris de la plantilla. */
+.sidebar {
+  --cui-sidebar-bg: var(--sigma-ink);
+  --cui-sidebar-nav-link-active-bg: var(--sigma-teal);
+  --cui-sidebar-brand-bg: var(--sigma-ink);
+}
+
+/* Deja lugar a la barra lateral fija en pantallas grandes. */
+@media (min-width: 992px) {
+  .wrapper {
+    padding-left: var(--cui-sidebar-occupy-start, 0);
+    transition: padding 0.15s;
+  }
+}
+
+/* El titulo de cada pantalla. */
+.sigma-titulo {
+  color: var(--sigma-ink);
+  font-size: 1.5rem;
+  font-weight: 600;
   margin: 0;
-  padding: 0;
-  max-width: 100vw;
-  overflow-x: hidden;
 }
 
-body {
-  background: var(--fondo);
-  color: var(--texto);
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1.5;
+/* Marca los campos obligatorios de los formularios. */
+.sigma-obligatorio::after {
+  color: var(--cui-danger, #e55353);
+  content: ' *';
 }
 
-main {
-  padding: 2rem;
+/*
+  Las dos cajitas de las dimensiones de un espacio.
+  Se les sacan las flechitas de subir y bajar que el navegador le pone a los
+  campos numericos: en una caja angosta ocupan mas de lo que sirven.
+*/
+.sigma-medidas input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+  text-align: center;
 }
 
-a {
-  color: var(--sigma-teal);
+.sigma-medidas input[type='number']::-webkit-outer-spin-button,
+.sigma-medidas input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }

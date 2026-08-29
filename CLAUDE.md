@@ -102,8 +102,10 @@ en los **issues de GitHub**, y el modelo de datos en `supabase/migrations/`.
 
 ## Todavía no existe
 
-- **Las pantallas y los módulos de la API.** El esqueleto está armado, pero las carpetas
-  `frontend/src/app/`, `backend/src/rutas/`, `controladores/` y `servicios/` se llenan a
-  partir del Sprint 1.
+- **El resto de las pantallas y de los módulos de la API.** Hechos: **HU-1 edificios,
+  HU-2 espacios y HU-3 áreas** (ABM completo, 28/08/2026), con la interfaz armada sobre
+  la plantilla de administración de CoreUI. Los tres andan contra **datos de prueba en
+  memoria** (`backend/src/datos-mock/`), no contra la base aún.
+- **El proyecto en Supabase** y la conexión con **Vercel** en producción.
 
 *(Nota: La base de datos ya fue refactorizada e integrada con Supabase CLI en la carpeta `supabase/migrations/`)*
