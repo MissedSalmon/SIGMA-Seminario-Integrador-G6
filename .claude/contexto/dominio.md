@@ -96,7 +96,7 @@ Agrupadas por tema, para tener el mapa general:
 | **Depósito** | Ítem de inventario → Material / Herramienta · Proveedor · Compra · Línea de compra |
 
 > ⚠️ **El modelo de tablas se está rehaciendo.** No dar por firme ninguna estructura
-> concreta hasta que estén las migraciones en `base-de-datos/`.
+> concreta hasta que estén las migraciones en `supabase/migrations/`.
 
 ---
 
