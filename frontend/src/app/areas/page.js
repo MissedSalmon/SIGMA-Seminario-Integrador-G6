@@ -4,18 +4,7 @@
  * /areas - listado de areas funcionales (HU-3).
  */
 import { useEffect, useState } from 'react';
-import {
-  CButton,
-  CButtonGroup,
-  CCard,
-  CCardBody,
-  CTable,
-  CTableBody,
-  CTableDataCell,
-  CTableHead,
-  CTableHeaderCell,
-  CTableRow,
-} from '@coreui/react';
+import { CButton, CButtonGroup, CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilPencil, cilTrash } from '@coreui/icons';
 
@@ -23,14 +12,16 @@ import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
 import DialogoEliminar from '@/componentes/DialogoEliminar.js';
-import { Cargando, SinDatos } from '@/componentes/EstadoTabla.js';
+import TablaDatos from '@/componentes/tabla/TablaDatos.js';
+import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarAreas, eliminarArea } from '@/servicios/areas.js';
 
 export default function PantallaAreas() {
+  const { mostrarToast } = useToast();
+
   const [areas, setAreas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
-  const [exito, setExito] = useState('');
 
   const [aEliminar, setAEliminar] = useState(null);
   const [eliminando, setEliminando] = useState(false);
@@ -68,7 +59,7 @@ export default function PantallaAreas() {
 
     try {
       await eliminarArea(aEliminar.idArea);
-      setExito(`Se elimino el area "${aEliminar.nombre}".`);
+      mostrarToast({ tipo: 'exito', mensaje: `Se elimino el area "${aEliminar.nombre}".` });
       setAEliminar(null);
       setRecarga((numero) => numero + 1);
     } catch (fallo) {
@@ -79,6 +70,50 @@ export default function PantallaAreas() {
     }
   }
 
+  const columnas = [
+    {
+      clave: 'nombre',
+      encabezado: 'Nombre',
+      render: (area) => <span className="fw-semibold">{area.nombre}</span>,
+    },
+    {
+      clave: 'espacio',
+      encabezado: 'Espacio',
+      render: (area) => <span className="text-body-secondary">{area.nombreEspacio}</span>,
+    },
+    {
+      clave: 'edificio',
+      encabezado: 'Edificio',
+      render: (area) => <span className="text-body-secondary">{area.nombreEdificio}</span>,
+    },
+    {
+      clave: 'acciones',
+      encabezado: 'Acciones',
+      alinearDerecha: true,
+      render: (area) => (
+        <CButtonGroup size="sm">
+          <BotonEnlace
+            href={`/areas/${area.idArea}/editar`}
+            variante="ghost"
+            className="btn-icono"
+            title="Editar"
+          >
+            <CIcon icon={cilPencil} />
+          </BotonEnlace>
+          <CButton
+            variant="ghost"
+            color="danger"
+            className="btn-icono"
+            onClick={() => setAEliminar(area)}
+            title="Eliminar"
+          >
+            <CIcon icon={cilTrash} />
+          </CButton>
+        </CButtonGroup>
+      ),
+    },
+  ];
+
   return (
     <>
       <EncabezadoPagina
@@ -87,60 +122,19 @@ export default function PantallaAreas() {
       />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
-      <Aviso mensaje={exito} color="success" onCerrar={() => setExito('')} />
 
       <CCard>
         <CCardBody>
-          {cargando ? (
-            <Cargando texto="Cargando areas..." />
-          ) : areas.length === 0 ? (
-            <SinDatos texto="Todavia no hay areas cargadas." />
-          ) : (
-            <CTable hover responsive align="middle" className="mb-0">
-              <CTableHead>
-                <CTableRow>
-                  <CTableHeaderCell>Nombre</CTableHeaderCell>
-                  <CTableHeaderCell>Espacio</CTableHeaderCell>
-                  <CTableHeaderCell>Edificio</CTableHeaderCell>
-                  <CTableHeaderCell className="text-end">Acciones</CTableHeaderCell>
-                </CTableRow>
-              </CTableHead>
-
-              <CTableBody>
-                {areas.map((area) => (
-                  <CTableRow key={area.idArea}>
-                    <CTableDataCell className="fw-semibold">{area.nombre}</CTableDataCell>
-                    <CTableDataCell className="text-body-secondary">
-                      {area.nombreEspacio}
-                    </CTableDataCell>
-                    <CTableDataCell className="text-body-secondary">
-                      {area.nombreEdificio}
-                    </CTableDataCell>
-                    <CTableDataCell className="text-end">
-                      <CButtonGroup size="sm">
-                        <BotonEnlace
-                          href={`/areas/${area.idArea}/editar`}
-                          color="primary"
-                          variante="outline"
-                          title="Editar"
-                          >
-                          <CIcon icon={cilPencil} />
-                          </BotonEnlace>
-                        <CButton
-                          color="danger"
-                          variant="outline"
-                          onClick={() => setAEliminar(area)}
-                          title="Eliminar"
-                        >
-                          <CIcon icon={cilTrash} />
-                        </CButton>
-                      </CButtonGroup>
-                    </CTableDataCell>
-                  </CTableRow>
-                ))}
-              </CTableBody>
-            </CTable>
-          )}
+          <TablaDatos
+            filas={areas}
+            claveFila={(area) => area.idArea}
+            columnas={columnas}
+            buscarPor={['nombre', 'nombreEspacio', 'nombreEdificio']}
+            placeholderBusqueda="Buscar por nombre, espacio o edificio..."
+            cargando={cargando}
+            textoVacio="Todavia no hay areas cargadas."
+            accionVacio={{ texto: 'Agregar area', direccion: '/areas/agregar' }}
+          />
         </CCardBody>
       </CCard>
 

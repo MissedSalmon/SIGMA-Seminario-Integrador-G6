@@ -14,23 +14,29 @@ import { ProveedorLayout } from './ContextoLayout.js';
 import BarraLateral from './BarraLateral.js';
 import Encabezado from './Encabezado.js';
 import PieDePagina from './PieDePagina.js';
+import { ProveedorToast } from '@/componentes/toast/ContextoToast.js';
+import Toast from '@/componentes/toast/Toast.js';
 
 export default function LayoutAdmin({ children }) {
   return (
-    <ProveedorLayout>
-      <BarraLateral />
+    <ProveedorToast>
+      <ProveedorLayout>
+        <BarraLateral />
 
-      <div className="wrapper d-flex flex-column min-vh-100">
-        <Encabezado />
+        <div className="wrapper d-flex flex-column min-vh-100">
+          <Encabezado />
 
-        <div className="body flex-grow-1">
-          <CContainer className="px-4" fluid>
-            {children}
-          </CContainer>
+          <div className="body flex-grow-1">
+            <CContainer className="px-4" fluid>
+              {children}
+            </CContainer>
+          </div>
+
+          <PieDePagina />
         </div>
 
-        <PieDePagina />
-      </div>
-    </ProveedorLayout>
+        <Toast />
+      </ProveedorLayout>
+    </ProveedorToast>
   );
 }

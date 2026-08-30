@@ -1,34 +1,275 @@
 /*
   Estilos globales de SIGMA.
 
-  La base es la plantilla de administracion de CoreUI, que se importa en
-  src/app/layout.js. Aca solo van los ajustes propios del proyecto: los
-  colores institucionales y algun retoque puntual.
+  La base sigue siendo la plantilla de administracion de CoreUI (importada en
+  src/app/layout.js). Este archivo pisa las variables CSS de CoreUI (las que
+  empiezan con --cui-) para lograr una identidad visual propia, mas algunas
+  clases utilitarias puntuales para cosas que CoreUI no resuelve solo.
 
   Regla practica: antes de escribir CSS a mano, fijarse si CoreUI ya tiene una
-  clase que haga lo mismo (mb-3, text-body-secondary, d-flex...). Cuanto menos
-  CSS propio, menos cosas que mantener.
+  variable o una clase que haga lo mismo. La mayoria de los componentes de
+  CoreUI leen sus colores de variables --cui-btn-*, --cui-card-*, etc., asi
+  que alcanza con redefinirlas aca para que todos los botones/cards/badges se
+  actualicen solos. Las excepciones (foco de formularios, estados hover/active
+  de los botones) vienen con el color final ya calculado en el CSS compilado
+  de CoreUI, asi que esos casos se pisan a mano mas abajo.
+
+  Orden de las secciones: 1) tokens de marca, 2) overrides de CoreUI (fondo,
+  bordes, botones, formularios, tarjetas, tablas, badges, sidebar, header),
+  3) componentes propios (toast, skeleton, estado vacio, tarjetas de
+  estadistica), 4) utilidades sueltas.
 */
+
+/* ---------- 1. Tokens de marca ---------- */
 
 :root {
   --sigma-teal: #0b6b8c;
+  --sigma-teal-rgb: 11, 107, 140;
+  --sigma-teal-hover: #0a5e7c;
+  --sigma-teal-activo: #09536d;
+  --sigma-teal-suave: #e6f0f4;
+  --sigma-teal-borde-suave: #a3c7d4;
+  --sigma-teal-enfasis: #074257;
+
   --sigma-amber: #f08a24;
   --sigma-ink: #0c2733;
+
+  --sigma-fondo: #f4f6f8;
+  --sigma-superficie: #ffffff;
+  --sigma-borde: #e2e6eb;
+  --sigma-texto-secundario: #64748b;
+
+  --sigma-radio-sm: 0.5rem;
+  --sigma-radio-md: 0.75rem;
+  --sigma-radio-lg: 1rem;
+
+  --sigma-sombra-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --sigma-sombra-md: 0 8px 24px rgba(15, 23, 42, 0.08);
 }
 
-/* La marca de la barra lateral. */
+/* ---------- 2. Overrides de CoreUI ---------- */
+
+:root {
+  /* Tipografia: Inter (cargada en layout.js con next/font), con la pila de
+     siempre como respaldo. */
+  --cui-font-sans-serif: var(--sigma-fuente), -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  /* Fondo de pagina gris muy claro en vez del blanco de fabrica: asi las
+     tarjetas blancas se distinguen del fondo, como en un panel SaaS. */
+  --cui-body-bg: var(--sigma-fondo);
+  --cui-tertiary-bg: var(--sigma-teal-suave);
+  --cui-border-color: var(--sigma-borde);
+  --cui-border-color-translucent: var(--sigma-borde);
+  --cui-border-radius: var(--sigma-radio-sm);
+  --cui-border-radius-lg: var(--sigma-radio-md);
+  --cui-border-radius-sm: 0.4rem;
+
+  /* El primario de CoreUI (violeta de fabrica) pasa a ser el teal
+     institucional. Estas variables las consumen en vivo .text-primary,
+     .bg-primary, .border-primary, los badges y los alerts. */
+  --cui-primary: var(--sigma-teal);
+  --cui-primary-rgb: var(--sigma-teal-rgb);
+  --cui-primary-text-emphasis: var(--sigma-teal-enfasis);
+  --cui-primary-bg-subtle: var(--sigma-teal-suave);
+  --cui-primary-border-subtle: var(--sigma-teal-borde-suave);
+  --cui-link-color: var(--sigma-teal);
+  --cui-link-color-rgb: var(--sigma-teal-rgb);
+  --cui-link-hover-color: var(--sigma-teal-hover);
+  --cui-link-hover-color-rgb: 10, 94, 124;
+}
+
+body {
+  color: var(--sigma-ink);
+  letter-spacing: -0.006em;
+}
+
+/*
+  .btn-primary y .btn-outline-primary traen sus colores de hover/active ya
+  calculados por CoreUI a partir del violeta de fabrica, no de una formula que
+  lea --cui-primary en vivo. Por eso hay que pisar estas variables puntuales
+  (mismo mecanismo que usa CoreUI, solo que con los tonos de --sigma-teal).
+*/
+.btn-primary {
+  --cui-btn-bg: var(--sigma-teal);
+  --cui-btn-border-color: var(--sigma-teal);
+  --cui-btn-hover-bg: var(--sigma-teal-hover);
+  --cui-btn-hover-border-color: var(--sigma-teal-hover);
+  --cui-btn-active-bg: var(--sigma-teal-activo);
+  --cui-btn-active-border-color: var(--sigma-teal-activo);
+  --cui-btn-disabled-bg: var(--sigma-teal);
+  --cui-btn-disabled-border-color: var(--sigma-teal);
+  --cui-btn-focus-shadow-rgb: var(--sigma-teal-rgb);
+  box-shadow: none;
+}
+
+.btn-outline-primary {
+  --cui-btn-color: var(--sigma-teal);
+  --cui-btn-border-color: var(--sigma-teal);
+  --cui-btn-hover-bg: var(--sigma-teal);
+  --cui-btn-hover-border-color: var(--sigma-teal);
+  --cui-btn-active-bg: var(--sigma-teal-activo);
+  --cui-btn-active-border-color: var(--sigma-teal-activo);
+  --cui-btn-disabled-color: var(--sigma-teal);
+  --cui-btn-disabled-border-color: var(--sigma-teal);
+  --cui-btn-focus-shadow-rgb: var(--sigma-teal-rgb);
+}
+
+.btn {
+  font-weight: 600;
+  border-radius: var(--sigma-radio-sm);
+  padding-inline: 1rem;
+}
+
+.btn-sm {
+  border-radius: 0.5rem;
+}
+
+/*
+  CoreUI ya trae un variant="ghost" (clases .btn-ghost-primary,
+  .btn-ghost-danger, etc.), con los mismos colores violeta de fabrica
+  calculados en el CSS compilado. Se pisa la version "primary" para que las
+  acciones de editar usen el teal institucional; la version "danger" (para
+  eliminar) ya sirve tal cual viene.
+*/
+.btn-ghost-primary {
+  --cui-btn-color: var(--sigma-texto-secundario);
+  --cui-btn-hover-color: #fff;
+  --cui-btn-hover-bg: var(--sigma-teal);
+  --cui-btn-hover-border-color: var(--sigma-teal);
+  --cui-btn-active-bg: var(--sigma-teal-activo);
+  --cui-btn-active-border-color: var(--sigma-teal-activo);
+  --cui-btn-disabled-color: var(--sigma-texto-secundario);
+}
+
+/* Botones circulares chicos para las acciones de fila de las tablas. */
+.btn-icono {
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* El foco de inputs/selects viene con el color de fabrica ya calculado en el
+   CSS compilado, asi que se redefine directo el anillo de foco. */
+.form-control:focus,
+.form-select:focus,
+.was-validated .form-control:valid:focus,
+.was-validated .form-select:valid:focus {
+  border-color: var(--sigma-teal);
+  box-shadow: 0 0 0 0.25rem rgba(var(--sigma-teal-rgb), 0.18);
+}
+
+.form-check-input:focus {
+  border-color: var(--sigma-teal);
+  box-shadow: 0 0 0 0.25rem rgba(var(--sigma-teal-rgb), 0.18);
+}
+
+.form-control,
+.form-select {
+  border-radius: var(--sigma-radio-sm);
+  border-color: var(--sigma-borde);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  background-color: var(--sigma-fondo);
+  opacity: 0.75;
+}
+
+.form-label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--sigma-ink);
+  margin-bottom: 0.375rem;
+}
+
+.card {
+  --cui-card-border-color: var(--sigma-borde);
+  --cui-card-border-radius: var(--sigma-radio-md);
+  --cui-card-cap-bg: transparent;
+  box-shadow: var(--sigma-sombra-sm);
+}
+
+.table {
+  --cui-table-color: var(--sigma-ink);
+  --cui-table-hover-bg: var(--sigma-teal-suave);
+  font-size: 0.9rem;
+}
+
+.table > thead {
+  --cui-table-color: var(--sigma-texto-secundario);
+}
+
+.table thead th {
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  border-bottom-width: 1px;
+  padding-block: 0.85rem;
+}
+
+.table td {
+  padding-block: 0.75rem;
+  vertical-align: middle;
+}
+
+.modal-content {
+  border-radius: var(--sigma-radio-md);
+  border: none;
+  box-shadow: var(--sigma-sombra-md);
+}
+
+.alert {
+  border-radius: var(--sigma-radio-sm);
+  border: 1px solid transparent;
+}
+
+/* ---------- Barra lateral ---------- */
+
 .sigma-marca {
   color: #fff;
-  font-size: 1.35rem;
+  font-size: 1.3rem;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.16em;
 }
 
-/* Barra lateral con el color institucional en lugar del gris de la plantilla. */
 .sidebar {
   --cui-sidebar-bg: var(--sigma-ink);
-  --cui-sidebar-nav-link-active-bg: var(--sigma-teal);
   --cui-sidebar-brand-bg: var(--sigma-ink);
+  --cui-sidebar-nav-link-color: rgba(255, 255, 255, 0.72);
+  --cui-sidebar-nav-link-hover-color: #fff;
+  --cui-sidebar-nav-link-hover-bg: rgba(255, 255, 255, 0.06);
+  --cui-sidebar-nav-link-active-color: #fff;
+  --cui-sidebar-nav-link-active-bg: rgba(var(--sigma-teal-rgb), 0.55);
+  --cui-sidebar-nav-title-color: rgba(255, 255, 255, 0.4);
+  --cui-sidebar-border-color: rgba(255, 255, 255, 0.08);
+  border-right: none;
+}
+
+.sidebar .nav-link {
+  border-radius: var(--sigma-radio-sm);
+  margin-inline: 0.5rem;
+  margin-block: 0.1rem;
+  width: auto;
+  font-weight: 500;
+  border-left: 3px solid transparent;
+}
+
+.sidebar .nav-link.active {
+  font-weight: 600;
+  border-left-color: var(--sigma-amber);
+}
+
+.sidebar .nav-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding-top: 1.25rem;
 }
 
 /* Deja lugar a la barra lateral fija en pantallas grandes. */
@@ -39,15 +280,55 @@
   }
 }
 
-/* El titulo de cada pantalla. */
+/* ---------- Encabezado superior ---------- */
+
+.sigma-header {
+  background: var(--sigma-superficie);
+  box-shadow: 0 1px 0 var(--sigma-borde);
+}
+
+.sigma-header .breadcrumb-item + .breadcrumb-item::before {
+  color: var(--sigma-borde);
+}
+
+.sigma-header .breadcrumb-item a {
+  color: var(--sigma-texto-secundario);
+  font-weight: 500;
+}
+
+.sigma-header .breadcrumb-item.active {
+  color: var(--sigma-ink);
+  font-weight: 700;
+}
+
+/* ---------- Pie de pagina ---------- */
+
+.sigma-footer {
+  background: transparent;
+  color: var(--sigma-texto-secundario);
+  font-size: 0.8rem;
+  border-top: 1px solid var(--sigma-borde);
+}
+
+/* ---------- Titulos y formularios ---------- */
+
 .sigma-titulo {
   color: var(--sigma-ink);
   font-size: 1.5rem;
-  font-weight: 600;
+  font-weight: 700;
   margin: 0;
+  letter-spacing: -0.01em;
 }
 
-/* Marca los campos obligatorios de los formularios. */
+.sigma-seccion-titulo {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--sigma-ink);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--sigma-borde);
+}
+
 .sigma-obligatorio::after {
   color: var(--cui-danger, #e55353);
   content: ' *';
@@ -68,4 +349,213 @@
 .sigma-medidas input[type='number']::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+/* ---------- 3. Componentes propios ---------- */
+
+/* Toasts de feedback (src/componentes/toast). */
+.sigma-toast-contenedor {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: min(22rem, calc(100vw - 2.5rem));
+}
+
+.sigma-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--sigma-radio-sm);
+  background: var(--sigma-superficie);
+  border: 1px solid var(--sigma-borde);
+  box-shadow: var(--sigma-sombra-md);
+  font-size: 0.9rem;
+  color: var(--sigma-ink);
+  animation: sigma-toast-entrada 0.18s ease-out;
+}
+
+@keyframes sigma-toast-entrada {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sigma-toast-icono {
+  flex-shrink: 0;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sigma-toast--exito .sigma-toast-icono {
+  background: var(--cui-success-bg-subtle, #d8f3e3);
+  color: var(--cui-success, #1b9e5a);
+}
+
+.sigma-toast--error .sigma-toast-icono {
+  background: var(--cui-danger-bg-subtle, #fbdcdc);
+  color: var(--cui-danger, #e55353);
+}
+
+.sigma-toast-cerrar {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--sigma-texto-secundario);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0.15rem;
+}
+
+/* Skeleton loader de tablas (src/componentes/EstadoTabla.js). */
+.sigma-esqueleto-linea {
+  height: 0.85rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--sigma-borde) 25%, #eef1f4 37%, var(--sigma-borde) 63%);
+  background-size: 400% 100%;
+  animation: sigma-shimmer 1.4s ease infinite;
+}
+
+@keyframes sigma-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+/* Estado vacio (src/componentes/EstadoTabla.js). */
+.sigma-estado-vacio {
+  text-align: center;
+  padding: 3rem 1.5rem;
+}
+
+.sigma-estado-vacio-icono {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 999px;
+  background: var(--sigma-teal-suave);
+  color: var(--sigma-teal);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+/* Tarjetas de estadistica del panel (src/app/page.js). */
+.sigma-stat-tarjeta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.sigma-stat-icono {
+  flex-shrink: 0;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--sigma-radio-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sigma-stat-numero {
+  font-size: 1.85rem;
+  font-weight: 700;
+  color: var(--sigma-ink);
+  line-height: 1.1;
+}
+
+.sigma-stat-etiqueta {
+  color: var(--sigma-texto-secundario);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.sigma-barra-proporcion {
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--sigma-fondo);
+  overflow: hidden;
+}
+
+.sigma-barra-proporcion > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--sigma-teal);
+}
+
+/* Barra de herramientas de las tablas (buscador + filtros). */
+.sigma-tabla-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.1rem;
+}
+
+.sigma-tabla-buscador {
+  position: relative;
+  min-width: 15rem;
+  flex: 1 1 15rem;
+}
+
+.sigma-tabla-buscador svg {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--sigma-texto-secundario);
+  pointer-events: none;
+}
+
+.sigma-tabla-buscador input {
+  padding-left: 2.25rem;
+}
+
+.sigma-tabla-conteo {
+  color: var(--sigma-texto-secundario);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.sigma-tabla-paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 1rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--sigma-borde);
+  flex-wrap: wrap;
+}
+
+/* Etiqueta de tipo de espacio (src/componentes/EtiquetaTipo.js). */
+.sigma-etiqueta {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
 }

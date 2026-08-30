@@ -30,10 +30,12 @@ import {
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
+import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarEspacios } from '@/servicios/espacios.js';
 
 export default function FormularioArea({ area = null, onGuardar }) {
   const router = useRouter();
+  const { mostrarToast } = useToast();
   const editando = Boolean(area);
 
   const [nombre, setNombre] = useState(area?.nombre ?? '');
@@ -63,7 +65,11 @@ export default function FormularioArea({ area = null, onGuardar }) {
     setGuardando(true);
 
     try {
-      await onGuardar({ nombre, idEspacio: Number(idEspacio) });
+      await onGuardar({ nombre, idEspacio });
+      mostrarToast({
+        tipo: 'exito',
+        mensaje: editando ? `Se guardaron los cambios de "${nombre}".` : `Se agrego el area "${nombre}".`,
+      });
       router.push('/areas');
       router.refresh();
     } catch (fallo) {
@@ -96,6 +102,8 @@ export default function FormularioArea({ area = null, onGuardar }) {
       <CCardBody>
         <Aviso mensaje={error} onCerrar={() => setError('')} />
 
+        <h2 className="sigma-seccion-titulo">Datos del area</h2>
+
         <CForm noValidate validated={validado} onSubmit={manejarEnvio}>
           <CRow className="g-3">
             <CCol md={5}>
@@ -125,7 +133,7 @@ export default function FormularioArea({ area = null, onGuardar }) {
               >
                 <option value="">Elegi un espacio...</option>
                 {espacios.map((espacio) => (
-                  <option key={espacio.idEspacio} value={espacio.idEspacio}>
+                  <option key={`${espacio.idEdificio}-${espacio.espacioNum}`} value={`${espacio.idEdificio}-${espacio.espacioNum}`}>
                     {espacio.nombreEdificio} - {espacio.nombre}
                   </option>
                 ))}

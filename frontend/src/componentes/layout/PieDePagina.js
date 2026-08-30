@@ -4,7 +4,7 @@ import { CFooter } from '@coreui/react';
 
 export default function PieDePagina() {
   return (
-    <CFooter className="px-4">
+    <CFooter className="sigma-footer px-4">
       <div>
         <strong>SIGMA</strong> &mdash; Sistema Integral de Gestion de Mantenimiento de Activos
       </div>
