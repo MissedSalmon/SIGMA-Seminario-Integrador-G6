@@ -32,8 +32,6 @@ router.use('/tipos-activos', rutasTiposActivos);
 import rutasTiposEspacio from './tiposEspacio.rutas.js';
 router.use('/tipos-espacio', rutasTiposEspacio);
 
-// Personal (Sprint 1). Especialidades es de solo lectura hasta que se
-// implemente su propia HU (HU-4): ver la nota en especialidades.servicio.js.
 router.use('/tecnicos', rutasTecnicos);
 router.use('/especialidades', rutasEspecialidades);
 

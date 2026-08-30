@@ -5,13 +5,14 @@ import * as espaciosServicio from '../servicios/espacios.servicio.js';
 import { datoInvalido } from '../utiles/errores.js';
 
 function leerId(req) {
-  const id = Number(req.params.id);
+  const idStr = req.params.id;
 
-  if (!Number.isInteger(id)) {
+  if (!idStr || typeof idStr !== 'string' || !idStr.includes('-')) {
     throw datoInvalido(`"${req.params.id}" no es un numero de espacio valido.`);
   }
 
-  return id;
+  const [edificioId, espacioNum] = idStr.split('-');
+  return { edificioId: Number(edificioId), espacioNum: Number(espacioNum) };
 }
 
 /** Toma del cuerpo solo los campos que son del espacio. */
@@ -43,7 +44,8 @@ export async function listarTipos(req, res) {
 
 /** GET /api/espacios/:id */
 export async function obtener(req, res) {
-  const espacio = await espaciosServicio.obtenerPorId(leerId(req));
+  const { edificioId, espacioNum } = leerId(req);
+  const espacio = await espaciosServicio.obtenerPorId(edificioId, espacioNum);
   res.json({ ok: true, datos: espacio });
 }
 
@@ -55,12 +57,14 @@ export async function crear(req, res) {
 
 /** PUT /api/espacios/:id */
 export async function actualizar(req, res) {
-  const espacio = await espaciosServicio.actualizar(leerId(req), leerCuerpo(req));
+  const { edificioId, espacioNum } = leerId(req);
+  const espacio = await espaciosServicio.actualizar(edificioId, espacioNum, leerCuerpo(req));
   res.json({ ok: true, datos: espacio });
 }
 
 /** DELETE /api/espacios/:id */
 export async function eliminar(req, res) {
-  const espacio = await espaciosServicio.eliminar(leerId(req));
-  res.json({ ok: true, datos: espacio, mensaje: `Se elimino "${espacio.nombre}".` });
+  const { edificioId, espacioNum } = leerId(req);
+  const espacio = await espaciosServicio.eliminar(edificioId, espacioNum);
+  res.json({ ok: true, datos: espacio, mensaje: `Se elimino el espacio.` });
 }

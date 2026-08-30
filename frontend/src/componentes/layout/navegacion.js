@@ -84,4 +84,10 @@ export const navegacion = [
     direccion: '/tecnicos',
     icono: cilPeople,
   },
+  {
+    tipo: 'item',
+    texto: 'Especialidades',
+    direccion: '/especialidades',
+    icono: cilTags,
+  },
 ];
