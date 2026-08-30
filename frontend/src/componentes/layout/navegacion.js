@@ -6,12 +6,19 @@
  *
  *   { tipo: 'titulo', texto: 'ESTRUCTURA EDILICIA' }
  *   { tipo: 'item', texto: 'Edificios', direccion: '/edificios', icono: cilBuilding }
+ *
+ * Cuando un modulo tiene mas de una pantalla, en lugar de un item va un
+ * desplegable con sus pantallas adentro:
+ *
+ *   { tipo: 'grupo', texto: 'Espacios', icono: cilRoom, items: [ ...items... ] }
  */
 import {
   cilSpeedometer,
   cilBuilding,
   cilRoom,
   cilSitemap,
+  cilList,
+  cilTags,
 } from '@coreui/icons';
 
 export const navegacion = [
@@ -32,14 +39,27 @@ export const navegacion = [
     icono: cilBuilding,
   },
   {
-    tipo: 'item',
+    tipo: 'grupo',
     texto: 'Espacios',
-    direccion: '/espacios',
     icono: cilRoom,
+    items: [
+      {
+        tipo: 'item',
+        texto: 'Listado de espacios',
+        direccion: '/espacios',
+        icono: cilList,
+      },
+      {
+        tipo: 'item',
+        texto: 'Tipos de espacio',
+        direccion: '/espacios/tipos',
+        icono: cilTags,
+      },
+    ],
   },
   {
     tipo: 'item',
-    texto: 'Areas',
+    texto: 'Áreas',
     direccion: '/areas',
     icono: cilSitemap,
   },
