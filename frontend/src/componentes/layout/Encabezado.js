@@ -11,7 +11,12 @@ import {
   CBreadcrumbItem,
   CContainer,
   CHeader,
+  CHeaderToggler,
 } from '@coreui/react';
+import CIcon from '@coreui/icons-react';
+import { cilMenu } from '@coreui/icons';
+
+import { useLayout } from './ContextoLayout.js';
 
 /** Como se muestra cada tramo de la direccion en las migas. */
 const NOMBRES = {
@@ -49,11 +54,20 @@ function armarMigas(direccion) {
 export default function Encabezado() {
   const direccionActual = usePathname();
   const migas = armarMigas(direccionActual);
+  const { setBarraVisible } = useLayout();
 
   return (
-    <CHeader position="sticky" className="mb-4 p-0">
-      <CContainer className="border-bottom px-4 py-3" fluid>
-        <CBreadcrumb className="my-0 fs-5 fw-semibold">
+    <CHeader position="sticky" className="sigma-header mb-4 p-0 border-0">
+      <CContainer className="px-4 py-3 d-flex align-items-center gap-3" fluid>
+        <CHeaderToggler
+          className="d-lg-none p-0"
+          onClick={() => setBarraVisible(true)}
+          aria-label="Abrir el menu"
+        >
+          <CIcon icon={cilMenu} size="lg" />
+        </CHeaderToggler>
+
+        <CBreadcrumb className="my-0 fs-6 flex-grow-1">
           <CBreadcrumbItem href="/" className="text-decoration-none">Inicio</CBreadcrumbItem>
           {migas.map((miga) =>
             miga.ultima ? (

@@ -31,6 +31,7 @@ import {
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
+import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarEdificios } from '@/servicios/edificios.js';
 import { listarTiposDeEspacio } from '@/servicios/espacios.js';
 
@@ -71,6 +72,7 @@ function unirDimensiones(ancho, largo) {
 
 export default function FormularioEspacio({ espacio = null, onGuardar }) {
   const router = useRouter();
+  const { mostrarToast } = useToast();
   const editando = Boolean(espacio);
 
   const medidas = separarDimensiones(espacio?.dimensiones);
@@ -126,6 +128,10 @@ export default function FormularioEspacio({ espacio = null, onGuardar }) {
         numero,
         dimensiones: unirDimensiones(ancho, largo),
       });
+      mostrarToast({
+        tipo: 'exito',
+        mensaje: editando ? `Se guardaron los cambios de "${nombre}".` : `Se agrego el espacio "${nombre}".`,
+      });
       router.push('/espacios');
       router.refresh();
     } catch (fallo) {
@@ -157,6 +163,8 @@ export default function FormularioEspacio({ espacio = null, onGuardar }) {
     <CCard>
       <CCardBody>
         <Aviso mensaje={error} onCerrar={() => setError('')} />
+
+        <h2 className="sigma-seccion-titulo">Datos del espacio</h2>
 
         <CForm noValidate validated={validado} onSubmit={manejarEnvio}>
           <CRow className="g-3">

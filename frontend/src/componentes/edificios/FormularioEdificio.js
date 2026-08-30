@@ -23,9 +23,11 @@ import {
 
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
+import { useToast } from '@/componentes/toast/ContextoToast.js';
 
 export default function FormularioEdificio({ edificio = null, onGuardar }) {
   const router = useRouter();
+  const { mostrarToast } = useToast();
   const editando = Boolean(edificio);
 
   const [nombre, setNombre] = useState(edificio?.nombre ?? '');
@@ -49,6 +51,10 @@ export default function FormularioEdificio({ edificio = null, onGuardar }) {
 
     try {
       await onGuardar({ nombre, direccion });
+      mostrarToast({
+        tipo: 'exito',
+        mensaje: editando ? `Se guardaron los cambios de "${nombre}".` : `Se agrego el edificio "${nombre}".`,
+      });
       router.push('/edificios');
       router.refresh();
     } catch (fallo) {
@@ -61,6 +67,8 @@ export default function FormularioEdificio({ edificio = null, onGuardar }) {
     <CCard>
       <CCardBody>
         <Aviso mensaje={error} onCerrar={() => setError('')} />
+
+        <h2 className="sigma-seccion-titulo">Datos del edificio</h2>
 
         <CForm noValidate validated={validado} onSubmit={manejarEnvio}>
           <CRow className="g-3">

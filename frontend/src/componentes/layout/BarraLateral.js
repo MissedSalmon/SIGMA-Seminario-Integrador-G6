@@ -41,6 +41,13 @@ function estaActiva(direccionActual, direccionDelItem) {
   return direccionActual.startsWith(direccionDelItem);
 }
 
+/*
+  Punto de quiebre "escritorio" de la plantilla de CoreUI (el mismo que usa
+  la variable --cui-is-mobile del CSS compilado): a partir de 992px la barra
+  deja de ser un overlay para quedar siempre fija al costado.
+*/
+const PUNTO_QUIEBRE_ESCRITORIO = 992;
+
 export default function BarraLateral() {
   const { barraVisible, setBarraVisible } = useLayout();
   const direccionActual = usePathname() ?? '/';
@@ -51,21 +58,35 @@ export default function BarraLateral() {
       colorScheme="dark"
       position="fixed"
       visible={barraVisible}
-      onVisibleChange={(visible) => setBarraVisible(visible)}
+      onVisibleChange={(visible) => {
+        /*
+         * CSidebar tambien dispara este callback al cruzar el punto de
+         * quiebre mobile/escritorio, con una medicion de posicion que todavia
+         * no se actualizo (bug conocido: mide antes de que React vuelva a
+         * pintar las clases nuevas). Eso hacia que la barra se ocultara sola
+         * al agrandar la ventana en escritorio, sin ninguna forma de
+         * volver a abrirla. En escritorio no hay ningun boton que la cierre
+         * a mano, asi que ahi se ignora el callback; en mobile (donde si hay
+         * un boton para cerrarla) se respeta como siempre.
+         */
+        if (typeof window !== 'undefined' && window.innerWidth < PUNTO_QUIEBRE_ESCRITORIO) {
+          setBarraVisible(visible);
+        }
+      }}
     >
       <CSidebarHeader className="border-bottom d-flex align-items-center justify-content-between">
         <CSidebarBrand as={Link} href="/" className="text-decoration-none">
           <span className="sigma-marca">SIGMA</span>
         </CSidebarBrand>
-        <button 
-          className="btn btn-link text-white p-0 d-md-none" 
+        <button
+          className="btn btn-link text-white p-0 d-md-none"
           onClick={() => setBarraVisible(false)}
         >
           <CIcon icon={cilMenu} size="lg" />
         </button>
       </CSidebarHeader>
 
-      <CSidebarNav>
+      <CSidebarNav className="mt-2">
         {navegacion.map((opcion) =>
           opcion.tipo === 'titulo' ? (
             <CNavTitle key={opcion.texto}>{opcion.texto}</CNavTitle>
