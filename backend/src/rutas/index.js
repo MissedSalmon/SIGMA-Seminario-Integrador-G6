@@ -27,6 +27,9 @@ router.use('/areas', rutasAreas);
 import rutasTiposActivos from './tiposActivos.rutas.js';
 router.use('/tipos-activos', rutasTiposActivos);
 
+import rutasTiposEspacio from './tiposEspacio.rutas.js';
+router.use('/tipos-espacio', rutasTiposEspacio);
+
 // Sirve para verificar que la API esta viva. No consulta la base de datos.
 router.get('/salud', (req, res) => {
   res.json({

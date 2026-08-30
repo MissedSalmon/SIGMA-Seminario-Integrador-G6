@@ -153,7 +153,7 @@ export default function PantallaEspacios() {
 
               <CTableBody>
                 {espacios.map((espacio) => (
-                  <CTableRow key={espacio.idEspacio}>
+                  <CTableRow key={`${espacio.idEdificio}-${espacio.espacioNum}`}>
                     <CTableDataCell className="fw-semibold">{espacio.nombre}</CTableDataCell>
                     <CTableDataCell className="text-body-secondary">
                       {espacio.nombreEdificio}

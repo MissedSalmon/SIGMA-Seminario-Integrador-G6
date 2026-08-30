@@ -131,5 +131,7 @@ export async function eliminar(edificioId, espacioNum) {
 }
 
 export async function obtenerTipos() {
-  return ['Aula', 'Laboratorio', 'Oficina', 'Pasillo', 'Área común'];
+  const { data, error } = await supabase.from('tipoespacio').select('tipoespacionom').order('tipoespacionom');
+  if (error) return ['Aula', 'Laboratorio', 'Oficina', 'Pasillo', 'Área común']; // Fallback en caso de error o sin datos
+  return data.map(t => t.tipoespacionom);
 }
