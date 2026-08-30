@@ -23,6 +23,7 @@ const NOMBRES = {
   edificios: 'Edificios',
   espacios: 'Espacios',
   areas: 'Areas',
+  tecnicos: 'Tecnicos',
   agregar: 'Agregar',
   editar: 'Editar',
 };
