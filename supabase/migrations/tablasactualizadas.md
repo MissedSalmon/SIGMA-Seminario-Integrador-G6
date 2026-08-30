@@ -51,6 +51,9 @@ Representa las áreas físicas o habitaciones dentro de un edificio.
 | **PK, FK** | `espacioNum` | Número/código del espacio dentro del edificio |
 | **FK** | `areaId` | Referencia al área organizativa (`Area`) |
 | | `espacioPiso` | Piso o nivel donde se encuentra el espacio |
+| | `espacioNom` | Nombre descriptivo del espacio |
+| | `espacioTipo` | Categoría/Tipo de espacio (Aula, Laboratorio, etc.) |
+| | `espacioDim` | Dimensiones del espacio (Ej: 8 x 6 m) |
 
 #### `Area`
 Áreas funcionales u organizativas.
@@ -70,6 +73,7 @@ Clasificación o categoría de los activos.
 | :--- | :--- | :--- |
 | **PK** | `tipoActivoId` | Identificador del tipo de activo |
 | | `tipoActivoNom` | Nombre del tipo/categoría de activo |
+| | `tipoActivoDesc` | Descripción detallada del tipo de activo |
 
 #### `Activo`
 Equipos, maquinaria o elementos mantenibles.
