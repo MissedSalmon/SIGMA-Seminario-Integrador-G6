@@ -27,6 +27,7 @@ const NOMBRES = {
   areas: 'Áreas',
   activos: 'Activos',
   'tipos-activos': 'Tipos de activos',
+  tecnicos: 'Técnicos',
   agregar: 'Agregar',
   editar: 'Editar',
 };
