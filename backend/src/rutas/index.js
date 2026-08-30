@@ -15,6 +15,8 @@ import { Router } from 'express';
 import rutasEdificios from './edificios.rutas.js';
 import rutasEspacios from './espacios.rutas.js';
 import rutasAreas from './areas.rutas.js';
+import rutasTecnicos from './tecnicos.rutas.js';
+import rutasEspecialidades from './especialidades.rutas.js';
 
 const router = Router();
 
@@ -29,6 +31,11 @@ router.use('/tipos-activos', rutasTiposActivos);
 
 import rutasTiposEspacio from './tiposEspacio.rutas.js';
 router.use('/tipos-espacio', rutasTiposEspacio);
+
+// Personal (Sprint 1). Especialidades es de solo lectura hasta que se
+// implemente su propia HU (HU-4): ver la nota en especialidades.servicio.js.
+router.use('/tecnicos', rutasTecnicos);
+router.use('/especialidades', rutasEspecialidades);
 
 // Sirve para verificar que la API esta viva. No consulta la base de datos.
 router.get('/salud', (req, res) => {

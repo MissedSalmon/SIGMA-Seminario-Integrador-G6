@@ -19,6 +19,7 @@ const NOMBRES = {
   espacios: 'Espacios',
   tipos: 'Tipos de espacio',
   areas: 'Áreas',
+  tecnicos: 'Técnicos',
   agregar: 'Agregar',
   editar: 'Editar',
 };
