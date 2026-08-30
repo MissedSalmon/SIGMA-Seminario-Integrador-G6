@@ -23,6 +23,10 @@ router.use('/edificios', rutasEdificios);
 router.use('/espacios', rutasEspacios);
 router.use('/areas', rutasAreas);
 
+// Tipos de activos
+import rutasTiposActivos from './tiposActivos.rutas.js';
+router.use('/tipos-activos', rutasTiposActivos);
+
 // Sirve para verificar que la API esta viva. No consulta la base de datos.
 router.get('/salud', (req, res) => {
   res.json({

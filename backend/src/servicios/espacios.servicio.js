@@ -13,6 +13,9 @@ export async function obtenerTodos(idEdificio = null) {
     espacionum,
     areaid,
     espaciopiso,
+    espacionom,
+    espaciotipo,
+    espaciodim,
     edificio (
       edificionom
     )
@@ -30,6 +33,9 @@ export async function obtenerTodos(idEdificio = null) {
     espacioNum: espacio.espacionum,
     areaId: espacio.areaid,
     espacioPiso: espacio.espaciopiso,
+    nombre: espacio.espacionom || '',
+    tipo: espacio.espaciotipo || '',
+    dimensiones: espacio.espaciodim || '',
     nombreEdificio: espacio.edificio ? espacio.edificio.edificionom : '(edificio eliminado)'
   }));
 }
@@ -48,6 +54,9 @@ export async function obtenerPorId(edificioId, espacioNum) {
     espacioNum: data.espacionum,
     areaId: data.areaid,
     espacioPiso: data.espaciopiso,
+    nombre: data.espacionom || '',
+    tipo: data.espaciotipo || '',
+    dimensiones: data.espaciodim || '',
     nombreEdificio: data.edificio ? data.edificio.edificionom : ''
   };
 }
@@ -57,6 +66,9 @@ export async function crear(datos) {
   const numeroLimpio = limpiar(datos.numero) || limpiar(datos.espacioNum);
   const pisoLimpio = limpiar(datos.piso) || limpiar(datos.espacioPiso);
   const area = datos.areaId ? Number(datos.areaId) : null;
+  const nombreLimpio = limpiar(datos.nombre);
+  const tipoLimpio = limpiar(datos.tipo);
+  const dimensionesLimpio = limpiar(datos.dimensiones);
 
   if (!Number.isInteger(edificio)) throw datoInvalido('El edificioId es obligatorio.');
   if (!numeroLimpio) throw datoInvalido('El numero de espacio es obligatorio.');
@@ -76,7 +88,10 @@ export async function crear(datos) {
     edificioid: edificio,
     espacionum: numeroLimpio,
     espaciopiso: pisoLimpio,
-    areaid: area
+    areaid: area,
+    espacionom: nombreLimpio,
+    espaciotipo: tipoLimpio,
+    espaciodim: dimensionesLimpio
   }).select().single();
 
   if (error) throw new Error(error.message);
@@ -87,10 +102,16 @@ export async function crear(datos) {
 export async function actualizar(edificioIdViejo, espacioNumViejo, datos) {
   const pisoLimpio = limpiar(datos.piso) || limpiar(datos.espacioPiso);
   const area = datos.areaId ? Number(datos.areaId) : null;
+  const nombreLimpio = limpiar(datos.nombre);
+  const tipoLimpio = limpiar(datos.tipo);
+  const dimensionesLimpio = limpiar(datos.dimensiones);
 
   const { data, error } = await supabase.from('espacio').update({
     espaciopiso: pisoLimpio,
-    areaid: area
+    areaid: area,
+    espacionom: nombreLimpio,
+    espaciotipo: tipoLimpio,
+    espaciodim: dimensionesLimpio
   }).eq('edificioid', edificioIdViejo).eq('espacionum', espacioNumViejo).select().single();
 
   if (error || !data) throw noEncontrado(`No existe el espacio.`);
@@ -110,5 +131,5 @@ export async function eliminar(edificioId, espacioNum) {
 }
 
 export async function obtenerTipos() {
-  return [];
+  return ['Aula', 'Laboratorio', 'Oficina', 'Pasillo', 'Área común'];
 }
