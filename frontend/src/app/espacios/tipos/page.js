@@ -1,7 +1,10 @@
 'use client';
 
 /**
- * /areas - listado de areas funcionales (HU-3).
+ * /espacios/tipos - listado de tipos de espacio (HU-2).
+ *
+ * Cuelga del menu de Espacios porque es una tabla de apoyo de ese modulo:
+ * aca se cargan los tipos que despues aparecen al dar de alta un espacio.
  */
 import { useEffect, useState } from 'react';
 import {
@@ -24,10 +27,10 @@ import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
 import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import { Cargando, SinDatos } from '@/componentes/EstadoTabla.js';
-import { listarAreas, eliminarArea } from '@/servicios/areas.js';
+import { listarTiposEspacio, eliminarTipoEspacio } from '@/servicios/tiposEspacio.js';
 
-export default function PantallaAreas() {
-  const [areas, setAreas] = useState([]);
+export default function PantallaTiposEspacio() {
+  const [tipos, setTipos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [exito, setExito] = useState('');
@@ -44,9 +47,9 @@ export default function PantallaAreas() {
 
     async function pedir() {
       try {
-        const filas = await listarAreas();
+        const filas = await listarTiposEspacio();
         if (!vigente) return;
-        setAreas(filas);
+        setTipos(filas);
         setError('');
       } catch (fallo) {
         if (vigente) setError(fallo.message);
@@ -67,8 +70,8 @@ export default function PantallaAreas() {
     setError('');
 
     try {
-      await eliminarArea(aEliminar.idArea);
-      setExito(`Se elimino el area "${aEliminar.nombre}".`);
+      await eliminarTipoEspacio(aEliminar.idTipoEspacio);
+      setExito(`Se elimino el tipo de espacio "${aEliminar.nombre}".`);
       setAEliminar(null);
       setRecarga((numero) => numero + 1);
     } catch (fallo) {
@@ -82,8 +85,9 @@ export default function PantallaAreas() {
   return (
     <>
       <EncabezadoPagina
-        titulo="Áreas"
-        accion={{ texto: 'Agregar área', direccion: '/areas/agregar' }}
+        titulo="Tipos de espacio"
+        descripcion="Los tipos que se pueden elegir al cargar un espacio."
+        accion={{ texto: 'Agregar tipo', direccion: '/espacios/tipos/agregar' }}
       />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
@@ -92,44 +96,36 @@ export default function PantallaAreas() {
       <CCard>
         <CCardBody>
           {cargando ? (
-            <Cargando texto="Cargando areas..." />
-          ) : areas.length === 0 ? (
-            <SinDatos texto="Todavia no hay areas cargadas." />
+            <Cargando texto="Cargando tipos de espacio..." />
+          ) : tipos.length === 0 ? (
+            <SinDatos texto="Todavia no hay tipos de espacio cargados." />
           ) : (
             <CTable hover responsive align="middle" className="mb-0">
               <CTableHead>
                 <CTableRow>
                   <CTableHeaderCell>Nombre</CTableHeaderCell>
-                  <CTableHeaderCell>Espacio</CTableHeaderCell>
-                  <CTableHeaderCell>Edificio</CTableHeaderCell>
                   <CTableHeaderCell className="text-end">Acciones</CTableHeaderCell>
                 </CTableRow>
               </CTableHead>
 
               <CTableBody>
-                {areas.map((area) => (
-                  <CTableRow key={area.idArea}>
-                    <CTableDataCell className="fw-semibold">{area.nombre}</CTableDataCell>
-                    <CTableDataCell className="text-body-secondary">
-                      {area.nombreEspacio}
-                    </CTableDataCell>
-                    <CTableDataCell className="text-body-secondary">
-                      {area.nombreEdificio}
-                    </CTableDataCell>
+                {tipos.map((tipo) => (
+                  <CTableRow key={tipo.idTipoEspacio}>
+                    <CTableDataCell className="fw-semibold">{tipo.nombre}</CTableDataCell>
                     <CTableDataCell className="text-end">
                       <CButtonGroup size="sm">
                         <BotonEnlace
-                          href={`/areas/${area.idArea}/editar`}
+                          href={`/espacios/tipos/${tipo.idTipoEspacio}/editar`}
                           color="primary"
                           variante="outline"
                           title="Editar"
-                          >
+                        >
                           <CIcon icon={cilPencil} />
-                          </BotonEnlace>
+                        </BotonEnlace>
                         <CButton
                           color="danger"
                           variant="outline"
-                          onClick={() => setAEliminar(area)}
+                          onClick={() => setAEliminar(tipo)}
                           title="Eliminar"
                         >
                           <CIcon icon={cilTrash} />
@@ -151,7 +147,10 @@ export default function PantallaAreas() {
         onCancelar={() => setAEliminar(null)}
       >
         <p className="mb-0">
-          Se va a eliminar el area <strong>{aEliminar?.nombre}</strong>.
+          Se va a eliminar el tipo de espacio <strong>{aEliminar?.nombre}</strong>.
+        </p>
+        <p className="text-body-secondary mt-2 mb-0">
+          Solo se puede eliminar si no hay espacios que lo esten usando.
         </p>
       </DialogoEliminar>
     </>

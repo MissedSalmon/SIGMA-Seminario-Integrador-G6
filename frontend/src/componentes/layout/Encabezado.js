@@ -17,7 +17,8 @@ import {
 const NOMBRES = {
   edificios: 'Edificios',
   espacios: 'Espacios',
-  areas: 'Areas',
+  tipos: 'Tipos de espacio',
+  areas: 'Áreas',
   agregar: 'Agregar',
   editar: 'Editar',
 };
