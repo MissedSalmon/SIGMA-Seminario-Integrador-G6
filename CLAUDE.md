@@ -44,11 +44,11 @@ Después copiar `backend/.env.example` → `backend/.env` y
 `frontend/.env.local.example` → `frontend/.env.local`, y completar los valores.
 
 ```bash
-npm run dev
+npm run dev:all
 ```
 
-Levanta las dos partes juntas: frontend en `http://localhost:3000` y API en
-`http://localhost:4000`. Más detalle en [arquitectura.md](.claude/contexto/arquitectura.md).
+Levanta las dos partes juntas: frontend en `http://localhost:4000` y API en
+`http://localhost:3000`. Más detalle en [arquitectura.md](.claude/contexto/arquitectura.md).
 
 ---
 
@@ -59,7 +59,7 @@ Levanta las dos partes juntas: frontend en `http://localhost:3000` y API en
 | `.claude/contexto/` | **Contexto ordenado por tema. Empezar por acá.** |
 | `frontend/` | Aplicación web (Next.js 16 + React 19). |
 | `backend/` | API REST (Express 5 + Supabase). |
-| `base-de-datos/` | Scripts SQL. Vacío por ahora: falta rehacer el modelo. |
+| `supabase/migrations/` | Scripts SQL de la base de datos gestionados por la CLI. |
 | `contexto.md` | Documento histórico del grupo. Es largo y mezcla decisiones viejas y nuevas. |
 
 ### Índice de `.claude/contexto/`
@@ -72,7 +72,7 @@ Levanta las dos partes juntas: frontend en `http://localhost:3000` y API en
 | [trabajo-en-equipo.md](.claude/contexto/trabajo-en-equipo.md) | Git, issues, tablero, forma de trabajo. |
 
 El detalle fino vive fuera de acá: las historias de usuario y sus criterios de aceptación
-en los **issues de GitHub**, y el modelo de datos en `base-de-datos/`.
+en los **issues de GitHub**, y el modelo de datos en `supabase/migrations/`.
 
 ---
 
@@ -83,13 +83,14 @@ en los **issues de GitHub**, y el modelo de datos en `base-de-datos/`.
    sin palabras rebuscadas, sin relleno.
 3. **Todo en español**, incluido nombres de carpetas, archivos, variables, tablas y
    comentarios de código.
-4. **JavaScript con módulos ES** (`import`/`export`), nunca `require`. Las importaciones
-   de archivos propios llevan la extensión: `'./app.js'`.
+4. **JavaScript con módulos ES** (`import`/`export`), nunca `require`. En el **backend** las importaciones
+   de archivos propios llevan la extensión: `'./app.js'`. En el **frontend** (Next.js), el Webpack ya está
+   configurado para auto-resolver `.js`, `.jsx`, `.ts`, `.tsx`, etc.
 5. **Las claves nunca se suben.** Los archivos `.env` están ignorados por Git. Si hay que
    compartir una clave, se hace por un canal privado.
 6. **No cambiar versiones de dependencias** sin avisar al equipo.
 7. **El modelo de tablas se está rehaciendo.** No dar por firme ninguna estructura hasta
-   que estén las migraciones en `base-de-datos/`.
+   que estén las migraciones en `supabase/migrations/`.
 8. **Una decisión que se toma, se escribe.** Si el equipo define algo (por ejemplo
    "un técnico tiene un solo tipo de trabajo"), se anota en el archivo de contexto que
    corresponda, con la fecha.
@@ -101,9 +102,10 @@ en los **issues de GitHub**, y el modelo de datos en `base-de-datos/`.
 
 ## Todavía no existe
 
-- **La base de datos.** La carpeta `base-de-datos/` está vacía a propósito: no se puede
-  escribir el primer script hasta rehacer el modelo de tablas.
-- **Las pantallas y los módulos de la API.** El esqueleto está armado, pero las carpetas
-  `frontend/src/app/`, `backend/src/rutas/`, `controladores/` y `servicios/` se llenan a
-  partir del Sprint 1.
-- **El proyecto en Supabase** y la conexión con **Vercel**.
+- **El resto de las pantallas y de los módulos de la API.** Hechos: **HU-1 edificios,
+  HU-2 espacios y HU-3 áreas** (ABM completo, 28/08/2026), con la interfaz armada sobre
+  la plantilla de administración de CoreUI. Los tres andan contra **datos de prueba en
+  memoria** (`backend/src/datos-mock/`), no contra la base aún.
+- **El proyecto en Supabase** y la conexión con **Vercel** en producción.
+
+*(Nota: La base de datos ya fue refactorizada e integrada con Supabase CLI en la carpeta `supabase/migrations/`)*

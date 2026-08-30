@@ -29,7 +29,7 @@ Esto es la mirada general del sistema. El detalle vive en otro lado:
 | Detalle | Dónde está |
 |---|---|
 | Historias de usuario y criterios de aceptación | Issues de GitHub |
-| Modelo de tablas y diccionario de datos | `base-de-datos/` |
+| Modelo de tablas y diccionario de datos | `supabase/migrations/` |
 | Cómo se llegó a cada decisión | `contexto.md` (documento histórico) |
 
 ## Cómo mantenerlo

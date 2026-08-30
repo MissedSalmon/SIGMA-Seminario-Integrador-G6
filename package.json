@@ -13,15 +13,23 @@
     "npm": ">=10.0.0"
   },
   "scripts": {
-    "dev": "concurrently -n backend,frontend -c blue,magenta \"npm:dev:backend\" \"npm:dev:frontend\"",
+    "dev:all": "concurrently -n backend,frontend -c blue,magenta \"npm:dev:backend\" \"npm:dev:frontend\"",
     "dev:backend": "npm run dev --workspace backend",
     "dev:frontend": "npm run dev --workspace frontend",
     "build": "npm run build --workspace frontend",
     "start:backend": "npm run start --workspace backend",
     "start:frontend": "npm run start --workspace frontend",
-    "lint": "npm run lint --workspace frontend"
+    "lint": "npm run lint --workspace frontend",
+    "db:link": "npx supabase link --project-ref agayydinmimmqoyuybbi",
+    "db:push": "npx supabase db push",
+    "db:start": "npx supabase start"
   },
   "devDependencies": {
-    "concurrently": "^10.0.5"
+    "concurrently": "^10.0.5",
+    "supabase": "^2.116.0"
+  },
+  "allowScripts": {
+    "unrs-resolver": true,
+    "@parcel/watcher@2.6.0": true
   }
 }

@@ -11,12 +11,24 @@
  * <modulo>.controlador.js en ../controladores y <modulo>.servicio.js en ../servicios.
  */
 import { Router } from 'express';
+
 import rutasEdificios from './edificios.rutas.js';
+import rutasEspacios from './espacios.rutas.js';
+import rutasAreas from './areas.rutas.js';
 
 const router = Router();
 
-// Rutas de los módulos
+// Estructura edilicia (Sprint 1)
 router.use('/edificios', rutasEdificios);
+router.use('/espacios', rutasEspacios);
+router.use('/areas', rutasAreas);
+
+// Tipos de activos
+import rutasTiposActivos from './tiposActivos.rutas.js';
+router.use('/tipos-activos', rutasTiposActivos);
+
+import rutasTiposEspacio from './tiposEspacio.rutas.js';
+router.use('/tipos-espacio', rutasTiposEspacio);
 
 // Sirve para verificar que la API esta viva. No consulta la base de datos.
 router.get('/salud', (req, res) => {
