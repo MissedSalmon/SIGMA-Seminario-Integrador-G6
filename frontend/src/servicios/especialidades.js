@@ -11,3 +11,23 @@ export async function listarEspecialidades() {
   const { data } = await api.get('/especialidades');
   return data.datos;
 }
+
+export async function crearEspecialidad(nombre) {
+  const { data } = await api.post('/especialidades', { nombre });
+  return data.datos;
+}
+
+export async function actualizarEspecialidad(id, nombre) {
+  const { data } = await api.put(`/especialidades/${id}`, { nombre });
+  return data.datos;
+}
+
+export async function eliminarEspecialidad(id) {
+  const { data } = await api.delete(`/especialidades/${id}`);
+  return data.datos;
+}
+
+export async function obtenerEspecialidad(id) {
+  const { data } = await api.get(`/especialidades/${id}`);
+  return data.datos;
+}

@@ -8,7 +8,6 @@
  */
 import { useEffect, useState } from 'react';
 import {
-  CBadge,
   CButton,
   CButtonGroup,
   CCard,
@@ -158,11 +157,7 @@ export default function PantallaEspacios() {
                     <CTableDataCell className="text-body-secondary">
                       {espacio.nombreEdificio}
                     </CTableDataCell>
-                    <CTableDataCell>
-                      <CBadge color="info" shape="rounded-pill">
-                        {espacio.tipo}
-                      </CBadge>
-                    </CTableDataCell>
+                    <CTableDataCell className="text-body-secondary">{espacio.tipo}</CTableDataCell>
                     <CTableDataCell className="text-body-secondary">
                       {espacio.piso ?? '-'}
                     </CTableDataCell>
@@ -173,15 +168,16 @@ export default function PantallaEspacios() {
                       <CButtonGroup size="sm">
                         <BotonEnlace
                           href={`/espacios/${espacio.idEspacio}/editar`}
-                          color="primary"
-                          variante="outline"
+                          variante="ghost"
+                          className="btn-icono"
                           title="Editar"
-                          >
+                        >
                           <CIcon icon={cilPencil} />
-                          </BotonEnlace>
+                        </BotonEnlace>
                         <CButton
+                          variant="ghost"
                           color="danger"
-                          variant="outline"
+                          className="btn-icono"
                           onClick={() => setAEliminar(espacio)}
                           title="Eliminar"
                         >

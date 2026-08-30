@@ -29,10 +29,13 @@ export async function obtenerTodos(idEdificio = null) {
   if (error) throw new Error(error.message);
 
   return data.map(espacio => ({
+    idEspacio: `${espacio.edificioid}-${espacio.espacionum}`,
     idEdificio: espacio.edificioid,
     espacioNum: espacio.espacionum,
     areaId: espacio.areaid,
     espacioPiso: espacio.espaciopiso,
+    piso: espacio.espaciopiso, // frontend lo espera como piso
+    numero: espacio.espacionum, // frontend lo espera como numero
     nombre: espacio.espacionom || '',
     tipo: espacio.espaciotipo || '',
     dimensiones: espacio.espaciodim || '',
@@ -50,10 +53,13 @@ export async function obtenerPorId(edificioId, espacioNum) {
   if (error || !data) throw noEncontrado(`No existe el espacio ${espacioNum} en el edificio ${edificioId}.`);
 
   return {
+    idEspacio: `${data.edificioid}-${data.espacionum}`,
     idEdificio: data.edificioid,
     espacioNum: data.espacionum,
     areaId: data.areaid,
     espacioPiso: data.espaciopiso,
+    piso: data.espaciopiso,
+    numero: data.espacionum,
     nombre: data.espacionom || '',
     tipo: data.espaciotipo || '',
     dimensiones: data.espaciodim || '',

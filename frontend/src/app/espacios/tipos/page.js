@@ -7,18 +7,7 @@
  * aca se cargan los tipos que despues aparecen al dar de alta un espacio.
  */
 import { useEffect, useState } from 'react';
-import {
-  CButton,
-  CButtonGroup,
-  CCard,
-  CCardBody,
-  CTable,
-  CTableBody,
-  CTableDataCell,
-  CTableHead,
-  CTableHeaderCell,
-  CTableRow,
-} from '@coreui/react';
+import { CButton, CButtonGroup, CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilPencil, cilTrash } from '@coreui/icons';
 
@@ -26,14 +15,16 @@ import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
 import DialogoEliminar from '@/componentes/DialogoEliminar.js';
-import { Cargando, SinDatos } from '@/componentes/EstadoTabla.js';
+import TablaDatos from '@/componentes/tabla/TablaDatos.js';
+import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarTiposEspacio, eliminarTipoEspacio } from '@/servicios/tiposEspacio.js';
 
 export default function PantallaTiposEspacio() {
+  const { mostrarToast } = useToast();
+
   const [tipos, setTipos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
-  const [exito, setExito] = useState('');
 
   const [aEliminar, setAEliminar] = useState(null);
   const [eliminando, setEliminando] = useState(false);
@@ -71,7 +62,10 @@ export default function PantallaTiposEspacio() {
 
     try {
       await eliminarTipoEspacio(aEliminar.idTipoEspacio);
-      setExito(`Se elimino el tipo de espacio "${aEliminar.nombre}".`);
+      mostrarToast({
+        tipo: 'exito',
+        mensaje: `Se elimino el tipo de espacio "${aEliminar.nombre}".`,
+      });
       setAEliminar(null);
       setRecarga((numero) => numero + 1);
     } catch (fallo) {
@@ -82,6 +76,40 @@ export default function PantallaTiposEspacio() {
     }
   }
 
+  const columnas = [
+    {
+      clave: 'nombre',
+      encabezado: 'Nombre',
+      render: (tipo) => <span className="fw-semibold">{tipo.nombre}</span>,
+    },
+    {
+      clave: 'acciones',
+      encabezado: 'Acciones',
+      alinearDerecha: true,
+      render: (tipo) => (
+        <CButtonGroup size="sm">
+          <BotonEnlace
+            href={`/espacios/tipos/${tipo.idTipoEspacio}/editar`}
+            variante="ghost"
+            className="btn-icono"
+            title="Editar"
+          >
+            <CIcon icon={cilPencil} />
+          </BotonEnlace>
+          <CButton
+            variant="ghost"
+            color="danger"
+            className="btn-icono"
+            onClick={() => setAEliminar(tipo)}
+            title="Eliminar"
+          >
+            <CIcon icon={cilTrash} />
+          </CButton>
+        </CButtonGroup>
+      ),
+    },
+  ];
+
   return (
     <>
       <EncabezadoPagina
@@ -91,52 +119,19 @@ export default function PantallaTiposEspacio() {
       />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
-      <Aviso mensaje={exito} color="success" onCerrar={() => setExito('')} />
 
       <CCard>
         <CCardBody>
-          {cargando ? (
-            <Cargando texto="Cargando tipos de espacio..." />
-          ) : tipos.length === 0 ? (
-            <SinDatos texto="Todavia no hay tipos de espacio cargados." />
-          ) : (
-            <CTable hover responsive align="middle" className="mb-0">
-              <CTableHead>
-                <CTableRow>
-                  <CTableHeaderCell>Nombre</CTableHeaderCell>
-                  <CTableHeaderCell className="text-end">Acciones</CTableHeaderCell>
-                </CTableRow>
-              </CTableHead>
-
-              <CTableBody>
-                {tipos.map((tipo) => (
-                  <CTableRow key={tipo.idTipoEspacio}>
-                    <CTableDataCell className="fw-semibold">{tipo.nombre}</CTableDataCell>
-                    <CTableDataCell className="text-end">
-                      <CButtonGroup size="sm">
-                        <BotonEnlace
-                          href={`/espacios/tipos/${tipo.idTipoEspacio}/editar`}
-                          color="primary"
-                          variante="outline"
-                          title="Editar"
-                        >
-                          <CIcon icon={cilPencil} />
-                        </BotonEnlace>
-                        <CButton
-                          color="danger"
-                          variant="outline"
-                          onClick={() => setAEliminar(tipo)}
-                          title="Eliminar"
-                        >
-                          <CIcon icon={cilTrash} />
-                        </CButton>
-                      </CButtonGroup>
-                    </CTableDataCell>
-                  </CTableRow>
-                ))}
-              </CTableBody>
-            </CTable>
-          )}
+          <TablaDatos
+            filas={tipos}
+            claveFila={(tipo) => tipo.idTipoEspacio}
+            columnas={columnas}
+            buscarPor={['nombre']}
+            placeholderBusqueda="Buscar tipo de espacio..."
+            cargando={cargando}
+            textoVacio="Todavia no hay tipos de espacio cargados."
+            accionVacio={{ texto: 'Agregar tipo', direccion: '/espacios/tipos/agregar' }}
+          />
         </CCardBody>
       </CCard>
 

@@ -23,3 +23,6 @@ export const noEncontrado = (mensaje) => crearError(mensaje, 404);
 
 /** 409: el pedido es valido pero choca con una regla del sistema. */
 export const conflicto = (mensaje) => crearError(mensaje, 409);
+
+/** 403: acceso prohibido. */
+export const prohibido = (mensaje) => crearError(mensaje, 403);
