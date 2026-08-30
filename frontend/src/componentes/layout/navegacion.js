@@ -19,6 +19,7 @@ import {
   cilSitemap,
   cilList,
   cilTags,
+  cilPeople,
 } from '@coreui/icons';
 
 export const navegacion = [
@@ -72,5 +73,15 @@ export const navegacion = [
     texto: 'Tipos de Activos',
     direccion: '/tipos-activos',
     icono: cilSitemap,
+  },
+  {
+    tipo: 'titulo',
+    texto: 'Personal',
+  },
+  {
+    tipo: 'item',
+    texto: 'Tecnicos',
+    direccion: '/tecnicos',
+    icono: cilPeople,
   },
 ];
