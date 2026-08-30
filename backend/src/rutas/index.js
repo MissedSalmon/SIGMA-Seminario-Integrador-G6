@@ -32,7 +32,7 @@ router.use('/tipos-activos', rutasTiposActivos);
 import rutasTiposEspacio from './tiposEspacio.rutas.js';
 router.use('/tipos-espacio', rutasTiposEspacio);
 
-import rutasEspecialidades from './especialidades.rutas.js';
+router.use('/tecnicos', rutasTecnicos);
 router.use('/especialidades', rutasEspecialidades);
 
 // Sirve para verificar que la API esta viva. No consulta la base de datos.

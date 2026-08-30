@@ -59,7 +59,10 @@ export async function crear(nombreRaw) {
   if (errExiste) throw new Error(errExiste.message);
   if (existe) throw conflicto('Ya existe una especialidad con ese nombre.');
 
-  const { data, error } = await supabase.from('especialidad').insert({ especialidadnom: nombre }).select().single();
+  const { data: lastIdData } = await supabase.from('especialidad').select('especialidadid').order('especialidadid', { ascending: false }).limit(1);
+  const nextId = lastIdData && lastIdData.length > 0 ? lastIdData[0].especialidadid + 1 : 1;
+
+  const { data, error } = await supabase.from('especialidad').insert({ especialidadid: nextId, especialidadnom: nombre }).select().single();
   if (error) throw new Error(error.message);
 
   return { idEspecialidad: data.especialidadid, nombre: data.especialidadnom };
@@ -93,14 +96,13 @@ export async function actualizar(id, nombreRaw) {
 
 export async function eliminar(id) {
   // No se puede borrar si tiene tecnicos asignados
-  const { data: asignaciones, error: errAsign } = await supabase
+  const { count, error: errAsign } = await supabase
     .from('tecnico_especialidad')
-    .select('tecnicolegajo')
-    .eq('especialidadid', id)
-    .limit(1);
+    .select('*', { count: 'exact', head: true })
+    .eq('especialidadid', id);
   if (errAsign) throw new Error(errAsign.message);
-  if (asignaciones && asignaciones.length > 0) {
-    throw conflicto('No se puede eliminar la especialidad porque tiene técnicos asignados.');
+  if (count > 0) {
+    throw conflicto(`No se puede eliminar la especialidad porque tiene ${count} técnico${count !== 1 ? 's' : ''} asignado${count !== 1 ? 's' : ''}.`);
   }
 
   const { data, error } = await supabase.from('especialidad').delete().eq('especialidadid', id).select().single();

@@ -11,6 +11,13 @@ export async function listar(req, res) {
   res.json({ ok: true, datos: especialidades });
 }
 
+/** GET /api/especialidades/:id */
+export async function obtener(req, res) {
+  const id = Number(req.params.id);
+  const especialidad = await especialidadesServicio.obtenerPorId(id);
+  res.json({ ok: true, datos: especialidad });
+}
+
 /** POST /api/especialidades */
 export async function crear(req, res) {
   const { nombre } = req.body;

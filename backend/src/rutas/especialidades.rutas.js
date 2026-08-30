@@ -10,6 +10,7 @@ const router = Router();
 
 // Listado público
 router.get('/', especialidades.listar);
+router.get('/:id', especialidades.obtener);
 
 // Operaciones de escritura (solo administradores)
 router.post('/', soloAdministrador, especialidades.crear);

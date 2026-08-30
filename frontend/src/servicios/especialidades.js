@@ -28,9 +28,6 @@ export async function eliminarEspecialidad(id) {
 }
 
 export async function obtenerEspecialidad(id) {
-  const { data } = await api.get(`/especialidades`);
-  // La API actual devuelve todas las especialidades; buscamos la que coincide.
-  const fila = data.datos.find((e) => Number(e.idEspecialidad) === Number(id));
-  if (!fila) throw new Error('No existe la especialidad solicitada.');
-  return fila;
+  const { data } = await api.get(`/especialidades/${id}`);
+  return data.datos;
 }

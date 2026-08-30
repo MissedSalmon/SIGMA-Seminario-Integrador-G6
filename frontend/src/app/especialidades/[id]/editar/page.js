@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
@@ -9,7 +9,7 @@ import { obtenerEspecialidad, actualizarEspecialidad } from '@/servicios/especia
 import { Cargando } from '@/componentes/EstadoTabla.js';
 
 export default function PantallaEditarEspecialidad({ params }) {
-  const { id } = params;
+  const { id } = use(params);
   const router = useRouter();
 
   const [especialidad, setEspecialidad] = useState(null);
