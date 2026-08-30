@@ -21,5 +21,6 @@ export async function actualizarTipoActivo(id, datos) {
 }
 
 export async function eliminarTipoActivo(id) {
-  await api.delete(`/tipos-activos/${id}`);
+  const { data } = await api.delete(`/tipos-activos/${id}`);
+  return data.datos;
 }

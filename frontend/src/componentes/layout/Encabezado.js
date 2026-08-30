@@ -13,12 +13,20 @@ import {
   CHeader,
 } from '@coreui/react';
 
-/** Como se muestra cada tramo de la direccion en las migas. */
+/**
+ * Como se muestra cada tramo de la direccion en las migas.
+ *
+ * El texto tiene que ser el mismo que el titulo de la pantalla: si en la
+ * direccion dice "tipos-activos" y arriba dice "Tipos de activos", la miga
+ * dice "Tipos de activos". Cada pantalla nueva se suma aca.
+ */
 const NOMBRES = {
   edificios: 'Edificios',
   espacios: 'Espacios',
   tipos: 'Tipos de espacio',
   areas: 'Áreas',
+  activos: 'Activos',
+  'tipos-activos': 'Tipos de activos',
   tecnicos: 'Técnicos',
   agregar: 'Agregar',
   editar: 'Editar',
@@ -26,7 +34,11 @@ const NOMBRES = {
 
 /**
  * Convierte "/edificios/3/editar" en los tramos de la ruta de migas.
- * Los tramos que son un numero (el id) no se muestran.
+ *
+ * Los identificadores no se muestran, porque no son una pantalla a la que se
+ * pueda entrar. Un identificador es el tramo que va justo antes de "editar":
+ * puede ser un numero (/edificios/3/editar) o un codigo, como el de inventario
+ * de un activo (/activos/AC-014/editar).
  */
 function armarMigas(direccion) {
   const tramos = direccion.split('/').filter(Boolean);
@@ -36,7 +48,7 @@ function armarMigas(direccion) {
   tramos.forEach((tramo, indice) => {
     acumulada += `/${tramo}`;
 
-    if (/^\d+$/.test(tramo)) return;
+    if (/^\d+$/.test(tramo) || tramos[indice + 1] === 'editar') return;
 
     migas.push({
       texto: NOMBRES[tramo] ?? tramo,

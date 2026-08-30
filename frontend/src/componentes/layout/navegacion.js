@@ -19,6 +19,7 @@ import {
   cilSitemap,
   cilList,
   cilTags,
+  cilDevices,
   cilPeople,
 } from '@coreui/icons';
 
@@ -69,10 +70,23 @@ export const navegacion = [
     texto: 'Gestión de Activos',
   },
   {
-    tipo: 'item',
-    texto: 'Tipos de Activos',
-    direccion: '/tipos-activos',
-    icono: cilSitemap,
+    tipo: 'grupo',
+    texto: 'Activos',
+    icono: cilDevices,
+    items: [
+      {
+        tipo: 'item',
+        texto: 'Listado de activos',
+        direccion: '/activos',
+        icono: cilList,
+      },
+      {
+        tipo: 'item',
+        texto: 'Tipos de activos',
+        direccion: '/tipos-activos',
+        icono: cilTags,
+      },
+    ],
   },
   {
     tipo: 'titulo',
