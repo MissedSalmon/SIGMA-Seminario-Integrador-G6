@@ -65,7 +65,7 @@ export default function FormularioArea({ area = null, onGuardar }) {
     setGuardando(true);
 
     try {
-      await onGuardar({ nombre, idEspacio: Number(idEspacio) });
+      await onGuardar({ nombre, idEspacio });
       mostrarToast({
         tipo: 'exito',
         mensaje: editando ? `Se guardaron los cambios de "${nombre}".` : `Se agrego el area "${nombre}".`,
@@ -133,7 +133,7 @@ export default function FormularioArea({ area = null, onGuardar }) {
               >
                 <option value="">Elegi un espacio...</option>
                 {espacios.map((espacio) => (
-                  <option key={espacio.idEspacio} value={espacio.idEspacio}>
+                  <option key={`${espacio.idEdificio}-${espacio.espacioNum}`} value={`${espacio.idEdificio}-${espacio.espacioNum}`}>
                     {espacio.nombreEdificio} - {espacio.nombre}
                   </option>
                 ))}
