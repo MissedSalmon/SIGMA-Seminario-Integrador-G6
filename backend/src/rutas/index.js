@@ -30,6 +30,10 @@ router.use('/tipos-activos', rutasTiposActivos);
 import rutasTiposEspacio from './tiposEspacio.rutas.js';
 router.use('/tipos-espacio', rutasTiposEspacio);
 
+// Activos (HU-7)
+import rutasActivos from './activos.rutas.js';
+router.use('/activos', rutasActivos);
+
 // Sirve para verificar que la API esta viva. No consulta la base de datos.
 router.get('/salud', (req, res) => {
   res.json({

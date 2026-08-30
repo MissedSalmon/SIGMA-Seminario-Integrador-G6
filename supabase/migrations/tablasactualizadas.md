@@ -80,6 +80,7 @@ Equipos, maquinaria o elementos mantenibles.
 | Clave | Campo | Tipo / Descripción |
 | :--- | :--- | :--- |
 | **PK** | `activoCodigo` | Código/Etiqueta única del activo |
+| | `activoDesc` | Descripción del activo |
 | **FK** | `edificioId` | Edificio donde se encuentra ubicado |
 | **FK** | `espacioNum` | Espacio específico donde está ubicado |
 | **FK** | `tipoActivoId` | Categoría del activo (`TipoActivo`) |
@@ -87,7 +88,15 @@ Equipos, maquinaria o elementos mantenibles.
 | | `activoFechaAlta` | Fecha de incorporación |
 | | `activoFechaInst` | Fecha de instalación |
 | | `activoFechaUltMant` | Fecha del último mantenimiento recibido |
-| | `activoEstado` | Estado operativo (Ej: Activo, En Reparación, Inactivo) |
+| | `activoFechaUltReub` | Fecha de la última reubicación (cambio de espacio) |
+| | `activoEstado` | Estado operativo: Operativo, En mantenimiento, Fuera de servicio, Retirado |
+
+> Un activo **nunca se elimina**. Darlo de baja es pasarlo a `Retirado`, para conservar su
+> historial de intervenciones. El estado `En mantenimiento` no se carga a mano: lo pone la
+> orden de trabajo cuando entra en ejecución.
+>
+> `activoDesc` y `activoFechaUltReub` se agregaron en la migración
+> `20260830200259_add_activo_desc_reubicacion.sql`.
 
 #### `Falla`
 Catálogo/Registro de fallas detectadas en los activos o tareas.

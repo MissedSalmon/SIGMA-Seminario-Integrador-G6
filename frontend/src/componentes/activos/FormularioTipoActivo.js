@@ -1,11 +1,12 @@
 'use client';
 
 /**
- * Formulario de alta y de edicion de un tipo de espacio (HU-2).
+ * Formulario de alta y de edicion de un tipo de activo.
  *
- * Un tipo de espacio es nada mas que un nombre (aula, laboratorio, oficina).
- * Sirve para que despues, al cargar un espacio, se elija de una lista en vez
- * de escribirlo a mano y que cada uno lo escriba distinto.
+ * Un tipo de activo es la categoria a la que pertenece un activo (aires
+ * acondicionados, luminarias, mobiliario). Sirve para dos cosas: agrupar el
+ * inventario, y mas adelante colgar de ahi los planes de mantenimiento
+ * preventivo y las tareas estandar.
  */
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -19,6 +20,7 @@ import {
   CFormInput,
   CFormLabel,
   CFormText,
+  CFormTextarea,
   CRow,
 } from '@coreui/react';
 
@@ -26,12 +28,13 @@ import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 
-export default function FormularioTipoEspacio({ tipo = null, onGuardar }) {
+export default function FormularioTipoActivo({ tipo = null, onGuardar }) {
   const router = useRouter();
   const { mostrarToast } = useToast();
   const editando = Boolean(tipo);
 
   const [nombre, setNombre] = useState(tipo?.nombre ?? '');
+  const [descripcion, setDescripcion] = useState(tipo?.descripcion ?? '');
 
   const [validado, setValidado] = useState(false);
   const [guardando, setGuardando] = useState(false);
@@ -47,16 +50,16 @@ export default function FormularioTipoEspacio({ tipo = null, onGuardar }) {
     setGuardando(true);
 
     try {
-      await onGuardar({ nombre });
+      await onGuardar({ nombre, descripcion });
 
       mostrarToast({
         tipo: 'exito',
         mensaje: editando
           ? `Se guardaron los cambios de "${nombre}".`
-          : `Se agrego el tipo de espacio "${nombre}".`,
+          : `Se agrego el tipo de activo "${nombre}".`,
       });
 
-      router.push('/espacios/tipos');
+      router.push('/tipos-activos');
       router.refresh();
     } catch (fallo) {
       setError(fallo.message);
@@ -71,7 +74,7 @@ export default function FormularioTipoEspacio({ tipo = null, onGuardar }) {
 
         <CForm noValidate validated={validado} onSubmit={manejarEnvio}>
           <CRow className="g-3">
-            <CCol md={6}>
+            <CCol xs={12} md={5}>
               <CFormLabel htmlFor="nombre" className="sigma-obligatorio">
                 Nombre
               </CFormLabel>
@@ -79,12 +82,23 @@ export default function FormularioTipoEspacio({ tipo = null, onGuardar }) {
                 id="nombre"
                 value={nombre}
                 onChange={(evento) => setNombre(evento.target.value)}
-                placeholder="Laboratorio"
+                placeholder="Aires acondicionados"
                 required
                 maxLength={100}
               />
               <CFormFeedback invalid>El nombre es obligatorio.</CFormFeedback>
-              <CFormText>Asi va a aparecer en el desplegable al cargar un espacio.</CFormText>
+              <CFormText>Asi va a aparecer en el desplegable al cargar un activo.</CFormText>
+            </CCol>
+
+            <CCol xs={12} md={7}>
+              <CFormLabel htmlFor="descripcion">Descripcion</CFormLabel>
+              <CFormTextarea
+                id="descripcion"
+                rows={3}
+                value={descripcion}
+                onChange={(evento) => setDescripcion(evento.target.value)}
+                placeholder="Equipos de refrigeracion split y de ventana"
+              />
             </CCol>
           </CRow>
 
@@ -92,7 +106,7 @@ export default function FormularioTipoEspacio({ tipo = null, onGuardar }) {
             <CButton type="submit" color="primary" disabled={guardando}>
               {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Agregar tipo'}
             </CButton>
-            <BotonEnlace href="/espacios/tipos" color="secondary" variante="outline">
+            <BotonEnlace href="/tipos-activos" color="secondary" variante="outline">
               Cancelar
             </BotonEnlace>
           </div>
