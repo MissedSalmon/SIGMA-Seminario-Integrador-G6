@@ -10,6 +10,7 @@
  * Ojo con CNavItem: su prop `as` reemplaza el <li> de afuera, no el enlace.
  * Por eso el <Link> va en el CNavLink de adentro y no en el CNavItem.
  */
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -19,6 +20,7 @@ import {
   CSidebarHeader,
   CSidebarNav,
   CSidebarToggler,
+  CNavGroup,
   CNavItem,
   CNavLink,
   CNavTitle,
@@ -29,28 +31,68 @@ import { cilMenu } from '@coreui/icons';
 import { navegacion } from './navegacion.js';
 import { useLayout } from './ContextoLayout.js';
 
-/**
- * Decide si una opcion del menu esta activa.
- * "/edificios" tiene que quedar marcado tambien en "/edificios/agregar".
- */
-function estaActiva(direccionActual, direccionDelItem) {
-  if (direccionDelItem === '/') {
-    return direccionActual === '/';
-  }
-
-  return direccionActual.startsWith(direccionDelItem);
+/** Todas las direcciones del menu, incluidas las de adentro de los grupos. */
+function juntarDirecciones(opciones) {
+  return opciones.flatMap((opcion) => {
+    if (opcion.tipo === 'grupo') return opcion.items.map((item) => item.direccion);
+    if (opcion.tipo === 'item') return [opcion.direccion];
+    return [];
+  });
 }
 
-/*
-  Punto de quiebre "escritorio" de la plantilla de CoreUI (el mismo que usa
-  la variable --cui-is-mobile del CSS compilado): a partir de 992px la barra
-  deja de ser un overlay para quedar siempre fija al costado.
-*/
-const PUNTO_QUIEBRE_ESCRITORIO = 992;
+/**
+ * De todas las opciones del menu, cual es la que hay que marcar como activa.
+ *
+ * Se queda con la mas larga que coincida, asi en "/espacios/tipos/agregar"
+ * queda marcado "Tipos de espacio" y no "Listado de espacios", aunque las dos
+ * direcciones arranquen igual.
+ */
+function buscarActiva(direccionActual, direcciones) {
+  let activa = null;
+
+  for (const direccion of direcciones) {
+    const coincide =
+      direccion === '/'
+        ? direccionActual === '/'
+        : direccionActual === direccion || direccionActual.startsWith(`${direccion}/`);
+
+    if (coincide && (activa === null || direccion.length > activa.length)) {
+      activa = direccion;
+    }
+  }
+
+  return activa;
+}
 
 export default function BarraLateral() {
   const { barraVisible, setBarraVisible } = useLayout();
   const direccionActual = usePathname() ?? '/';
+  const direccionActiva = buscarActiva(direccionActual, juntarDirecciones(navegacion));
+
+  // Los desplegables que el usuario abrio o cerro a mano, por nombre de grupo.
+  // Mientras no toque ninguno, el grupo se abre solo si estamos en una de sus
+  // pantallas.
+  const [gruposAbiertos, setGruposAbiertos] = useState({});
+
+  function abrirOCerrar(texto, abierto) {
+    setGruposAbiertos((grupos) => ({ ...grupos, [texto]: abierto }));
+  }
+
+  /** El enlace de una opcion. Se usa suelto y tambien adentro de un grupo. */
+  function enlace(opcion) {
+    return (
+      <CNavItem key={opcion.direccion}>
+        <CNavLink
+          as={Link}
+          href={opcion.direccion}
+          active={opcion.direccion === direccionActiva}
+        >
+          <CIcon customClassName="nav-icon" icon={opcion.icono} />
+          {opcion.texto}
+        </CNavLink>
+      </CNavItem>
+    );
+  }
 
   return (
     <CSidebar
@@ -58,51 +100,51 @@ export default function BarraLateral() {
       colorScheme="dark"
       position="fixed"
       visible={barraVisible}
-      onVisibleChange={(visible) => {
-        /*
-         * CSidebar tambien dispara este callback al cruzar el punto de
-         * quiebre mobile/escritorio, con una medicion de posicion que todavia
-         * no se actualizo (bug conocido: mide antes de que React vuelva a
-         * pintar las clases nuevas). Eso hacia que la barra se ocultara sola
-         * al agrandar la ventana en escritorio, sin ninguna forma de
-         * volver a abrirla. En escritorio no hay ningun boton que la cierre
-         * a mano, asi que ahi se ignora el callback; en mobile (donde si hay
-         * un boton para cerrarla) se respeta como siempre.
-         */
-        if (typeof window !== 'undefined' && window.innerWidth < PUNTO_QUIEBRE_ESCRITORIO) {
-          setBarraVisible(visible);
-        }
-      }}
+      onVisibleChange={(visible) => setBarraVisible(visible)}
     >
       <CSidebarHeader className="border-bottom d-flex align-items-center justify-content-between">
         <CSidebarBrand as={Link} href="/" className="text-decoration-none">
           <span className="sigma-marca">SIGMA</span>
         </CSidebarBrand>
-        <button
-          className="btn btn-link text-white p-0 d-md-none"
+        <button 
+          className="btn btn-link text-white p-0 d-md-none" 
           onClick={() => setBarraVisible(false)}
         >
           <CIcon icon={cilMenu} size="lg" />
         </button>
       </CSidebarHeader>
 
-      <CSidebarNav className="mt-2">
-        {navegacion.map((opcion) =>
-          opcion.tipo === 'titulo' ? (
-            <CNavTitle key={opcion.texto}>{opcion.texto}</CNavTitle>
-          ) : (
-            <CNavItem key={opcion.direccion}>
-              <CNavLink
-                as={Link}
-                href={opcion.direccion}
-                active={estaActiva(direccionActual, opcion.direccion)}
+      <CSidebarNav>
+        {navegacion.map((opcion) => {
+          if (opcion.tipo === 'titulo') {
+            return <CNavTitle key={opcion.texto}>{opcion.texto}</CNavTitle>;
+          }
+
+          if (opcion.tipo === 'grupo') {
+            // El desplegable arranca abierto si estamos en alguna de sus pantallas.
+            const abierto =
+              gruposAbiertos[opcion.texto] ??
+              opcion.items.some((item) => item.direccion === direccionActiva);
+
+            return (
+              <CNavGroup
+                key={opcion.texto}
+                visible={abierto}
+                onVisibleChange={(valor) => abrirOCerrar(opcion.texto, valor)}
+                toggler={
+                  <>
+                    <CIcon customClassName="nav-icon" icon={opcion.icono} />
+                    {opcion.texto}
+                  </>
+                }
               >
-                <CIcon customClassName="nav-icon" icon={opcion.icono} />
-                {opcion.texto}
-              </CNavLink>
-            </CNavItem>
-          )
-        )}
+                {opcion.items.map(enlace)}
+              </CNavGroup>
+            );
+          }
+
+          return enlace(opcion);
+        })}
       </CSidebarNav>
 
       <CSidebarFooter className="border-top d-none d-lg-flex">

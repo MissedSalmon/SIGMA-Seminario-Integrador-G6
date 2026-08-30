@@ -117,9 +117,8 @@ export default function PantallaAreas() {
   return (
     <>
       <EncabezadoPagina
-        titulo="Areas"
-        descripcion="Las unidades organizacionales de la facultad. Cada ticket se carga desde un area."
-        accion={{ texto: 'Agregar area', direccion: '/areas/agregar' }}
+        titulo="Áreas"
+        accion={{ texto: 'Agregar área', direccion: '/areas/agregar' }}
       />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
