@@ -16,8 +16,6 @@ import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
 import DialogoEliminar from '@/componentes/DialogoEliminar.js';
-import EtiquetaTipo from '@/componentes/EtiquetaTipo.js';
-import EtiquetaDisponibilidad from '@/componentes/EtiquetaDisponibilidad.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarEspecialidades } from '@/servicios/especialidades.js';
@@ -113,18 +111,19 @@ export default function PantallaTecnicos() {
     {
       clave: 'especialidad',
       encabezado: 'Especialidad',
+      // Un tecnico puede tener mas de una, asi que van separadas por coma.
       render: (tecnico) => (
-        <div className="d-flex flex-wrap gap-1">
-          {tecnico.especialidades.map((especialidad) => (
-            <EtiquetaTipo key={especialidad.idEspecialidad} texto={especialidad.nombre} />
-          ))}
-        </div>
+        <span className="text-body-secondary">
+          {tecnico.especialidades.map((especialidad) => especialidad.nombre).join(', ') || '-'}
+        </span>
       ),
     },
     {
       clave: 'disponibilidad',
       encabezado: 'Disponibilidad',
-      render: (tecnico) => <EtiquetaDisponibilidad disponibilidad={tecnico.disponibilidad} />,
+      render: (tecnico) => (
+        <span className="text-body-secondary">{tecnico.disponibilidad}</span>
+      ),
     },
     {
       clave: 'acciones',

@@ -9,6 +9,14 @@
  *
  * Ojo con CNavItem: su prop `as` reemplaza el <li> de afuera, no el enlace.
  * Por eso el <Link> va en el CNavLink de adentro y no en el CNavItem.
+ *
+ * Ojo tambien con CSidebarNav: no se usa a proposito. Ese componente no hace
+ * mas que este <ul className="sidebar-nav">, pero ademas mete un contexto que
+ * maneja el acordeon por su cuenta. Queremos el acordeon, pero el de CoreUI
+ * pelea con nuestro estado: al abrir un grupo teniendo otro abierto, cerraba
+ * el anterior y no abria el nuevo, y habia que hacer clic dos veces. Ese
+ * contexto no se exporta, asi que no hay forma de desactivarlo desde afuera:
+ * se arma el <ul> a mano y el acordeon lo llevamos nosotros, mas abajo.
  */
 import { useState } from 'react';
 import Link from 'next/link';
@@ -18,7 +26,6 @@ import {
   CSidebarBrand,
   CSidebarFooter,
   CSidebarHeader,
-  CSidebarNav,
   CSidebarToggler,
   CNavGroup,
   CNavItem,
@@ -69,13 +76,34 @@ export default function BarraLateral() {
   const direccionActual = usePathname() ?? '/';
   const direccionActiva = buscarActiva(direccionActual, juntarDirecciones(navegacion));
 
-  // Los desplegables que el usuario abrio o cerro a mano, por nombre de grupo.
-  // Mientras no toque ninguno, el grupo se abre solo si estamos en una de sus
-  // pantallas.
-  const [gruposAbiertos, setGruposAbiertos] = useState({});
+  /*
+   * Solo se puede tener un desplegable abierto a la vez: al abrir uno, el que
+   * estaba abierto se cierra. Asi el menu no se llena de opciones y siempre
+   * entra en la pantalla sin tener que hacer scroll.
+   *
+   * Por eso se guarda el NOMBRE del grupo abierto y no un abierto/cerrado por
+   * cada uno: si solo puede haber uno, un solo dato alcanza.
+   *
+   * Los tres valores posibles:
+   *   undefined  el usuario todavia no toco el menu
+   *   null       lo toco y no dejo ninguno abierto
+   *   "Activos"  ese es el que esta abierto
+   */
+  const [grupoAbierto, setGrupoAbierto] = useState(undefined);
+
+  /** El grupo que contiene la pantalla en la que estamos, si hay alguno. */
+  const grupoDeLaPantalla =
+    navegacion.find(
+      (opcion) =>
+        opcion.tipo === 'grupo' &&
+        opcion.items.some((item) => item.direccion === direccionActiva)
+    )?.texto ?? null;
+
+  // Mientras no toque nada, se abre solo el grupo de la pantalla actual.
+  const abiertoAhora = grupoAbierto === undefined ? grupoDeLaPantalla : grupoAbierto;
 
   function abrirOCerrar(texto, abierto) {
-    setGruposAbiertos((grupos) => ({ ...grupos, [texto]: abierto }));
+    setGrupoAbierto(abierto ? texto : null);
   }
 
   /** El enlace de una opcion. Se usa suelto y tambien adentro de un grupo. */
@@ -114,22 +142,17 @@ export default function BarraLateral() {
         </button>
       </CSidebarHeader>
 
-      <CSidebarNav>
+      <ul className="sidebar-nav">
         {navegacion.map((opcion) => {
           if (opcion.tipo === 'titulo') {
             return <CNavTitle key={opcion.texto}>{opcion.texto}</CNavTitle>;
           }
 
           if (opcion.tipo === 'grupo') {
-            // El desplegable arranca abierto si estamos en alguna de sus pantallas.
-            const abierto =
-              gruposAbiertos[opcion.texto] ??
-              opcion.items.some((item) => item.direccion === direccionActiva);
-
             return (
               <CNavGroup
                 key={opcion.texto}
-                visible={abierto}
+                visible={abiertoAhora === opcion.texto}
                 onVisibleChange={(valor) => abrirOCerrar(opcion.texto, valor)}
                 toggler={
                   <>
@@ -145,7 +168,7 @@ export default function BarraLateral() {
 
           return enlace(opcion);
         })}
-      </CSidebarNav>
+      </ul>
 
       <CSidebarFooter className="border-top d-none d-lg-flex">
         <CSidebarToggler />
