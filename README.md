@@ -8,14 +8,14 @@ _“Todo tu mantenimiento, sumado.”_
 
 <br>
 
-![Estado](https://img.shields.io/badge/estado-prototipo_funcional-0B6B8C?style=for-the-badge)
+![Estado](https://img.shields.io/badge/estado-en_desarrollo-0B6B8C?style=for-the-badge)
 ![Historias](https://img.shields.io/badge/HU-34-F08A24?style=for-the-badge)
 ![Sprints](https://img.shields.io/badge/sprints-7-0B6B8C?style=for-the-badge)
-![Entrega](https://img.shields.io/badge/entrega-17--07--2026-0C2733?style=for-the-badge)
 
-![HTML](https://img.shields.io/badge/HTML-0C2733?style=flat-square&logo=html5&logoColor=white)
-![CSS](https://img.shields.io/badge/CSS-0C2733?style=flat-square&logo=css3&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-0C2733?style=flat-square&logo=javascript&logoColor=F08A24)
+![Next.js](https://img.shields.io/badge/Next.js_16-0C2733?style=flat-square&logo=nextdotjs&logoColor=white)
+![React](https://img.shields.io/badge/React_19-0C2733?style=flat-square&logo=react&logoColor=61DAFB)
+![Express](https://img.shields.io/badge/Express_5-0C2733?style=flat-square&logo=express&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-0C2733?style=flat-square&logo=supabase&logoColor=3ECF8E)
 ![UTN--FRRe](https://img.shields.io/badge/UTN--FRRe-Seminario_Integrador-0B6B8C?style=flat-square)
 
 </div>
@@ -71,10 +71,10 @@ Después copiá las plantillas de variables de entorno y completá los valores:
 - `backend/.env.example` → `backend/.env`
 - `frontend/.env.local.example` → `frontend/.env.local`
 
-Y levantá el proyecto:
+Y levantá las dos partes juntas:
 
 ```bash
-npm run dev
+npm run dev:all
 ```
 
 | | Dirección |
@@ -90,6 +90,10 @@ npm run dev
 | `npm run dev:backend` | Sólo la API. |
 | `npm run build` | Compila el frontend. |
 | `npm run lint` | Revisa el estilo del código. |
+| `npm run db:push` | Aplica las migraciones pendientes a Supabase. |
+
+> Antes de usar `db:push` hay que estar autenticado (`npx supabase login`) y tener el
+> proyecto vinculado (`npm run db:link`). Ojo: la base es compartida por todo el grupo.
 
 ---
 
@@ -148,7 +152,14 @@ SIGMA-Seminario-Integrador-G6/
 | Documento | Contenido |
 |---|---|
 | [`.claude/contexto/`](.claude/contexto/) | Contexto general: proyecto, dominio, arquitectura y forma de trabajo. |
+| [`frontend/README.md`](frontend/README.md) | Cómo se arma una pantalla y las **pautas de diseño** que seguimos todos. |
+| [`backend/README.md`](backend/README.md) | Cómo se agrega un módulo a la API. |
+| [`supabase/migrations/README.md`](supabase/migrations/README.md) | Cómo se cambia la base de datos sin pisarse entre compañeros. |
 | [`contexto.md`](contexto.md) | Documento histórico: situación, glosario, modelo de tablas, roadmap de HU, automatizaciones. |
+
+> **Antes de armar una pantalla nueva**, leé las pautas de diseño del
+> [README del frontend](frontend/README.md#pautas-de-diseño). Están para que todas las
+> pantallas se vean y se usen igual, sin importar quién las hizo.
 
 ---
 

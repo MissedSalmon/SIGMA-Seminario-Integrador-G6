@@ -28,6 +28,7 @@ const NOMBRES = {
   activos: 'Activos',
   'tipos-activos': 'Tipos de activos',
   tecnicos: 'Técnicos',
+  especialidades: 'Especialidades',
   agregar: 'Agregar',
   editar: 'Editar',
 };
