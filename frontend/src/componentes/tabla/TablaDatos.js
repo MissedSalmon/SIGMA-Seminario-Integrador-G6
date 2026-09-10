@@ -16,14 +16,32 @@
  *     ]}
  *     buscarPor={['nombre', 'direccion']}
  *     placeholderBusqueda="Buscar edificio..."
- *     filtros={<selector de edificio, opcional>}
+ *     filtros={[ ... ver abajo ... ]}
  *     cargando={cargando}
  *     textoVacio="Todavia no hay edificios cargados."
- *     accionVacio={{ texto: 'Agregar edificio', direccion: '/edificios/agregar' }}
+ *     accionVacio={{ direccion: '/edificios/agregar' }}
  *   />
+ *
+ * Los filtros se pasan como datos, no como JSX. Los arma la tabla para que en
+ * todas las pantallas se vean y se ubiquen igual: primero el buscador y
+ * despues "Filtrar por:" con los desplegables, todo en la misma linea.
+ *
+ *   filtros={[
+ *     {
+ *       etiqueta: 'Tipo',            // el nombre de la columna, nada mas
+ *       valor: filtroTipo,
+ *       alCambiar: setFiltroTipo,
+ *       opciones: tipos.map((t) => ({ valor: t.idTipoActivo, texto: t.nombre })),
+ *       textoTodos: 'Todos',         // opcional, para concordar el genero
+ *     },
+ *   ]}
+ *
+ * Con el desplegable cerrado y sin filtrar se lee el nombre de la columna
+ * ("Tipo"), y al abrirlo la primera opcion dice "Todos". Las dos las agrega la
+ * tabla sola: la pantalla no las escribe.
  */
-import { useMemo, useState } from 'react';
-import { CButton, CFormInput, CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
+import { useId, useMemo, useState } from 'react';
+import { CButton, CFormInput, CFormSelect, CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilChevronLeft, cilChevronRight, cilSearch } from '@coreui/icons';
 
@@ -37,13 +55,16 @@ export default function TablaDatos({
   claveFila,
   buscarPor = [],
   placeholderBusqueda = 'Buscar...',
-  filtros,
+  filtros = [],
   cargando = false,
   textoVacio = 'Todavia no hay datos cargados.',
   accionVacio,
 }) {
   const [busqueda, setBusqueda] = useState('');
   const [paginaPedida, setPaginaPedida] = useState(1);
+
+  // Para que cada desplegable tenga su propio id, aunque haya dos tablas.
+  const idFiltros = useId();
 
   const filasFiltradas = useMemo(() => {
     const texto = busqueda.trim().toLowerCase();
@@ -64,12 +85,14 @@ export default function TablaDatos({
 
   return (
     <>
+      {/* Buscador, filtros y conteo van todos en la misma linea. */}
       <div className="sigma-tabla-toolbar">
-        <div className="d-flex flex-wrap gap-3 align-items-center">
+        <div className="sigma-tabla-controles">
           {buscarPor.length > 0 && (
             <div className="sigma-tabla-buscador">
               <CIcon icon={cilSearch} size="sm" />
               <CFormInput
+                size="sm"
                 value={busqueda}
                 onChange={(evento) => {
                   setBusqueda(evento.target.value);
@@ -80,7 +103,43 @@ export default function TablaDatos({
               />
             </div>
           )}
-          {filtros}
+
+          {filtros.length > 0 && (
+            <>
+              <span className="sigma-tabla-filtros-titulo">Filtrar por:</span>
+
+              {filtros.map((filtro) => (
+                <CFormSelect
+                  className="sigma-tabla-filtro"
+                  size="sm"
+                  key={filtro.etiqueta}
+                  id={`${idFiltros}-${filtro.etiqueta}`}
+                  aria-label={`Filtrar por ${filtro.etiqueta.toLowerCase()}`}
+                  value={filtro.valor}
+                  onChange={(evento) => filtro.alCambiar(evento.target.value)}
+                >
+                  {/*
+                    Las dos primeras opciones valen lo mismo (vacio: sin
+                    filtrar) pero se muestran distinto, y eso es a proposito.
+                    La primera lleva "hidden": no aparece en la lista al
+                    desplegar, pero es la que se ve con el desplegable cerrado,
+                    porque el navegador toma la primera que coincide con el
+                    valor. Asi cerrado se lee el nombre de la columna
+                    ("Espacio") y al abrirlo la opcion de siempre ("Todos").
+                  */}
+                  <option value="" hidden>
+                    {filtro.etiqueta}
+                  </option>
+                  <option value="">{filtro.textoTodos ?? 'Todos'}</option>
+                  {filtro.opciones.map((opcion) => (
+                    <option key={opcion.valor} value={opcion.valor}>
+                      {opcion.texto}
+                    </option>
+                  ))}
+                </CFormSelect>
+              ))}
+            </>
+          )}
         </div>
 
         <span className="sigma-tabla-conteo">

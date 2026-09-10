@@ -42,7 +42,7 @@ export function EsqueletoFilas({ columnas, filas = 5 }) {
 /**
  * Estado vacio de una tabla o listado.
  *
- *   <SinDatos texto="Todavia no hay edificios cargados." accion={{ texto: 'Agregar edificio', direccion: '/edificios/agregar' }} />
+ *   <SinDatos texto="Todavia no hay edificios cargados." accion={{ direccion: '/edificios/agregar' }} />
  */
 export function SinDatos({ texto, accion, icono = cilInbox }) {
   return (
@@ -53,7 +53,8 @@ export function SinDatos({ texto, accion, icono = cilInbox }) {
       <p className="text-body-secondary mb-0">{texto}</p>
       {accion && (
         <div className="mt-3">
-          <BotonEnlace href={accion.direccion}>{accion.texto}</BotonEnlace>
+          {/* Igual que en EncabezadoPagina: el boton dice "Agregar" a secas. */}
+          <BotonEnlace href={accion.direccion}>{accion.texto ?? 'Agregar'}</BotonEnlace>
         </div>
       )}
     </div>

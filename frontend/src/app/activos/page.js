@@ -10,7 +10,7 @@
  * conservar su historial de intervenciones.
  */
 import { useEffect, useState } from 'react';
-import { CButton, CButtonGroup, CCard, CCardBody, CFormSelect } from '@coreui/react';
+import { CButton, CButtonGroup, CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilPencil, cilTrash } from '@coreui/icons';
 
@@ -179,7 +179,7 @@ export default function PantallaActivos() {
       <EncabezadoPagina
         titulo="Activos"
         descripcion="El inventario de la facultad: que hay, donde esta y en que estado."
-        accion={{ texto: 'Agregar activo', direccion: '/activos/agregar' }}
+        accion={{ direccion: '/activos/agregar' }}
       />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
@@ -192,54 +192,32 @@ export default function PantallaActivos() {
             columnas={columnas}
             buscarPor={['codigo', 'descripcion', 'nombreTipo']}
             placeholderBusqueda="Buscar por codigo, descripcion o tipo..."
-            filtros={
-              <>
-                <CFormSelect
-                  value={filtroEspacio}
-                  onChange={(evento) => setFiltroEspacio(evento.target.value)}
-                  aria-label="Filtrar por espacio"
-                  style={{ maxWidth: '16rem' }}
-                >
-                  <option value="">Todos los espacios</option>
-                  {espacios.map((espacio) => (
-                    <option
-                      key={`${espacio.idEdificio}|${espacio.espacioNum}`}
-                      value={`${espacio.idEdificio}|${espacio.espacioNum}`}
-                    >
-                      {espacio.nombreEdificio} — {espacio.nombre || espacio.espacioNum}
-                    </option>
-                  ))}
-                </CFormSelect>
-
-                <CFormSelect
-                  value={filtroTipo}
-                  onChange={(evento) => setFiltroTipo(evento.target.value)}
-                  aria-label="Filtrar por tipo de activo"
-                  style={{ maxWidth: '14rem' }}
-                >
-                  <option value="">Todos los tipos</option>
-                  {tipos.map((tipo) => (
-                    <option key={tipo.idTipoActivo} value={tipo.idTipoActivo}>
-                      {tipo.nombre}
-                    </option>
-                  ))}
-                </CFormSelect>
-
-                <CFormSelect
-                  value={filtroEstado}
-                  onChange={(evento) => setFiltroEstado(evento.target.value)}
-                  aria-label="Filtrar por estado"
-                  style={{ maxWidth: '13rem' }}
-                >
-                  <option value="">Todos los estados</option>
-                  {ESTADOS.map((unEstado) => (
-                    <option key={unEstado} value={unEstado}>
-                      {unEstado}
-                    </option>
-                  ))}
-                </CFormSelect>
-              </>
-            }
+            filtros={[
+              {
+                etiqueta: 'Espacio',
+                valor: filtroEspacio,
+                alCambiar: setFiltroEspacio,
+                opciones: espacios.map((espacio) => ({
+                  valor: `${espacio.idEdificio}|${espacio.espacioNum}`,
+                  texto: `${espacio.nombreEdificio} — ${espacio.nombre || espacio.espacioNum}`,
+                })),
+              },
+              {
+                etiqueta: 'Tipo',
+                valor: filtroTipo,
+                alCambiar: setFiltroTipo,
+                opciones: tipos.map((tipo) => ({
+                  valor: tipo.idTipoActivo,
+                  texto: tipo.nombre,
+                })),
+              },
+              {
+                etiqueta: 'Estado',
+                valor: filtroEstado,
+                alCambiar: setFiltroEstado,
+                opciones: ESTADOS.map((unEstado) => ({ valor: unEstado, texto: unEstado })),
+              },
+            ]}
             cargando={cargando}
             textoVacio={
               hayFiltros
@@ -247,7 +225,7 @@ export default function PantallaActivos() {
                 : 'Todavia no hay activos cargados.'
             }
             accionVacio={
-              hayFiltros ? undefined : { texto: 'Agregar activo', direccion: '/activos/agregar' }
+              hayFiltros ? undefined : { direccion: '/activos/agregar' }
             }
           />
         </CCardBody>

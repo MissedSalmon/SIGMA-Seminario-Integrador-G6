@@ -114,7 +114,7 @@ export default function PantallaEdificios() {
     <>
       <EncabezadoPagina
         titulo="Edificios"
-        accion={{ texto: 'Agregar edificio', direccion: '/edificios/agregar' }}
+        accion={{ direccion: '/edificios/agregar' }}
       />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
@@ -129,7 +129,7 @@ export default function PantallaEdificios() {
             placeholderBusqueda="Buscar por nombre o direccion..."
             cargando={cargando}
             textoVacio="Todavia no hay edificios cargados."
-            accionVacio={{ texto: 'Agregar edificio', direccion: '/edificios/agregar' }}
+            accionVacio={{ direccion: '/edificios/agregar' }}
           />
         </CCardBody>
       </CCard>

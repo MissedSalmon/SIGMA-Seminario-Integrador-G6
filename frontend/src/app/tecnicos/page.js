@@ -8,7 +8,7 @@
  * electricistas que ahora mismo pueden recibir tareas.
  */
 import { useEffect, useState } from 'react';
-import { CButton, CButtonGroup, CCard, CCardBody, CFormSelect } from '@coreui/react';
+import { CButton, CButtonGroup, CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilPencil, cilTrash } from '@coreui/icons';
 
@@ -158,7 +158,7 @@ export default function PantallaTecnicos() {
       <EncabezadoPagina
         titulo="Tecnicos"
         descripcion="El personal de mantenimiento: su especialidad y su disponibilidad para recibir tareas."
-        accion={{ texto: 'Agregar tecnico', direccion: '/tecnicos/agregar' }}
+        accion={{ direccion: '/tecnicos/agregar' }}
       />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
@@ -171,34 +171,28 @@ export default function PantallaTecnicos() {
             columnas={columnas}
             buscarPor={['nombre', 'apellido', 'dni', 'legajo']}
             placeholderBusqueda="Buscar por nombre, apellido o DNI..."
-            filtros={
-              <>
-                <CFormSelect
-                  value={filtroEspecialidad}
-                  onChange={(evento) => setFiltroEspecialidad(evento.target.value)}
-                  aria-label="Filtrar por especialidad"
-                  style={{ maxWidth: '14rem' }}
-                >
-                  <option value="">Todas las especialidades</option>
-                  {especialidades.map((especialidad) => (
-                    <option key={especialidad.idEspecialidad} value={especialidad.idEspecialidad}>
-                      {especialidad.nombre}
-                    </option>
-                  ))}
-                </CFormSelect>
-
-                <CFormSelect
-                  value={filtroDisponibilidad}
-                  onChange={(evento) => setFiltroDisponibilidad(evento.target.value)}
-                  aria-label="Filtrar por disponibilidad"
-                  style={{ maxWidth: '12rem' }}
-                >
-                  <option value="">Todas</option>
-                  <option value="Disponible">Disponible</option>
-                  <option value="No disponible">No disponible</option>
-                </CFormSelect>
-              </>
-            }
+            filtros={[
+              {
+                etiqueta: 'Especialidad',
+                valor: filtroEspecialidad,
+                alCambiar: setFiltroEspecialidad,
+                textoTodos: 'Todas',
+                opciones: especialidades.map((especialidad) => ({
+                  valor: especialidad.idEspecialidad,
+                  texto: especialidad.nombre,
+                })),
+              },
+              {
+                etiqueta: 'Disponibilidad',
+                valor: filtroDisponibilidad,
+                alCambiar: setFiltroDisponibilidad,
+                textoTodos: 'Todas',
+                opciones: [
+                  { valor: 'Disponible', texto: 'Disponible' },
+                  { valor: 'No disponible', texto: 'No disponible' },
+                ],
+              },
+            ]}
             cargando={cargando}
             textoVacio={
               filtroEspecialidad || filtroDisponibilidad
@@ -208,7 +202,7 @@ export default function PantallaTecnicos() {
             accionVacio={
               filtroEspecialidad || filtroDisponibilidad
                 ? undefined
-                : { texto: 'Agregar tecnico', direccion: '/tecnicos/agregar' }
+                : { direccion: '/tecnicos/agregar' }
             }
           />
         </CCardBody>

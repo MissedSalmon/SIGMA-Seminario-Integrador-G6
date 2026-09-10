@@ -81,7 +81,7 @@ export default function PantallaEspecialidades() {
 
   return (
     <>
-      <EncabezadoPagina titulo="Especialidades" accion={{ texto: 'Agregar especialidad', direccion: '/especialidades/agregar' }} />
+      <EncabezadoPagina titulo="Especialidades" accion={{ direccion: '/especialidades/agregar' }} />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
 
@@ -95,7 +95,7 @@ export default function PantallaEspecialidades() {
             placeholderBusqueda="Buscar por nombre..."
             cargando={cargando}
             textoVacio="Todavia no hay especialidades cargadas."
-            accionVacio={{ texto: 'Agregar especialidad', direccion: '/especialidades/agregar' }}
+            accionVacio={{ direccion: '/especialidades/agregar' }}
           />
         </CCardBody>
       </CCard>

@@ -251,11 +251,17 @@ body {
   border-right: none;
 }
 
+/*
+  Las opciones del menu van compactas a proposito: son muchas y tienen que
+  entrar todas sin scroll. Por eso se achica el alto que trae CoreUI.
+*/
 .sidebar .nav-link {
   border-radius: var(--sigma-radio-sm);
   margin-inline: 0.5rem;
-  margin-block: 0.1rem;
+  margin-block: 0.05rem;
+  padding-block: 0.45rem;
   width: auto;
+  font-size: 0.9rem;
   font-weight: 500;
   border-left: 3px solid transparent;
 }
@@ -269,7 +275,8 @@ body {
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  padding-top: 1.25rem;
+  padding-block: 0.5rem;
+  margin-top: 0.5rem;
 }
 
 /* Deja lugar a la barra lateral fija en pantallas grandes. */
@@ -514,10 +521,43 @@ body {
   margin-bottom: 1.1rem;
 }
 
+/*
+  El buscador y los filtros. Ninguno tiene ancho fijo: se encogen para entrar
+  todos en la misma linea aunque la ventana sea angosta, y no se estiran de mas
+  cuando sobra lugar. Recien se apilan cuando ya no entran ni encogidos.
+*/
+.sigma-tabla-controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .sigma-tabla-buscador {
   position: relative;
-  min-width: 15rem;
-  flex: 1 1 15rem;
+  flex: 1 1 8rem;
+  min-width: 0;
+  max-width: 15rem;
+}
+
+/*
+  Los filtros van a la derecha del buscador, en la misma linea. El nombre de la
+  columna va adentro de cada desplegable, no arriba, para que se vea de que es
+  el filtro sin sumar otro renglon. Antes de todos va el texto "Filtrar por:".
+*/
+.sigma-tabla-filtros-titulo {
+  color: var(--sigma-texto-secundario);
+  font-size: 0.8rem;
+  margin-left: 0.4rem;
+  white-space: nowrap;
+}
+
+.sigma-tabla-filtro {
+  flex: 1 1 7rem;
+  min-width: 0;
+  max-width: 11rem;
 }
 
 .sigma-tabla-buscador svg {
@@ -530,7 +570,7 @@ body {
 }
 
 .sigma-tabla-buscador input {
-  padding-left: 2.25rem;
+  padding-left: 2rem;
 }
 
 .sigma-tabla-conteo {

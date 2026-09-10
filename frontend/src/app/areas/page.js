@@ -118,7 +118,7 @@ export default function PantallaAreas() {
     <>
       <EncabezadoPagina
         titulo="Áreas"
-        accion={{ texto: 'Agregar área', direccion: '/areas/agregar' }}
+        accion={{ direccion: '/areas/agregar' }}
       />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
@@ -133,7 +133,7 @@ export default function PantallaAreas() {
             placeholderBusqueda="Buscar por nombre, espacio o edificio..."
             cargando={cargando}
             textoVacio="Todavia no hay areas cargadas."
-            accionVacio={{ texto: 'Agregar area', direccion: '/areas/agregar' }}
+            accionVacio={{ direccion: '/areas/agregar' }}
           />
         </CCardBody>
       </CCard>
