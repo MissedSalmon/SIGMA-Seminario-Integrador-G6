@@ -17,6 +17,7 @@ import rutasEspacios from './espacios.rutas.js';
 import rutasAreas from './areas.rutas.js';
 import rutasTecnicos from './tecnicos.rutas.js';
 import rutasEspecialidades from './especialidades.rutas.js';
+import rutasInventario from './inventario.rutas.js';
 
 const router = Router();
 
@@ -35,6 +36,9 @@ router.use('/tipos-espacio', rutasTiposEspacio);
 // Activos (HU-7)
 import rutasActivos from './activos.rutas.js';
 router.use('/activos', rutasActivos);
+
+// Gestion de inventario
+router.use('/inventario', rutasInventario);
 
 // Personal (Sprint 1)
 router.use('/tecnicos', rutasTecnicos);

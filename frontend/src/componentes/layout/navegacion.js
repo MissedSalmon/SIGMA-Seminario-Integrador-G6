@@ -21,6 +21,7 @@ import {
   cilTags,
   cilDevices,
   cilPeople,
+  cilStorage,
 } from '@coreui/icons';
 
 export const navegacion = [
@@ -84,6 +85,29 @@ export const navegacion = [
         tipo: 'item',
         texto: 'Tipos de activos',
         direccion: '/tipos-activos',
+        icono: cilTags,
+      },
+    ],
+  },
+  {
+    tipo: 'titulo',
+    texto: 'Gestion de inventario',
+  },
+  {
+    tipo: 'grupo',
+    texto: 'Inventario',
+    icono: cilStorage,
+    items: [
+      {
+        tipo: 'item',
+        texto: 'Materiales y herramientas',
+        direccion: '/inventario',
+        icono: cilList,
+      },
+      {
+        tipo: 'item',
+        texto: 'Tipos de materiales y herramientas',
+        direccion: '/inventario/tipos',
         icono: cilTags,
       },
     ],
