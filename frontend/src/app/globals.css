@@ -358,6 +358,153 @@ body {
   margin: 0;
 }
 
+/*
+  Campos de formulario que se adaptan al texto (src/componentes/formulario/Campo.js).
+
+  Los campos no van en una grilla de columnas iguales: van uno al lado del otro
+  y cada uno mide lo que mide su contenido (el ancho lo calcula el componente en
+  "ch"). Cuando no entran mas en el renglon, pasan al de abajo solos.
+*/
+.sigma-campos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.25rem;
+  align-items: flex-start;
+}
+
+.sigma-campo {
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+}
+
+/* El que necesita el renglon entero, como la descripcion del problema. */
+.sigma-campo--ancho {
+  flex: 1 1 100%;
+}
+
+.sigma-campo-caja {
+  position: relative;
+  max-width: 100%;
+}
+
+.sigma-campo-caja .form-control,
+.sigma-campo-caja .form-select {
+  width: 100%;
+}
+
+/* El lugar de la marca se reserva este o no, asi el texto no se corre cuando
+   aparece el tilde. En las listas va antes de la flechita del desplegable. */
+.sigma-campo-caja .form-control {
+  padding-right: 2rem;
+}
+
+.sigma-campo-caja .form-select {
+  padding-right: 3.6rem;
+}
+
+.sigma-campo-caja textarea.form-control {
+  resize: none; /* el alto lo maneja el componente, crece con lo que se escribe */
+  overflow: hidden;
+}
+
+.sigma-campo-marca {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.6rem;
+  display: inline-flex;
+  pointer-events: none;
+}
+
+.sigma-campo-caja .form-select ~ .sigma-campo-marca {
+  right: 2.2rem;
+}
+
+/*
+  La marca de validacion.
+
+  No se pinta el borde entero ni el fondo: alcanza con una barrita de color al
+  costado izquierdo y el icono al final de la caja. Se lee igual de claro que
+  esta bien y que esta mal, y con varios campos juntos no queda un semaforo.
+  El :focus se repite a proposito: el foco pisa el color de todo el borde, y
+  la barrita tiene que seguir marcando el error mientras se corrige.
+*/
+.sigma-campo--ok .form-control,
+.sigma-campo--ok .form-select,
+.sigma-campo--ok .form-control:focus,
+.sigma-campo--ok .form-select:focus {
+  border-left: 3px solid var(--cui-success, #1b9e5a);
+}
+
+.sigma-campo--ok .sigma-campo-marca {
+  color: var(--cui-success, #1b9e5a);
+}
+
+.sigma-campo--error .form-control,
+.sigma-campo--error .form-select,
+.sigma-campo--error .form-control:focus,
+.sigma-campo--error .form-select:focus {
+  border-left: 3px solid var(--cui-danger, #e55353);
+}
+
+.sigma-campo--error .sigma-campo-marca {
+  color: var(--cui-danger, #e55353);
+}
+
+/*
+  La foto elegida: miniatura, nombre y peso, y el boton para sacarla. Se ve
+  antes de subir nada, leyendo el archivo que ya esta en la maquina.
+*/
+.sigma-campo-foto {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--sigma-borde);
+  border-radius: var(--sigma-radio-sm);
+  background: var(--sigma-superficie);
+  max-width: 28rem;
+}
+
+.sigma-campo-foto img {
+  width: 3.5rem;
+  height: 3.5rem;
+  object-fit: cover;
+  border-radius: var(--sigma-radio-sm);
+  flex-shrink: 0;
+}
+
+.sigma-campo-foto-datos {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 0.875rem;
+}
+
+/* Un nombre largo se corta con puntos suspensivos en vez de estirar la caja. */
+.sigma-campo-foto-datos span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sigma-campo-foto .btn-icono {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* La ayuda y el motivo del error van abajo del campo, en chico. */
+.sigma-campo-mensaje {
+  font-size: 0.8rem;
+  color: var(--sigma-texto-secundario);
+  margin: 0.3rem 0 0;
+  max-width: 32rem;
+}
+
+.sigma-campo-mensaje--error {
+  color: var(--cui-danger, #e55353);
+}
+
 /* ---------- 3. Componentes propios ---------- */
 
 /* Toasts de feedback (src/componentes/toast). */

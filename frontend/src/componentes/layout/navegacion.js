@@ -29,6 +29,7 @@ import {
   cilDevices,
   cilPeople,
   cilStorage,
+  cilTask,
 } from '@coreui/icons';
 
 export const navegacion = [
@@ -37,6 +38,16 @@ export const navegacion = [
     texto: 'Panel',
     direccion: '/',
     icono: cilSpeedometer,
+  },
+  {
+    tipo: 'titulo',
+    texto: 'Mantenimiento',
+  },
+  {
+    tipo: 'item',
+    texto: 'Registrar ticket',
+    direccion: '/tickets/agregar',
+    icono: cilTask,
   },
   {
     tipo: 'titulo',
