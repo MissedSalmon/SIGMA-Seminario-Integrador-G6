@@ -30,6 +30,7 @@ import {
   cilPeople,
   cilStorage,
   cilTask,
+  cilListRich,
 } from '@coreui/icons';
 
 export const navegacion = [
@@ -48,6 +49,12 @@ export const navegacion = [
     texto: 'Registrar ticket',
     direccion: '/tickets/agregar',
     icono: cilTask,
+  },
+  {
+    tipo: 'item',
+    texto: 'Plantillas de tareas',
+    direccion: '/plantillas-tareas',
+    icono: cilListRich,
   },
   {
     tipo: 'titulo',
