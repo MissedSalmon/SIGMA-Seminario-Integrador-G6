@@ -78,12 +78,12 @@ export default function PantallaAreas() {
     },
     {
       clave: 'espacio',
-      encabezado: 'Espacio',
+      encabezado: 'espacio',
       render: (area) => <span className="text-body-secondary">{area.nombreEspacio}</span>,
     },
     {
       clave: 'edificio',
-      encabezado: 'Edificio',
+      encabezado: 'edificio',
       render: (area) => <span className="text-body-secondary">{area.nombreEdificio}</span>,
     },
     {

@@ -28,6 +28,9 @@ import {
   cilTags,
   cilDevices,
   cilPeople,
+  cilStorage,
+  cilTask,
+  cilListRich,
 } from '@coreui/icons';
 
 export const navegacion = [
@@ -36,6 +39,22 @@ export const navegacion = [
     texto: 'Panel',
     direccion: '/',
     icono: cilSpeedometer,
+  },
+  {
+    tipo: 'titulo',
+    texto: 'Mantenimiento',
+  },
+  {
+    tipo: 'item',
+    texto: 'Registrar ticket',
+    direccion: '/tickets/agregar',
+    icono: cilTask,
+  },
+  {
+    tipo: 'item',
+    texto: 'Plantillas de tareas',
+    direccion: '/plantillas-tareas',
+    icono: cilListRich,
   },
   {
     tipo: 'titulo',
@@ -92,6 +111,29 @@ export const navegacion = [
         texto: 'Listado de activos',
         direccion: '/activos',
         icono: cilList,
+      },
+    ],
+  },
+  {
+    tipo: 'titulo',
+    texto: 'Gestion de inventario',
+  },
+  {
+    tipo: 'grupo',
+    texto: 'Inventario',
+    icono: cilStorage,
+    items: [
+      {
+        tipo: 'item',
+        texto: 'Materiales y herramientas',
+        direccion: '/inventario',
+        icono: cilList,
+      },
+      {
+        tipo: 'item',
+        texto: 'Tipos de materiales y herramientas',
+        direccion: '/inventario/tipos',
+        icono: cilTags,
       },
     ],
   },

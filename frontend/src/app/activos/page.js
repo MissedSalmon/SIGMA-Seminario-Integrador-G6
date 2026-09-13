@@ -4,7 +4,7 @@
  * /activos - inventario de activos (HU-7).
  *
  * Se puede filtrar por espacio, por tipo y por estado, y los tres se combinan.
- * El buscador de arriba busca por codigo, descripcion y tipo.
+ * El buscador de arriba busca por codigo, tipo.
  *
  * Dar de baja no borra: pasa el activo a Retirado y lo deja en la lista, para
  * conservar su historial de intervenciones.
@@ -61,12 +61,12 @@ export default function PantallaActivos() {
     let vigente = true;
 
     async function pedir() {
-      const [idEdificio, espacioNum] = filtroEspacio ? filtroEspacio.split('|') : [];
+      const [idEdificio, espacio_num] = filtroEspacio ? filtroEspacio.split('|') : [];
 
       try {
         const filas = await listarActivos({
           idEdificio: idEdificio || null,
-          espacioNum: espacioNum || null,
+          espacio_num: espacio_num || null,
           idTipoActivo: filtroTipo || null,
           estado: filtroEstado || null,
         });
@@ -115,13 +115,7 @@ export default function PantallaActivos() {
       encabezado: 'Codigo',
       render: (activo) => <span className="fw-semibold">{activo.codigo}</span>,
     },
-    {
-      clave: 'descripcion',
-      encabezado: 'Descripcion',
-      render: (activo) => (
-        <span className="text-body-secondary">{activo.descripcion || '-'}</span>
-      ),
-    },
+
     {
       clave: 'tipo',
       encabezado: 'Tipo',
@@ -190,16 +184,16 @@ export default function PantallaActivos() {
             filas={activos}
             claveFila={(activo) => activo.codigo}
             columnas={columnas}
-            buscarPor={['codigo', 'descripcion', 'nombreTipo']}
-            placeholderBusqueda="Buscar por codigo, descripcion o tipo..."
+            buscarPor={['codigo', 'nombreTipo']}
+            placeholderBusqueda="Buscar por codigo o tipo..."
             filtros={[
               {
-                etiqueta: 'Espacio',
+                etiqueta: 'espacio',
                 valor: filtroEspacio,
                 alCambiar: setFiltroEspacio,
                 opciones: espacios.map((espacio) => ({
-                  valor: `${espacio.idEdificio}|${espacio.espacioNum}`,
-                  texto: `${espacio.nombreEdificio} — ${espacio.nombre || espacio.espacioNum}`,
+                  valor: `${espacio.idEdificio}|${espacio.espacio_num}`,
+                  texto: `${espacio.nombreEdificio} — ${espacio.nombre || espacio.espacio_num}`,
                 })),
               },
               {
@@ -240,7 +234,7 @@ export default function PantallaActivos() {
       >
         <p className="mb-0">
           Se va a dar de baja el activo <strong>{aDarDeBaja?.codigo}</strong>
-          {aDarDeBaja?.descripcion ? ` (${aDarDeBaja.descripcion})` : ''}.
+          .
         </p>
         <p className="text-body-secondary mt-2 mb-0">
           Pasa a estado <strong>Retirado</strong> y deja de estar disponible, pero no se elimina:

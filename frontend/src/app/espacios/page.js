@@ -94,7 +94,7 @@ export default function PantallaEspacios() {
     },
     {
       clave: 'edificio',
-      encabezado: 'Edificio',
+      encabezado: 'edificio',
       render: (espacio) => <span className="text-body-secondary">{espacio.nombreEdificio}</span>,
     },
     {
@@ -150,13 +150,13 @@ export default function PantallaEspacios() {
         <CCardBody>
           <TablaDatos
             filas={espacios}
-            claveFila={(espacio) => `${espacio.idEdificio}-${espacio.espacioNum}`}
+            claveFila={(espacio) => `${espacio.idEdificio}-${espacio.espacio_num}`}
             columnas={columnas}
             buscarPor={['nombre', 'nombreEdificio', 'tipo', 'piso', 'numero']}
             placeholderBusqueda="Buscar por nombre, tipo o piso..."
             filtros={[
               {
-                etiqueta: 'Edificio',
+                etiqueta: 'edificio',
                 valor: filtroEdificio,
                 alCambiar: setFiltroEdificio,
                 opciones: edificios.map((edificio) => ({

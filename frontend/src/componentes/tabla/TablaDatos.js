@@ -125,7 +125,7 @@ export default function TablaDatos({
                     desplegar, pero es la que se ve con el desplegable cerrado,
                     porque el navegador toma la primera que coincide con el
                     valor. Asi cerrado se lee el nombre de la columna
-                    ("Espacio") y al abrirlo la opcion de siempre ("Todos").
+                    ("espacio") y al abrirlo la opcion de siempre ("Todos").
                   */}
                   <option value="" hidden>
                     {filtro.etiqueta}

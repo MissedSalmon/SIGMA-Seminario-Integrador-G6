@@ -51,7 +51,7 @@ export default function PantallaTecnicos() {
     async function pedir() {
       try {
         const filas = await listarTecnicos({
-          especialidadId: filtroEspecialidad || null,
+          especialidad_id: filtroEspecialidad || null,
           disponibilidad: filtroDisponibilidad || null,
         });
         if (!vigente) return;
@@ -77,7 +77,7 @@ export default function PantallaTecnicos() {
 
     try {
       await eliminarTecnico(aEliminar.legajo);
-      mostrarToast({ tipo: 'exito', mensaje: `Se elimino al tecnico "${aEliminar.nombre} ${aEliminar.apellido}".` });
+      mostrarToast({ tipo: 'exito', mensaje: `Se elimino al tecnico "${aEliminar.nombre} ".` });
       setAEliminar(null);
       setRecarga((numero) => numero + 1);
     } catch (fallo) {
@@ -96,21 +96,17 @@ export default function PantallaTecnicos() {
     },
     {
       clave: 'tecnico',
-      encabezado: 'Tecnico',
+      encabezado: 'tecnico',
       render: (tecnico) => (
         <span className="fw-semibold">
-          {tecnico.nombre} {tecnico.apellido}
+          {tecnico.nombre} 
         </span>
       ),
     },
-    {
-      clave: 'dni',
-      encabezado: 'DNI',
-      render: (tecnico) => <span className="text-body-secondary">{tecnico.dni}</span>,
-    },
+
     {
       clave: 'especialidad',
-      encabezado: 'Especialidad',
+      encabezado: 'especialidad',
       // Un tecnico puede tener mas de una, asi que van separadas por coma.
       render: (tecnico) => (
         <span className="text-body-secondary">
@@ -169,11 +165,11 @@ export default function PantallaTecnicos() {
             filas={tecnicos}
             claveFila={(tecnico) => tecnico.legajo}
             columnas={columnas}
-            buscarPor={['nombre', 'apellido', 'dni', 'legajo']}
-            placeholderBusqueda="Buscar por nombre, apellido o DNI..."
+            buscarPor={['nombre', '', , 'legajo']}
+            placeholderBusqueda="Buscar por nombre, ..."
             filtros={[
               {
-                etiqueta: 'Especialidad',
+                etiqueta: 'especialidad',
                 valor: filtroEspecialidad,
                 alCambiar: setFiltroEspecialidad,
                 textoTodos: 'Todas',
@@ -217,7 +213,7 @@ export default function PantallaTecnicos() {
         <p className="mb-0">
           Se va a eliminar al tecnico{' '}
           <strong>
-            {aEliminar?.nombre} {aEliminar?.apellido}
+            {aEliminar?.nombre} 
           </strong>
           .
         </p>

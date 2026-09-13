@@ -7,97 +7,96 @@ function limpiar(texto) {
   return limpio === '' ? null : limpio;
 }
 
-export async function obtenerTodos(idEdificio = null) {
+export async function obtenerTodos(edificio_id = null) {
   let query = supabase.from('espacio').select(`
-    edificioid,
-    espacionum,
-    areaid,
-    espaciopiso,
-    espacionom,
-    espaciotipo,
-    espaciodim,
+    espacio_id,
+    edificio_id,
+    espacio_num,
+    tipo_espacio_id,
+    espacio_piso,
+    espacio_dim,
     edificio (
-      edificionom
+      edificio_nom
+    ),
+    tipo_espacio (
+      tipo_espacio_nom
     )
   `);
   
-  if (idEdificio) {
-    query = query.eq('edificioid', idEdificio);
+  if (edificio_id) {
+    query = query.eq('edificio_id', edificio_id);
   }
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
   return data.map(espacio => ({
-    idEspacio: `${espacio.edificioid}-${espacio.espacionum}`,
-    idEdificio: espacio.edificioid,
-    espacioNum: espacio.espacionum,
-    areaId: espacio.areaid,
-    espacioPiso: espacio.espaciopiso,
-    piso: espacio.espaciopiso, // frontend lo espera como piso
-    numero: espacio.espacionum, // frontend lo espera como numero
-    nombre: espacio.espacionom || '',
-    tipo: espacio.espaciotipo || '',
-    dimensiones: espacio.espaciodim || '',
-    nombreEdificio: espacio.edificio ? espacio.edificio.edificionom : '(edificio eliminado)'
+    idEspacio: espacio.espacio_id,
+    idEdificio: espacio.edificio_id,
+    espacio_num: espacio.espacio_num,
+    espacio_piso: espacio.espacio_piso,
+    piso: espacio.espacio_piso, 
+    numero: espacio.espacio_num,
+    idTipoEspacio: espacio.tipo_espacio_id,
+    tipo: espacio.tipo_espacio ? espacio.tipo_espacio.tipo_espacio_nom : '',
+    nombre: espacio.tipo_espacio ? `${espacio.tipo_espacio.tipo_espacio_nom} ${espacio.espacio_num}` : `Espacio ${espacio.espacio_num}`,
+    dimensiones: espacio.espacio_dim || '',
+    nombreEdificio: espacio.edificio ? espacio.edificio.edificio_nom : '(edificio eliminado)'
   }));
 }
 
-export async function obtenerPorId(edificioId, espacioNum) {
+export async function obtenerPorId(espacio_id) {
   const { data, error } = await supabase.from('espacio')
-    .select('*, edificio(edificionom)')
-    .eq('edificioid', edificioId)
-    .eq('espacionum', espacioNum)
+    .select('*, edificio(edificio_nom), tipo_espacio(tipo_espacio_nom)')
+    .eq('espacio_id', espacio_id)
     .single();
 
-  if (error || !data) throw noEncontrado(`No existe el espacio ${espacioNum} en el edificio ${edificioId}.`);
+  if (error || !data) throw noEncontrado(`No existe el espacio ${espacio_id}.`);
 
   return {
-    idEspacio: `${data.edificioid}-${data.espacionum}`,
-    idEdificio: data.edificioid,
-    espacioNum: data.espacionum,
-    areaId: data.areaid,
-    espacioPiso: data.espaciopiso,
-    piso: data.espaciopiso,
-    numero: data.espacionum,
-    nombre: data.espacionom || '',
-    tipo: data.espaciotipo || '',
-    dimensiones: data.espaciodim || '',
-    nombreEdificio: data.edificio ? data.edificio.edificionom : ''
+    idEspacio: data.espacio_id,
+    idEdificio: data.edificio_id,
+    espacio_num: data.espacio_num,
+    espacio_piso: data.espacio_piso,
+    piso: data.espacio_piso,
+    numero: data.espacio_num,
+    idTipoEspacio: data.tipo_espacio_id,
+    tipo: data.tipo_espacio ? data.tipo_espacio.tipo_espacio_nom : '',
+    nombre: data.tipo_espacio ? `${data.tipo_espacio.tipo_espacio_nom} ${data.espacio_num}` : `Espacio ${data.espacio_num}`,
+    dimensiones: data.espacio_dim || '',
+    nombreEdificio: data.edificio ? data.edificio.edificio_nom : ''
   };
 }
 
 export async function crear(datos) {
   const edificio = Number(datos.idEdificio);
-  const numeroLimpio = limpiar(datos.numero) || limpiar(datos.espacioNum);
-  const pisoLimpio = limpiar(datos.piso) || limpiar(datos.espacioPiso);
-  const area = datos.areaId ? Number(datos.areaId) : null;
-  const nombreLimpio = limpiar(datos.nombre);
-  const tipoLimpio = limpiar(datos.tipo);
+  const numeroLimpio = limpiar(datos.numero) || limpiar(datos.espacio_num);
+  const pisoLimpio = limpiar(datos.piso) || limpiar(datos.espacio_piso);
+  const tipo_espacio_id = datos.idTipoEspacio ? Number(datos.idTipoEspacio) : null;
   const dimensionesLimpio = limpiar(datos.dimensiones);
+  const nombreLimpio = limpiar(datos.nombre);
 
-  if (!Number.isInteger(edificio)) throw datoInvalido('El edificioId es obligatorio.');
+  if (!Number.isInteger(edificio)) throw datoInvalido('El edificio_id es obligatorio.');
   if (!numeroLimpio) throw datoInvalido('El numero de espacio es obligatorio.');
+  if (!tipo_espacio_id) throw datoInvalido('El tipo de espacio es obligatorio.');
 
-  const { data: existeEdificio } = await supabase.from('edificio').select('edificioid').eq('edificioid', edificio).maybeSingle();
+  const { data: existeEdificio } = await supabase.from('edificio').select('edificio_id').eq('edificio_id', edificio).maybeSingle();
   if (!existeEdificio) throw datoInvalido(`No existe el edificio ${edificio}.`);
 
   const { data: duplicado } = await supabase.from('espacio')
-    .select('espacionum')
-    .eq('edificioid', edificio)
-    .eq('espacionum', numeroLimpio)
+    .select('espacio_num')
+    .eq('edificio_id', edificio)
+    .eq('espacio_num', numeroLimpio)
     .maybeSingle();
 
   if (duplicado) throw conflicto(`El espacio ${numeroLimpio} ya existe en el edificio ${edificio}.`);
 
   const { data, error } = await supabase.from('espacio').insert({
-    edificioid: edificio,
-    espacionum: numeroLimpio,
-    espaciopiso: pisoLimpio,
-    areaid: area,
-    espacionom: nombreLimpio,
-    espaciotipo: tipoLimpio,
-    espaciodim: dimensionesLimpio
+    edificio_id: edificio,
+    espacio_num: numeroLimpio,
+    espacio_piso: pisoLimpio,
+    tipo_espacio_id: tipo_espacio_id,
+    espacio_dim: dimensionesLimpio ? parseFloat(dimensionesLimpio) : null
   }).select().single();
 
   if (error) throw new Error(error.message);
@@ -105,30 +104,26 @@ export async function crear(datos) {
   return data;
 }
 
-export async function actualizar(edificioIdViejo, espacioNumViejo, datos) {
-  const pisoLimpio = limpiar(datos.piso) || limpiar(datos.espacioPiso);
-  const area = datos.areaId ? Number(datos.areaId) : null;
-  const nombreLimpio = limpiar(datos.nombre);
-  const tipoLimpio = limpiar(datos.tipo);
+export async function actualizar(espacio_id, datos) {
+  const pisoLimpio = limpiar(datos.piso) || limpiar(datos.espacio_piso);
+  const tipo_espacio_id = datos.idTipoEspacio ? Number(datos.idTipoEspacio) : null;
   const dimensionesLimpio = limpiar(datos.dimensiones);
+  const nombreLimpio = limpiar(datos.nombre);
 
   const { data, error } = await supabase.from('espacio').update({
-    espaciopiso: pisoLimpio,
-    areaid: area,
-    espacionom: nombreLimpio,
-    espaciotipo: tipoLimpio,
-    espaciodim: dimensionesLimpio
-  }).eq('edificioid', edificioIdViejo).eq('espacionum', espacioNumViejo).select().single();
+    espacio_piso: pisoLimpio,
+    tipo_espacio_id: tipo_espacio_id,
+    espacio_dim: dimensionesLimpio ? parseFloat(dimensionesLimpio) : null
+  }).eq('espacio_id', espacio_id).select().single();
 
   if (error || !data) throw noEncontrado(`No existe el espacio.`);
 
   return data;
 }
 
-export async function eliminar(edificioId, espacioNum) {
+export async function eliminar(espacio_id) {
   const { data, error } = await supabase.from('espacio').delete()
-    .eq('edificioid', edificioId)
-    .eq('espacionum', espacioNum)
+    .eq('espacio_id', espacio_id)
     .select().single();
     
   if (error || !data) throw noEncontrado(`No existe el espacio.`);
@@ -137,7 +132,7 @@ export async function eliminar(edificioId, espacioNum) {
 }
 
 export async function obtenerTipos() {
-  const { data, error } = await supabase.from('tipoespacio').select('tipoespacionom').order('tipoespacionom');
-  if (error) return ['Aula', 'Laboratorio', 'Oficina', 'Pasillo', 'Área común']; // Fallback en caso de error o sin datos
-  return data.map(t => t.tipoespacionom);
+  const { data, error } = await supabase.from('tipo_espacio').select('tipo_espacio_id, tipo_espacio_nom').order('tipo_espacio_nom');
+  if (error) return [];
+  return data.map(t => ({ idTipoEspacio: t.tipo_espacio_id, nombre: t.tipo_espacio_nom }));
 }

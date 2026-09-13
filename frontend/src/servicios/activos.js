@@ -5,17 +5,17 @@ import { api } from './api.js';
 
 /**
  * @param {object} [filtros]
- * @param {number} [filtros.idEdificio] - junto con espacioNum, filtra por espacio
- * @param {string} [filtros.espacioNum]
+ * @param {number} [filtros.idEdificio] - junto con espacio_num, filtra por espacio
+ * @param {string} [filtros.espacio_num]
  * @param {number} [filtros.idTipoActivo]
  * @param {string} [filtros.estado] - "Operativo" | "En mantenimiento" | "Fuera de servicio" | "Retirado"
  */
 export async function listarActivos(filtros = {}) {
-  const { idEdificio, espacioNum, idTipoActivo, estado } = filtros;
+  const { idEdificio, espacio_num, idTipoActivo, estado } = filtros;
 
   const { data } = await api.get('/activos', {
     params: {
-      ...(idEdificio && espacioNum ? { idEdificio, espacioNum } : {}),
+      ...(idEdificio && espacio_num ? { idEdificio, espacio_num } : {}),
       ...(idTipoActivo ? { idTipoActivo } : {}),
       ...(estado ? { estado } : {}),
     },

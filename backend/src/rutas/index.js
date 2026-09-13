@@ -17,6 +17,7 @@ import rutasEspacios from './espacios.rutas.js';
 import rutasAreas from './areas.rutas.js';
 import rutasTecnicos from './tecnicos.rutas.js';
 import rutasEspecialidades from './especialidades.rutas.js';
+import rutasInventario from './inventario.rutas.js';
 
 const router = Router();
 
@@ -36,9 +37,20 @@ router.use('/tipos-espacio', rutasTiposEspacio);
 import rutasActivos from './activos.rutas.js';
 router.use('/activos', rutasActivos);
 
+// Gestion de inventario
+router.use('/inventario', rutasInventario);
+
+// Plantillas de Tareas
+import rutasPlantillasTareas from './plantillasTareas.rutas.js';
+router.use('/plantillas-tareas', rutasPlantillasTareas);
+
 // Personal (Sprint 1)
 router.use('/tecnicos', rutasTecnicos);
 router.use('/especialidades', rutasEspecialidades);
+
+// Tickets (HU-9)
+import rutasTickets from './tickets.rutas.js';
+router.use('/tickets', rutasTickets);
 
 // Sirve para verificar que la API esta viva. No consulta la base de datos.
 router.get('/salud', (req, res) => {
