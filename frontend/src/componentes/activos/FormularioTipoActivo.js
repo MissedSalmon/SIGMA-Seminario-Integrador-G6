@@ -49,7 +49,7 @@ export default function FormularioTipoActivo({ tipo = null, onGuardar }) {
     setGuardando(true);
 
     try {
-      await onGuardar({ nombre, descripcion });
+      await onGuardar({ nombre });
 
       mostrarToast({
         tipo: 'exito',

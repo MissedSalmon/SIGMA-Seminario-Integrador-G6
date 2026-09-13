@@ -125,15 +125,15 @@ export const navegacion = [
     items: [
       {
         tipo: 'item',
-        texto: 'Materiales y herramientas',
-        direccion: '/inventario',
-        icono: cilList,
-      },
-      {
-        tipo: 'item',
         texto: 'Tipos de materiales y herramientas',
         direccion: '/inventario/tipos',
         icono: cilTags,
+      },
+      {
+        tipo: 'item',
+        texto: 'Materiales y herramientas',
+        direccion: '/inventario',
+        icono: cilList,
       },
     ],
   },
