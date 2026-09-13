@@ -23,11 +23,11 @@ function leerCuerpo(req) {
 
 /**
  * GET /api/tecnicos
- * GET /api/tecnicos?especialidadId=2&disponibilidad=Disponible  -> filtros combinables
+ * GET /api/tecnicos?especialidad_id=2&disponibilidad=Disponible  -> filtros combinables
  */
 export async function listar(req, res) {
-  const { especialidadId, disponibilidad } = req.query;
-  const tecnicos = await tecnicosServicio.obtenerTodos({ especialidadId, disponibilidad });
+  const { especialidad_id, disponibilidad } = req.query;
+  const tecnicos = await tecnicosServicio.obtenerTodos({ especialidad_id, disponibilidad });
   res.json({ ok: true, datos: tecnicos });
 }
 

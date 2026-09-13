@@ -38,12 +38,7 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
 
   const [legajo, setLegajo] = useState(tecnico?.legajo ?? '');
   const [nombre, setNombre] = useState(tecnico?.nombre ?? '');
-  const [apellido, setApellido] = useState(tecnico?.apellido ?? '');
-  const [dni, setDni] = useState(tecnico?.dni ?? '');
-  const [cuil, setCuil] = useState(tecnico?.cuil ?? '');
-  const [email, setEmail] = useState(tecnico?.email ?? '');
   const [telefono, setTelefono] = useState(tecnico?.telefono ?? '');
-  const [fechaNacimiento, setFechaNacimiento] = useState(tecnico?.fechaNacimiento ?? '');
   const [disponibilidad, setDisponibilidad] = useState(tecnico?.disponibilidad ?? 'Disponible');
   const [especialidadesElegidas, setEspecialidadesElegidas] = useState(
     tecnico?.especialidades?.map((especialidad) => especialidad.idEspecialidad) ?? []
@@ -83,11 +78,6 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
     if (
       !legajo ||
       !nombre.trim() ||
-      !apellido.trim() ||
-      !dni.trim() ||
-      !cuil.trim() ||
-      !email.trim() ||
-      !fechaNacimiento ||
       sinElegir
     ) {
       return;
@@ -99,20 +89,15 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
       await onGuardar({
         legajo: editando ? undefined : Number(legajo),
         nombre,
-        apellido,
-        dni,
-        cuil,
-        email,
         telefono,
-        fechaNacimiento,
         disponibilidad,
         especialidades: especialidadesElegidas,
       });
       mostrarToast({
         tipo: 'exito',
         mensaje: editando
-          ? `Se guardaron los cambios de "${nombre} ${apellido}".`
-          : `Se agrego el tecnico "${nombre} ${apellido}".`,
+          ? `Se guardaron los cambios de "${nombre} ".`
+          : `Se agrego el tecnico "${nombre} ".`,
       });
       router.push('/tecnicos');
       router.refresh();
@@ -172,81 +157,10 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
               <CFormFeedback invalid>El nombre es obligatorio.</CFormFeedback>
             </CCol>
 
-            <CCol xs={12} md={5}>
-              <CFormLabel htmlFor="apellido" className="sigma-obligatorio">
-                Apellido
-              </CFormLabel>
-              <CFormInput
-                id="apellido"
-                value={apellido}
-                onChange={(evento) => setApellido(evento.target.value)}
-                placeholder="Perez"
-                required
-                maxLength={100}
-              />
-              <CFormFeedback invalid>El apellido es obligatorio.</CFormFeedback>
-            </CCol>
 
-            <CCol xs={6} md={4}>
-              <CFormLabel htmlFor="dni" className="sigma-obligatorio">
-                DNI
-              </CFormLabel>
-              <CFormInput
-                id="dni"
-                value={dni}
-                onChange={(evento) => setDni(evento.target.value)}
-                placeholder="30123456"
-                required
-                pattern="\d{7,8}"
-                maxLength={10}
-              />
-              <CFormFeedback invalid>El DNI tiene que tener 7 u 8 digitos.</CFormFeedback>
-            </CCol>
 
-            <CCol xs={6} md={4}>
-              <CFormLabel htmlFor="cuil" className="sigma-obligatorio">
-                CUIL
-              </CFormLabel>
-              <CFormInput
-                id="cuil"
-                value={cuil}
-                onChange={(evento) => setCuil(evento.target.value)}
-                placeholder="20-30123456-4"
-                required
-                maxLength={13}
-              />
-              <CFormFeedback invalid>El CUIL tiene que tener 11 digitos.</CFormFeedback>
-              <CFormText>Con o sin guiones.</CFormText>
-            </CCol>
 
-            <CCol xs={12} md={4}>
-              <CFormLabel htmlFor="fechaNacimiento" className="sigma-obligatorio">
-                Fecha de nacimiento
-              </CFormLabel>
-              <CFormInput
-                id="fechaNacimiento"
-                type="date"
-                value={fechaNacimiento}
-                onChange={(evento) => setFechaNacimiento(evento.target.value)}
-                required
-              />
-              <CFormFeedback invalid>La fecha de nacimiento es obligatoria.</CFormFeedback>
-            </CCol>
 
-            <CCol xs={12} md={6}>
-              <CFormLabel htmlFor="email" className="sigma-obligatorio">
-                Email
-              </CFormLabel>
-              <CFormInput
-                id="email"
-                type="email"
-                value={email}
-                onChange={(evento) => setEmail(evento.target.value)}
-                placeholder="juan.perez@ejemplo.com"
-                required
-              />
-              <CFormFeedback invalid>El email es obligatorio.</CFormFeedback>
-            </CCol>
 
             <CCol xs={12} md={6}>
               <CFormLabel htmlFor="telefono">Telefono</CFormLabel>
@@ -260,7 +174,7 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
             </CCol>
           </CRow>
 
-          <h2 className="sigma-seccion-titulo">Especialidad y disponibilidad</h2>
+          <h2 className="sigma-seccion-titulo">especialidad y disponibilidad</h2>
           <CRow className="g-3">
             <CCol xs={12} md={7}>
               <CFormLabel className="sigma-obligatorio">Especialidades</CFormLabel>

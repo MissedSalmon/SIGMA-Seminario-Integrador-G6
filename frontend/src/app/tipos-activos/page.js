@@ -82,11 +82,7 @@ export default function PantallaTiposActivos() {
       encabezado: 'Nombre',
       render: (tipo) => <span className="fw-semibold">{tipo.nombre}</span>,
     },
-    {
-      clave: 'descripcion',
-      encabezado: 'Descripcion',
-      render: (tipo) => <span className="text-body-secondary">{tipo.descripcion || '-'}</span>,
-    },
+
     {
       clave: 'cantidadActivos',
       encabezado: 'Activos',
@@ -136,8 +132,8 @@ export default function PantallaTiposActivos() {
             filas={tipos}
             claveFila={(tipo) => tipo.idTipoActivo}
             columnas={columnas}
-            buscarPor={['nombre', 'descripcion']}
-            placeholderBusqueda="Buscar por nombre o descripcion..."
+            buscarPor={['nombre', ]}
+            placeholderBusqueda="Buscar por nombre..."
             cargando={cargando}
             textoVacio="Todavia no hay tipos de activos cargados."
             accionVacio={{ direccion: '/tipos-activos/agregar' }}

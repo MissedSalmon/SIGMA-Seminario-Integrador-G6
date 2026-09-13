@@ -79,7 +79,7 @@ export default function FormularioEspacio({ espacio = null, onGuardar }) {
 
   const [idEdificio, setIdEdificio] = useState(espacio?.idEdificio ?? '');
   const [nombre, setNombre] = useState(espacio?.nombre ?? '');
-  const [tipo, setTipo] = useState(espacio?.tipo ?? '');
+  const [idTipoEspacio, setIdTipoEspacio] = useState(espacio?.idTipoEspacio ?? '');
   const [piso, setPiso] = useState(espacio?.piso ?? '');
   const [numero, setNumero] = useState(espacio?.numero ?? '');
   const [ancho, setAncho] = useState(medidas.ancho);
@@ -108,7 +108,7 @@ export default function FormularioEspacio({ espacio = null, onGuardar }) {
     setValidado(true);
     setError('');
 
-    if (!nombre.trim() || !idEdificio || !tipo) return;
+    if (!nombre.trim() || !idEdificio || !idTipoEspacio) return;
 
     // Media medida no sirve para nada, y guardarla a medias seria peor que no
     // guardarla: mejor avisar.
@@ -123,7 +123,7 @@ export default function FormularioEspacio({ espacio = null, onGuardar }) {
       await onGuardar({
         idEdificio: Number(idEdificio),
         nombre,
-        tipo,
+        idTipoEspacio,
         piso,
         numero,
         dimensiones: unirDimensiones(ancho, largo),
@@ -170,7 +170,7 @@ export default function FormularioEspacio({ espacio = null, onGuardar }) {
           <CRow className="g-3">
             <CCol md={5}>
               <CFormLabel htmlFor="idEdificio" className="sigma-obligatorio">
-                Edificio
+                edificio
               </CFormLabel>
               <CFormSelect
                 id="idEdificio"
@@ -208,15 +208,15 @@ export default function FormularioEspacio({ espacio = null, onGuardar }) {
                 Tipo
               </CFormLabel>
               <CFormSelect
-                id="tipo"
-                value={tipo}
-                onChange={(evento) => setTipo(evento.target.value)}
+                id="idTipoEspacio"
+                value={idTipoEspacio}
+                onChange={(evento) => setIdTipoEspacio(evento.target.value)}
                 required
               >
                 <option value="">Elegi el tipo...</option>
                 {tipos.map((unTipo) => (
-                  <option key={unTipo} value={unTipo}>
-                    {unTipo}
+                  <option key={unTipo.idTipoEspacio} value={unTipo.idTipoEspacio}>
+                    {unTipo.nombre}
                   </option>
                 ))}
               </CFormSelect>

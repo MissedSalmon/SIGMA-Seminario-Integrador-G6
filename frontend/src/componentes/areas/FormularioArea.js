@@ -4,7 +4,7 @@
  * Formulario de alta y de edicion de un area funcional (HU-3).
  *
  * El area se ubica en un espacio, asi que el desplegable muestra los espacios
- * con su edificio adelante ("Edificio Central - Aula 1"), que es como los
+ * con su edificio adelante ("edificio Central - Aula 1"), que es como los
  * distingue la gente de infraestructura.
  *
  * No pide el responsable del area a proposito: el usuario autorizado es el que
@@ -123,7 +123,7 @@ export default function FormularioArea({ area = null, onGuardar }) {
 
             <CCol md={7}>
               <CFormLabel htmlFor="idEspacio" className="sigma-obligatorio">
-                Espacio donde funciona
+                espacio donde funciona
               </CFormLabel>
               <CFormSelect
                 id="idEspacio"
@@ -133,7 +133,7 @@ export default function FormularioArea({ area = null, onGuardar }) {
               >
                 <option value="">Elegi un espacio...</option>
                 {espacios.map((espacio) => (
-                  <option key={`${espacio.idEdificio}-${espacio.espacioNum}`} value={`${espacio.idEdificio}-${espacio.espacioNum}`}>
+                  <option key={espacio.idEspacio} value={espacio.idEspacio}>
                     {espacio.nombreEdificio} - {espacio.nombre}
                   </option>
                 ))}

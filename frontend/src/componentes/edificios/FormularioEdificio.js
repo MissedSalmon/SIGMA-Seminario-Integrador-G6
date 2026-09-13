@@ -80,7 +80,7 @@ export default function FormularioEdificio({ edificio = null, onGuardar }) {
                 id="nombre"
                 value={nombre}
                 onChange={(evento) => setNombre(evento.target.value)}
-                placeholder="Edificio Central"
+                placeholder="edificio Central"
                 required
                 maxLength={100}
               />

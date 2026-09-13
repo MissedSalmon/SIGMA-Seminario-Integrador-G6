@@ -1,29 +1,15 @@
-/**
- * Servicio de tecnicos (HU-5).
- *
- * Un tecnico tiene una o varias especialidades (relacion N:M via
- * tecnico_especialidad, ver supabase/migrations/20260828234944_init_schema.sql
- * y la nota de tablasactualizadas.md). La disponibilidad ("Disponible" /
- * "No disponible") es tambien el mecanismo de baja logica: un tecnico con
- * tareas asignadas no se puede eliminar, se marca como no disponible y
- * conserva su historial.
- */
 import { supabase } from '../config/supabase.js';
 import { datoInvalido, noEncontrado, conflicto } from '../utiles/errores.js';
 
 const DISPONIBILIDADES_VALIDAS = ['Disponible', 'No disponible'];
 
-const COLUMNAS_CON_ESPECIALIDADES = `
-  tecnicolegajo,
-  tecniconombre,
-  tecnicoapellido,
-  tecnicodni,
-  tecnicocuil,
-  tecnicoemail,
-  tecnicotel,
-  tecnicofechanac,
-  tecnicodisponibilidad,
-  tecnico_especialidad ( especialidadid, especialidad ( especialidadnom ) )
+const COLUMNAS_CON_ESPECIALIDADES = `*,
+  tecnico_especialidad (
+    especialidad_id,
+    especialidad (
+      especialidad_nom
+    )
+  )
 `;
 
 function limpiar(texto) {
@@ -40,42 +26,31 @@ function soloDigitos(texto) {
 
 function mapearTecnico(fila) {
   return {
-    legajo: fila.tecnicolegajo,
-    nombre: fila.tecniconombre,
-    apellido: fila.tecnicoapellido,
-    dni: fila.tecnicodni,
-    cuil: fila.tecnicocuil,
-    email: fila.tecnicoemail,
-    telefono: fila.tecnicotel,
-    fechaNacimiento: fila.tecnicofechanac,
-    disponibilidad: fila.tecnicodisponibilidad,
+    legajo: fila.tecnico_legajo,
+    nombre: fila.tecnico_nom_ape,
+    apellido: '', // El nuevo esquema fusiono nombre y apellido
+    telefono: fila.tecnico_tel,
+    disponibilidad: fila.tecnico_disponibilidad ? 'Disponible' : 'No disponible',
     especialidades: (fila.tecnico_especialidad ?? []).map((relacion) => ({
-      idEspecialidad: relacion.especialidadid,
-      nombre: relacion.especialidad ? relacion.especialidad.especialidadnom : '(especialidad eliminada)',
+      idEspecialidad: relacion.especialidad_id,
+      nombre: relacion.especialidad ? relacion.especialidad.especialidad_nom : '(especialidad eliminada)',
     })),
   };
 }
 
 /** Valida y normaliza los datos personales. No valida el legajo: eso lo hace `crear`, que es el unico que lo puede tocar. */
 function validarDatos(datos) {
-  const nombre = limpiar(datos.nombre);
-  const apellido = limpiar(datos.apellido);
-  const dni = soloDigitos(datos.dni);
-  const cuil = soloDigitos(datos.cuil);
-  const email = limpiar(datos.email);
+  // Ahora el front puede seguir mandando nombre y apellido por separado, pero los juntamos
+  const nombre = limpiar(datos.nombre) || '';
+  const apellido = limpiar(datos.apellido) || '';
+  const nombreCompleto = (nombre + ' ' + apellido).trim();
   const telefono = limpiar(datos.telefono);
-  const fechaNacimiento = limpiar(datos.fechaNacimiento);
   const disponibilidad = limpiar(datos.disponibilidad) ?? 'Disponible';
   const especialidades = Array.isArray(datos.especialidades)
     ? [...new Set(datos.especialidades.map(Number).filter(Number.isInteger))]
     : [];
 
-  if (!nombre) throw datoInvalido('El nombre es obligatorio.');
-  if (!apellido) throw datoInvalido('El apellido es obligatorio.');
-  if (!dni || !/^\d{7,8}$/.test(dni)) throw datoInvalido('El DNI tiene que tener 7 u 8 digitos.');
-  if (!cuil || !/^\d{11}$/.test(cuil)) throw datoInvalido('El CUIL tiene que tener 11 digitos.');
-  if (!email) throw datoInvalido('El email es obligatorio.');
-  if (!fechaNacimiento) throw datoInvalido('La fecha de nacimiento es obligatoria.');
+  if (!nombreCompleto) throw datoInvalido('El nombre completo es obligatorio.');
   if (!DISPONIBILIDADES_VALIDAS.includes(disponibilidad)) {
     throw datoInvalido('La disponibilidad tiene que ser "Disponible" o "No disponible".');
   }
@@ -83,12 +58,12 @@ function validarDatos(datos) {
     throw datoInvalido('Hay que seleccionar al menos una especialidad.');
   }
 
-  return { nombre, apellido, dni, cuil, email, telefono, fechaNacimiento, disponibilidad, especialidades };
+  return { nombreCompleto, telefono, disponibilidad, especialidades };
 }
 
 /** Corta el alta/edicion si alguna especialidad elegida no existe en la tabla. */
 async function validarEspecialidadesExisten(idsEspecialidad) {
-  const { data, error } = await supabase.from('especialidad').select('especialidadid').in('especialidadid', idsEspecialidad);
+  const { data, error } = await supabase.from('especialidad').select('especialidad_id').in('especialidad_id', idsEspecialidad);
   if (error) throw new Error(error.message);
 
   if (!data || data.length !== idsEspecialidad.length) {
@@ -98,23 +73,23 @@ async function validarEspecialidadesExisten(idsEspecialidad) {
 
 /** Reemplaza por completo las especialidades de un tecnico (se usa en alta y en edicion). */
 async function asignarEspecialidades(legajo, idsEspecialidad) {
-  const { error: errorBorrado } = await supabase.from('tecnico_especialidad').delete().eq('tecnicolegajo', legajo);
+  const { error: errorBorrado } = await supabase.from('tecnico_especialidad').delete().eq('tecnico_legajo', legajo);
   if (errorBorrado) throw new Error(errorBorrado.message);
 
   const filas = idsEspecialidad.map((idEspecialidad) => ({
-    tecnicolegajo: legajo,
-    especialidadid: idEspecialidad,
+    tecnico_legajo: legajo,
+    especialidad_id: idEspecialidad,
   }));
 
   const { error } = await supabase.from('tecnico_especialidad').insert(filas);
   if (error) throw new Error(error.message);
 }
 
-export async function obtenerTodos({ especialidadId, disponibilidad } = {}) {
-  let query = supabase.from('tecnico').select(COLUMNAS_CON_ESPECIALIDADES).order('tecnicoapellido', { ascending: true });
+export async function obtenerTodos({ especialidad_id, disponibilidad } = {}) {
+  let query = supabase.from('tecnico').select(COLUMNAS_CON_ESPECIALIDADES).order('tecnico_nom_ape', { ascending: true });
 
   if (disponibilidad) {
-    query = query.eq('tecnicodisponibilidad', disponibilidad);
+    query = query.eq('tecnico_disponibilidad', disponibilidad === 'Disponible');
   }
 
   const { data, error } = await query;
@@ -124,8 +99,8 @@ export async function obtenerTodos({ especialidadId, disponibilidad } = {}) {
 
   // Postgrest no deja filtrar la tabla principal por una columna de una
   // relacion N:M, asi que el filtro por especialidad se aplica aca.
-  if (especialidadId) {
-    const idNumerico = Number(especialidadId);
+  if (especialidad_id) {
+    const idNumerico = Number(especialidad_id);
     tecnicos = tecnicos.filter((tecnico) =>
       tecnico.especialidades.some((especialidad) => especialidad.idEspecialidad === idNumerico)
     );
@@ -138,7 +113,7 @@ export async function obtenerPorId(legajo) {
   const { data, error } = await supabase
     .from('tecnico')
     .select(COLUMNAS_CON_ESPECIALIDADES)
-    .eq('tecnicolegajo', legajo)
+    .eq('tecnico_legajo', legajo)
     .single();
 
   if (error || !data) throw noEncontrado(`No existe el tecnico ${legajo}.`);
@@ -155,25 +130,14 @@ export async function crear(datos) {
   const limpio = validarDatos(datos);
   await validarEspecialidadesExisten(limpio.especialidades);
 
-  const { data: legajoExistente } = await supabase.from('tecnico').select('tecnicolegajo').eq('tecnicolegajo', legajo).maybeSingle();
+  const { data: legajoExistente } = await supabase.from('tecnico').select('tecnico_legajo').eq('tecnico_legajo', legajo).maybeSingle();
   if (legajoExistente) throw conflicto('El legajo ingresado ya pertenece a otro técnico.');
 
-  const { data: dniExistente } = await supabase.from('tecnico').select('tecnicolegajo').eq('tecnicodni', limpio.dni).maybeSingle();
-  if (dniExistente) throw conflicto('El DNI ingresado ya pertenece a otro técnico.');
-
-  const { data: cuilExistente } = await supabase.from('tecnico').select('tecnicolegajo').eq('tecnicocuil', limpio.cuil).maybeSingle();
-  if (cuilExistente) throw conflicto('El CUIL ingresado ya pertenece a otro técnico.');
-
   const { error } = await supabase.from('tecnico').insert({
-    tecnicolegajo: legajo,
-    tecniconombre: limpio.nombre,
-    tecnicoapellido: limpio.apellido,
-    tecnicodni: limpio.dni,
-    tecnicocuil: limpio.cuil,
-    tecnicoemail: limpio.email,
-    tecnicotel: limpio.telefono,
-    tecnicofechanac: limpio.fechaNacimiento,
-    tecnicodisponibilidad: limpio.disponibilidad,
+    tecnico_legajo: legajo,
+    tecnico_nom_ape: limpio.nombreCompleto,
+    tecnico_tel: limpio.telefono,
+    tecnico_disponibilidad: limpio.disponibilidad === 'Disponible',
   });
 
   if (error) throw new Error(error.message);
@@ -187,35 +151,14 @@ export async function actualizar(legajo, datos) {
   const limpio = validarDatos(datos);
   await validarEspecialidadesExisten(limpio.especialidades);
 
-  const { data: dniExistente } = await supabase
-    .from('tecnico')
-    .select('tecnicolegajo')
-    .eq('tecnicodni', limpio.dni)
-    .neq('tecnicolegajo', legajo)
-    .maybeSingle();
-  if (dniExistente) throw conflicto('El DNI ingresado ya pertenece a otro técnico.');
-
-  const { data: cuilExistente } = await supabase
-    .from('tecnico')
-    .select('tecnicolegajo')
-    .eq('tecnicocuil', limpio.cuil)
-    .neq('tecnicolegajo', legajo)
-    .maybeSingle();
-  if (cuilExistente) throw conflicto('El CUIL ingresado ya pertenece a otro técnico.');
-
   const { data, error } = await supabase
     .from('tecnico')
     .update({
-      tecniconombre: limpio.nombre,
-      tecnicoapellido: limpio.apellido,
-      tecnicodni: limpio.dni,
-      tecnicocuil: limpio.cuil,
-      tecnicoemail: limpio.email,
-      tecnicotel: limpio.telefono,
-      tecnicofechanac: limpio.fechaNacimiento,
-      tecnicodisponibilidad: limpio.disponibilidad,
+      tecnico_nom_ape: limpio.nombreCompleto,
+      tecnico_tel: limpio.telefono,
+      tecnico_disponibilidad: limpio.disponibilidad === 'Disponible',
     })
-    .eq('tecnicolegajo', legajo)
+    .eq('tecnico_legajo', legajo)
     .select()
     .single();
 
@@ -227,25 +170,12 @@ export async function actualizar(legajo, datos) {
 }
 
 export async function eliminar(legajo) {
-  const { data: tareas } = await supabase
-    .from('tecnico_asignado_tareaot')
-    .select('tareaid')
-    .eq('tecnicolegajo', legajo)
-    .limit(1);
+  // Limpiamos sus relaciones primero
+  await supabase.from('tecnico_especialidad').delete().eq('tecnico_legajo', legajo);
 
-  if (tareas && tareas.length > 0) {
-    throw conflicto(
-      'No se puede eliminar este técnico porque tiene tareas asignadas. Para conservar su historial, marque el técnico como no disponible.'
-    );
-  }
-
-  // Se limpian las relaciones propias del tecnico antes de borrarlo: no son
-  // historial de negocio (a diferencia de las tareas), son solo su ficha.
-  await supabase.from('tecnico_especialidad').delete().eq('tecnicolegajo', legajo);
-  await supabase.from('tecnico_utiliza_herramienta').delete().eq('tecnicolegajo', legajo);
-
-  const { data, error } = await supabase.from('tecnico').delete().eq('tecnicolegajo', legajo).select().single();
+  const { data, error } = await supabase.from('tecnico').delete().eq('tecnico_legajo', legajo).select().single();
   if (error || !data) throw noEncontrado(`No existe el tecnico ${legajo}.`);
 
-  return { legajo: data.tecnicolegajo, nombre: data.tecniconombre, apellido: data.tecnicoapellido };
+  return { legajo: data.tecnico_legajo, nombre: data.tecnico_nom_ape, apellido: '' };
 }
+
