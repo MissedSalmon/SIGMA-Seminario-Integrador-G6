@@ -5,14 +5,14 @@ import { api } from './api.js';
 
 /**
  * @param {object} [filtros]
- * @param {number} [filtros.especialidadId]
+ * @param {number} [filtros.especialidad_id]
  * @param {string} [filtros.disponibilidad] - "Disponible" | "No disponible"
  */
 export async function listarTecnicos(filtros = {}) {
-  const { especialidadId, disponibilidad } = filtros;
+  const { especialidad_id, disponibilidad } = filtros;
   const { data } = await api.get('/tecnicos', {
     params: {
-      ...(especialidadId ? { especialidadId } : {}),
+      ...(especialidad_id ? { especialidad_id } : {}),
       ...(disponibilidad ? { disponibilidad } : {}),
     },
   });

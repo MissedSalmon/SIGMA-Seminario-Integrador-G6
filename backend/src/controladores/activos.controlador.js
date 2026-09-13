@@ -22,20 +22,18 @@ function leerCodigo(req) {
 
 /** Toma del cuerpo solo los campos que son del activo. */
 function leerCuerpo(req) {
-  const { codigo, descripcion, idTipoActivo, idEdificio, espacioNum, fechaInstalacion, estado } =
-    req.body;
-
-  return { codigo, descripcion, idTipoActivo, idEdificio, espacioNum, fechaInstalacion, estado };
+  const { codigo, idTipoActivo, espacio_id, estado } = req.body;
+  return { codigo, idTipoActivo, espacio_id, estado };
 }
 
 /**
  * GET /api/activos
- * GET /api/activos?idEdificio=1&espacioNum=12&idTipoActivo=3&estado=Operativo
+ * GET /api/activos?idEdificio=1&espacio_num=12&idTipoActivo=3&estado=Operativo
  *
  * Los filtros se combinan: si vienen varios, tienen que cumplirse todos.
  */
 export async function listar(req, res) {
-  const { idEdificio, espacioNum, idTipoActivo, estado } = req.query;
+  const { idEdificio, espacio_num, idTipoActivo, estado } = req.query;
 
   if (estado && !ESTADOS.includes(estado)) {
     throw datoInvalido(`"${estado}" no es un estado de activo valido.`);
@@ -43,7 +41,7 @@ export async function listar(req, res) {
 
   const activos = await activosServicio.obtenerTodos({
     idEdificio: idEdificio ? Number(idEdificio) : null,
-    espacioNum: espacioNum || null,
+    espacio_num: espacio_num || null,
     idTipoActivo: idTipoActivo ? Number(idTipoActivo) : null,
     estado: estado || null,
   });
