@@ -2,7 +2,7 @@
  * Servicio de especialidades.
  *
  * HU-4 (el ABM completo de especialidades) todavia no esta implementada en el
- * proyecto: la tabla Especialidad existe en la base (con datos de semilla,
+ * proyecto: la tabla especialidad existe en la base (con datos de semilla,
  * ver supabase/migrations/20260829210000_tecnico_datos_personales.sql) pero
  * no hay ninguna pantalla para darlas de alta todavia. Este servicio solo
  * expone lo que Tecnicos (HU-5) necesita para su selector: listarlas.
@@ -21,14 +21,14 @@ export async function obtenerTodos() {
   // poder informar la cantidad de tecnicos por especialidad.
   const { data, error } = await supabase
     .from('especialidad')
-    .select('especialidadid, especialidadnom, tecnico_especialidad ( tecnicolegajo )')
-    .order('especialidadnom', { ascending: true });
+    .select('especialidad_id, especialidad_nom, tecnico_especialidad ( tecnico_legajo )')
+    .order('especialidad_nom', { ascending: true });
 
   if (error) throw new Error(error.message);
 
   return data.map((especialidad) => ({
-    idEspecialidad: especialidad.especialidadid,
-    nombre: especialidad.especialidadnom,
+    idEspecialidad: especialidad.especialidad_id,
+    nombre: especialidad.especialidad_nom,
     cantidadTecnicos: (especialidad.tecnico_especialidad ?? []).length,
   }));
 }
@@ -36,14 +36,14 @@ export async function obtenerTodos() {
 export async function obtenerPorId(id) {
   const { data, error } = await supabase
     .from('especialidad')
-    .select('especialidadid, especialidadnom')
-    .eq('especialidadid', id)
+    .select('especialidad_id, especialidad_nom')
+    .eq('especialidad_id', id)
     .maybeSingle();
 
   if (error) throw new Error(error.message);
   if (!data) throw noEncontrado('No existe la especialidad solicitada.');
 
-  return { idEspecialidad: data.especialidadid, nombre: data.especialidadnom };
+  return { idEspecialidad: data.especialidad_id, nombre: data.especialidad_nom };
 }
 
 export async function crear(nombreRaw) {
@@ -53,19 +53,16 @@ export async function crear(nombreRaw) {
   // Evitar duplicados (case-insensitive)
   const { data: existe, error: errExiste } = await supabase
     .from('especialidad')
-    .select('especialidadid')
-    .ilike('especialidadnom', nombre)
+    .select('especialidad_id')
+    .ilike('especialidad_nom', nombre)
     .maybeSingle();
   if (errExiste) throw new Error(errExiste.message);
   if (existe) throw conflicto('Ya existe una especialidad con ese nombre.');
 
-  const { data: lastIdData } = await supabase.from('especialidad').select('especialidadid').order('especialidadid', { ascending: false }).limit(1);
-  const nextId = lastIdData && lastIdData.length > 0 ? lastIdData[0].especialidadid + 1 : 1;
-
-  const { data, error } = await supabase.from('especialidad').insert({ especialidadid: nextId, especialidadnom: nombre }).select().single();
+  const { data, error } = await supabase.from('especialidad').insert({ especialidad_nom: nombre }).select().single();
   if (error) throw new Error(error.message);
 
-  return { idEspecialidad: data.especialidadid, nombre: data.especialidadnom };
+  return { idEspecialidad: data.especialidad_id, nombre: data.especialidad_nom };
 }
 
 export async function actualizar(id, nombreRaw) {
@@ -75,23 +72,23 @@ export async function actualizar(id, nombreRaw) {
   // Verificar conflicto de nombre con otra fila
   const { data: existe, error: errExiste } = await supabase
     .from('especialidad')
-    .select('especialidadid')
-    .ilike('especialidadnom', nombre)
-    .neq('especialidadid', id)
+    .select('especialidad_id')
+    .ilike('especialidad_nom', nombre)
+    .neq('especialidad_id', id)
     .maybeSingle();
   if (errExiste) throw new Error(errExiste.message);
   if (existe) throw conflicto('Ya existe otra especialidad con ese nombre.');
 
   const { data, error } = await supabase
     .from('especialidad')
-    .update({ especialidadnom: nombre })
-    .eq('especialidadid', id)
+    .update({ especialidad_nom: nombre })
+    .eq('especialidad_id', id)
     .select()
     .single();
 
   if (error || !data) throw noEncontrado('No existe la especialidad solicitada.');
 
-  return { idEspecialidad: data.especialidadid, nombre: data.especialidadnom };
+  return { idEspecialidad: data.especialidad_id, nombre: data.especialidad_nom };
 }
 
 export async function eliminar(id) {
@@ -99,14 +96,14 @@ export async function eliminar(id) {
   const { count, error: errAsign } = await supabase
     .from('tecnico_especialidad')
     .select('*', { count: 'exact', head: true })
-    .eq('especialidadid', id);
+    .eq('especialidad_id', id);
   if (errAsign) throw new Error(errAsign.message);
   if (count > 0) {
     throw conflicto(`No se puede eliminar la especialidad porque tiene ${count} técnico${count !== 1 ? 's' : ''} asignado${count !== 1 ? 's' : ''}.`);
   }
 
-  const { data, error } = await supabase.from('especialidad').delete().eq('especialidadid', id).select().single();
+  const { data, error } = await supabase.from('especialidad').delete().eq('especialidad_id', id).select().single();
   if (error || !data) throw noEncontrado('No existe la especialidad solicitada.');
 
-  return { idEspecialidad: data.especialidadid, nombre: data.especialidadnom };
+  return { idEspecialidad: data.especialidad_id, nombre: data.especialidad_nom };
 }

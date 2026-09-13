@@ -115,7 +115,7 @@ export default function PantallaTiposEspacio() {
       <EncabezadoPagina
         titulo="Tipos de espacio"
         descripcion="Los tipos que se pueden elegir al cargar un espacio."
-        accion={{ texto: 'Agregar tipo', direccion: '/espacios/tipos/agregar' }}
+        accion={{ direccion: '/espacios/tipos/agregar' }}
       />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
@@ -130,7 +130,7 @@ export default function PantallaTiposEspacio() {
             placeholderBusqueda="Buscar tipo de espacio..."
             cargando={cargando}
             textoVacio="Todavia no hay tipos de espacio cargados."
-            accionVacio={{ texto: 'Agregar tipo', direccion: '/espacios/tipos/agregar' }}
+            accionVacio={{ direccion: '/espacios/tipos/agregar' }}
           />
         </CCardBody>
       </CCard>

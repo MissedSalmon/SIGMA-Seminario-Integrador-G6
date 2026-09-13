@@ -34,7 +34,6 @@ export default function FormularioTipoActivo({ tipo = null, onGuardar }) {
   const editando = Boolean(tipo);
 
   const [nombre, setNombre] = useState(tipo?.nombre ?? '');
-  const [descripcion, setDescripcion] = useState(tipo?.descripcion ?? '');
 
   const [validado, setValidado] = useState(false);
   const [guardando, setGuardando] = useState(false);
@@ -50,7 +49,7 @@ export default function FormularioTipoActivo({ tipo = null, onGuardar }) {
     setGuardando(true);
 
     try {
-      await onGuardar({ nombre, descripcion });
+      await onGuardar({ nombre });
 
       mostrarToast({
         tipo: 'exito',
@@ -90,16 +89,7 @@ export default function FormularioTipoActivo({ tipo = null, onGuardar }) {
               <CFormText>Asi va a aparecer en el desplegable al cargar un activo.</CFormText>
             </CCol>
 
-            <CCol xs={12} md={7}>
-              <CFormLabel htmlFor="descripcion">Descripcion</CFormLabel>
-              <CFormTextarea
-                id="descripcion"
-                rows={3}
-                value={descripcion}
-                onChange={(evento) => setDescripcion(evento.target.value)}
-                placeholder="Equipos de refrigeracion split y de ventana"
-              />
-            </CCol>
+
           </CRow>
 
           <div className="d-flex gap-2 mt-4">

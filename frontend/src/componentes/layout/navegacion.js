@@ -11,6 +11,13 @@
  * desplegable con sus pantallas adentro:
  *
  *   { tipo: 'grupo', texto: 'Espacios', icono: cilRoom, items: [ ...items... ] }
+ *
+ * EL ORDEN NO ES LIBRE: primero la clasificacion y despues lo que depende de
+ * ella. Los tipos de espacio antes que los espacios, los tipos de activo antes
+ * que los activos, las especialidades antes que los tecnicos. Es el orden en
+ * que hay que cargar los datos: sin especialidades no se puede dar de alta un
+ * tecnico, asi que el menu se lee de arriba hacia abajo como una guia de por
+ * donde empezar.
  */
 import {
   cilSpeedometer,
@@ -21,6 +28,9 @@ import {
   cilTags,
   cilDevices,
   cilPeople,
+  cilStorage,
+  cilTask,
+  cilListRich,
 } from '@coreui/icons';
 
 export const navegacion = [
@@ -29,6 +39,22 @@ export const navegacion = [
     texto: 'Panel',
     direccion: '/',
     icono: cilSpeedometer,
+  },
+  {
+    tipo: 'titulo',
+    texto: 'Mantenimiento',
+  },
+  {
+    tipo: 'item',
+    texto: 'Registrar ticket',
+    direccion: '/tickets/agregar',
+    icono: cilTask,
+  },
+  {
+    tipo: 'item',
+    texto: 'Plantillas de tareas',
+    direccion: '/plantillas-tareas',
+    icono: cilListRich,
   },
   {
     tipo: 'titulo',
@@ -47,15 +73,15 @@ export const navegacion = [
     items: [
       {
         tipo: 'item',
-        texto: 'Listado de espacios',
-        direccion: '/espacios',
-        icono: cilList,
-      },
-      {
-        tipo: 'item',
         texto: 'Tipos de espacio',
         direccion: '/espacios/tipos',
         icono: cilTags,
+      },
+      {
+        tipo: 'item',
+        texto: 'Listado de espacios',
+        direccion: '/espacios',
+        icono: cilList,
       },
     ],
   },
@@ -76,15 +102,38 @@ export const navegacion = [
     items: [
       {
         tipo: 'item',
+        texto: 'Tipos de activos',
+        direccion: '/tipos-activos',
+        icono: cilTags,
+      },
+      {
+        tipo: 'item',
         texto: 'Listado de activos',
         direccion: '/activos',
         icono: cilList,
       },
+    ],
+  },
+  {
+    tipo: 'titulo',
+    texto: 'Gestion de inventario',
+  },
+  {
+    tipo: 'grupo',
+    texto: 'Inventario',
+    icono: cilStorage,
+    items: [
       {
         tipo: 'item',
-        texto: 'Tipos de activos',
-        direccion: '/tipos-activos',
+        texto: 'Tipos de materiales y herramientas',
+        direccion: '/inventario/tipos',
         icono: cilTags,
+      },
+      {
+        tipo: 'item',
+        texto: 'Materiales y herramientas',
+        direccion: '/inventario',
+        icono: cilList,
       },
     ],
   },
@@ -94,14 +143,14 @@ export const navegacion = [
   },
   {
     tipo: 'item',
-    texto: 'Tecnicos',
-    direccion: '/tecnicos',
-    icono: cilPeople,
-  },
-  {
-    tipo: 'item',
     texto: 'Especialidades',
     direccion: '/especialidades',
     icono: cilTags,
+  },
+  {
+    tipo: 'item',
+    texto: 'Tecnicos',
+    direccion: '/tecnicos',
+    icono: cilPeople,
   },
 ];

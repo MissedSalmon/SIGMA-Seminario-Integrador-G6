@@ -44,16 +44,16 @@ import { listarTiposActivos } from '@/servicios/tiposActivos.js';
  * vuelven a separar al guardar.
  */
 
-/** De { idEdificio: 1, espacioNum: '12' } arma "1|12". */
-function unirEspacio(idEdificio, espacioNum) {
-  if (!idEdificio || !espacioNum) return '';
-  return `${idEdificio}|${espacioNum}`;
+/** De { idEdificio: 1, espacio_num: '12' } arma "1|12". */
+function unirEspacio(idEdificio, espacio_num) {
+  if (!idEdificio || !idEspacio_num) return '';
+  return `${idEdificio}|${espacio_num}`;
 }
 
-/** De "1|12" saca { idEdificio: 1, espacioNum: '12' }. */
+/** De "1|12" saca { idEdificio: 1, espacio_num: '12' }. */
 function separarEspacio(valor) {
   const [edificio, numero] = String(valor).split('|');
-  return { idEdificio: Number(edificio), espacioNum: numero };
+  return { idEdificio: Number(edificio), espacio_num: numero };
 }
 
 /** De "2026-08-30" arma "30/08/2026", que es como se lee una fecha aca. */
@@ -69,12 +69,8 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
   const editando = Boolean(activo);
 
   const [codigo, setCodigo] = useState(activo?.codigo ?? '');
-  const [descripcion, setDescripcion] = useState(activo?.descripcion ?? '');
   const [idTipoActivo, setIdTipoActivo] = useState(activo?.idTipoActivo ?? '');
-  const [espacio, setEspacio] = useState(unirEspacio(activo?.idEdificio, activo?.espacioNum));
-  const [fechaInstalacion, setFechaInstalacion] = useState(
-    activo?.fechaInstalacion ? String(activo.fechaInstalacion).slice(0, 10) : ''
-  );
+  const [idEspacio, setIdEspacio] = useState(activo?.espacio_id ?? '');
   const [estado, setEstado] = useState(activo?.estado ?? 'Operativo');
 
   const [tipos, setTipos] = useState([]);
@@ -100,20 +96,16 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
     setValidado(true);
     setError('');
 
-    if (!codigo.trim() || !idTipoActivo || !espacio) return;
+    if (!codigo.trim() || !idTipoActivo || !idEspacio) return;
 
     setGuardando(true);
 
-    const { idEdificio, espacioNum } = separarEspacio(espacio);
-
+    
     try {
       await onGuardar({
         codigo: codigo.trim(),
-        descripcion,
         idTipoActivo: Number(idTipoActivo),
-        idEdificio,
-        espacioNum,
-        fechaInstalacion: fechaInstalacion || null,
+        espacio_id: Number(idEspacio),
         ...(editando ? { estado } : {}),
       });
 
@@ -213,16 +205,6 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
               )}
             </CCol>
 
-            <CCol xs={12} md={8}>
-              <CFormLabel htmlFor="descripcion">Descripcion</CFormLabel>
-              <CFormTextarea
-                id="descripcion"
-                rows={2}
-                value={descripcion}
-                onChange={(evento) => setDescripcion(evento.target.value)}
-                placeholder="Aire acondicionado split 3000 frigorias"
-              />
-            </CCol>
 
             <CCol xs={12} md={4}>
               <CFormLabel htmlFor="idTipoActivo" className="sigma-obligatorio">
@@ -246,21 +228,21 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
 
             <CCol xs={12} md={5}>
               <CFormLabel htmlFor="espacio" className="sigma-obligatorio">
-                Espacio
+                espacio
               </CFormLabel>
               <CFormSelect
-                id="espacio"
-                value={espacio}
-                onChange={(evento) => setEspacio(evento.target.value)}
+                id="idEspacio"
+                value={idEspacio}
+                onChange={(evento) => setIdEspacio(evento.target.value)}
                 required
               >
                 <option value="">Elegi el espacio...</option>
                 {espacios.map((unEspacio) => (
                   <option
-                    key={unirEspacio(unEspacio.idEdificio, unEspacio.espacioNum)}
-                    value={unirEspacio(unEspacio.idEdificio, unEspacio.espacioNum)}
+                    key={unEspacio.idEspacio}
+                    value={unEspacio.idEspacio}
                   >
-                    {unEspacio.nombreEdificio} — {unEspacio.nombre || unEspacio.espacioNum}
+                    {unEspacio.nombreEdificio} — {unEspacio.nombre || unEspacio.espacio_num}
                   </option>
                 ))}
               </CFormSelect>
@@ -274,15 +256,6 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
               )}
             </CCol>
 
-            <CCol xs={12} md={3}>
-              <CFormLabel htmlFor="fechaInstalacion">Fecha de instalacion</CFormLabel>
-              <CFormInput
-                id="fechaInstalacion"
-                type="date"
-                value={fechaInstalacion}
-                onChange={(evento) => setFechaInstalacion(evento.target.value)}
-              />
-            </CCol>
 
             {editando && (
               <CCol xs={12} md={4}>

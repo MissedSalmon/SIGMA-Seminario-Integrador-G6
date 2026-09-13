@@ -6,8 +6,12 @@
  *   <EncabezadoPagina
  *     titulo="Edificios"
  *     descripcion="Los edificios de la facultad."
- *     accion={{ texto: 'Agregar edificio', direccion: '/edificios/agregar' }}
+ *     accion={{ direccion: '/edificios/agregar' }}
  *   />
+ *
+ * El boton dice "Agregar" a secas: el titulo de arriba ya aclara de que. Por
+ * eso el texto no se pasa, sale solo. Se puede cambiar con accion.texto, pero
+ * en un alta comun no hace falta.
  */
 import CIcon from '@coreui/icons-react';
 import { cilPlus } from '@coreui/icons';
@@ -25,7 +29,7 @@ export default function EncabezadoPagina({ titulo, descripcion, accion }) {
       {accion && (
         <BotonEnlace href={accion.direccion}>
           <CIcon icon={cilPlus} className="me-2" />
-          {accion.texto}
+          {accion.texto ?? 'Agregar'}
         </BotonEnlace>
       )}
     </div>

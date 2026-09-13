@@ -8,7 +8,7 @@
  * electricistas que ahora mismo pueden recibir tareas.
  */
 import { useEffect, useState } from 'react';
-import { CButton, CButtonGroup, CCard, CCardBody, CFormSelect } from '@coreui/react';
+import { CButton, CButtonGroup, CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilPencil, cilTrash } from '@coreui/icons';
 
@@ -51,7 +51,7 @@ export default function PantallaTecnicos() {
     async function pedir() {
       try {
         const filas = await listarTecnicos({
-          especialidadId: filtroEspecialidad || null,
+          especialidad_id: filtroEspecialidad || null,
           disponibilidad: filtroDisponibilidad || null,
         });
         if (!vigente) return;
@@ -77,7 +77,7 @@ export default function PantallaTecnicos() {
 
     try {
       await eliminarTecnico(aEliminar.legajo);
-      mostrarToast({ tipo: 'exito', mensaje: `Se elimino al tecnico "${aEliminar.nombre} ${aEliminar.apellido}".` });
+      mostrarToast({ tipo: 'exito', mensaje: `Se elimino al tecnico "${aEliminar.nombre} ".` });
       setAEliminar(null);
       setRecarga((numero) => numero + 1);
     } catch (fallo) {
@@ -96,21 +96,17 @@ export default function PantallaTecnicos() {
     },
     {
       clave: 'tecnico',
-      encabezado: 'Tecnico',
+      encabezado: 'tecnico',
       render: (tecnico) => (
         <span className="fw-semibold">
-          {tecnico.nombre} {tecnico.apellido}
+          {tecnico.nombre} 
         </span>
       ),
     },
-    {
-      clave: 'dni',
-      encabezado: 'DNI',
-      render: (tecnico) => <span className="text-body-secondary">{tecnico.dni}</span>,
-    },
+
     {
       clave: 'especialidad',
-      encabezado: 'Especialidad',
+      encabezado: 'especialidad',
       // Un tecnico puede tener mas de una, asi que van separadas por coma.
       render: (tecnico) => (
         <span className="text-body-secondary">
@@ -158,7 +154,7 @@ export default function PantallaTecnicos() {
       <EncabezadoPagina
         titulo="Tecnicos"
         descripcion="El personal de mantenimiento: su especialidad y su disponibilidad para recibir tareas."
-        accion={{ texto: 'Agregar tecnico', direccion: '/tecnicos/agregar' }}
+        accion={{ direccion: '/tecnicos/agregar' }}
       />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
@@ -169,36 +165,30 @@ export default function PantallaTecnicos() {
             filas={tecnicos}
             claveFila={(tecnico) => tecnico.legajo}
             columnas={columnas}
-            buscarPor={['nombre', 'apellido', 'dni', 'legajo']}
-            placeholderBusqueda="Buscar por nombre, apellido o DNI..."
-            filtros={
-              <>
-                <CFormSelect
-                  value={filtroEspecialidad}
-                  onChange={(evento) => setFiltroEspecialidad(evento.target.value)}
-                  aria-label="Filtrar por especialidad"
-                  style={{ maxWidth: '14rem' }}
-                >
-                  <option value="">Todas las especialidades</option>
-                  {especialidades.map((especialidad) => (
-                    <option key={especialidad.idEspecialidad} value={especialidad.idEspecialidad}>
-                      {especialidad.nombre}
-                    </option>
-                  ))}
-                </CFormSelect>
-
-                <CFormSelect
-                  value={filtroDisponibilidad}
-                  onChange={(evento) => setFiltroDisponibilidad(evento.target.value)}
-                  aria-label="Filtrar por disponibilidad"
-                  style={{ maxWidth: '12rem' }}
-                >
-                  <option value="">Todas</option>
-                  <option value="Disponible">Disponible</option>
-                  <option value="No disponible">No disponible</option>
-                </CFormSelect>
-              </>
-            }
+            buscarPor={['nombre', '', , 'legajo']}
+            placeholderBusqueda="Buscar por nombre, ..."
+            filtros={[
+              {
+                etiqueta: 'especialidad',
+                valor: filtroEspecialidad,
+                alCambiar: setFiltroEspecialidad,
+                textoTodos: 'Todas',
+                opciones: especialidades.map((especialidad) => ({
+                  valor: especialidad.idEspecialidad,
+                  texto: especialidad.nombre,
+                })),
+              },
+              {
+                etiqueta: 'Disponibilidad',
+                valor: filtroDisponibilidad,
+                alCambiar: setFiltroDisponibilidad,
+                textoTodos: 'Todas',
+                opciones: [
+                  { valor: 'Disponible', texto: 'Disponible' },
+                  { valor: 'No disponible', texto: 'No disponible' },
+                ],
+              },
+            ]}
             cargando={cargando}
             textoVacio={
               filtroEspecialidad || filtroDisponibilidad
@@ -208,7 +198,7 @@ export default function PantallaTecnicos() {
             accionVacio={
               filtroEspecialidad || filtroDisponibilidad
                 ? undefined
-                : { texto: 'Agregar tecnico', direccion: '/tecnicos/agregar' }
+                : { direccion: '/tecnicos/agregar' }
             }
           />
         </CCardBody>
@@ -223,7 +213,7 @@ export default function PantallaTecnicos() {
         <p className="mb-0">
           Se va a eliminar al tecnico{' '}
           <strong>
-            {aEliminar?.nombre} {aEliminar?.apellido}
+            {aEliminar?.nombre} 
           </strong>
           .
         </p>

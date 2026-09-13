@@ -146,16 +146,39 @@ paginación, el contador de resultados, el esqueleto de carga y el estado vacío
   columnas={columnas}
   buscarPor={['nombre', 'descripcion']}
   placeholderBusqueda="Buscar por nombre o descripcion..."
-  filtros={<>{/* los CFormSelect que hagan falta */}</>}
+  filtros={filtros}
   cargando={cargando}
   textoVacio="Todavia no hay ... cargados."
-  accionVacio={{ texto: 'Agregar ...', direccion: '/<entidad>/agregar' }}
+  accionVacio={{ direccion: '/<entidad>/agregar' }}
 />
 ```
 
 Ojo: `buscarPor` sólo mira campos de primer nivel. Si querés buscar por el nombre de algo
 relacionado, el servicio del backend tiene que devolverlo **plano** (`nombreTipo`, y no
 `tipo.nombre`).
+
+**Los filtros se pasan como datos, no como JSX.** Los arma `TablaDatos` para que en todas
+las pantallas se vean y se ubiquen igual: primero el buscador y después «Filtrar por:» con
+los desplegables, todo en la misma línea.
+
+```jsx
+const filtros = [
+  {
+    etiqueta: 'Tipo',          // sólo el nombre de la columna
+    valor: filtroTipo,
+    alCambiar: setFiltroTipo,
+    opciones: tipos.map((t) => ({ valor: t.id, texto: t.nombre })),
+    textoTodos: 'Todos',       // opcional, poné 'Todas' si la palabra es femenina
+  },
+];
+```
+
+Con el desplegable cerrado y sin filtrar se lee el **nombre de la columna** («Tipo»), y al
+abrirlo la primera opción dice **«Todos»**. Las dos las agrega la tabla sola: la pantalla
+no las escribe.
+
+Y no pongas filtros de relleno: **cada filtro tiene que servir para algo en esa pantalla.**
+Los listados que no tienen nada por lo que filtrar llevan sólo buscador.
 
 **Todas las columnas van en texto plano**, con `className="text-body-secondary"`. Nada de
 pastillas de colores: cuando cada columna tenía su color, la tabla se leía como un
@@ -177,6 +200,14 @@ Los botones de acción, siempre iguales:
 
 `BotonEnlace` usa `variante` (en español) y `CButton` usa `variant` (en inglés). Es
 molesto pero es así: uno es nuestro y el otro es de CoreUI.
+
+**El botón de alta dice «Agregar» a secas.** El título de la pantalla ya aclara de qué, así
+que no hace falta repetirlo. El texto por defecto está en `EncabezadoPagina` y en
+`SinDatos`, y la pantalla pasa sólo la dirección:
+
+```jsx
+accion={{ direccion: '/<entidad>/agregar' }}
+```
 
 ### Avisar que algo salió bien o mal
 
@@ -230,6 +261,12 @@ las que se pueda entrar.
 El menú lateral se arma en `src/componentes/layout/navegacion.js`. Cuando un módulo tiene
 una sola pantalla va un `item`, y cuando tiene varias va un `grupo` con sus `items`
 adentro.
+
+**El orden no es libre: primero la clasificación y después lo que depende de ella.** Los
+tipos de espacio antes que los espacios, los tipos de activo antes que los activos, las
+especialidades antes que los técnicos. Es el orden en que hay que cargar los datos —sin
+especialidades no se puede dar de alta un técnico—, así que el menú se lee de arriba hacia
+abajo como una guía de por dónde empezar.
 
 **Sólo puede haber un desplegable abierto a la vez**: al abrir uno, se cierra el que
 estaba. Así el menú no se llena de opciones y entra en la pantalla sin scroll.
