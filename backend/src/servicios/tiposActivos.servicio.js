@@ -42,8 +42,6 @@ export async function crear(datos) {
   const { data: existente } = await supabase.from('tipo_activo').select('tipo_activo_id').ilike('tipo_activo_nom', nombreLimpio).maybeSingle();
   if (existente) throw conflicto(`Ya existe un tipo de activo con el nombre "${nombreLimpio}".`);
 
-  const { data: lastIdData } = await supabase.from('tipo_activo').select('tipo_activo_id').order('tipo_activo_id', { ascending: false }).limit(1);
-  const nextId = lastIdData && lastIdData.length > 0 ? lastIdData[0].tipo_activo_id + 1 : 1;
 
   // Insert description only if the DB has the column, but we will pass it anyway
   // Note: If the column is not in the DB, Supabase might ignore it or throw.

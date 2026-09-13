@@ -59,10 +59,7 @@ export async function crear(nombreRaw) {
   if (errExiste) throw new Error(errExiste.message);
   if (existe) throw conflicto('Ya existe una especialidad con ese nombre.');
 
-  const { data: lastIdData } = await supabase.from('especialidad').select('especialidad_id').order('especialidad_id', { ascending: false }).limit(1);
-  const nextId = lastIdData && lastIdData.length > 0 ? lastIdData[0].especialidad_id + 1 : 1;
-
-  const { data, error } = await supabase.from('especialidad').insert({ especialidad_id: nextId, especialidad_nom: nombre }).select().single();
+  const { data, error } = await supabase.from('especialidad').insert({ especialidad_nom: nombre }).select().single();
   if (error) throw new Error(error.message);
 
   return { idEspecialidad: data.especialidad_id, nombre: data.especialidad_nom };

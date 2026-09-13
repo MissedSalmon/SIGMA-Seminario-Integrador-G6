@@ -38,11 +38,7 @@ export async function crear(datos) {
   const { data: existente } = await supabase.from('edificio').select('edificio_id').ilike('edificio_nom', nombreLimpio).maybeSingle();
   if (existente) throw conflicto(`Ya existe un edificio con el nombre "${nombreLimpio}".`);
 
-  const { data: lastIdData } = await supabase.from('edificio').select('edificio_id').order('edificio_id', { ascending: false }).limit(1);
-  const nextId = lastIdData && lastIdData.length > 0 ? lastIdData[0].edificio_id + 1 : 1;
-
   const { data, error } = await supabase.from('edificio').insert({
-    edificio_id: nextId,
     edificio_nom: nombreLimpio,
     edificio_dir: direccion
   }).select().single();

@@ -35,11 +35,7 @@ export async function crear(datos) {
   const { data: existente } = await supabase.from('tipo_espacio').select('tipo_espacio_id').ilike('tipo_espacio_nom', nombreLimpio).maybeSingle();
   if (existente) throw conflicto(`Ya existe un tipo de espacio con el nombre "${nombreLimpio}".`);
 
-  const { data: lastIdData } = await supabase.from('tipo_espacio').select('tipo_espacio_id').order('tipo_espacio_id', { ascending: false }).limit(1);
-  const nextId = lastIdData && lastIdData.length > 0 ? lastIdData[0].tipo_espacio_id + 1 : 1;
-
   const record = {
-    tipo_espacio_id: nextId,
     tipo_espacio_nom: nombreLimpio
   };
 

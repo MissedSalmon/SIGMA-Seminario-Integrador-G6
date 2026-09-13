@@ -40,9 +40,17 @@ router.use('/activos', rutasActivos);
 // Gestion de inventario
 router.use('/inventario', rutasInventario);
 
+// Plantillas de Tareas
+import rutasPlantillasTareas from './plantillasTareas.rutas.js';
+router.use('/plantillas-tareas', rutasPlantillasTareas);
+
 // Personal (Sprint 1)
 router.use('/tecnicos', rutasTecnicos);
 router.use('/especialidades', rutasEspecialidades);
+
+// Tickets (HU-9)
+import rutasTickets from './tickets.rutas.js';
+router.use('/tickets', rutasTickets);
 
 // Sirve para verificar que la API esta viva. No consulta la base de datos.
 router.get('/salud', (req, res) => {

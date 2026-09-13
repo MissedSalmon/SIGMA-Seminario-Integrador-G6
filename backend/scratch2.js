@@ -1,9 +1,12 @@
-import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
-dotenv.config();
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-async function run() {
-  const { data, error } = await supabase.from('tipoactivo').select('tipoactivodesc').limit(1);
-  console.log('Error:', error);
+import fetch from 'node-fetch';
+
+async function test() {
+  try {
+    const res = await fetch('http://localhost:4000/api/tipos-activos');
+    const data = await res.json();
+    console.log("Response:", JSON.stringify(data, null, 2));
+  } catch(e) {
+    console.error("Error:", e);
+  }
 }
-run();
+test();

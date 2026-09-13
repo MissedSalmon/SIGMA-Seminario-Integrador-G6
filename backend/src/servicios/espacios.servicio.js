@@ -15,7 +15,6 @@ export async function obtenerTodos(edificio_id = null) {
     tipo_espacio_id,
     espacio_piso,
     espacio_dim,
-    espacio_nom,
     edificio (
       edificio_nom
     ),
@@ -40,7 +39,7 @@ export async function obtenerTodos(edificio_id = null) {
     numero: espacio.espacio_num,
     idTipoEspacio: espacio.tipo_espacio_id,
     tipo: espacio.tipo_espacio ? espacio.tipo_espacio.tipo_espacio_nom : '',
-    nombre: espacio.espacio_nom || '',
+    nombre: espacio.tipo_espacio ? `${espacio.tipo_espacio.tipo_espacio_nom} ${espacio.espacio_num}` : `Espacio ${espacio.espacio_num}`,
     dimensiones: espacio.espacio_dim || '',
     nombreEdificio: espacio.edificio ? espacio.edificio.edificio_nom : '(edificio eliminado)'
   }));
@@ -63,7 +62,7 @@ export async function obtenerPorId(espacio_id) {
     numero: data.espacio_num,
     idTipoEspacio: data.tipo_espacio_id,
     tipo: data.tipo_espacio ? data.tipo_espacio.tipo_espacio_nom : '',
-    nombre: data.espacio_nom || '',
+    nombre: data.tipo_espacio ? `${data.tipo_espacio.tipo_espacio_nom} ${data.espacio_num}` : `Espacio ${data.espacio_num}`,
     dimensiones: data.espacio_dim || '',
     nombreEdificio: data.edificio ? data.edificio.edificio_nom : ''
   };
@@ -97,8 +96,7 @@ export async function crear(datos) {
     espacio_num: numeroLimpio,
     espacio_piso: pisoLimpio,
     tipo_espacio_id: tipo_espacio_id,
-    espacio_dim: dimensionesLimpio ? parseFloat(dimensionesLimpio) : null,
-    espacio_nom: nombreLimpio
+    espacio_dim: dimensionesLimpio ? parseFloat(dimensionesLimpio) : null
   }).select().single();
 
   if (error) throw new Error(error.message);
@@ -115,8 +113,7 @@ export async function actualizar(espacio_id, datos) {
   const { data, error } = await supabase.from('espacio').update({
     espacio_piso: pisoLimpio,
     tipo_espacio_id: tipo_espacio_id,
-    espacio_dim: dimensionesLimpio ? parseFloat(dimensionesLimpio) : null,
-    espacio_nom: nombreLimpio
+    espacio_dim: dimensionesLimpio ? parseFloat(dimensionesLimpio) : null
   }).eq('espacio_id', espacio_id).select().single();
 
   if (error || !data) throw noEncontrado(`No existe el espacio.`);
