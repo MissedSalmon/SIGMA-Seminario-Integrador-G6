@@ -48,6 +48,10 @@ router.use('/plantillas-tareas', rutasPlantillasTareas);
 router.use('/tecnicos', rutasTecnicos);
 router.use('/especialidades', rutasEspecialidades);
 
+// Usuarios autorizados (HU-8)
+import rutasAutorizados from './autorizados.rutas.js';
+router.use('/autorizados', rutasAutorizados);
+
 // Tickets (HU-9)
 import rutasTickets from './tickets.rutas.js';
 router.use('/tickets', rutasTickets);

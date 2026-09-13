@@ -119,7 +119,17 @@ Usuarios externos o del personal autorizados para generar reportes/tickets.
 | :--- | :--- | :--- |
 | **PK** | `autorizadoLegajo` | Legajo/Identificación única del autorizado |
 | | `autorizadoNomYApe` | Nombre y apellido |
+| | `autorizadoDni` | DNI (único) |
+| | `autorizadoCuil` | CUIL (único) |
+| | `autorizadoEmail` | Email de contacto |
 | | `autorizadoTel` | Teléfono de contacto |
+| | `autorizadoFechaNac` | Fecha de nacimiento |
+
+> **Nota de regla de negocio (Área a cargo):**
+> El área de la que el usuario autorizado es responsable **no** se guarda en esta tabla:
+> está del otro lado, en `Area.autorizadoLegajo`. Por eso un área tiene un solo
+> responsable, y por eso la obligatoriedad del área en el alta la controla el servicio
+> (`backend/src/servicios/autorizados.servicio.js`) y no la base.
 
 #### `Ticket`
 Solicitud inicial de atención o reporte de problema.
