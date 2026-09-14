@@ -10,10 +10,7 @@ import { crearTecnico } from '@/servicios/tecnicos.js';
 export default function PantallaAgregarTecnico() {
   return (
     <>
-      <EncabezadoPagina
-        titulo="Agregar tecnico"
-        descripcion="Los campos marcados con * son obligatorios."
-      />
+      <EncabezadoPagina titulo="Agregar tecnico" />
       <FormularioTecnico onGuardar={crearTecnico} />
     </>
   );

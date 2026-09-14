@@ -4,31 +4,20 @@
  * Formulario de alta y de edicion de un area funcional (HU-3).
  *
  * El area se ubica en un espacio, asi que el desplegable muestra los espacios
- * con su edificio adelante ("edificio Central - Aula 1"), que es como los
+ * con su edificio adelante ("Edificio Central - Aula 1"), que es como los
  * distingue la gente de infraestructura.
  *
  * No pide el responsable del area a proposito: el usuario autorizado es el que
  * apunta a su area, no al reves (contexto.md, pregunta abierta 4). Se asigna
  * al dar de alta al usuario, en el Sprint 6.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  CButton,
-  CCard,
-  CCardBody,
-  CCol,
-  CForm,
-  CFormFeedback,
-  CFormInput,
-  CFormLabel,
-  CFormSelect,
-  CFormText,
-  CRow,
-} from '@coreui/react';
+import { CButton, CCard, CCardBody } from '@coreui/react';
 
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
+import Campo from '@/componentes/formulario/Campo.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarEspacios } from '@/servicios/espacios.js';
@@ -44,7 +33,7 @@ export default function FormularioArea({ area = null, onGuardar }) {
   const [espacios, setEspacios] = useState([]);
   const [cargando, setCargando] = useState(true);
 
-  const [validado, setValidado] = useState(false);
+  const [revisado, setRevisado] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
@@ -55,20 +44,30 @@ export default function FormularioArea({ area = null, onGuardar }) {
       .finally(() => setCargando(false));
   }, []);
 
+  const errores = useMemo(() => {
+    const encontrados = {};
+    if (!nombre.trim()) encontrados.nombre = 'El nombre es obligatorio.';
+    if (!idEspacio) encontrados.idEspacio = 'Elegi el espacio donde funciona el area.';
+    return encontrados;
+  }, [nombre, idEspacio]);
+
+  const hayErrores = Object.keys(errores).length > 0;
+
   async function manejarEnvio(evento) {
     evento.preventDefault();
-    setValidado(true);
+    setRevisado(true);
     setError('');
-
-    if (!nombre.trim() || !idEspacio) return;
+    if (hayErrores) return;
 
     setGuardando(true);
 
     try {
-      await onGuardar({ nombre, idEspacio });
+      await onGuardar({ nombre: nombre.trim(), idEspacio });
       mostrarToast({
         tipo: 'exito',
-        mensaje: editando ? `Se guardaron los cambios de "${nombre}".` : `Se agrego el area "${nombre}".`,
+        mensaje: editando
+          ? `Se guardaron los cambios de "${nombre}".`
+          : `Se agrego el area "${nombre}".`,
       });
       router.push('/areas');
       router.refresh();
@@ -97,63 +96,64 @@ export default function FormularioArea({ area = null, onGuardar }) {
     );
   }
 
+  const opcionesEspacios = espacios.map((espacio) => ({
+    valor: espacio.idEspacio,
+    texto: `${espacio.nombreEdificio} - ${espacio.nombre}`,
+  }));
+
   return (
     <CCard>
       <CCardBody>
         <Aviso mensaje={error} onCerrar={() => setError('')} />
 
-        <h2 className="sigma-seccion-titulo">Datos del area</h2>
+        <form noValidate onSubmit={manejarEnvio}>
+          <h2 className="sigma-seccion-titulo">Datos del area</h2>
 
-        <CForm noValidate validated={validado} onSubmit={manejarEnvio}>
-          <CRow className="g-3">
-            <CCol md={5}>
-              <CFormLabel htmlFor="nombre" className="sigma-obligatorio">
-                Nombre
-              </CFormLabel>
-              <CFormInput
-                id="nombre"
-                value={nombre}
-                onChange={(evento) => setNombre(evento.target.value)}
-                placeholder="Departamento de Sistemas"
-                required
-                maxLength={100}
-              />
-              <CFormFeedback invalid>El nombre es obligatorio.</CFormFeedback>
-            </CCol>
+          <div className="sigma-campos mb-4">
+            <Campo
+              id="nombre"
+              etiqueta="Nombre"
+              valor={nombre}
+              alCambiar={setNombre}
+              placeholder="Departamento de Sistemas"
+              obligatorio
+              maxLength={100}
+              anchoMinimo={22}
+              revisado={revisado}
+              error={errores.nombre}
+            />
 
-            <CCol md={7}>
-              <CFormLabel htmlFor="idEspacio" className="sigma-obligatorio">
-                espacio donde funciona
-              </CFormLabel>
-              <CFormSelect
-                id="idEspacio"
-                value={idEspacio}
-                onChange={(evento) => setIdEspacio(evento.target.value)}
-                required
-              >
-                <option value="">Elegi un espacio...</option>
-                {espacios.map((espacio) => (
-                  <option key={espacio.idEspacio} value={espacio.idEspacio}>
-                    {espacio.nombreEdificio} - {espacio.nombre}
-                  </option>
-                ))}
-              </CFormSelect>
-              <CFormFeedback invalid>Hay que elegir el espacio.</CFormFeedback>
-              <CFormText>
-                El responsable del area se asigna despues, al dar de alta al usuario autorizado.
-              </CFormText>
-            </CCol>
-          </CRow>
+            <Campo
+              id="idEspacio"
+              etiqueta="Espacio donde funciona"
+              tipo="lista"
+              valor={idEspacio}
+              alCambiar={setIdEspacio}
+              opciones={opcionesEspacios}
+              placeholder="Elegir espacio"
+              obligatorio
+              anchoMinimo={22}
+              revisado={revisado}
+              error={errores.idEspacio}
+              ayuda="El responsable del area se asigna despues, al dar de alta al usuario autorizado."
+            />
+          </div>
+
+          {revisado && hayErrores && (
+            <p className="sigma-campo-mensaje sigma-campo-mensaje--error mb-3">
+              Revisa los campos marcados y volve a guardar.
+            </p>
+          )}
 
           <div className="d-flex gap-2 mt-4">
             <CButton type="submit" color="primary" disabled={guardando}>
-              {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Agregar area'}
+              {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Agregar'}
             </CButton>
             <BotonEnlace href="/areas" color="secondary" variante="outline">
               Cancelar
             </BotonEnlace>
           </div>
-        </CForm>
+        </form>
       </CCardBody>
     </CCard>
   );

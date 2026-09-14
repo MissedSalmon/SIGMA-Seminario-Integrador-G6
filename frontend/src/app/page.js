@@ -61,10 +61,7 @@ export default function PantallaInicio() {
 
   return (
     <>
-      <EncabezadoPagina
-        titulo="Panel"
-        descripcion="SIGMA - Sistema Integral de Gestion de Mantenimiento de Activos."
-      />
+      <EncabezadoPagina titulo="Panel" />
 
       <CRow className="g-4">
         {MODULOS.map((modulo) => (

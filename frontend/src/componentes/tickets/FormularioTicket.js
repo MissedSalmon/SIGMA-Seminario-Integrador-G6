@@ -191,7 +191,7 @@ export default function FormularioTicket({ onGuardar }) {
 
   const opcionesActivos = activos.map((activo) => ({
     valor: activo.codigo,
-    texto: activo.descripcion ? `${activo.codigo} - ${activo.descripcion}` : activo.codigo,
+    texto: activo.nombreTipo ? `${activo.codigo} - ${activo.nombreTipo}` : activo.codigo,
   }));
 
   const opcionesEdificios = edificios.map((edificio) => ({

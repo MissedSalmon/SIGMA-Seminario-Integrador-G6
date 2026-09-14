@@ -26,7 +26,7 @@ export default function PantallaEditarEspacio({ params }) {
 
   return (
     <>
-      <EncabezadoPagina titulo="Editar espacio" descripcion={espacio?.nombre} />
+      <EncabezadoPagina titulo="Editar espacio" />
 
       <Aviso mensaje={error} />
 

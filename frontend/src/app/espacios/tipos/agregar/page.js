@@ -10,10 +10,7 @@ import { crearTipoEspacio } from '@/servicios/tiposEspacio.js';
 export default function PantallaAgregarTipoEspacio() {
   return (
     <>
-      <EncabezadoPagina
-        titulo="Agregar tipo de espacio"
-        descripcion="Los campos marcados con * son obligatorios."
-      />
+      <EncabezadoPagina titulo="Agregar tipo de espacio" />
       <FormularioTipoEspacio onGuardar={crearTipoEspacio} />
     </>
   );

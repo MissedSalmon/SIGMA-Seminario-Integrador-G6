@@ -27,7 +27,7 @@ export default function PantallaEditarPlantilla({ params }) {
 
   return (
     <>
-      <EncabezadoPagina titulo="Editar plantilla de tareas" descripcion={plantilla?.descripcion} />
+      <EncabezadoPagina titulo="Editar plantilla de tareas" />
 
       <Aviso mensaje={error} />
 

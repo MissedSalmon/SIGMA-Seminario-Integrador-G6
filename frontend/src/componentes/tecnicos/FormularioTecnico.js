@@ -5,31 +5,21 @@
  *
  * El legajo es la clave del tecnico: se pide al dar de alta pero no se puede
  * cambiar despues (en edicion se muestra deshabilitado). Las especialidades
- * se cargan con HU-4 (ver servicios/especialidades.js): ac solo se listan y
+ * se cargan con HU-4 (ver servicios/especialidades.js): aca solo se listan y
  * se eligen, no se pueden crear especialidades nuevas desde este formulario.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  CButton,
-  CCard,
-  CCardBody,
-  CCol,
-  CForm,
-  CFormCheck,
-  CFormFeedback,
-  CFormInput,
-  CFormLabel,
-  CFormSelect,
-  CFormText,
-  CRow,
-} from '@coreui/react';
+import { CButton, CCard, CCardBody, CFormCheck, CFormLabel } from '@coreui/react';
 
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
+import Campo from '@/componentes/formulario/Campo.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarEspecialidades } from '@/servicios/especialidades.js';
+
+const DISPONIBILIDADES = ['Disponible', 'No disponible'];
 
 export default function FormularioTecnico({ tecnico = null, onGuardar }) {
   const router = useRouter();
@@ -47,8 +37,7 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
   const [especialidades, setEspecialidades] = useState([]);
   const [cargando, setCargando] = useState(true);
 
-  const [validado, setValidado] = useState(false);
-  const [sinEspecialidad, setSinEspecialidad] = useState(false);
+  const [revisado, setRevisado] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
@@ -58,6 +47,24 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
       .catch((fallo) => setError(fallo.message))
       .finally(() => setCargando(false));
   }, []);
+
+  /*
+   * Los errores se recalculan en cada tecla, pero no se muestran hasta apretar
+   * Guardar. De ahi en mas se actualizan solos mientras se corrige.
+   */
+  const errores = useMemo(() => {
+    const encontrados = {};
+
+    if (!String(legajo).trim()) encontrados.legajo = 'El legajo es obligatorio.';
+    if (!nombre.trim()) encontrados.nombre = 'El nombre es obligatorio.';
+    if (especialidadesElegidas.length === 0) {
+      encontrados.especialidades = 'Elegi al menos una especialidad.';
+    }
+
+    return encontrados;
+  }, [legajo, nombre, especialidadesElegidas]);
+
+  const hayErrores = Object.keys(errores).length > 0;
 
   function alternarEspecialidad(idEspecialidad) {
     setEspecialidadesElegidas((actuales) =>
@@ -69,35 +76,25 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
 
   async function manejarEnvio(evento) {
     evento.preventDefault();
-    setValidado(true);
+    setRevisado(true);
     setError('');
-
-    const sinElegir = especialidadesElegidas.length === 0;
-    setSinEspecialidad(sinElegir);
-
-    if (
-      !legajo ||
-      !nombre.trim() ||
-      sinElegir
-    ) {
-      return;
-    }
+    if (hayErrores) return;
 
     setGuardando(true);
 
     try {
       await onGuardar({
         legajo: editando ? undefined : Number(legajo),
-        nombre,
-        telefono,
+        nombre: nombre.trim(),
+        telefono: telefono.trim(),
         disponibilidad,
         especialidades: especialidadesElegidas,
       });
       mostrarToast({
         tipo: 'exito',
         mensaje: editando
-          ? `Se guardaron los cambios de "${nombre} ".`
-          : `Se agrego el tecnico "${nombre} ".`,
+          ? `Se guardaron los cambios de "${nombre}".`
+          : `Se agrego el tecnico "${nombre}".`,
       });
       router.push('/tecnicos');
       router.refresh();
@@ -117,66 +114,72 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
     );
   }
 
+  const errorEspecialidades = revisado ? errores.especialidades : '';
+
   return (
     <CCard>
       <CCardBody>
         <Aviso mensaje={error} onCerrar={() => setError('')} />
 
-        <CForm noValidate validated={validado} onSubmit={manejarEnvio}>
+        <form noValidate onSubmit={manejarEnvio}>
           <h2 className="sigma-seccion-titulo">Datos personales</h2>
-          <CRow className="g-3 mb-4">
-            <CCol xs={6} md={3}>
-              <CFormLabel htmlFor="legajo" className="sigma-obligatorio">
-                Legajo
-              </CFormLabel>
-              <CFormInput
-                id="legajo"
-                type="number"
-                min="1"
-                value={legajo}
-                onChange={(evento) => setLegajo(evento.target.value)}
-                placeholder="1024"
-                required
-                disabled={editando}
-              />
-              <CFormFeedback invalid>El legajo es obligatorio.</CFormFeedback>
-            </CCol>
 
-            <CCol xs={6} md={4}>
-              <CFormLabel htmlFor="nombre" className="sigma-obligatorio">
-                Nombre
-              </CFormLabel>
-              <CFormInput
-                id="nombre"
-                value={nombre}
-                onChange={(evento) => setNombre(evento.target.value)}
-                placeholder="Juan"
-                required
-                maxLength={100}
-              />
-              <CFormFeedback invalid>El nombre es obligatorio.</CFormFeedback>
-            </CCol>
+          <div className="sigma-campos mb-4">
+            <Campo
+              id="legajo"
+              etiqueta="Legajo"
+              tipoHtml="number"
+              min="1"
+              valor={legajo}
+              alCambiar={setLegajo}
+              placeholder="1024"
+              obligatorio
+              deshabilitado={editando}
+              anchoMinimo={8}
+              anchoMaximo={12}
+              revisado={revisado}
+              error={errores.legajo}
+              ayuda={editando ? 'El legajo identifica al tecnico y no se puede cambiar.' : ''}
+            />
 
+            <Campo
+              id="nombre"
+              etiqueta="Nombre"
+              valor={nombre}
+              alCambiar={setNombre}
+              placeholder="Juan Perez"
+              obligatorio
+              maxLength={100}
+              anchoMinimo={20}
+              revisado={revisado}
+              error={errores.nombre}
+            />
 
+            <Campo
+              id="telefono"
+              etiqueta="Telefono"
+              tipoHtml="tel"
+              valor={telefono}
+              alCambiar={setTelefono}
+              placeholder="3624 123456"
+              maxLength={50}
+              anchoMinimo={14}
+              anchoMaximo={20}
+              revisado={revisado}
+            />
+          </div>
 
+          <h2 className="sigma-seccion-titulo">Especialidad y disponibilidad</h2>
 
-
-
-            <CCol xs={12} md={6}>
-              <CFormLabel htmlFor="telefono">Telefono</CFormLabel>
-              <CFormInput
-                id="telefono"
-                value={telefono}
-                onChange={(evento) => setTelefono(evento.target.value)}
-                placeholder="3624 123456"
-                maxLength={50}
-              />
-            </CCol>
-          </CRow>
-
-          <h2 className="sigma-seccion-titulo">especialidad y disponibilidad</h2>
-          <CRow className="g-3">
-            <CCol xs={12} md={7}>
+          <div className="sigma-campos mb-4">
+            {/*
+              Las especialidades son varias casillas y no una caja, asi que no
+              entran en <Campo>. Se arman a mano con las mismas clases, para que
+              el recuadro y la marca de error queden igual que en el resto.
+            */}
+            <div
+              className={`sigma-campo sigma-campo--ancho${errorEspecialidades ? ' sigma-campo--error' : ''}`}
+            >
               <CFormLabel className="sigma-obligatorio">Especialidades</CFormLabel>
 
               {especialidades.length === 0 ? (
@@ -185,58 +188,64 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
                   mensaje="Todavia no hay especialidades cargadas: hace falta al menos una para poder dar de alta un tecnico."
                 />
               ) : (
-                <div className={`border rounded p-3 ${sinEspecialidad ? 'border-danger' : ''}`}>
-                  <div className="d-flex flex-wrap gap-3">
+                <>
+                  <div className="sigma-campo-opciones">
                     {especialidades.map((especialidad) => (
                       <CFormCheck
                         key={especialidad.idEspecialidad}
                         id={`especialidad-${especialidad.idEspecialidad}`}
                         label={especialidad.nombre}
                         checked={especialidadesElegidas.includes(especialidad.idEspecialidad)}
-                        onChange={() => {
-                          alternarEspecialidad(especialidad.idEspecialidad);
-                          setSinEspecialidad(false);
-                        }}
+                        onChange={() => alternarEspecialidad(especialidad.idEspecialidad)}
                       />
                     ))}
                   </div>
-                </div>
+                  <p
+                    className={`sigma-campo-mensaje${errorEspecialidades ? ' sigma-campo-mensaje--error' : ''}`}
+                  >
+                    {errorEspecialidades || 'Un tecnico puede tener mas de una.'}
+                  </p>
+                </>
               )}
-              {sinEspecialidad && (
-                <div className="text-danger small mt-1">Hay que seleccionar al menos una especialidad.</div>
-              )}
-            </CCol>
+            </div>
 
-            <CCol xs={12} md={5}>
-              <CFormLabel htmlFor="disponibilidad" className="sigma-obligatorio">
-                Disponibilidad
-              </CFormLabel>
-              <CFormSelect
-                id="disponibilidad"
-                value={disponibilidad}
-                onChange={(evento) => setDisponibilidad(evento.target.value)}
-                required
-              >
-                <option value="Disponible">Disponible</option>
-                <option value="No disponible">No disponible</option>
-              </CFormSelect>
-              {editando && (
-                <CFormText>
-                  Marcar como &quot;No disponible&quot; no elimina al tecnico: sigue en el sistema con su historial.
-                </CFormText>
-              )}
-            </CCol>
-          </CRow>
+            <Campo
+              id="disponibilidad"
+              etiqueta="Disponibilidad"
+              tipo="lista"
+              valor={disponibilidad}
+              alCambiar={setDisponibilidad}
+              opciones={DISPONIBILIDADES.map((texto) => ({ valor: texto, texto }))}
+              obligatorio
+              anchoMinimo={14}
+              revisado={revisado}
+              ayuda={
+                editando
+                  ? 'Marcarlo como "No disponible" no lo elimina: sigue en el sistema con su historial.'
+                  : ''
+              }
+            />
+          </div>
+
+          {revisado && hayErrores && (
+            <p className="sigma-campo-mensaje sigma-campo-mensaje--error mb-3">
+              Revisa los campos marcados y volve a guardar.
+            </p>
+          )}
 
           <div className="d-flex gap-2 mt-4">
-            <CButton type="submit" color="primary" disabled={guardando || especialidades.length === 0}>
-              {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Agregar tecnico'}
+            <CButton
+              type="submit"
+              color="primary"
+              disabled={guardando || especialidades.length === 0}
+            >
+              {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Agregar'}
             </CButton>
             <BotonEnlace href="/tecnicos" color="secondary" variante="outline">
               Cancelar
             </BotonEnlace>
           </div>
-        </CForm>
+        </form>
       </CCardBody>
     </CCard>
   );

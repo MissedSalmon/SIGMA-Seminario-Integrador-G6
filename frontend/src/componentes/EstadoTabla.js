@@ -8,8 +8,6 @@
 import CIcon from '@coreui/icons-react';
 import { cilInbox } from '@coreui/icons';
 
-import BotonEnlace from './BotonEnlace.js';
-
 /** @deprecated usar EsqueletoFilas dentro de una tabla real. Se deja por si algo la usa suelta. */
 export function Cargando({ texto = 'Cargando...' }) {
   return (
@@ -42,21 +40,19 @@ export function EsqueletoFilas({ columnas, filas = 5 }) {
 /**
  * Estado vacio de una tabla o listado.
  *
- *   <SinDatos texto="Todavia no hay edificios cargados." accion={{ direccion: '/edificios/agregar' }} />
+ *   <SinDatos texto="Todavia no hay edificios cargados." />
+ *
+ * Avisa que no hay nada, nada mas. No lleva un boton de Agregar a proposito:
+ * el de la pantalla esta justo arriba, en el encabezado, y dos botones que
+ * hacen lo mismo a diez centimetros uno del otro confunden en vez de ayudar.
  */
-export function SinDatos({ texto, accion, icono = cilInbox }) {
+export function SinDatos({ texto, icono = cilInbox }) {
   return (
     <div className="sigma-estado-vacio">
       <div className="sigma-estado-vacio-icono">
         <CIcon icon={icono} size="xl" />
       </div>
       <p className="text-body-secondary mb-0">{texto}</p>
-      {accion && (
-        <div className="mt-3">
-          {/* Igual que en EncabezadoPagina: el boton dice "Agregar" a secas. */}
-          <BotonEnlace href={accion.direccion}>{accion.texto ?? 'Agregar'}</BotonEnlace>
-        </div>
-      )}
     </div>
   );
 }

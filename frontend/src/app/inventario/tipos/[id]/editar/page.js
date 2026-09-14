@@ -20,7 +20,7 @@ export default function PantallaEditarTipoInventario({ params }) {
 
   return (
     <>
-      <EncabezadoPagina titulo="Editar tipo de inventario" descripcion={tipo?.nombre} />
+      <EncabezadoPagina titulo="Editar tipo" />
       <Aviso mensaje={error} />
       {cargando ? <Cargando texto="Cargando el tipo..." /> : tipo && <FormularioTipo tipo={tipo} onGuardar={(datos) => actualizarTipoInventario(id, datos)} />}
     </>

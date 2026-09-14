@@ -6,23 +6,18 @@
  * Es el mismo formulario para las dos cosas: si recibe `edificio`, arranca con
  * los datos cargados y edita; si no, arranca vacio y da de alta. Asi los
  * campos y las validaciones se escriben una sola vez.
+ *
+ * Los campos usan <Campo>, asi que las cajas miden lo que mide su contenido y
+ * la validacion marca cada campo en chico, sin pintar toda la caja de verde o
+ * de rojo. Ver src/componentes/formulario/Campo.js.
  */
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  CButton,
-  CCard,
-  CCardBody,
-  CCol,
-  CForm,
-  CFormFeedback,
-  CFormInput,
-  CFormLabel,
-  CRow,
-} from '@coreui/react';
+import { CButton, CCard, CCardBody } from '@coreui/react';
 
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
+import Campo from '@/componentes/formulario/Campo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 
 export default function FormularioEdificio({ edificio = null, onGuardar }) {
@@ -33,27 +28,38 @@ export default function FormularioEdificio({ edificio = null, onGuardar }) {
   const [nombre, setNombre] = useState(edificio?.nombre ?? '');
   const [direccion, setDireccion] = useState(edificio?.direccion ?? '');
 
-  // `validado` prende los mensajes de campo obligatorio de CoreUI.
-  const [validado, setValidado] = useState(false);
+  const [revisado, setRevisado] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
+  /*
+   * Los errores se recalculan en cada tecla, pero no se muestran hasta apretar
+   * Guardar. De ahi en mas se actualizan solos mientras se corrige.
+   * El backend igual vuelve a validar: es el que manda.
+   */
+  const errores = useMemo(() => {
+    const encontrados = {};
+    if (!nombre.trim()) encontrados.nombre = 'El nombre es obligatorio.';
+    return encontrados;
+  }, [nombre]);
+
+  const hayErrores = Object.keys(errores).length > 0;
+
   async function manejarEnvio(evento) {
     evento.preventDefault();
-    setValidado(true);
+    setRevisado(true);
     setError('');
-
-    // Validacion en la pantalla, para no ir al servidor al pedazo.
-    // El backend igual vuelve a validar: es el que manda.
-    if (!nombre.trim()) return;
+    if (hayErrores) return;
 
     setGuardando(true);
 
     try {
-      await onGuardar({ nombre, direccion });
+      await onGuardar({ nombre: nombre.trim(), direccion: direccion.trim() });
       mostrarToast({
         tipo: 'exito',
-        mensaje: editando ? `Se guardaron los cambios de "${nombre}".` : `Se agrego el edificio "${nombre}".`,
+        mensaje: editando
+          ? `Se guardaron los cambios de "${nombre}".`
+          : `Se agrego el edificio "${nombre}".`,
       });
       router.push('/edificios');
       router.refresh();
@@ -68,46 +74,50 @@ export default function FormularioEdificio({ edificio = null, onGuardar }) {
       <CCardBody>
         <Aviso mensaje={error} onCerrar={() => setError('')} />
 
-        <h2 className="sigma-seccion-titulo">Datos del edificio</h2>
+        <form noValidate onSubmit={manejarEnvio}>
+          <h2 className="sigma-seccion-titulo">Datos del edificio</h2>
 
-        <CForm noValidate validated={validado} onSubmit={manejarEnvio}>
-          <CRow className="g-3">
-            <CCol md={5}>
-              <CFormLabel htmlFor="nombre" className="sigma-obligatorio">
-                Nombre
-              </CFormLabel>
-              <CFormInput
-                id="nombre"
-                value={nombre}
-                onChange={(evento) => setNombre(evento.target.value)}
-                placeholder="edificio Central"
-                required
-                maxLength={100}
-              />
-              <CFormFeedback invalid>El nombre es obligatorio.</CFormFeedback>
-            </CCol>
+          <div className="sigma-campos mb-4">
+            <Campo
+              id="nombre"
+              etiqueta="Nombre"
+              valor={nombre}
+              alCambiar={setNombre}
+              placeholder="Edificio Central"
+              obligatorio
+              maxLength={100}
+              anchoMinimo={18}
+              revisado={revisado}
+              error={errores.nombre}
+            />
 
-            <CCol md={7}>
-              <CFormLabel htmlFor="direccion">Direccion</CFormLabel>
-              <CFormInput
-                id="direccion"
-                value={direccion}
-                onChange={(evento) => setDireccion(evento.target.value)}
-                placeholder="French 414, Resistencia"
-                maxLength={200}
-              />
-            </CCol>
-          </CRow>
+            <Campo
+              id="direccion"
+              etiqueta="Direccion"
+              valor={direccion}
+              alCambiar={setDireccion}
+              placeholder="French 414, Resistencia"
+              maxLength={200}
+              anchoMinimo={24}
+              revisado={revisado}
+            />
+          </div>
+
+          {revisado && hayErrores && (
+            <p className="sigma-campo-mensaje sigma-campo-mensaje--error mb-3">
+              Revisa los campos marcados y volve a guardar.
+            </p>
+          )}
 
           <div className="d-flex gap-2 mt-4">
             <CButton type="submit" color="primary" disabled={guardando}>
-              {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Agregar edificio'}
+              {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Agregar'}
             </CButton>
             <BotonEnlace href="/edificios" color="secondary" variante="outline">
               Cancelar
             </BotonEnlace>
           </div>
-        </CForm>
+        </form>
       </CCardBody>
     </CCard>
   );

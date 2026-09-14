@@ -1,7 +1,10 @@
 'use client';
 
+/**
+ * /inventario - listado de materiales y herramientas del deposito (HU-15).
+ */
 import { useEffect, useState } from 'react';
-import { CButton, CButtonGroup, CCard, CCardBody, CFormSelect } from '@coreui/react';
+import { CButton, CButtonGroup, CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilPencil, cilTrash } from '@coreui/icons';
 
@@ -15,7 +18,7 @@ import { eliminarItem, listarItems } from '@/servicios/inventario.js';
 
 export default function PantallaInventario() {
   const { mostrarToast } = useToast();
-  const [items, setItems] = useState([]);
+  const [articulos, setArticulos] = useState([]);
   const [clase, setClase] = useState('');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
@@ -24,14 +27,17 @@ export default function PantallaInventario() {
   const [recarga, setRecarga] = useState(0);
 
   useEffect(() => {
-    listarItems(clase || null).then(setItems).catch((fallo) => setError(fallo.message)).finally(() => setCargando(false));
+    listarItems(clase || null)
+      .then(setArticulos)
+      .catch((fallo) => setError(fallo.message))
+      .finally(() => setCargando(false));
   }, [clase, recarga]);
 
   async function confirmarBaja() {
     setEliminando(true);
     try {
       await eliminarItem(aEliminar.codigo);
-      mostrarToast({ tipo: 'exito', mensaje: `Se elimino el item "${aEliminar.codigo}".` });
+      mostrarToast({ tipo: 'exito', mensaje: `Se elimino "${aEliminar.nombre}".` });
       setAEliminar(null);
       setRecarga((numero) => numero + 1);
     } catch (fallo) {
@@ -43,17 +49,47 @@ export default function PantallaInventario() {
   }
 
   const columnas = [
-    { clave: 'codigo', encabezado: 'Codigo', render: (item) => <span className="fw-semibold">{item.codigo}</span> },
-    { clave: 'nombre', encabezado: 'Nombre', render: (item) => item.nombre },
-    { clave: 'clase', encabezado: 'Clase', render: (item) => item.clase },
-    { clave: 'nombreTipo', encabezado: 'Tipo', render: (item) => <span className="text-body-secondary">{item.nombreTipo || '-'}</span> },
-    { clave: 'stock', encabezado: 'Stock minimo', render: (item) => item.clase === 'Material' ? item.stockMinimo : '-' },
-    { clave: 'estado', encabezado: 'Estado', render: (item) => item.estado },
     {
-      clave: 'acciones', encabezado: 'Acciones', alinearDerecha: true, render: (item) => (
+      clave: 'codigo',
+      encabezado: 'Codigo',
+      render: (fila) => <span className="fw-semibold">{fila.codigo}</span>,
+    },
+    { clave: 'nombre', encabezado: 'Nombre', render: (fila) => fila.nombre },
+    { clave: 'clase', encabezado: 'Clase', render: (fila) => fila.clase },
+    {
+      clave: 'nombreTipo',
+      encabezado: 'Tipo',
+      render: (fila) => <span className="text-body-secondary">{fila.nombreTipo || '-'}</span>,
+    },
+    {
+      clave: 'stock',
+      encabezado: 'Stock minimo',
+      render: (fila) => (fila.clase === 'Material' ? fila.stockMinimo : '-'),
+    },
+    { clave: 'estado', encabezado: 'Estado', render: (fila) => fila.estado },
+    {
+      clave: 'acciones',
+      encabezado: 'Acciones',
+      alinearDerecha: true,
+      render: (fila) => (
         <CButtonGroup size="sm">
-          <BotonEnlace href={`/inventario/${encodeURIComponent(item.codigo)}/editar`} variante="ghost" className="btn-icono" title="Editar"><CIcon icon={cilPencil} /></BotonEnlace>
-          <CButton variant="ghost" color="danger" className="btn-icono" onClick={() => setAEliminar(item)} title="Eliminar"><CIcon icon={cilTrash} /></CButton>
+          <BotonEnlace
+            href={`/inventario/${encodeURIComponent(fila.codigo)}/editar`}
+            variante="ghost"
+            className="btn-icono"
+            title="Editar"
+          >
+            <CIcon icon={cilPencil} />
+          </BotonEnlace>
+          <CButton
+            variant="ghost"
+            color="danger"
+            className="btn-icono"
+            onClick={() => setAEliminar(fila)}
+            title="Eliminar"
+          >
+            <CIcon icon={cilTrash} />
+          </CButton>
         </CButtonGroup>
       ),
     },
@@ -61,10 +97,51 @@ export default function PantallaInventario() {
 
   return (
     <>
-      <EncabezadoPagina titulo="Materiales y herramientas" descripcion="Catalogo del deposito y sus existencias." accion={{ texto: 'Agregar item', direccion: '/inventario/agregar' }} />
+      <EncabezadoPagina
+        titulo="Materiales y herramientas"
+        accion={{ direccion: '/inventario/agregar' }}
+      />
+
       <Aviso mensaje={error} onCerrar={() => setError('')} />
-      <CCard><CCardBody><TablaDatos filas={items} claveFila={(item) => item.codigo} columnas={columnas} buscarPor={['codigo', 'nombre', 'descripcion', 'nombreTipo']} placeholderBusqueda="Buscar por codigo, nombre o tipo..." filtros={<CFormSelect value={clase} onChange={(evento) => setClase(evento.target.value)} aria-label="Filtrar por clase" style={{ maxWidth: '15rem' }}><option value="">Todos</option><option value="Material">Materiales</option><option value="Herramienta">Herramientas</option></CFormSelect>} cargando={cargando} textoVacio="Todavia no hay materiales ni herramientas cargados." accionVacio={{ texto: 'Agregar item', direccion: '/inventario/agregar' }} /></CCardBody></CCard>
-      <DialogoEliminar visible={Boolean(aEliminar)} eliminando={eliminando} onConfirmar={confirmarBaja} onCancelar={() => setAEliminar(null)}><p className="mb-0">Se va a eliminar <strong>{aEliminar?.nombre}</strong>.</p><p className="text-body-secondary mt-2 mb-0">No se puede eliminar un item que tenga ingresos o consumos registrados.</p></DialogoEliminar>
+
+      <CCard>
+        <CCardBody>
+          <TablaDatos
+            filas={articulos}
+            claveFila={(fila) => fila.codigo}
+            columnas={columnas}
+            buscarPor={['codigo', 'nombre', 'descripcion', 'nombreTipo']}
+            placeholderBusqueda="Buscar por codigo, nombre o tipo..."
+            filtros={[
+              {
+                etiqueta: 'Clase',
+                valor: clase,
+                alCambiar: setClase,
+                opciones: [
+                  { valor: 'Material', texto: 'Materiales' },
+                  { valor: 'Herramienta', texto: 'Herramientas' },
+                ],
+              },
+            ]}
+            cargando={cargando}
+            textoVacio="Todavia no hay materiales ni herramientas cargados."
+          />
+        </CCardBody>
+      </CCard>
+
+      <DialogoEliminar
+        visible={Boolean(aEliminar)}
+        eliminando={eliminando}
+        onConfirmar={confirmarBaja}
+        onCancelar={() => setAEliminar(null)}
+      >
+        <p className="mb-0">
+          Se va a eliminar <strong>{aEliminar?.nombre}</strong>.
+        </p>
+        <p className="text-body-secondary mt-2 mb-0">
+          Solo se puede eliminar si no tiene ingresos ni consumos registrados.
+        </p>
+      </DialogoEliminar>
     </>
   );
 }

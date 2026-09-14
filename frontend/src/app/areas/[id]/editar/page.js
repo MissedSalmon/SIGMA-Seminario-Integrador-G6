@@ -26,7 +26,7 @@ export default function PantallaEditarArea({ params }) {
 
   return (
     <>
-      <EncabezadoPagina titulo="Editar area" descripcion={area?.nombre} />
+      <EncabezadoPagina titulo="Editar area" />
 
       <Aviso mensaje={error} />
 

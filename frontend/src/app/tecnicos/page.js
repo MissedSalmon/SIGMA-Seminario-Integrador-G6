@@ -153,7 +153,6 @@ export default function PantallaTecnicos() {
     <>
       <EncabezadoPagina
         titulo="Tecnicos"
-        descripcion="El personal de mantenimiento: su especialidad y su disponibilidad para recibir tareas."
         accion={{ direccion: '/tecnicos/agregar' }}
       />
 
@@ -194,11 +193,6 @@ export default function PantallaTecnicos() {
               filtroEspecialidad || filtroDisponibilidad
                 ? 'No hay tecnicos que cumplan con ese filtro.'
                 : 'Todavia no hay tecnicos cargados.'
-            }
-            accionVacio={
-              filtroEspecialidad || filtroDisponibilidad
-                ? undefined
-                : { direccion: '/tecnicos/agregar' }
             }
           />
         </CCardBody>

@@ -19,7 +19,6 @@
  *     filtros={[ ... ver abajo ... ]}
  *     cargando={cargando}
  *     textoVacio="Todavia no hay edificios cargados."
- *     accionVacio={{ direccion: '/edificios/agregar' }}
  *   />
  *
  * Los filtros se pasan como datos, no como JSX. Los arma la tabla para que en
@@ -68,7 +67,6 @@ export default function TablaDatos({
   alLimpiar,
   cargando = false,
   textoVacio = 'Todavia no hay datos cargados.',
-  accionVacio,
 }) {
   const [busqueda, setBusqueda] = useState('');
   const [paginaPedida, setPaginaPedida] = useState(1);
@@ -190,7 +188,7 @@ export default function TablaDatos({
       </div>
 
       {!cargando && filas.length === 0 ? (
-        <SinDatos texto={textoVacio} accion={accionVacio} />
+        <SinDatos texto={textoVacio} />
       ) : !cargando && filasFiltradas.length === 0 ? (
         <SinDatos texto="No se encontro ningun resultado para la busqueda." />
       ) : (
