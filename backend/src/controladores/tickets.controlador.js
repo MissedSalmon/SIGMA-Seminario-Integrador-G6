@@ -75,3 +75,16 @@ export async function crear(req, res) {
   const nuevo = await ticketsServicio.crear(req.body);
   res.status(201).json({ ok: true, datos: nuevo });
 }
+
+/** PUT /api/tickets/5/validar */
+export async function validar(req, res) {
+  const ticket = await ticketsServicio.validar(leerId(req));
+  res.json({ ok: true, datos: ticket });
+}
+
+/** PUT /api/tickets/5/rechazar */
+export async function rechazar(req, res) {
+  const { motivo } = req.body;
+  const ticket = await ticketsServicio.rechazar(leerId(req), motivo);
+  res.json({ ok: true, datos: ticket });
+}

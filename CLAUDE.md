@@ -109,3 +109,18 @@ en los **issues de GitHub**, y el modelo de datos en `supabase/migrations/`.
 - **El proyecto en Supabase** y la conexión con **Vercel** en producción.
 
 *(Nota: La base de datos ya fue refactorizada e integrada con Supabase CLI en la carpeta `supabase/migrations/`)*
+
+---
+
+## Restricciones de UI y Diseño
+
+Al trabajar en la interfaz gráfica, se deben seguir estrictamente estas reglas:
+1. **Botones de Alta:** Los botones con la funcionalidad de dar de alta un registro tienen que llamarse estrictamente "Agregar".
+2. **Filtros (Barra de Filtros Horizontales):**
+   - **Estructura:** Campo de búsqueda global (input con ícono de lupa) a la izquierda, seguido de la etiqueta "Filtrar por:" y selectores desplegables (dropdowns) para las facetas (AND lógico).
+   - **Nombres de etiquetas:** NINGÚN filtro en su nombre (etiqueta) debe contener el prefijo "Tipo de ". Debe usarse directamente el sustantivo descriptivo (ej. "Activo", "Espacio", "Material", etc.).
+   - **Comportamiento:** Filtrado reactivo combinado en la misma línea superior, maximizando el espacio vertical, tal como el diseño utilizado en la pantalla "Listado de activos".
+3. **Formularios y Casillas de Texto:** Las casillas de texto deben tener el tamaño acorde a la información que va dentro (ej. fechas, textos cortos, descripciones largas). Se debe respetar el diseño convencional de cada formulario.
+4. **Menús Laterales:** El tamaño del texto de los menúes no debe ser cortado por la barra lateral.
+5. **Responsividad:** Todas las pantallas (nuevas y existentes) deben ser responsivas y multiplataforma (adaptables a todos los tipos de pantallas y resoluciones).
+6. **Uso de Colores:** Los textos no deben tener un formato de colores si no tienen una explicación de qué significa cada color. Si se solicita que el texto de la UI tenga colores, siempre se debe preguntar/solicitar el significado de cada uno para tener las referencias necesarias. (¡Restricción más importante!)

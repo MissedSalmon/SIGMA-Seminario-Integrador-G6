@@ -169,7 +169,7 @@ export default function PantallaTickets() {
       <EncabezadoPagina
         titulo="Tickets"
         descripcion="Las solicitudes de mantenimiento, de la más reciente a la más antigua."
-        accion={{ direccion: '/tickets/agregar', texto: 'Registrar ticket' }}
+        accion={{ direccion: '/tickets/agregar' }}
       />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
@@ -226,7 +226,7 @@ export default function PantallaTickets() {
                 : 'Todavía no hay tickets registrados.'
             }
             accionVacio={
-              hayFiltros ? undefined : { direccion: '/tickets/agregar', texto: 'Registrar ticket' }
+              hayFiltros ? undefined : { direccion: '/tickets/agregar' }
             }
           />
         </CCardBody>

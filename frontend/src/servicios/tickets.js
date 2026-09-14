@@ -44,3 +44,13 @@ export async function obtenerTicket(id) {
   const { data } = await api.get(`/tickets/${id}`);
   return data.datos;
 }
+
+export async function validarTicket(id) {
+  const { data } = await api.put(`/tickets/${id}/validar`);
+  return data.datos;
+}
+
+export async function rechazarTicket(id, motivo) {
+  const { data } = await api.put(`/tickets/${id}/rechazar`, { motivo });
+  return data.datos;
+}

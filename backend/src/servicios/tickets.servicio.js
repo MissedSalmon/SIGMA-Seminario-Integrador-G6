@@ -104,11 +104,21 @@ function aTicket(fila) {
   // Un ticket tiene a lo sumo una OT, pero la relacion viene como lista.
   const ot = Array.isArray(fila.orden_trabajo) ? fila.orden_trabajo[0] ?? null : fila.orden_trabajo;
 
+  let descripcion = fila.ticket_desc;
+  let motivoRechazo = null;
+  const separador = '\n\n--- MOTIVO DE RECHAZO ---\n';
+  if (descripcion && descripcion.includes(separador)) {
+    const partes = descripcion.split(separador);
+    descripcion = partes[0];
+    motivoRechazo = partes.slice(1).join(separador);
+  }
+
   return {
     id: fila.ticket_id,
     estado: normalizarEstado(fila.ticket_estado),
     fechaAlta: fila.ticket_fecha_alta,
-    descripcion: fila.ticket_desc,
+    descripcion,
+    motivoRechazo,
     evidencia: fila.ticket_evidencia ?? null,
     codigoActivo: fila.activo_codigo,
     activo: activo
@@ -241,4 +251,62 @@ export async function crear(datos) {
     evidencia: data.ticket_evidencia,
     fechaAlta: data.ticket_fecha_alta
   };
+}
+
+/**
+ * Valida un ticket que esta en estado 'Creado'.
+ * Pasa a estado 'Validado'.
+ */
+export async function validar(id) {
+  const ticket = await obtenerPorId(id);
+  
+  if (ticket.estado !== ESTADO_INICIAL) {
+    throw datoInvalido(`El ticket solo se puede validar si está en estado ${ESTADO_INICIAL}. Estado actual: ${ticket.estado}`);
+  }
+
+  const { data, error } = await supabase
+    .from('ticket')
+    .update({ ticket_estado: 'Validado' })
+    .eq('ticket_id', id)
+    .select(COLUMNAS)
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return aTicket(data);
+}
+
+/**
+ * Rechaza un ticket que esta en estado 'Creado'.
+ * Requiere un motivo de rechazo y pasa a estado 'Rechazado'.
+ */
+export async function rechazar(id, motivo) {
+  const motivoLimpio = limpiar(motivo);
+  if (!motivoLimpio) {
+    throw datoInvalido('Debe indicar el motivo del rechazo.');
+  }
+
+  const ticket = await obtenerPorId(id);
+  
+  if (ticket.estado !== ESTADO_INICIAL) {
+    throw datoInvalido(`El ticket solo se puede rechazar si está en estado ${ESTADO_INICIAL}. Estado actual: ${ticket.estado}`);
+  }
+
+  const { data, error } = await supabase
+    .from('ticket')
+    .update({
+      ticket_estado: 'Rechazado',
+      ticket_desc: ticket.descripcion + '\n\n--- MOTIVO DE RECHAZO ---\n' + motivoLimpio
+    })
+    .eq('ticket_id', id)
+    .select(COLUMNAS)
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return aTicket(data);
 }

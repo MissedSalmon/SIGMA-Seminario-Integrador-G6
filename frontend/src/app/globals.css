@@ -261,7 +261,9 @@ body {
   margin-block: 0.05rem;
   padding-block: 0.45rem;
   width: auto;
-  font-size: 0.9rem;
+  white-space: normal;
+  line-height: 1.2;
+  font-size: 0.85rem;
   font-weight: 500;
   border-left: 3px solid transparent;
 }

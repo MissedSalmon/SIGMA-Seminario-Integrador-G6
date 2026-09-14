@@ -312,3 +312,15 @@ de Supabase va únicamente en `backend/.env`.
 cada vez que se ejecuta `npm run dev`. Avisan que esta versión de Next.js cambió
 respecto de las anteriores. No hay que borrarlos, porque se vuelven a crear: se dejan
 versionados y listo.
+
+## Restricciones de UI y Diseño (¡Obligatorias!)
+
+1. **Botones de Alta:** Los botones con la funcionalidad de dar de alta un registro tienen que llamarse estrictamente "Agregar".
+2. **Filtros (Barra de Filtros Horizontales):**
+   - **Estructura:** Campo de búsqueda global (input con ícono de lupa) a la izquierda, seguido de la etiqueta "Filtrar por:" y selectores desplegables (dropdowns) para las facetas (AND lógico).
+   - **Nombres de etiquetas:** NINGÚN filtro en su nombre (etiqueta) debe contener el prefijo "Tipo de ". Debe usarse directamente el sustantivo descriptivo (ej. "Activo", "Espacio", "Material", etc.).
+   - **Comportamiento:** Filtrado reactivo combinado en la misma línea superior, maximizando el espacio vertical, tal como el diseño utilizado en la pantalla "Listado de activos".
+3. **Formularios y Casillas de Texto:** Las casillas de texto deben tener un tamaño acorde a la información que contienen. No usar campos muy anchos para datos breves (como fechas), y usar campos grandes (o textareas) para descripciones largas. Se debe evaluar el tamaño convencional esperado para cada dato.
+4. **Menús Laterales:** El tamaño del texto de los menúes no debe verse cortado por la barra lateral; se deben tomar medidas o ajustes responsivos para que el texto encaje perfectamente.
+5. **Responsividad:** Todas las pantallas nuevas y existentes deben ser responsivas y multiplataforma, adaptándose a todos los tipos de pantallas y resoluciones.
+6. **Uso de Colores en Textos:** ESTA ES LA RESTRICCIÓN MÁS IMPORTANTE. Los textos no deben tener un formato de colores si no existe una explicación o leyenda de qué significa cada color para tener una referencia visual. Si un requerimiento pide textos con colores en la UI, el desarrollador SIEMPRE debe solicitar qué significado tiene cada uno.

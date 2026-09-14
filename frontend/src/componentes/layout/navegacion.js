@@ -46,15 +46,15 @@ export const navegacion = [
   },
   {
     tipo: 'item',
-    texto: 'Tickets',
-    direccion: '/tickets',
-    icono: cilList,
-  },
-  {
-    tipo: 'item',
     texto: 'Registrar ticket',
     direccion: '/tickets/agregar',
     icono: cilTask,
+  },
+  {
+    tipo: 'item',
+    texto: 'Tickets',
+    direccion: '/tickets',
+    icono: cilList,
   },
   {
     tipo: 'item',

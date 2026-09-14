@@ -156,7 +156,7 @@ export default function PantallaEspacios() {
             placeholderBusqueda="Buscar por nombre, tipo o piso..."
             filtros={[
               {
-                etiqueta: 'edificio',
+                etiqueta: 'Edificio',
                 valor: filtroEdificio,
                 alCambiar: setFiltroEdificio,
                 opciones: edificios.map((edificio) => ({

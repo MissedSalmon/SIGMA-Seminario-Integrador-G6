@@ -13,5 +13,7 @@ router.get('/estados', tickets.listarEstados);
 router.get('/', tickets.listar);
 router.get('/:id', tickets.obtener);
 router.post('/', tickets.crear);
+router.put('/:id/validar', tickets.validar);
+router.put('/:id/rechazar', tickets.rechazar);
 
 export default router;

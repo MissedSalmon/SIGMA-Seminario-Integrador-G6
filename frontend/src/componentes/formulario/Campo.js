@@ -49,7 +49,7 @@ const ANCHO_MAXIMO = 44;
  * mide siempre lo mismo: el navegador dibuja el dia, el mes y el anio, no lo
  * que uno escribe.
  */
-const ANCHO_FECHA = 10;
+const ANCHO_FECHA = 12;
 
 /**
  * Lo que ocupa en la caja todo lo que no es texto, en rem: el padding de CoreUI
@@ -60,7 +60,7 @@ const ANCHO_FECHA = 10;
  */
 const LUGAR_EXTRA = {
   lista: 4.5,
-  fecha: 4.8,
+  fecha: 5.5,
   texto: 2.75,
 };
 

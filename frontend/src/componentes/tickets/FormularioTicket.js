@@ -212,7 +212,7 @@ export default function FormularioTicket({ onGuardar }) {
         <Aviso mensaje={error} onCerrar={() => setError('')} />
 
         <form noValidate onSubmit={manejarEnvio}>
-          <h2 className="sigma-seccion-titulo">¿Qué se rompió?</h2>
+          <h2 className="sigma-seccion-titulo"></h2>
 
           <div className="mb-3">
             <CFormLabel className="sigma-obligatorio">¿De qué es el ticket?</CFormLabel>

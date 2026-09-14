@@ -187,7 +187,7 @@ export default function PantallaActivos() {
             placeholderBusqueda="Buscar por codigo o tipo..."
             filtros={[
               {
-                etiqueta: 'espacio',
+                etiqueta: 'Espacio',
                 valor: filtroEspacio,
                 alCambiar: setFiltroEspacio,
                 opciones: espacios.map((espacio) => ({

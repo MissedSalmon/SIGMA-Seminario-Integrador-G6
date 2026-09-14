@@ -168,7 +168,7 @@ export default function PantallaTecnicos() {
             placeholderBusqueda="Buscar por nombre, ..."
             filtros={[
               {
-                etiqueta: 'especialidad',
+                etiqueta: 'Especialidad',
                 valor: filtroEspecialidad,
                 alCambiar: setFiltroEspecialidad,
                 textoTodos: 'Todas',
