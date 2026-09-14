@@ -707,6 +707,24 @@ body {
   max-width: 11rem;
 }
 
+/*
+  Filtro por fecha (HU-10): la etiqueta ("Desde", "Hasta") va pegada a la caja,
+  en el mismo renglon que los desplegables.
+*/
+.sigma-tabla-filtro-fecha {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  color: var(--sigma-texto-secundario);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.sigma-tabla-filtro-fecha input {
+  width: 9.5rem;
+}
+
 .sigma-tabla-buscador svg {
   position: absolute;
   left: 0.75rem;

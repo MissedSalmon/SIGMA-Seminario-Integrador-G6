@@ -56,6 +56,15 @@ Una OT viene **o de un ticket, o de un plan preventivo**. Nunca de los dos.
 | **Activo** | Operativo → En mantenimiento → Fuera de servicio → Retirado |
 | **Herramienta** | Disponible → En uso → En reparación |
 
+> **Decisiones del 13/09/2026 (HU-10, consulta de tickets):**
+> - Los estados del ticket viven en `backend/src/servicios/tickets.servicio.js` (`ESTADOS`) y
+>   se exponen en `GET /api/tickets/estados`. Todo ticket nuevo se guarda como **Creado**.
+>   Los primeros tickets quedaron guardados como `ABIERTO` (default viejo de la tabla): el
+>   backend los lee y los filtra como "Creado". No se cambió la base.
+> - **El área de un ticket es la del espacio donde está el activo** (`area.espacio_id`).
+>   El ticket no tiene FK a área. Si el espacio no tiene área asignada, el ticket se muestra
+>   "Sin área".
+
 ---
 
 ## Automatismos

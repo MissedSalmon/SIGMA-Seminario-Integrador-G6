@@ -202,8 +202,8 @@ export default function FormularioTicket({ onGuardar }) {
   // Sin edificio elegido no se ofrece ningún espacio, aunque queden en memoria
   // los del edificio anterior.
   const opcionesEspacios = (idEdificio ? espacios : []).map((espacio) => ({
-    valor: espacio.espacioNum,
-    texto: espacio.nombre ? `${espacio.nombre} (${espacio.espacioNum})` : espacio.espacioNum,
+    valor: espacio.espacio_num,
+    texto: espacio.nombre ? `${espacio.nombre} (${espacio.espacio_num})` : espacio.espacio_num,
   }));
 
   return (
