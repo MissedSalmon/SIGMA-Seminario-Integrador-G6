@@ -29,6 +29,21 @@ import { listarTiposActivos } from '@/servicios/tiposActivos.js';
 /** Los dos estados que elige el administrador; los otros los pone el sistema. */
 const ESTADOS_A_MANO = ['Operativo', 'Fuera de servicio'];
 
+/**
+ * La fecha de hoy como "2026-09-14", que es el formato que entiende un
+ * <input type="date">.
+ *
+ * Se arma con el dia, el mes y el anio de la maquina, y no con toISOString(),
+ * que da la fecha en UTC: despues de las 21 de Argentina eso ya es el dia
+ * siguiente, y el campo dejaria elegir manana.
+ */
+function hoy() {
+  const ahora = new Date();
+  const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+  const dia = String(ahora.getDate()).padStart(2, '0');
+  return `${ahora.getFullYear()}-${mes}-${dia}`;
+}
+
 /** De "2026-08-30" arma "30/08/2026", que es como se lee una fecha aca. */
 function comoFecha(texto) {
   if (!texto) return '';
@@ -42,11 +57,10 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
   const editando = Boolean(activo);
 
   const [codigo, setCodigo] = useState(activo?.codigo ?? '');
-  const [descripcion, setDescripcion] = useState(activo?.descripcion ?? '');
   const [idTipoActivo, setIdTipoActivo] = useState(activo?.idTipoActivo ?? '');
   const [idEspacio, setIdEspacio] = useState(activo?.espacio_id ?? '');
-  const [fechaInstalacion, setFechaInstalacion] = useState(
-    activo?.fechaInstalacion ? String(activo.fechaInstalacion).slice(0, 10) : ''
+  const [fechaAlta, setFechaAlta] = useState(
+    activo?.fechaAlta ? String(activo.fechaAlta).slice(0, 10) : ''
   );
   const [estado, setEstado] = useState(activo?.estado ?? 'Operativo');
 
@@ -79,8 +93,24 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
     if (!idTipoActivo) encontrados.idTipoActivo = 'Elegi el tipo de activo.';
     if (!idEspacio) encontrados.idEspacio = 'Elegi donde esta el activo.';
 
+    /*
+     * La fecha de alta puede ser de antes, pero nunca de despues de hoy:
+     * todavia no paso.
+     *
+     * Las dos fechas estan en formato "2026-09-14", asi que alcanza con
+     * compararlas como texto: ordenan igual que en el almanaque.
+     *
+     * El tope tambien va en el <input type="date"> (max), que apaga los dias
+     * futuros en el almanaque del navegador. Pero el formulario es noValidate,
+     * asi que la fecha se puede escribir a mano igual: el que corta de verdad
+     * es este control.
+     */
+    if (fechaAlta && fechaAlta > hoy()) {
+      encontrados.fechaAlta = 'La fecha de alta no puede ser posterior a hoy.';
+    }
+
     return encontrados;
-  }, [codigo, idTipoActivo, idEspacio]);
+  }, [codigo, idTipoActivo, idEspacio, fechaAlta]);
 
   const hayErrores = Object.keys(errores).length > 0;
 
@@ -95,10 +125,9 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
     try {
       await onGuardar({
         codigo: codigo.trim(),
-        descripcion: descripcion.trim(),
         idTipoActivo: Number(idTipoActivo),
         espacio_id: Number(idEspacio),
-        fechaInstalacion: fechaInstalacion || null,
+        fechaAlta: fechaAlta || null,
         ...(editando ? { estado } : {}),
       });
 
@@ -212,18 +241,6 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
             />
 
             <Campo
-              id="descripcion"
-              etiqueta="Descripcion"
-              tipo="area"
-              valor={descripcion}
-              alCambiar={setDescripcion}
-              placeholder="Aire acondicionado split 3000 frigorias"
-              maxLength={300}
-              revisado={revisado}
-              ayuda="Que es el activo, para reconocerlo sin tener que ir a mirar el codigo."
-            />
-
-            <Campo
               id="idTipoActivo"
               etiqueta="Tipo de activo"
               tipo="lista"
@@ -259,13 +276,14 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
             />
 
             <Campo
-              id="fechaInstalacion"
-              etiqueta="Fecha de instalacion"
+              id="fechaAlta"
+              etiqueta="Fecha de alta"
               tipoHtml="date"
-              valor={fechaInstalacion}
-              alCambiar={setFechaInstalacion}
+              valor={fechaAlta}
+              alCambiar={setFechaAlta}
+              max={hoy()}
               revisado={revisado}
-              ayuda="Cuando se instalo, si se sabe."
+              error={errores.fechaAlta}
             />
 
             {editando && (
