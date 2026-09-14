@@ -18,10 +18,12 @@ function limpiar(texto) {
 
 const COLUMNAS = `
   activo_codigo,
+  activo_desc,
   tipo_activo_id,
   edificio_id,
   espacio_id,
   activo_fecha_alta,
+  activo_fecha_inst,
   activo_fecha_baja,
   activo_fecha_ult_maint,
   activo_estado,
@@ -39,7 +41,7 @@ const COLUMNAS = `
 function aActivo(fila) {
   return {
     codigo: fila.activo_codigo,
-    descripcion: '', 
+    descripcion: fila.activo_desc || '',
     idTipoActivo: fila.tipo_activo_id,
     nombreTipo: fila.tipo_activo ? fila.tipo_activo.tipo_activo_nom : '',
     idEdificio: fila.edificio_id,
@@ -48,7 +50,7 @@ function aActivo(fila) {
     nombreEspacio: fila.espacio ? fila.espacio.espacio_num : '',
     nombreEdificio: fila.espacio && fila.espacio.edificio ? fila.espacio.edificio.edificio_nom : '',
     fechaAlta: fila.activo_fecha_alta,
-    fechaInstalacion: fila.activo_fecha_alta,
+    fechaInstalacion: fila.activo_fecha_inst,
     fechaUltimoMantenimiento: fila.activo_fecha_ult_maint,
     fechaUltimaReubicacion: null,
     estado: fila.activo_estado || ESTADO_INICIAL,
@@ -164,10 +166,12 @@ export async function crear(datos) {
     .from('activo')
     .insert({
       activo_codigo: codigo,
+      activo_desc: limpiar(datos.descripcion),
       tipo_activo_id: idTipoActivo,
       edificio_id: idEdificio,
       espacio_id: espacio_id,
       activo_fecha_alta: hoy(),
+      activo_fecha_inst: limpiar(datos.fechaInstalacion),
       activo_estado: ESTADO_INICIAL,
     })
     .select(COLUMNAS)
@@ -195,9 +199,11 @@ export async function actualizar(codigo, datos) {
   const idEdificio = await obtenerEdificioDeEspacio(espacio_id);
 
   const cambios = {
+    activo_desc: limpiar(datos.descripcion),
     tipo_activo_id: idTipoActivo,
     edificio_id: idEdificio,
     espacio_id: espacio_id,
+    activo_fecha_inst: limpiar(datos.fechaInstalacion),
     activo_estado: estado,
   };
 
