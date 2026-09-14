@@ -171,7 +171,6 @@ export default function PantallaEspacios() {
                 ? 'Ese edificio todavia no tiene espacios cargados.'
                 : 'Todavia no hay espacios cargados.'
             }
-            accionVacio={filtroEdificio ? undefined : { direccion: '/espacios/agregar' }}
           />
         </CCardBody>
       </CCard>

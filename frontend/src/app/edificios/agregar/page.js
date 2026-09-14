@@ -10,10 +10,7 @@ import { crearEdificio } from '@/servicios/edificios.js';
 export default function PantallaAgregarEdificio() {
   return (
     <>
-      <EncabezadoPagina
-        titulo="Agregar edificio"
-        descripcion="Los campos marcados con * son obligatorios."
-      />
+      <EncabezadoPagina titulo="Agregar edificio" />
       <FormularioEdificio onGuardar={crearEdificio} />
     </>
   );

@@ -1,7 +1,10 @@
 'use client';
 
+/**
+ * /inventario/tipos - listado de tipos de material y de herramienta (HU-15).
+ */
 import { useEffect, useState } from 'react';
-import { CButton, CButtonGroup, CCard, CCardBody, CFormSelect } from '@coreui/react';
+import { CButton, CButtonGroup, CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilPencil, cilTrash } from '@coreui/icons';
 
@@ -24,7 +27,10 @@ export default function PantallaTiposInventario() {
   const [recarga, setRecarga] = useState(0);
 
   useEffect(() => {
-    listarTiposInventario(clase || null).then(setTipos).catch((fallo) => setError(fallo.message)).finally(() => setCargando(false));
+    listarTiposInventario(clase || null)
+      .then(setTipos)
+      .catch((fallo) => setError(fallo.message))
+      .finally(() => setCargando(false));
   }, [clase, recarga]);
 
   async function confirmarBaja() {
@@ -43,14 +49,40 @@ export default function PantallaTiposInventario() {
   }
 
   const columnas = [
-    { clave: 'nombre', encabezado: 'Nombre', render: (tipo) => <span className="fw-semibold">{tipo.nombre}</span> },
-    { clave: 'clase', encabezado: 'Clase', render: (tipo) => tipo.clase },
-    { clave: 'descripcion', encabezado: 'Descripcion', render: (tipo) => <span className="text-body-secondary">{tipo.descripcion || '-'}</span> },
     {
-      clave: 'acciones', encabezado: 'Acciones', alinearDerecha: true, render: (tipo) => (
+      clave: 'nombre',
+      encabezado: 'Nombre',
+      render: (tipo) => <span className="fw-semibold">{tipo.nombre}</span>,
+    },
+    { clave: 'clase', encabezado: 'Clase', render: (tipo) => tipo.clase },
+    {
+      clave: 'descripcion',
+      encabezado: 'Descripcion',
+      render: (tipo) => <span className="text-body-secondary">{tipo.descripcion || '-'}</span>,
+    },
+    {
+      clave: 'acciones',
+      encabezado: 'Acciones',
+      alinearDerecha: true,
+      render: (tipo) => (
         <CButtonGroup size="sm">
-          <BotonEnlace href={`/inventario/tipos/${tipo.idTipo}/editar`} variante="ghost" className="btn-icono" title="Editar"><CIcon icon={cilPencil} /></BotonEnlace>
-          <CButton variant="ghost" color="danger" className="btn-icono" onClick={() => setAEliminar(tipo)} title="Eliminar"><CIcon icon={cilTrash} /></CButton>
+          <BotonEnlace
+            href={`/inventario/tipos/${tipo.idTipo}/editar`}
+            variante="ghost"
+            className="btn-icono"
+            title="Editar"
+          >
+            <CIcon icon={cilPencil} />
+          </BotonEnlace>
+          <CButton
+            variant="ghost"
+            color="danger"
+            className="btn-icono"
+            onClick={() => setAEliminar(tipo)}
+            title="Eliminar"
+          >
+            <CIcon icon={cilTrash} />
+          </CButton>
         </CButtonGroup>
       ),
     },
@@ -58,10 +90,51 @@ export default function PantallaTiposInventario() {
 
   return (
     <>
-      <EncabezadoPagina titulo="Tipos de materiales y herramientas" descripcion="Categorias para ordenar el catalogo del deposito." accion={{ texto: 'Agregar tipo', direccion: '/inventario/tipos/agregar' }} />
+      <EncabezadoPagina
+        titulo="Tipos de materiales y herramientas"
+        accion={{ direccion: '/inventario/tipos/agregar' }}
+      />
+
       <Aviso mensaje={error} onCerrar={() => setError('')} />
-      <CCard><CCardBody><TablaDatos filas={tipos} claveFila={(tipo) => tipo.idTipo} columnas={columnas} buscarPor={['nombre', 'descripcion', 'clase']} placeholderBusqueda="Buscar por nombre o clase..." filtros={<CFormSelect value={clase} onChange={(evento) => setClase(evento.target.value)} aria-label="Filtrar por clase" style={{ maxWidth: '15rem' }}><option value="">Todos</option><option value="Material">Materiales</option><option value="Herramienta">Herramientas</option></CFormSelect>} cargando={cargando} textoVacio="Todavia no hay tipos cargados." accionVacio={{ texto: 'Agregar tipo', direccion: '/inventario/tipos/agregar' }} /></CCardBody></CCard>
-      <DialogoEliminar visible={Boolean(aEliminar)} eliminando={eliminando} onConfirmar={confirmarBaja} onCancelar={() => setAEliminar(null)}><p className="mb-0">Se va a eliminar el tipo <strong>{aEliminar?.nombre}</strong>.</p><p className="text-body-secondary mt-2 mb-0">Solo puede eliminarse si no tiene items asociados.</p></DialogoEliminar>
+
+      <CCard>
+        <CCardBody>
+          <TablaDatos
+            filas={tipos}
+            claveFila={(tipo) => tipo.idTipo}
+            columnas={columnas}
+            buscarPor={['nombre', 'descripcion', 'clase']}
+            placeholderBusqueda="Buscar por nombre o clase..."
+            filtros={[
+              {
+                etiqueta: 'Clase',
+                valor: clase,
+                alCambiar: setClase,
+                opciones: [
+                  { valor: 'Material', texto: 'Materiales' },
+                  { valor: 'Herramienta', texto: 'Herramientas' },
+                ],
+              },
+            ]}
+            cargando={cargando}
+            textoVacio="Todavia no hay tipos cargados."
+          />
+        </CCardBody>
+      </CCard>
+
+      <DialogoEliminar
+        visible={Boolean(aEliminar)}
+        eliminando={eliminando}
+        onConfirmar={confirmarBaja}
+        onCancelar={() => setAEliminar(null)}
+      >
+        <p className="mb-0">
+          Se va a eliminar el tipo <strong>{aEliminar?.nombre}</strong>.
+        </p>
+        <p className="text-body-secondary mt-2 mb-0">
+          Solo se puede eliminar si no tiene materiales ni herramientas asociados.
+        </p>
+      </DialogoEliminar>
     </>
   );
 }

@@ -63,8 +63,8 @@ function leerItem(datos) {
   const idTipo = Number(datos.idTipo);
   const stockMinimo = datos.stockMinimo === '' || datos.stockMinimo == null ? null : Number(datos.stockMinimo);
 
-  if (!codigo) throw datoInvalido('El codigo del item es obligatorio.');
-  if (!nombre) throw datoInvalido('El nombre del item es obligatorio.');
+  if (!codigo) throw datoInvalido('El codigo es obligatorio.');
+  if (!nombre) throw datoInvalido('El nombre es obligatorio.');
   if (!Number.isInteger(idTipo)) throw datoInvalido('Hay que indicar un tipo de inventario.');
   if (clase === 'Material' && (!Number.isInteger(stockMinimo) || stockMinimo < 0)) {
     throw datoInvalido('El stock minimo del material es obligatorio y no puede ser negativo.');
@@ -116,7 +116,7 @@ export async function actualizarTipo(id, datos) {
 
 export async function eliminarTipo(id) {
   const { count } = await supabase.from('inventarioitem').select('*', { count: 'exact', head: true }).eq('inventariotipoid', id);
-  if (count) throw conflicto('No se puede eliminar un tipo que tiene items asociados.');
+  if (count) throw conflicto('No se puede eliminar un tipo que tiene materiales o herramientas asociados.');
   const tipo = await obtenerTipo(id);
   const { error } = await supabase.from('inventariotipo').delete().eq('inventariotipoid', id);
   if (error) throw new Error(error.message);
@@ -134,14 +134,14 @@ export async function obtenerItems(clase) {
 export async function obtenerItem(codigo) {
   const { data, error } = await supabase.from('inventarioitem').select(COLUMNAS).eq('inventarioitemcod', codigo).maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) throw noEncontrado(`No existe el item "${codigo}".`);
+  if (!data) throw noEncontrado(`No existe el codigo "${codigo}" en el deposito.`);
   return aItem(data);
 }
 
 export async function crearItem(datos) {
   const item = leerItem(datos);
   const { data: repetido } = await supabase.from('inventarioitem').select('inventarioitemcod').ilike('inventarioitemcod', item.codigo).maybeSingle();
-  if (repetido) throw conflicto(`Ya existe un item con el codigo "${item.codigo}".`);
+  if (repetido) throw conflicto(`Ya existe un material o una herramienta con el codigo "${item.codigo}".`);
   await verificarTipo(item.idTipo, item.clase);
   const { data, error } = await supabase.from('inventarioitem').insert({ inventarioitemcod: item.codigo, inventarioitemnom: item.nombre, inventarioitemdesc: item.descripcion, inventariotipoid: item.idTipo, inventarioitemclase: item.clase, inventarioitemstockmin: item.stockMinimo, inventarioitemfechavenc: item.fechaVencimiento, inventarioitemestado: item.clase === 'Herramienta' ? 'Disponible' : 'Disponible' }).select(COLUMNAS).single();
   if (error) throw new Error(error.message);
@@ -159,7 +159,7 @@ export async function actualizarItem(codigo, datos) {
 
 export async function eliminarItem(codigo) {
   const { count } = await supabase.from('inventariomovimiento').select('*', { count: 'exact', head: true }).eq('inventarioitemcod', codigo);
-  if (count) throw conflicto('No se puede eliminar un item que tiene movimientos registrados.');
+  if (count) throw conflicto('No se puede eliminar algo que tiene movimientos registrados.');
   const item = await obtenerItem(codigo);
   const { error } = await supabase.from('inventarioitem').delete().eq('inventarioitemcod', codigo);
   if (error) throw new Error(error.message);

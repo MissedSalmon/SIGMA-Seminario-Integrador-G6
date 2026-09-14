@@ -1,14 +1,14 @@
 'use client';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
-import FormularioItem from '@/componentes/inventario/FormularioItem.js';
+import FormularioMaterialHerramienta from '@/componentes/inventario/FormularioMaterialHerramienta.js';
 import { crearItem } from '@/servicios/inventario.js';
 
-export default function PantallaAgregarItem() {
+export default function PantallaAgregarMaterialHerramienta() {
   return (
     <>
-      <EncabezadoPagina titulo="Agregar item" descripcion="Carga los datos del material o de la herramienta." />
-      <FormularioItem onGuardar={crearItem} />
+      <EncabezadoPagina titulo="Agregar material o herramienta" />
+      <FormularioMaterialHerramienta onGuardar={crearItem} />
     </>
   );
 }

@@ -10,10 +10,7 @@ import { crearTipoActivo } from '@/servicios/tiposActivos.js';
 export default function PantallaAgregarTipoActivo() {
   return (
     <>
-      <EncabezadoPagina
-        titulo="Agregar tipo de activo"
-        descripcion="Los campos marcados con * son obligatorios."
-      />
+      <EncabezadoPagina titulo="Agregar tipo de activo" />
       <FormularioTipoActivo onGuardar={crearTipoActivo} />
     </>
   );

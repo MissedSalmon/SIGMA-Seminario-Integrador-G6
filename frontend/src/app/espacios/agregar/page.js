@@ -10,10 +10,7 @@ import { crearEspacio } from '@/servicios/espacios.js';
 export default function PantallaAgregarEspacio() {
   return (
     <>
-      <EncabezadoPagina
-        titulo="Agregar espacio"
-        descripcion="Los campos marcados con * son obligatorios."
-      />
+      <EncabezadoPagina titulo="Agregar espacio" />
       <FormularioEspacio onGuardar={crearEspacio} />
     </>
   );

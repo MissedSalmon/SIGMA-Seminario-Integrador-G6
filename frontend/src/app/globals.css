@@ -346,6 +346,12 @@ body {
   Se les sacan las flechitas de subir y bajar que el navegador le pone a los
   campos numericos: en una caja angosta ocupan mas de lo que sirven.
 */
+.sigma-medidas {
+  /* Dos numeros cortos, la x y la m: no necesita mas que esto. */
+  width: calc(10ch + 5.5rem);
+  max-width: 100%;
+}
+
 .sigma-medidas input[type='number'] {
   -moz-appearance: textfield;
   appearance: textfield;
@@ -418,6 +424,55 @@ body {
 
 .sigma-campo-caja .form-select ~ .sigma-campo-marca {
   right: 2.2rem;
+}
+
+/*
+  La fecha la dibuja el navegador (dd/mm/aaaa y el almanaque), asi que la marca
+  se corre para no taparle el almanaque, igual que con la flechita de una lista.
+*/
+.sigma-campo-caja input[type='date'] {
+  padding-right: 3.4rem;
+}
+
+.sigma-campo-caja input[type='date'] ~ .sigma-campo-marca {
+  right: 2.1rem;
+}
+
+/*
+  A los campos numericos se les sacan las flechitas de subir y bajar: en una
+  caja angosta ocupan mas de lo que sirven, y el teclado ya alcanza.
+*/
+.sigma-campo-caja input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.sigma-campo-caja input[type='number']::-webkit-outer-spin-button,
+.sigma-campo-caja input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/*
+  Un campo que en vez de una caja tiene varias casillas para tildar (las
+  especialidades de un tecnico) o dos cajitas juntas (las dimensiones de un
+  espacio). El recuadro es el mismo que el de una caja comun, asi que la fila
+  de campos se sigue leyendo pareja.
+*/
+.sigma-campo-opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--cui-border-color, var(--sigma-borde));
+  border-radius: var(--cui-border-radius, 0.375rem);
+  background: var(--cui-body-bg, #fff);
+  min-height: calc(1.5em + 0.75rem + 2px);
+  align-items: center;
+}
+
+.sigma-campo--error .sigma-campo-opciones {
+  border-left: 3px solid var(--cui-danger, #e55353);
 }
 
 /*

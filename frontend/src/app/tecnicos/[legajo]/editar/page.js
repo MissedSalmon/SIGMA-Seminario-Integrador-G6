@@ -27,10 +27,7 @@ export default function PantallaEditarTecnico({ params }) {
 
   return (
     <>
-      <EncabezadoPagina
-        titulo="Editar tecnico"
-        descripcion={tecnico ? `${tecnico.nombre} ${tecnico.apellido}` : undefined}
-      />
+      <EncabezadoPagina titulo="Editar tecnico" />
 
       <Aviso mensaje={error} />
 

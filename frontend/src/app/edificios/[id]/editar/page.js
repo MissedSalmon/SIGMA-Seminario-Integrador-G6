@@ -27,10 +27,7 @@ export default function PantallaEditarEdificio({ params }) {
 
   return (
     <>
-      <EncabezadoPagina
-        titulo="Editar edificio"
-        descripcion={edificio?.nombre}
-      />
+      <EncabezadoPagina titulo="Editar edificio" />
 
       <Aviso mensaje={error} />
 

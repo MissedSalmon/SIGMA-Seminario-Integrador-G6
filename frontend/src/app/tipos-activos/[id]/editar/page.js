@@ -27,7 +27,7 @@ export default function PantallaEditarTipoActivo({ params }) {
 
   return (
     <>
-      <EncabezadoPagina titulo="Editar tipo de activo" descripcion={tipo?.nombre} />
+      <EncabezadoPagina titulo="Editar tipo de activo" />
 
       <Aviso mensaje={error} />
 

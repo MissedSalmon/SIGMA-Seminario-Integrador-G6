@@ -37,7 +37,7 @@ export default function PantallaEditarEspecialidad({ params }) {
 
   return (
     <>
-      <EncabezadoPagina titulo="Editar especialidad" descripcion="Los campos marcados con * son obligatorios." />
+      <EncabezadoPagina titulo="Editar especialidad" />
       <FormularioEspecialidad especialidad={especialidad} onGuardar={async ({ nombre }) => actualizarEspecialidad(id, nombre)} />
     </>
   );

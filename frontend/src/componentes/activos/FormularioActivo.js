@@ -14,47 +14,20 @@
  *    "En mantenimiento" lo pone la orden de trabajo y "Retirado" se pone dando
  *    de baja desde el listado.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  CButton,
-  CCard,
-  CCardBody,
-  CCol,
-  CForm,
-  CFormFeedback,
-  CFormInput,
-  CFormLabel,
-  CFormSelect,
-  CFormText,
-  CFormTextarea,
-  CRow,
-} from '@coreui/react';
+import { CButton, CCard, CCardBody } from '@coreui/react';
 
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
+import Campo from '@/componentes/formulario/Campo.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarEspacios } from '@/servicios/espacios.js';
 import { listarTiposActivos } from '@/servicios/tiposActivos.js';
 
-/*
- * Un espacio se identifica con dos datos (el edificio y el numero), pero un
- * <select> maneja un solo valor. Se unen con una barra para el desplegable y se
- * vuelven a separar al guardar.
- */
-
-/** De { idEdificio: 1, espacio_num: '12' } arma "1|12". */
-function unirEspacio(idEdificio, espacio_num) {
-  if (!idEdificio || !idEspacio_num) return '';
-  return `${idEdificio}|${espacio_num}`;
-}
-
-/** De "1|12" saca { idEdificio: 1, espacio_num: '12' }. */
-function separarEspacio(valor) {
-  const [edificio, numero] = String(valor).split('|');
-  return { idEdificio: Number(edificio), espacio_num: numero };
-}
+/** Los dos estados que elige el administrador; los otros los pone el sistema. */
+const ESTADOS_A_MANO = ['Operativo', 'Fuera de servicio'];
 
 /** De "2026-08-30" arma "30/08/2026", que es como se lee una fecha aca. */
 function comoFecha(texto) {
@@ -69,15 +42,19 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
   const editando = Boolean(activo);
 
   const [codigo, setCodigo] = useState(activo?.codigo ?? '');
+  const [descripcion, setDescripcion] = useState(activo?.descripcion ?? '');
   const [idTipoActivo, setIdTipoActivo] = useState(activo?.idTipoActivo ?? '');
   const [idEspacio, setIdEspacio] = useState(activo?.espacio_id ?? '');
+  const [fechaInstalacion, setFechaInstalacion] = useState(
+    activo?.fechaInstalacion ? String(activo.fechaInstalacion).slice(0, 10) : ''
+  );
   const [estado, setEstado] = useState(activo?.estado ?? 'Operativo');
 
   const [tipos, setTipos] = useState([]);
   const [espacios, setEspacios] = useState([]);
   const [cargando, setCargando] = useState(true);
 
-  const [validado, setValidado] = useState(false);
+  const [revisado, setRevisado] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
@@ -91,21 +68,37 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
       .finally(() => setCargando(false));
   }, []);
 
+  /*
+   * Los errores se recalculan en cada tecla, pero no se muestran hasta apretar
+   * Guardar. De ahi en mas se actualizan solos mientras se corrige.
+   */
+  const errores = useMemo(() => {
+    const encontrados = {};
+
+    if (!codigo.trim()) encontrados.codigo = 'El codigo de inventario es obligatorio.';
+    if (!idTipoActivo) encontrados.idTipoActivo = 'Elegi el tipo de activo.';
+    if (!idEspacio) encontrados.idEspacio = 'Elegi donde esta el activo.';
+
+    return encontrados;
+  }, [codigo, idTipoActivo, idEspacio]);
+
+  const hayErrores = Object.keys(errores).length > 0;
+
   async function manejarEnvio(evento) {
     evento.preventDefault();
-    setValidado(true);
+    setRevisado(true);
     setError('');
-
-    if (!codigo.trim() || !idTipoActivo || !idEspacio) return;
+    if (hayErrores) return;
 
     setGuardando(true);
 
-    
     try {
       await onGuardar({
         codigo: codigo.trim(),
+        descripcion: descripcion.trim(),
         idTipoActivo: Number(idTipoActivo),
         espacio_id: Number(idEspacio),
+        fechaInstalacion: fechaInstalacion || null,
         ...(editando ? { estado } : {}),
       });
 
@@ -168,129 +161,148 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
     );
   }
 
+  const opcionesTipos = tipos.map((tipo) => ({
+    valor: tipo.idTipoActivo,
+    texto: tipo.nombre,
+  }));
+
+  const opcionesEspacios = espacios.map((unEspacio) => ({
+    valor: unEspacio.idEspacio,
+    texto: `${unEspacio.nombreEdificio} - ${unEspacio.nombre || unEspacio.espacio_num}`,
+  }));
+
   /*
    * El desplegable de estado ofrece los dos que el administrador puede elegir.
-   * Si el activo esta En mantenimiento (lo puso una OT), se agrega esa opcion
-   * deshabilitada: asi se ve el estado real y no se pisa sin querer al guardar.
+   * Si el activo esta En mantenimiento (lo puso una OT), se agrega ese estado a
+   * la lista: asi se ve el estado real y no se pisa sin querer al guardar.
    */
-  const estadoAutomatico = !['Operativo', 'Fuera de servicio'].includes(estado);
+  const estadoAutomatico = !ESTADOS_A_MANO.includes(estado);
+  const opcionesEstado = [
+    ...ESTADOS_A_MANO.map((nombre) => ({ valor: nombre, texto: nombre })),
+    ...(estadoAutomatico ? [{ valor: estado, texto: estado }] : []),
+  ];
 
   return (
     <CCard>
       <CCardBody>
         <Aviso mensaje={error} onCerrar={() => setError('')} />
 
-        <h2 className="sigma-seccion-titulo">Datos del activo</h2>
+        <form noValidate onSubmit={manejarEnvio}>
+          <h2 className="sigma-seccion-titulo">Datos del activo</h2>
 
-        <CForm noValidate validated={validado} onSubmit={manejarEnvio}>
-          <CRow className="g-3">
-            <CCol xs={12} md={4}>
-              <CFormLabel htmlFor="codigo" className="sigma-obligatorio">
-                Codigo de inventario
-              </CFormLabel>
-              <CFormInput
-                id="codigo"
-                value={codigo}
-                onChange={(evento) => setCodigo(evento.target.value)}
-                placeholder="AC-014"
-                required
-                maxLength={50}
-                disabled={editando}
-              />
-              <CFormFeedback invalid>El codigo de inventario es obligatorio.</CFormFeedback>
-              {editando ? (
-                <CFormText>El codigo identifica al activo y no se puede cambiar.</CFormText>
-              ) : (
-                <CFormText>No se puede repetir: identifica al activo.</CFormText>
-              )}
-            </CCol>
+          <div className="sigma-campos mb-4">
+            <Campo
+              id="codigo"
+              etiqueta="Codigo de inventario"
+              valor={codigo}
+              alCambiar={setCodigo}
+              placeholder="AC-014"
+              obligatorio
+              maxLength={50}
+              deshabilitado={editando}
+              anchoMinimo={10}
+              anchoMaximo={20}
+              revisado={revisado}
+              error={errores.codigo}
+              ayuda={
+                editando
+                  ? 'El codigo identifica al activo y no se puede cambiar.'
+                  : 'No se puede repetir: identifica al activo.'
+              }
+            />
 
+            <Campo
+              id="descripcion"
+              etiqueta="Descripcion"
+              tipo="area"
+              valor={descripcion}
+              alCambiar={setDescripcion}
+              placeholder="Aire acondicionado split 3000 frigorias"
+              maxLength={300}
+              revisado={revisado}
+              ayuda="Que es el activo, para reconocerlo sin tener que ir a mirar el codigo."
+            />
 
-            <CCol xs={12} md={4}>
-              <CFormLabel htmlFor="idTipoActivo" className="sigma-obligatorio">
-                Tipo de activo
-              </CFormLabel>
-              <CFormSelect
-                id="idTipoActivo"
-                value={idTipoActivo}
-                onChange={(evento) => setIdTipoActivo(evento.target.value)}
-                required
-              >
-                <option value="">Elegi el tipo...</option>
-                {tipos.map((tipo) => (
-                  <option key={tipo.idTipoActivo} value={tipo.idTipoActivo}>
-                    {tipo.nombre}
-                  </option>
-                ))}
-              </CFormSelect>
-              <CFormFeedback invalid>Hay que elegir el tipo de activo.</CFormFeedback>
-            </CCol>
+            <Campo
+              id="idTipoActivo"
+              etiqueta="Tipo de activo"
+              tipo="lista"
+              valor={idTipoActivo}
+              alCambiar={setIdTipoActivo}
+              opciones={opcionesTipos}
+              placeholder="Elegir tipo"
+              obligatorio
+              anchoMinimo={18}
+              revisado={revisado}
+              error={errores.idTipoActivo}
+            />
 
-            <CCol xs={12} md={5}>
-              <CFormLabel htmlFor="espacio" className="sigma-obligatorio">
-                espacio
-              </CFormLabel>
-              <CFormSelect
-                id="idEspacio"
-                value={idEspacio}
-                onChange={(evento) => setIdEspacio(evento.target.value)}
-                required
-              >
-                <option value="">Elegi el espacio...</option>
-                {espacios.map((unEspacio) => (
-                  <option
-                    key={unEspacio.idEspacio}
-                    value={unEspacio.idEspacio}
-                  >
-                    {unEspacio.nombreEdificio} — {unEspacio.nombre || unEspacio.espacio_num}
-                  </option>
-                ))}
-              </CFormSelect>
-              <CFormFeedback invalid>Hay que elegir donde esta el activo.</CFormFeedback>
-              {editando && (
-                <CFormText>
-                  {activo.fechaUltimaReubicacion
+            <Campo
+              id="idEspacio"
+              etiqueta="Espacio"
+              tipo="lista"
+              valor={idEspacio}
+              alCambiar={setIdEspacio}
+              opciones={opcionesEspacios}
+              placeholder="Elegir espacio"
+              obligatorio
+              anchoMinimo={22}
+              revisado={revisado}
+              error={errores.idEspacio}
+              ayuda={
+                editando
+                  ? activo.fechaUltimaReubicacion
                     ? `Elegir otro espacio reubica el activo. Ultima reubicacion: ${comoFecha(activo.fechaUltimaReubicacion)}.`
-                    : 'Elegir otro espacio reubica el activo y queda registrada la fecha.'}
-                </CFormText>
-              )}
-            </CCol>
+                    : 'Elegir otro espacio reubica el activo y queda registrada la fecha.'
+                  : ''
+              }
+            />
 
+            <Campo
+              id="fechaInstalacion"
+              etiqueta="Fecha de instalacion"
+              tipoHtml="date"
+              valor={fechaInstalacion}
+              alCambiar={setFechaInstalacion}
+              revisado={revisado}
+              ayuda="Cuando se instalo, si se sabe."
+            />
 
             {editando && (
-              <CCol xs={12} md={4}>
-                <CFormLabel htmlFor="estado">Estado</CFormLabel>
-                <CFormSelect
-                  id="estado"
-                  value={estado}
-                  onChange={(evento) => setEstado(evento.target.value)}
-                >
-                  <option value="Operativo">Operativo</option>
-                  <option value="Fuera de servicio">Fuera de servicio</option>
-                  {estadoAutomatico && (
-                    <option value={estado} disabled>
-                      {estado}
-                    </option>
-                  )}
-                </CFormSelect>
-                <CFormText>
-                  {estadoAutomatico
+              <Campo
+                id="estado"
+                etiqueta="Estado"
+                tipo="lista"
+                valor={estado}
+                alCambiar={setEstado}
+                opciones={opcionesEstado}
+                deshabilitado={estadoAutomatico}
+                anchoMinimo={16}
+                revisado={revisado}
+                ayuda={
+                  estadoAutomatico
                     ? 'Este estado lo maneja la orden de trabajo, no se cambia desde aca.'
-                    : 'Para retirar el activo, usa el boton de baja en el listado.'}
-                </CFormText>
-              </CCol>
+                    : 'Para retirar el activo, usa el boton de baja en el listado.'
+                }
+              />
             )}
-          </CRow>
+          </div>
+
+          {revisado && hayErrores && (
+            <p className="sigma-campo-mensaje sigma-campo-mensaje--error mb-3">
+              Revisa los campos marcados y volve a guardar.
+            </p>
+          )}
 
           <div className="d-flex gap-2 mt-4">
             <CButton type="submit" color="primary" disabled={guardando}>
-              {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Agregar activo'}
+              {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Agregar'}
             </CButton>
             <BotonEnlace href="/activos" color="secondary" variante="outline">
               Cancelar
             </BotonEnlace>
           </div>
-        </CForm>
+        </form>
       </CCardBody>
     </CCard>
   );

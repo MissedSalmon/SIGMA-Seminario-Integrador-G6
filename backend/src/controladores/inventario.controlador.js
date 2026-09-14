@@ -9,7 +9,7 @@ function leerId(req) {
 
 function leerCodigo(req) {
   const codigo = String(req.params.codigo || '').trim();
-  if (!codigo) throw datoInvalido('Falta el codigo del item.');
+  if (!codigo) throw datoInvalido('Falta el codigo del material o de la herramienta.');
   return codigo;
 }
 
