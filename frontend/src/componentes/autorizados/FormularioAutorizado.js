@@ -199,7 +199,7 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
               <CFormFeedback invalid>El nombre y apellido es obligatorio.</CFormFeedback>
             </CCol>
 
-            <CCol xs={6} md={4}>
+            <CCol xs={6} md={3}>
               <CFormLabel htmlFor="fechaNacimiento">Fecha de nacimiento</CFormLabel>
               <CFormInput
                 id="fechaNacimiento"
@@ -294,7 +294,7 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
 
           <div className="d-flex gap-2 mt-4">
             <CButton type="submit" color="primary" disabled={guardando}>
-              {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Agregar usuario autorizado'}
+              {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Agregar'}
             </CButton>
             <BotonEnlace href="/autorizados" color="secondary" variante="outline">
               Cancelar
