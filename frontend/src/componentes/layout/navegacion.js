@@ -31,6 +31,7 @@ import {
   cilStorage,
   cilTask,
   cilListRich,
+  cilUser,
 } from '@coreui/icons';
 
 export const navegacion = [
@@ -158,5 +159,13 @@ export const navegacion = [
     texto: 'Tecnicos',
     direccion: '/tecnicos',
     icono: cilPeople,
+  },
+  {
+    // Va despues de las areas (mas arriba, en estructura edilicia): a un usuario
+    // autorizado hay que asignarle un area, asi que primero se cargan las areas.
+    tipo: 'item',
+    texto: 'Usuarios autorizados',
+    direccion: '/autorizados',
+    icono: cilUser,
   },
 ];

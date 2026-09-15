@@ -30,6 +30,7 @@ const NOMBRES = {
   'tipos-activos': 'Tipos de activos',
   tecnicos: 'Técnicos',
   especialidades: 'Especialidades',
+  autorizados: 'Usuarios autorizados',
   agregar: 'Agregar',
   editar: 'Editar',
 };
