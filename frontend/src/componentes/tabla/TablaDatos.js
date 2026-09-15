@@ -62,7 +62,7 @@ export default function TablaDatos({
   columnas,
   claveFila,
   buscarPor = [],
-  placeholderBusqueda = 'Buscar...',
+  placeholderBusqueda = 'Buscar',
   filtros = [],
   alLimpiar,
   cargando = false,
@@ -190,7 +190,7 @@ export default function TablaDatos({
       {!cargando && filas.length === 0 ? (
         <SinDatos texto={textoVacio} />
       ) : !cargando && filasFiltradas.length === 0 ? (
-        <SinDatos texto="No se encontro ningun resultado para la busqueda." />
+        <SinDatos texto="No se encontró ningún resultado para la búsqueda." />
       ) : (
         <>
           <CTable hover responsive align="middle" className="mb-0">

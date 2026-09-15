@@ -20,14 +20,13 @@ import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
 import Campo from '@/componentes/formulario/Campo.js';
+import CampoCuil from '@/componentes/formulario/CampoCuil.js';
+import CampoDni from '@/componentes/formulario/CampoDni.js';
+import CampoTelefono from '@/componentes/formulario/CampoTelefono.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarAreas } from '@/servicios/areas.js';
 import { listarAutorizados } from '@/servicios/autorizados.js';
-
-/** Deja solo los digitos, para poder contarlos sin importar puntos ni guiones. */
-function soloDigitos(texto) {
-  return String(texto ?? '').replace(/\D/g, '');
-}
+import { validarCuil, validarDni, validarEmail, validarTelefono } from '@/utils/validaciones.js';
 
 /** La fecha de hoy en el formato que entiende un <input type="date">. */
 function hoy() {
@@ -78,28 +77,33 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
 
     if (!String(legajo).trim()) encontrados.legajo = 'El legajo es obligatorio.';
     if (!nombre.trim()) encontrados.nombre = 'El nombre y apellido es obligatorio.';
-    if (!idArea) encontrados.idArea = 'Hay que elegir el area de la que es responsable.';
+    if (!idArea) encontrados.idArea = 'Hay que elegir el área de la que es responsable.';
 
-    const digitosDni = soloDigitos(dni);
-    if (digitosDni && (digitosDni.length < 7 || digitosDni.length > 8)) {
-      encontrados.dni = 'El DNI tiene 7 u 8 digitos.';
+    // Las reglas de estos campos son las mismas en todo el sistema.
+    if (!String(dni).trim()) {
+      encontrados.dni = 'El DNI es obligatorio.';
+    } else {
+      const errorDni = validarDni(dni);
+      if (errorDni) encontrados.dni = errorDni;
     }
 
-    const digitosCuil = soloDigitos(cuil);
-    if (digitosCuil && digitosCuil.length !== 11) {
-      encontrados.cuil = 'El CUIL tiene 11 digitos.';
-    }
+    const errorCuil = validarCuil(cuil, dni);
+    if (errorCuil) encontrados.cuil = errorCuil;
 
-    if (email.trim() && !email.includes('@')) {
-      encontrados.email = 'Revisa el email: falta el @ o esta incompleto.';
-    }
+    const errorTelefono = validarTelefono(telefono);
+    if (errorTelefono) encontrados.telefono = errorTelefono;
 
-    if (fechaNacimiento && fechaNacimiento > hoy()) {
+    const errorEmail = validarEmail(email);
+    if (errorEmail) encontrados.email = errorEmail;
+
+    if (!fechaNacimiento) {
+      encontrados.fechaNacimiento = 'La fecha de nacimiento es obligatoria.';
+    } else if (fechaNacimiento > hoy()) {
       encontrados.fechaNacimiento = 'La fecha no puede ser posterior a hoy.';
     }
 
     return encontrados;
-  }, [legajo, nombre, idArea, dni, cuil, email, fechaNacimiento]);
+  }, [legajo, nombre, idArea, dni, cuil, telefono, email, fechaNacimiento]);
 
   const hayErrores = Object.keys(errores).length > 0;
 
@@ -130,7 +134,7 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
         tipo: 'exito',
         mensaje: editando
           ? `Se guardaron los cambios de "${nombre}".`
-          : `Se agrego el usuario autorizado "${nombre}".`,
+          : `Se agregó el usuario autorizado "${nombre}".`,
       });
 
       router.push('/autorizados');
@@ -157,10 +161,10 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
       <>
         <Aviso
           color="warning"
-          mensaje="No hay areas disponibles para asignar: o todavia no se cargo ninguna, o todas ya tienen un responsable. Carga un area nueva o sacale el area a quien la tenga."
+          mensaje="No hay áreas disponibles para asignar: o todavía no se cargó ninguna, o todas ya tienen un responsable. Cargá un área nueva o sacale el área a quien la tenga."
         />
         <BotonEnlace href="/areas" color="secondary" variante="outline">
-          Ir a areas
+          Ir a áreas
         </BotonEnlace>
       </>
     );
@@ -184,24 +188,34 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
               obligatorio
               maxLength={50}
               deshabilitado={editando}
-              anchoMinimo={8}
+              ancho={8}
               revisado={revisado}
               error={errores.legajo}
-              ayuda={editando ? 'El legajo identifica a la persona y no se puede cambiar.' : ''}
+              ayuda={editando ? 'No se puede cambiar.' : ''}
             />
 
             <Campo
               id="nombre"
-              etiqueta="Nombre y apellido"
+              etiqueta="Nombre y Apellido"
               valor={nombre}
               alCambiar={setNombre}
               placeholder="Juan Perez"
               obligatorio
               maxLength={150}
-              anchoMinimo={24}
+              ancho={24}
               revisado={revisado}
               error={errores.nombre}
             />
+
+            <CampoDni
+              valor={dni}
+              alCambiar={setDni}
+              obligatorio
+              revisado={revisado}
+              error={errores.dni}
+            />
+
+            <CampoCuil valor={cuil} alCambiar={setCuil} revisado={revisado} error={errores.cuil} />
 
             <Campo
               id="fechaNacimiento"
@@ -210,34 +224,15 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
               valor={fechaNacimiento}
               alCambiar={setFechaNacimiento}
               max={hoy()}
+              obligatorio
               revisado={revisado}
               error={errores.fechaNacimiento}
             />
+          </div>
 
-            <Campo
-              id="dni"
-              etiqueta="DNI"
-              valor={dni}
-              alCambiar={setDni}
-              placeholder="20345678"
-              maxLength={8}
-              anchoMinimo={10}
-              revisado={revisado}
-              error={errores.dni}
-            />
+          <h2 className="sigma-seccion-titulo">Contacto</h2>
 
-            <Campo
-              id="cuil"
-              etiqueta="CUIL"
-              valor={cuil}
-              alCambiar={setCuil}
-              placeholder="20203456783"
-              maxLength={11}
-              anchoMinimo={13}
-              revisado={revisado}
-              error={errores.cuil}
-            />
-
+          <div className="sigma-campos mb-4">
             <Campo
               id="email"
               etiqueta="Email"
@@ -246,45 +241,41 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
               alCambiar={setEmail}
               placeholder="jperez@frre.utn.edu.ar"
               maxLength={150}
-              anchoMinimo={24}
+              ancho={24}
               revisado={revisado}
               error={errores.email}
             />
 
-            <Campo
-              id="telefono"
-              etiqueta="Telefono"
+            <CampoTelefono
               valor={telefono}
               alCambiar={setTelefono}
-              placeholder="3624 123456"
-              maxLength={30}
-              anchoMinimo={14}
               revisado={revisado}
+              error={errores.telefono}
             />
           </div>
 
-          <h2 className="sigma-seccion-titulo">Area a cargo</h2>
+          <h2 className="sigma-seccion-titulo">Área a cargo</h2>
 
           <div className="sigma-campos mb-4">
             <Campo
               id="idArea"
-              etiqueta="Area"
+              etiqueta="Área"
               tipo="lista"
               valor={idArea}
               alCambiar={setIdArea}
               opciones={areas.map((area) => ({ valor: area.idArea, texto: area.nombre }))}
-              placeholder="Elegi el area..."
+              placeholder="Elegí el área..."
               obligatorio
-              anchoMinimo={24}
+              ancho={24}
               revisado={revisado}
               error={errores.idArea}
-              ayuda="Queda habilitado para cargar tickets sobre los activos de esta area. Solo se listan las areas que todavia no tienen responsable."
+              ayuda="Solo se listan las áreas que todavía no tienen responsable."
             />
           </div>
 
           {revisado && hayErrores && (
             <p className="sigma-campo-mensaje sigma-campo-mensaje--error mb-3">
-              Revisa los campos marcados y volve a guardar.
+              Revisá los campos marcados y volvé a guardar.
             </p>
           )}
 

@@ -59,7 +59,7 @@ export default function FormularioEdificio({ edificio = null, onGuardar }) {
         tipo: 'exito',
         mensaje: editando
           ? `Se guardaron los cambios de "${nombre}".`
-          : `Se agrego el edificio "${nombre}".`,
+          : `Se agregó el edificio "${nombre}".`,
       });
       router.push('/edificios');
       router.refresh();
@@ -86,26 +86,26 @@ export default function FormularioEdificio({ edificio = null, onGuardar }) {
               placeholder="Edificio Central"
               obligatorio
               maxLength={100}
-              anchoMinimo={18}
+              ancho={18}
               revisado={revisado}
               error={errores.nombre}
             />
 
             <Campo
               id="direccion"
-              etiqueta="Direccion"
+              etiqueta="Dirección"
               valor={direccion}
               alCambiar={setDireccion}
               placeholder="French 414, Resistencia"
               maxLength={200}
-              anchoMinimo={24}
+              ancho={24}
               revisado={revisado}
             />
           </div>
 
           {revisado && hayErrores && (
             <p className="sigma-campo-mensaje sigma-campo-mensaje--error mb-3">
-              Revisa los campos marcados y volve a guardar.
+              Revisá los campos marcados y volvé a guardar.
             </p>
           )}
 

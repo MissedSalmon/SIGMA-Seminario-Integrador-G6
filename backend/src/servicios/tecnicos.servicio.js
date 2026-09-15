@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabase.js';
 import { datoInvalido, noEncontrado, conflicto } from '../utiles/errores.js';
+import { normalizarTelefono, validarTelefono } from '../utiles/validaciones.js';
 
 const DISPONIBILIDADES_VALIDAS = ['Disponible', 'No disponible'];
 
@@ -18,11 +19,6 @@ function limpiar(texto) {
   return limpio === '' ? null : limpio;
 }
 
-/** Deja solo los digitos: sirve para guardar DNI/CUIL sin importar si vienen con puntos o guiones. */
-function soloDigitos(texto) {
-  const limpio = limpiar(texto);
-  return limpio ? limpio.replace(/\D/g, '') : null;
-}
 
 function mapearTecnico(fila) {
   return {
@@ -44,7 +40,6 @@ function validarDatos(datos) {
   const nombre = limpiar(datos.nombre) || '';
   const apellido = limpiar(datos.apellido) || '';
   const nombreCompleto = (nombre + ' ' + apellido).trim();
-  const telefono = limpiar(datos.telefono);
   const disponibilidad = limpiar(datos.disponibilidad) ?? 'Disponible';
   const especialidades = Array.isArray(datos.especialidades)
     ? [...new Set(datos.especialidades.map(Number).filter(Number.isInteger))]
@@ -57,6 +52,12 @@ function validarDatos(datos) {
   if (especialidades.length === 0) {
     throw datoInvalido('Hay que seleccionar al menos una especialidad.');
   }
+
+  // El telefono sigue las reglas de utiles/validaciones.js, las mismas que la pantalla.
+  const problemaTelefono = validarTelefono(datos.telefono);
+  if (problemaTelefono) throw datoInvalido(problemaTelefono);
+
+  const telefono = normalizarTelefono(datos.telefono);
 
   return { nombreCompleto, telefono, disponibilidad, especialidades };
 }
@@ -116,7 +117,7 @@ export async function obtenerPorId(legajo) {
     .eq('tecnico_legajo', legajo)
     .single();
 
-  if (error || !data) throw noEncontrado(`No existe el tecnico ${legajo}.`);
+  if (error || !data) throw noEncontrado(`No existe el técnico ${legajo}.`);
 
   return mapearTecnico(data);
 }
@@ -124,7 +125,7 @@ export async function obtenerPorId(legajo) {
 export async function crear(datos) {
   const legajo = Number(datos.legajo);
   if (!Number.isInteger(legajo) || legajo <= 0) {
-    throw datoInvalido('El legajo tiene que ser un numero valido.');
+    throw datoInvalido('El legajo tiene que ser un número válido.');
   }
 
   const limpio = validarDatos(datos);
@@ -162,7 +163,7 @@ export async function actualizar(legajo, datos) {
     .select()
     .single();
 
-  if (error || !data) throw noEncontrado(`No existe el tecnico ${legajo}.`);
+  if (error || !data) throw noEncontrado(`No existe el técnico ${legajo}.`);
 
   await asignarEspecialidades(legajo, limpio.especialidades);
 
@@ -174,7 +175,7 @@ export async function eliminar(legajo) {
   await supabase.from('tecnico_especialidad').delete().eq('tecnico_legajo', legajo);
 
   const { data, error } = await supabase.from('tecnico').delete().eq('tecnico_legajo', legajo).select().single();
-  if (error || !data) throw noEncontrado(`No existe el tecnico ${legajo}.`);
+  if (error || !data) throw noEncontrado(`No existe el técnico ${legajo}.`);
 
   return { legajo: data.tecnico_legajo, nombre: data.tecnico_nom_ape, apellido: '' };
 }

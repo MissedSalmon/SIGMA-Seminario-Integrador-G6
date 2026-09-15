@@ -64,7 +64,7 @@ export default function PantallaTiposEspacio() {
       await eliminarTipoEspacio(aEliminar.idTipoEspacio);
       mostrarToast({
         tipo: 'exito',
-        mensaje: `Se elimino el tipo de espacio "${aEliminar.nombre}".`,
+        mensaje: `Se eliminó el tipo de espacio "${aEliminar.nombre}".`,
       });
       setAEliminar(null);
       setRecarga((numero) => numero + 1);
@@ -126,7 +126,7 @@ export default function PantallaTiposEspacio() {
             claveFila={(tipo) => tipo.idTipoEspacio}
             columnas={columnas}
             buscarPor={['nombre']}
-            placeholderBusqueda="Buscar tipo de espacio..."
+            placeholderBusqueda="Buscar por nombre"
             cargando={cargando}
             textoVacio="Todavia no hay tipos de espacio cargados."
           />

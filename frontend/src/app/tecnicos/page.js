@@ -77,7 +77,7 @@ export default function PantallaTecnicos() {
 
     try {
       await eliminarTecnico(aEliminar.legajo);
-      mostrarToast({ tipo: 'exito', mensaje: `Se elimino al tecnico "${aEliminar.nombre} ".` });
+      mostrarToast({ tipo: 'exito', mensaje: `Se eliminó al técnico "${aEliminar.nombre} ".` });
       setAEliminar(null);
       setRecarga((numero) => numero + 1);
     } catch (fallo) {
@@ -96,7 +96,7 @@ export default function PantallaTecnicos() {
     },
     {
       clave: 'tecnico',
-      encabezado: 'tecnico',
+      encabezado: 'Técnico',
       render: (tecnico) => (
         <span className="fw-semibold">
           {tecnico.nombre} 
@@ -106,7 +106,7 @@ export default function PantallaTecnicos() {
 
     {
       clave: 'especialidad',
-      encabezado: 'especialidad',
+      encabezado: 'Especialidad',
       // Un tecnico puede tener mas de una, asi que van separadas por coma.
       render: (tecnico) => (
         <span className="text-body-secondary">
@@ -152,7 +152,7 @@ export default function PantallaTecnicos() {
   return (
     <>
       <EncabezadoPagina
-        titulo="Tecnicos"
+        titulo="Técnicos"
         accion={{ direccion: '/tecnicos/agregar' }}
       />
 
@@ -164,8 +164,8 @@ export default function PantallaTecnicos() {
             filas={tecnicos}
             claveFila={(tecnico) => tecnico.legajo}
             columnas={columnas}
-            buscarPor={['nombre', '', , 'legajo']}
-            placeholderBusqueda="Buscar por nombre, ..."
+            buscarPor={['nombre', 'legajo']}
+            placeholderBusqueda="Buscar por nombre o legajo"
             filtros={[
               {
                 etiqueta: 'Especialidad',
@@ -212,7 +212,7 @@ export default function PantallaTecnicos() {
           .
         </p>
         <p className="text-body-secondary mt-2 mb-0">
-          Solo se puede eliminar si no tiene tareas asignadas. Si el tecnico ya no trabaja pero tiene
+          Solo se puede eliminar si no tiene tareas asignadas. Si el técnico ya no trabaja pero tiene
           historial, marcalo como &quot;No disponible&quot; en vez de eliminarlo.
         </p>
       </DialogoEliminar>

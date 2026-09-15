@@ -9,7 +9,7 @@ function leerId(req) {
   const id = Number(req.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
-    throw datoInvalido(`"${req.params.id}" no es un numero de ticket valido.`);
+    throw datoInvalido(`"${req.params.id}" no es un número de ticket válido.`);
   }
 
   return id;
@@ -20,7 +20,7 @@ function leerFecha(valor, nombre) {
   if (!valor) return null;
 
   if (Number.isNaN(Date.parse(valor))) {
-    throw datoInvalido(`"${valor}" no es una fecha valida para "${nombre}".`);
+    throw datoInvalido(`"${valor}" no es una fecha válida para "${nombre}".`);
   }
 
   return valor;
@@ -37,11 +37,11 @@ export async function listar(req, res) {
   const { estado, desde, hasta, codigoActivo, idArea } = req.query;
 
   if (estado && !ESTADOS.includes(estado)) {
-    throw datoInvalido(`"${estado}" no es un estado de ticket valido.`);
+    throw datoInvalido(`"${estado}" no es un estado de ticket válido.`);
   }
 
   if (idArea && !Number.isInteger(Number(idArea))) {
-    throw datoInvalido(`"${idArea}" no es un numero de area valido.`);
+    throw datoInvalido(`"${idArea}" no es un número de área válido.`);
   }
 
   const tickets = await ticketsServicio.obtenerTodos({

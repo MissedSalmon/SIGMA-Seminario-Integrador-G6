@@ -101,6 +101,7 @@ export default function FormularioPlantilla({ plantilla = null, onGuardar }) {
               opciones={opcionesTipos}
               placeholder="Elegir tipo"
               obligatorio
+              ancho={24}
               revisado={revisado}
               error={errores.idTipoActivo}
               ayuda="La tarea se va a precargar en las OT de los activos de este tipo."
@@ -114,7 +115,7 @@ export default function FormularioPlantilla({ plantilla = null, onGuardar }) {
               placeholder="Ej: limpiar los filtros"
               obligatorio
               maxLength={200}
-              anchoMaximo={60}
+              ancho={36}
               revisado={revisado}
               error={errores.descripcion}
               ayuda="Una tarea por plantilla, escrita como una instrucción."

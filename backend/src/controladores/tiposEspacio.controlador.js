@@ -4,7 +4,7 @@ import { datoInvalido } from '../utiles/errores.js';
 function leerId(req) {
   const id = Number(req.params.id);
   if (!Number.isInteger(id)) {
-    throw datoInvalido(`"${req.params.id}" no es un id valido.`);
+    throw datoInvalido(`"${req.params.id}" no es un id válido.`);
   }
   return id;
 }
@@ -33,5 +33,5 @@ export async function actualizar(req, res) {
 
 export async function eliminar(req, res) {
   const tipo = await tiposEspacioServicio.eliminar(leerId(req));
-  res.json({ ok: true, datos: tipo, mensaje: `Se elimino "${tipo.nombre}".` });
+  res.json({ ok: true, datos: tipo, mensaje: `Se eliminó "${tipo.nombre}".` });
 }

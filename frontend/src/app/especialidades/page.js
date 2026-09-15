@@ -48,7 +48,7 @@ export default function PantallaEspecialidades() {
 
     try {
       await eliminarEspecialidad(aEliminar.idEspecialidad);
-      mostrarToast({ tipo: 'exito', mensaje: `Se elimino la especialidad "${aEliminar.nombre}".` });
+      mostrarToast({ tipo: 'exito', mensaje: `Se eliminó la especialidad "${aEliminar.nombre}".` });
       setAEliminar(null);
       setRecarga((n) => n + 1);
     } catch (fallo) {
@@ -92,7 +92,7 @@ export default function PantallaEspecialidades() {
             claveFila={(e) => e.idEspecialidad}
             columnas={columnas}
             buscarPor={[ 'nombre' ]}
-            placeholderBusqueda="Buscar por nombre..."
+            placeholderBusqueda="Buscar por nombre"
             cargando={cargando}
             textoVacio="Todavia no hay especialidades cargadas."
           />

@@ -112,7 +112,7 @@ export default function PantallaActivos() {
   const columnas = [
     {
       clave: 'codigo',
-      encabezado: 'Codigo',
+      encabezado: 'Código',
       render: (activo) => <span className="fw-semibold">{activo.codigo}</span>,
     },
 
@@ -123,7 +123,7 @@ export default function PantallaActivos() {
     },
     {
       clave: 'ubicacion',
-      encabezado: 'Ubicacion',
+      encabezado: 'Ubicación',
       render: (activo) => (
         <span className="text-body-secondary">
           {activo.nombreEdificio} — {activo.nombreEspacio}
@@ -184,7 +184,7 @@ export default function PantallaActivos() {
             claveFila={(activo) => activo.codigo}
             columnas={columnas}
             buscarPor={['codigo', 'nombreTipo']}
-            placeholderBusqueda="Buscar por codigo o tipo..."
+            placeholderBusqueda="Buscar por código o tipo"
             filtros={[
               {
                 etiqueta: 'Espacio',

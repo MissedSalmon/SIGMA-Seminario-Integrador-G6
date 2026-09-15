@@ -8,7 +8,7 @@ function leerId(req) {
   const id = Number(req.params.id);
 
   if (!Number.isInteger(id)) {
-    throw datoInvalido(`"${req.params.id}" no es un numero de area valido.`);
+    throw datoInvalido(`"${req.params.id}" no es un número de área válido.`);
   }
 
   return id;
@@ -46,5 +46,5 @@ export async function actualizar(req, res) {
 /** DELETE /api/areas/:id */
 export async function eliminar(req, res) {
   const area = await areasServicio.eliminar(leerId(req));
-  res.json({ ok: true, datos: area, mensaje: `Se elimino "${area.nombre}".` });
+  res.json({ ok: true, datos: area, mensaje: `Se eliminó "${area.nombre}".` });
 }

@@ -256,6 +256,7 @@ export default function FormularioTicket({ onGuardar }) {
                 opciones={opcionesActivos}
                 placeholder="Elegir activo"
                 obligatorio
+                ancho={30}
                 revisado={revisado}
                 error={errores.codigoActivo}
                 ayuda="Los activos retirados no aparecen en la lista."
@@ -274,6 +275,7 @@ export default function FormularioTicket({ onGuardar }) {
                   opciones={opcionesEdificios}
                   placeholder="Elegir edificio"
                   obligatorio
+                  ancho={24}
                   revisado={revisado}
                   error={errores.idEdificio}
                 />
@@ -287,6 +289,7 @@ export default function FormularioTicket({ onGuardar }) {
                   placeholder={idEdificio ? 'Elegir espacio' : 'Primero el edificio'}
                   deshabilitado={!idEdificio}
                   obligatorio
+                  ancho={20}
                   revisado={revisado}
                   error={errores.espacioNum}
                 />
@@ -303,6 +306,7 @@ export default function FormularioTicket({ onGuardar }) {
               tipo="area"
               valor={descripcion}
               alCambiar={setDescripcion}
+              placeholder="Ej: el aire acondicionado no enfria desde el lunes."
               obligatorio
               maxLength={500}
               revisado={revisado}

@@ -47,7 +47,7 @@ export default function FormularioArea({ area = null, onGuardar }) {
   const errores = useMemo(() => {
     const encontrados = {};
     if (!nombre.trim()) encontrados.nombre = 'El nombre es obligatorio.';
-    if (!idEspacio) encontrados.idEspacio = 'Elegi el espacio donde funciona el area.';
+    if (!idEspacio) encontrados.idEspacio = 'Elegí el espacio donde funciona el área.';
     return encontrados;
   }, [nombre, idEspacio]);
 
@@ -67,7 +67,7 @@ export default function FormularioArea({ area = null, onGuardar }) {
         tipo: 'exito',
         mensaje: editando
           ? `Se guardaron los cambios de "${nombre}".`
-          : `Se agrego el area "${nombre}".`,
+          : `Se agregó el área "${nombre}".`,
       });
       router.push('/areas');
       router.refresh();
@@ -91,7 +91,7 @@ export default function FormularioArea({ area = null, onGuardar }) {
     return (
       <Aviso
         color="warning"
-        mensaje="Primero hay que cargar por lo menos un espacio: toda area funciona en uno."
+        mensaje="Primero hay que cargar por lo menos un espacio: toda área funciona en uno."
       />
     );
   }
@@ -107,7 +107,7 @@ export default function FormularioArea({ area = null, onGuardar }) {
         <Aviso mensaje={error} onCerrar={() => setError('')} />
 
         <form noValidate onSubmit={manejarEnvio}>
-          <h2 className="sigma-seccion-titulo">Datos del area</h2>
+          <h2 className="sigma-seccion-titulo">Datos del área</h2>
 
           <div className="sigma-campos mb-4">
             <Campo
@@ -118,7 +118,7 @@ export default function FormularioArea({ area = null, onGuardar }) {
               placeholder="Departamento de Sistemas"
               obligatorio
               maxLength={100}
-              anchoMinimo={22}
+              ancho={22}
               revisado={revisado}
               error={errores.nombre}
             />
@@ -132,16 +132,16 @@ export default function FormularioArea({ area = null, onGuardar }) {
               opciones={opcionesEspacios}
               placeholder="Elegir espacio"
               obligatorio
-              anchoMinimo={22}
+              ancho={22}
               revisado={revisado}
               error={errores.idEspacio}
-              ayuda="El responsable del area se asigna despues, al dar de alta al usuario autorizado."
+              ayuda="El responsable del área se asigna después, al dar de alta al usuario autorizado."
             />
           </div>
 
           {revisado && hayErrores && (
             <p className="sigma-campo-mensaje sigma-campo-mensaje--error mb-3">
-              Revisa los campos marcados y volve a guardar.
+              Revisá los campos marcados y volvé a guardar.
             </p>
           )}
 

@@ -127,7 +127,7 @@ export default function PantallaPlantillas() {
             claveFila={(plantilla) => plantilla.idPlantilla}
             columnas={columnas}
             buscarPor={['descripcion', 'nombreTipo']}
-            placeholderBusqueda="Buscar por tarea o tipo de activo..."
+            placeholderBusqueda="Buscar por tarea o tipo de activo"
             filtros={[
               {
                 etiqueta: 'Activo',

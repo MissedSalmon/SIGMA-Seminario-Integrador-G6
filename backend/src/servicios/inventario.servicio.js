@@ -63,14 +63,14 @@ function leerItem(datos) {
   const idTipo = Number(datos.idTipo);
   const stockMinimo = datos.stockMinimo === '' || datos.stockMinimo == null ? null : Number(datos.stockMinimo);
 
-  if (!codigo) throw datoInvalido('El codigo es obligatorio.');
+  if (!codigo) throw datoInvalido('El código es obligatorio.');
   if (!nombre) throw datoInvalido('El nombre es obligatorio.');
   if (!Number.isInteger(idTipo)) throw datoInvalido('Hay que indicar un tipo de inventario.');
   if (clase === 'Material' && (!Number.isInteger(stockMinimo) || stockMinimo < 0)) {
-    throw datoInvalido('El stock minimo del material es obligatorio y no puede ser negativo.');
+    throw datoInvalido('El stock mínimo del material es obligatorio y no puede ser negativo.');
   }
   if (clase === 'Herramienta' && (stockMinimo !== null || datos.fechaVencimiento)) {
-    throw datoInvalido('Una herramienta no lleva stock minimo ni fecha de vencimiento.');
+    throw datoInvalido('Una herramienta no lleva stock mínimo ni fecha de vencimiento.');
   }
 
   return { codigo, nombre, clase, idTipo, stockMinimo, descripcion: texto(datos.descripcion), fechaVencimiento: datos.fechaVencimiento || null };
@@ -134,14 +134,14 @@ export async function obtenerItems(clase) {
 export async function obtenerItem(codigo) {
   const { data, error } = await supabase.from('inventarioitem').select(COLUMNAS).eq('inventarioitemcod', codigo).maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) throw noEncontrado(`No existe el codigo "${codigo}" en el deposito.`);
+  if (!data) throw noEncontrado(`No existe el código "${codigo}" en el depósito.`);
   return aItem(data);
 }
 
 export async function crearItem(datos) {
   const item = leerItem(datos);
   const { data: repetido } = await supabase.from('inventarioitem').select('inventarioitemcod').ilike('inventarioitemcod', item.codigo).maybeSingle();
-  if (repetido) throw conflicto(`Ya existe un material o una herramienta con el codigo "${item.codigo}".`);
+  if (repetido) throw conflicto(`Ya existe un material o una herramienta con el código "${item.codigo}".`);
   await verificarTipo(item.idTipo, item.clase);
   const { data, error } = await supabase.from('inventarioitem').insert({ inventarioitemcod: item.codigo, inventarioitemnom: item.nombre, inventarioitemdesc: item.descripcion, inventariotipoid: item.idTipo, inventarioitemclase: item.clase, inventarioitemstockmin: item.stockMinimo, inventarioitemfechavenc: item.fechaVencimiento, inventarioitemestado: item.clase === 'Herramienta' ? 'Disponible' : 'Disponible' }).select(COLUMNAS).single();
   if (error) throw new Error(error.message);

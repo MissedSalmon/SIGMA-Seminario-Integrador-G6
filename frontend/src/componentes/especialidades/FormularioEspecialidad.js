@@ -48,7 +48,7 @@ export default function FormularioEspecialidad({ especialidad = null, onGuardar 
         tipo: 'exito',
         mensaje: editando
           ? `Se guardaron los cambios de "${nombre}".`
-          : `Se agrego la especialidad "${nombre}".`,
+          : `Se agregó la especialidad "${nombre}".`,
       });
       router.push('/especialidades');
       router.refresh();
@@ -75,16 +75,16 @@ export default function FormularioEspecialidad({ especialidad = null, onGuardar 
               placeholder="Electricidad"
               obligatorio
               maxLength={100}
-              anchoMinimo={18}
+              ancho={18}
               revisado={revisado}
               error={errores.nombre}
-              ayuda="Asi va a aparecer al elegir las especialidades de un tecnico."
+              ayuda="Así va a aparecer al elegir las especialidades de un técnico."
             />
           </div>
 
           {revisado && hayErrores && (
             <p className="sigma-campo-mensaje sigma-campo-mensaje--error mb-3">
-              Revisa los campos marcados y volve a guardar.
+              Revisá los campos marcados y volvé a guardar.
             </p>
           )}
 

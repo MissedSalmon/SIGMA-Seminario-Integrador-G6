@@ -90,7 +90,7 @@ function leerUbicacion(datos) {
   const idTipoActivo = Number(datos.idTipoActivo);
 
   if (!Number.isInteger(espacio_id)) {
-    throw datoInvalido('Hay que indicar en que espacio esta el activo.');
+    throw datoInvalido('Hay que indicar en qué espacio está el activo.');
   }
 
   if (!Number.isInteger(idTipoActivo)) {
@@ -142,7 +142,7 @@ export async function obtenerPorId(codigo) {
 
 export async function crear(datos) {
   const codigo = limpiar(datos.codigo);
-  if (!codigo) throw datoInvalido('El codigo de inventario es obligatorio.');
+  if (!codigo) throw datoInvalido('El código de inventario es obligatorio.');
 
   const { espacio_id, idTipoActivo } = leerUbicacion(datos);
 
@@ -152,7 +152,7 @@ export async function crear(datos) {
     .ilike('activo_codigo', codigo)
     .maybeSingle();
 
-  if (repetido) throw conflicto(`Ya hay un activo con el codigo "${codigo}".`);
+  if (repetido) throw conflicto(`Ya hay un activo con el código "${codigo}".`);
 
   await verificarTipo(idTipoActivo);
 
@@ -179,7 +179,7 @@ export async function actualizar(codigo, datos) {
   const actual = await obtenerPorId(codigo);
 
   if (actual.estado === ESTADO_BAJA) {
-    throw conflicto(`El activo "${codigo}" esta retirado y no se puede modificar.`);
+    throw conflicto(`El activo "${codigo}" está retirado y no se puede modificar.`);
   }
 
   const { espacio_id, idTipoActivo } = leerUbicacion(datos);

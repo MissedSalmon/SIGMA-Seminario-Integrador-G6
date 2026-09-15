@@ -11,7 +11,7 @@ import { prohibido } from '../utiles/errores.js';
 export function soloAdministrador(req, res, next) {
   const rol = req.headers['x-rol'] || req.headers['x-rol'.toLowerCase()];
   if (rol !== 'Administrador') {
-    throw prohibido('Se requieren permisos de administrador para esta accion.');
+    throw prohibido('Se requieren permisos de administrador para esta acción.');
   }
   next();
 }

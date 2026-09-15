@@ -89,9 +89,9 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
   const errores = useMemo(() => {
     const encontrados = {};
 
-    if (!codigo.trim()) encontrados.codigo = 'El codigo de inventario es obligatorio.';
-    if (!idTipoActivo) encontrados.idTipoActivo = 'Elegi el tipo de activo.';
-    if (!idEspacio) encontrados.idEspacio = 'Elegi donde esta el activo.';
+    if (!codigo.trim()) encontrados.codigo = 'El código de inventario es obligatorio.';
+    if (!idTipoActivo) encontrados.idTipoActivo = 'Elegí el tipo de activo.';
+    if (!idEspacio) encontrados.idEspacio = 'Elegí dónde está el activo.';
 
     /*
      * La fecha de alta puede ser de antes, pero nunca de despues de hoy:
@@ -135,7 +135,7 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
         tipo: 'exito',
         mensaje: editando
           ? `Se guardaron los cambios del activo "${codigo}".`
-          : `Se agrego el activo "${codigo}".`,
+          : `Se agregó el activo "${codigo}".`,
       });
 
       router.push('/activos');
@@ -170,7 +170,7 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
     return (
       <Aviso
         color="warning"
-        mensaje="Primero hay que cargar por lo menos un espacio: todo activo esta ubicado en uno."
+        mensaje="Primero hay que cargar por lo menos un espacio: todo activo está ubicado en uno."
       />
     );
   }
@@ -181,7 +181,7 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
       <>
         <Aviso
           color="warning"
-          mensaje={`El activo "${activo.codigo}" esta retirado, asi que no se puede modificar. Se conserva para no perder su historial de intervenciones.`}
+          mensaje={`El activo "${activo.codigo}" está retirado, así que no se puede modificar. Se conserva para no perder su historial de intervenciones.`}
         />
         <BotonEnlace href="/activos" color="secondary" variante="outline">
           Volver al listado
@@ -222,15 +222,14 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
           <div className="sigma-campos mb-4">
             <Campo
               id="codigo"
-              etiqueta="Codigo de inventario"
+              etiqueta="Código de inventario"
               valor={codigo}
               alCambiar={setCodigo}
               placeholder="AC-014"
               obligatorio
               maxLength={50}
               deshabilitado={editando}
-              anchoMinimo={10}
-              anchoMaximo={20}
+              ancho={10}
               revisado={revisado}
               error={errores.codigo}
               ayuda={
@@ -249,7 +248,7 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
               opciones={opcionesTipos}
               placeholder="Elegir tipo"
               obligatorio
-              anchoMinimo={18}
+              ancho={18}
               revisado={revisado}
               error={errores.idTipoActivo}
             />
@@ -263,7 +262,7 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
               opciones={opcionesEspacios}
               placeholder="Elegir espacio"
               obligatorio
-              anchoMinimo={22}
+              ancho={22}
               revisado={revisado}
               error={errores.idEspacio}
               ayuda={
@@ -294,8 +293,9 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
                 valor={estado}
                 alCambiar={setEstado}
                 opciones={opcionesEstado}
+                placeholder="Elegir estado"
                 deshabilitado={estadoAutomatico}
-                anchoMinimo={16}
+                ancho={16}
                 revisado={revisado}
                 ayuda={
                   estadoAutomatico
@@ -308,7 +308,7 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
 
           {revisado && hayErrores && (
             <p className="sigma-campo-mensaje sigma-campo-mensaje--error mb-3">
-              Revisa los campos marcados y volve a guardar.
+              Revisá los campos marcados y volvé a guardar.
             </p>
           )}
 

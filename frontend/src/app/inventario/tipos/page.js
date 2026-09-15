@@ -37,7 +37,7 @@ export default function PantallaTiposInventario() {
     setEliminando(true);
     try {
       await eliminarTipoInventario(aEliminar.idTipo);
-      mostrarToast({ tipo: 'exito', mensaje: `Se elimino el tipo "${aEliminar.nombre}".` });
+      mostrarToast({ tipo: 'exito', mensaje: `Se eliminó el tipo "${aEliminar.nombre}".` });
       setAEliminar(null);
       setRecarga((numero) => numero + 1);
     } catch (fallo) {
@@ -57,7 +57,7 @@ export default function PantallaTiposInventario() {
     { clave: 'clase', encabezado: 'Clase', render: (tipo) => tipo.clase },
     {
       clave: 'descripcion',
-      encabezado: 'Descripcion',
+      encabezado: 'Descripción',
       render: (tipo) => <span className="text-body-secondary">{tipo.descripcion || '-'}</span>,
     },
     {
@@ -104,7 +104,7 @@ export default function PantallaTiposInventario() {
             claveFila={(tipo) => tipo.idTipo}
             columnas={columnas}
             buscarPor={['nombre', 'descripcion', 'clase']}
-            placeholderBusqueda="Buscar por nombre o clase..."
+            placeholderBusqueda="Buscar por nombre o clase"
             filtros={[
               {
                 etiqueta: 'Clase',

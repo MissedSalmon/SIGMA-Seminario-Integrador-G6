@@ -59,7 +59,7 @@ export default function PantallaAreas() {
 
     try {
       await eliminarArea(aEliminar.idArea);
-      mostrarToast({ tipo: 'exito', mensaje: `Se elimino el area "${aEliminar.nombre}".` });
+      mostrarToast({ tipo: 'exito', mensaje: `Se eliminó el área "${aEliminar.nombre}".` });
       setAEliminar(null);
       setRecarga((numero) => numero + 1);
     } catch (fallo) {
@@ -78,12 +78,12 @@ export default function PantallaAreas() {
     },
     {
       clave: 'espacio',
-      encabezado: 'espacio',
+      encabezado: 'Espacio',
       render: (area) => <span className="text-body-secondary">{area.nombreEspacio}</span>,
     },
     {
       clave: 'edificio',
-      encabezado: 'edificio',
+      encabezado: 'Edificio',
       render: (area) => <span className="text-body-secondary">{area.nombreEdificio}</span>,
     },
     {
@@ -130,7 +130,7 @@ export default function PantallaAreas() {
             claveFila={(area) => area.idArea}
             columnas={columnas}
             buscarPor={['nombre', 'nombreEspacio', 'nombreEdificio']}
-            placeholderBusqueda="Buscar por nombre, espacio o edificio..."
+            placeholderBusqueda="Buscar por nombre, espacio o edificio"
             cargando={cargando}
             textoVacio="Todavia no hay areas cargadas."
           />
