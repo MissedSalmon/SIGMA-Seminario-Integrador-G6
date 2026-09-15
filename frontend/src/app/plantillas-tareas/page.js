@@ -13,7 +13,6 @@ import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
 import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
-import EtiquetaTipo from '@/componentes/EtiquetaTipo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { eliminarPlantilla, listarPlantillas } from '@/servicios/plantillasTareas.js';
 import { listarTiposActivos } from '@/servicios/tiposActivos.js';
@@ -82,7 +81,7 @@ export default function PantallaPlantillas() {
     {
       clave: 'nombreTipo',
       encabezado: 'Tipo de activo',
-      render: (plantilla) => <EtiquetaTipo texto={plantilla.nombreTipo} />,
+      render: (plantilla) => <span className="text-body-secondary">{plantilla.nombreTipo}</span>,
     },
     {
       clave: 'acciones',
@@ -131,7 +130,7 @@ export default function PantallaPlantillas() {
             placeholderBusqueda="Buscar por tarea o tipo de activo..."
             filtros={[
               {
-                etiqueta: 'Tipo de activo',
+                etiqueta: 'Activo',
                 valor: filtroTipo,
                 alCambiar: setFiltroTipo,
                 opciones: tipos.map((tipo) => ({ valor: tipo.idTipoActivo, texto: tipo.nombre })),

@@ -1,31 +1,60 @@
 'use client';
 
-import { useState } from 'react';
+/**
+ * Alta y edicion de un tipo de material o de herramienta (HU-15).
+ *
+ * Un tipo es la categoria con la que se ordena el deposito (cables, pinturas,
+ * herramientas electricas). Va pegado a una clase: un tipo de material no
+ * sirve para una herramienta, asi que la clase se elige al darlo de alta y
+ * despues no se cambia.
+ */
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CButton, CCard, CCardBody, CCol, CForm, CFormFeedback, CFormInput, CFormLabel, CFormSelect, CFormTextarea, CRow } from '@coreui/react';
+import { CButton, CCard, CCardBody } from '@coreui/react';
 
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
+import Campo from '@/componentes/formulario/Campo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
+
+const CLASES = ['Material', 'Herramienta'];
 
 export default function FormularioTipo({ tipo = null, onGuardar }) {
   const router = useRouter();
   const { mostrarToast } = useToast();
+  const editando = Boolean(tipo);
+
   const [nombre, setNombre] = useState(tipo?.nombre ?? '');
   const [descripcion, setDescripcion] = useState(tipo?.descripcion ?? '');
   const [clase, setClase] = useState(tipo?.clase ?? 'Material');
-  const [validado, setValidado] = useState(false);
+
+  const [revisado, setRevisado] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
+  const errores = useMemo(() => {
+    const encontrados = {};
+    if (!nombre.trim()) encontrados.nombre = 'El nombre es obligatorio.';
+    return encontrados;
+  }, [nombre]);
+
+  const hayErrores = Object.keys(errores).length > 0;
+
   async function manejarEnvio(evento) {
     evento.preventDefault();
-    setValidado(true);
-    if (!nombre.trim()) return;
+    setRevisado(true);
+    setError('');
+    if (hayErrores) return;
+
     setGuardando(true);
     try {
-      await onGuardar({ nombre: nombre.trim(), descripcion, clase });
-      mostrarToast({ tipo: 'exito', mensaje: tipo ? `Se guardaron los cambios de "${nombre}".` : `Se agrego el tipo "${nombre}".` });
+      await onGuardar({ nombre: nombre.trim(), descripcion: descripcion.trim(), clase });
+      mostrarToast({
+        tipo: 'exito',
+        mensaje: editando
+          ? `Se guardaron los cambios de "${nombre}".`
+          : `Se agrego el tipo "${nombre}".`,
+      });
       router.push('/inventario/tipos');
       router.refresh();
     } catch (fallo) {
@@ -38,30 +67,68 @@ export default function FormularioTipo({ tipo = null, onGuardar }) {
     <CCard>
       <CCardBody>
         <Aviso mensaje={error} onCerrar={() => setError('')} />
-        <CForm noValidate validated={validado} onSubmit={manejarEnvio}>
-          <CRow className="g-3">
-            <CCol xs={12} md={6}>
-              <CFormLabel htmlFor="nombre" className="sigma-obligatorio">Nombre</CFormLabel>
-              <CFormInput id="nombre" value={nombre} onChange={(evento) => setNombre(evento.target.value)} required maxLength={150} />
-              <CFormFeedback invalid>El nombre es obligatorio.</CFormFeedback>
-            </CCol>
-            <CCol xs={12} md={6}>
-              <CFormLabel htmlFor="clase" className="sigma-obligatorio">Clase</CFormLabel>
-              <CFormSelect id="clase" value={clase} onChange={(evento) => setClase(evento.target.value)} disabled={Boolean(tipo)} required>
-                <option value="Material">Material</option>
-                <option value="Herramienta">Herramienta</option>
-              </CFormSelect>
-            </CCol>
-            <CCol xs={12}>
-              <CFormLabel htmlFor="descripcion">Descripcion</CFormLabel>
-              <CFormTextarea id="descripcion" rows={3} value={descripcion} onChange={(evento) => setDescripcion(evento.target.value)} />
-            </CCol>
-          </CRow>
-          <div className="d-flex gap-2 mt-4">
-            <CButton type="submit" disabled={guardando}>{guardando ? 'Guardando...' : 'Guardar tipo'}</CButton>
-            <BotonEnlace href="/inventario/tipos" color="secondary" variante="outline">Cancelar</BotonEnlace>
+
+        <form noValidate onSubmit={manejarEnvio}>
+          <div className="sigma-campos mb-4">
+            <Campo
+              id="nombre"
+              etiqueta="Nombre"
+              valor={nombre}
+              alCambiar={setNombre}
+              placeholder={clase === 'Herramienta' ? 'Herramientas electricas' : 'Cables'}
+              obligatorio
+              maxLength={150}
+              anchoMinimo={20}
+              revisado={revisado}
+              error={errores.nombre}
+              ayuda="Asi va a aparecer en el desplegable al cargar un material o una herramienta."
+            />
+
+            <Campo
+              id="clase"
+              etiqueta="Clase"
+              tipo="lista"
+              valor={clase}
+              alCambiar={setClase}
+              opciones={CLASES.map((texto) => ({ valor: texto, texto }))}
+              obligatorio
+              deshabilitado={editando}
+              anchoMinimo={14}
+              revisado={revisado}
+              ayuda={
+                editando
+                  ? 'La clase no se puede cambiar despues del alta.'
+                  : 'Un tipo de material no sirve para una herramienta, ni al reves.'
+              }
+            />
+
+            <Campo
+              id="descripcion"
+              etiqueta="Descripcion"
+              tipo="area"
+              valor={descripcion}
+              alCambiar={setDescripcion}
+              placeholder="Opcional: que entra en esta categoria."
+              maxLength={300}
+              revisado={revisado}
+            />
           </div>
-        </CForm>
+
+          {revisado && hayErrores && (
+            <p className="sigma-campo-mensaje sigma-campo-mensaje--error mb-3">
+              Revisa los campos marcados y volve a guardar.
+            </p>
+          )}
+
+          <div className="d-flex gap-2 mt-4">
+            <CButton type="submit" color="primary" disabled={guardando}>
+              {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Agregar'}
+            </CButton>
+            <BotonEnlace href="/inventario/tipos" color="secondary" variante="outline">
+              Cancelar
+            </BotonEnlace>
+          </div>
+        </form>
       </CCardBody>
     </CCard>
   );

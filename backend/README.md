@@ -80,3 +80,16 @@ Siempre el mismo, para que el frontend no tenga que adivinar:
   importaciones de archivos propios llevan la extensión: `'./app.js'`.
 - Express 5 pasa solo los errores de funciones `async` al manejador de errores,
   así que no hace falta `try/catch` en cada controlador.
+
+---
+
+## Restricciones Generales del Proyecto (Aplica principalmente al Frontend)
+1. **Botones de Alta:** Los botones con la funcionalidad de un alta de algún registro tienen que llamarse estrictamente "Agregar".
+2. **Filtros (Barra de Filtros Horizontales):**
+   - **Estructura:** Campo de búsqueda global (input con ícono de lupa) a la izquierda, seguido de la etiqueta "Filtrar por:" y selectores desplegables (dropdowns) para las facetas (AND lógico).
+   - **Nombres de etiquetas:** NINGÚN filtro en su nombre (etiqueta) debe contener el prefijo "Tipo de ". Debe usarse directamente el sustantivo descriptivo (ej. "Activo", "Espacio", "Material", etc.).
+   - **Comportamiento:** Filtrado reactivo combinado en la misma línea superior, maximizando el espacio vertical, tal como el diseño utilizado en la pantalla "Listado de activos".
+3. **Casillas de Texto:** Deben tener el tamaño acorde a la información que va dentro, con descripciones detalladas de su diseño esperado.
+4. **Menús Laterales:** Evitar que el texto se corte.
+5. **Responsividad:** Todas las pantallas deben adaptarse a múltiples resoluciones y plataformas.
+6. **Uso de Colores:** Los textos no deben tener un formato de colores si no tienen una explicación o referencia de qué significa cada color. Siempre consultar el significado.

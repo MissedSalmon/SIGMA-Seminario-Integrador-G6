@@ -133,7 +133,6 @@ export default function PantallaAreas() {
             placeholderBusqueda="Buscar por nombre, espacio o edificio..."
             cargando={cargando}
             textoVacio="Todavia no hay areas cargadas."
-            accionVacio={{ direccion: '/areas/agregar' }}
           />
         </CCardBody>
       </CCard>

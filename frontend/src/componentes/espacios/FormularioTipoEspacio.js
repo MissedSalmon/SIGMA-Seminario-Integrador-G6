@@ -7,23 +7,13 @@
  * Sirve para que despues, al cargar un espacio, se elija de una lista en vez
  * de escribirlo a mano y que cada uno lo escriba distinto.
  */
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  CButton,
-  CCard,
-  CCardBody,
-  CCol,
-  CForm,
-  CFormFeedback,
-  CFormInput,
-  CFormLabel,
-  CFormText,
-  CRow,
-} from '@coreui/react';
+import { CButton, CCard, CCardBody } from '@coreui/react';
 
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
+import Campo from '@/componentes/formulario/Campo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 
 export default function FormularioTipoEspacio({ tipo = null, onGuardar }) {
@@ -33,21 +23,28 @@ export default function FormularioTipoEspacio({ tipo = null, onGuardar }) {
 
   const [nombre, setNombre] = useState(tipo?.nombre ?? '');
 
-  const [validado, setValidado] = useState(false);
+  const [revisado, setRevisado] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
+  const errores = useMemo(() => {
+    const encontrados = {};
+    if (!nombre.trim()) encontrados.nombre = 'El nombre es obligatorio.';
+    return encontrados;
+  }, [nombre]);
+
+  const hayErrores = Object.keys(errores).length > 0;
+
   async function manejarEnvio(evento) {
     evento.preventDefault();
-    setValidado(true);
+    setRevisado(true);
     setError('');
-
-    if (!nombre.trim()) return;
+    if (hayErrores) return;
 
     setGuardando(true);
 
     try {
-      await onGuardar({ nombre });
+      await onGuardar({ nombre: nombre.trim() });
 
       mostrarToast({
         tipo: 'exito',
@@ -69,34 +66,38 @@ export default function FormularioTipoEspacio({ tipo = null, onGuardar }) {
       <CCardBody>
         <Aviso mensaje={error} onCerrar={() => setError('')} />
 
-        <CForm noValidate validated={validado} onSubmit={manejarEnvio}>
-          <CRow className="g-3">
-            <CCol md={6}>
-              <CFormLabel htmlFor="nombre" className="sigma-obligatorio">
-                Nombre
-              </CFormLabel>
-              <CFormInput
-                id="nombre"
-                value={nombre}
-                onChange={(evento) => setNombre(evento.target.value)}
-                placeholder="Laboratorio"
-                required
-                maxLength={100}
-              />
-              <CFormFeedback invalid>El nombre es obligatorio.</CFormFeedback>
-              <CFormText>Asi va a aparecer en el desplegable al cargar un espacio.</CFormText>
-            </CCol>
-          </CRow>
+        <form noValidate onSubmit={manejarEnvio}>
+          <div className="sigma-campos mb-4">
+            <Campo
+              id="nombre"
+              etiqueta="Nombre"
+              valor={nombre}
+              alCambiar={setNombre}
+              placeholder="Laboratorio"
+              obligatorio
+              maxLength={100}
+              anchoMinimo={18}
+              revisado={revisado}
+              error={errores.nombre}
+              ayuda="Asi va a aparecer en el desplegable al cargar un espacio."
+            />
+          </div>
+
+          {revisado && hayErrores && (
+            <p className="sigma-campo-mensaje sigma-campo-mensaje--error mb-3">
+              Revisa los campos marcados y volve a guardar.
+            </p>
+          )}
 
           <div className="d-flex gap-2 mt-4">
             <CButton type="submit" color="primary" disabled={guardando}>
-              {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Agregar tipo'}
+              {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Agregar'}
             </CButton>
             <BotonEnlace href="/espacios/tipos" color="secondary" variante="outline">
               Cancelar
             </BotonEnlace>
           </div>
-        </CForm>
+        </form>
       </CCardBody>
     </CCard>
   );

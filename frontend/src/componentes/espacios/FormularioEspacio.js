@@ -10,26 +10,21 @@
  * Cada campo ocupa el ancho que necesita su contenido: Numero es corto y
  * Nombre es largo, asi que no tienen por que medir lo mismo.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   CButton,
   CCard,
   CCardBody,
-  CCol,
-  CForm,
-  CFormFeedback,
   CFormInput,
   CFormLabel,
-  CFormSelect,
-  CFormText,
   CInputGroup,
   CInputGroupText,
-  CRow,
 } from '@coreui/react';
 
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
+import Campo from '@/componentes/formulario/Campo.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarEdificios } from '@/servicios/edificios.js';
@@ -44,9 +39,7 @@ import { listarTiposDeEspacio } from '@/servicios/espacios.js';
 
 /** De 8 x 6 m saca { ancho: 8, largo: 6 }. */
 function separarDimensiones(texto) {
-  const partes = String(texto ?? '').match(
-    /(\d+(?:[.,]\d+)?)\s*[x×]\s*(\d+(?:[.,]\d+)?)/i
-  );
+  const partes = String(texto ?? '').match(/(\d+(?:[.,]\d+)?)\s*[x×]\s*(\d+(?:[.,]\d+)?)/i);
 
   if (!partes) {
     return { ancho: '', largo: '' };
@@ -89,7 +82,7 @@ export default function FormularioEspacio({ espacio = null, onGuardar }) {
   const [tipos, setTipos] = useState([]);
   const [cargando, setCargando] = useState(true);
 
-  const [validado, setValidado] = useState(false);
+  const [revisado, setRevisado] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
@@ -103,26 +96,40 @@ export default function FormularioEspacio({ espacio = null, onGuardar }) {
       .finally(() => setCargando(false));
   }, []);
 
-  async function manejarEnvio(evento) {
-    evento.preventDefault();
-    setValidado(true);
-    setError('');
+  /*
+   * Los errores se recalculan en cada tecla, pero no se muestran hasta apretar
+   * Guardar. De ahi en mas se actualizan solos mientras se corrige.
+   */
+  const errores = useMemo(() => {
+    const encontrados = {};
 
-    if (!nombre.trim() || !idEdificio || !idTipoEspacio) return;
+    if (!idEdificio) encontrados.idEdificio = 'Elegi a que edificio pertenece.';
+    if (!nombre.trim()) encontrados.nombre = 'El nombre es obligatorio.';
+    if (!idTipoEspacio) encontrados.idTipoEspacio = 'Elegi el tipo de espacio.';
 
     // Media medida no sirve para nada, y guardarla a medias seria peor que no
     // guardarla: mejor avisar.
-    if (Boolean(ancho.trim()) !== Boolean(largo.trim())) {
-      setError('Para las dimensiones hay que cargar el ancho y el largo, o dejar los dos vacios.');
-      return;
+    if (Boolean(String(ancho).trim()) !== Boolean(String(largo).trim())) {
+      encontrados.dimensiones = 'Carga el ancho y el largo, o deja los dos vacios.';
     }
+
+    return encontrados;
+  }, [idEdificio, nombre, idTipoEspacio, ancho, largo]);
+
+  const hayErrores = Object.keys(errores).length > 0;
+
+  async function manejarEnvio(evento) {
+    evento.preventDefault();
+    setRevisado(true);
+    setError('');
+    if (hayErrores) return;
 
     setGuardando(true);
 
     try {
       await onGuardar({
         idEdificio: Number(idEdificio),
-        nombre,
+        nombre: nombre.trim(),
         idTipoEspacio,
         piso,
         numero,
@@ -130,7 +137,9 @@ export default function FormularioEspacio({ espacio = null, onGuardar }) {
       });
       mostrarToast({
         tipo: 'exito',
-        mensaje: editando ? `Se guardaron los cambios de "${nombre}".` : `Se agrego el espacio "${nombre}".`,
+        mensaje: editando
+          ? `Se guardaron los cambios de "${nombre}".`
+          : `Se agrego el espacio "${nombre}".`,
       });
       router.push('/espacios');
       router.refresh();
@@ -159,93 +168,97 @@ export default function FormularioEspacio({ espacio = null, onGuardar }) {
     );
   }
 
+  const opcionesEdificios = edificios.map((edificio) => ({
+    valor: edificio.idEdificio,
+    texto: edificio.nombre,
+  }));
+
+  const opcionesTipos = tipos.map((unTipo) => ({
+    valor: unTipo.idTipoEspacio,
+    texto: unTipo.nombre,
+  }));
+
+  const errorDimensiones = revisado ? errores.dimensiones : '';
+
   return (
     <CCard>
       <CCardBody>
         <Aviso mensaje={error} onCerrar={() => setError('')} />
 
-        <h2 className="sigma-seccion-titulo">Datos del espacio</h2>
+        <form noValidate onSubmit={manejarEnvio}>
+          <h2 className="sigma-seccion-titulo">Datos del espacio</h2>
 
-        <CForm noValidate validated={validado} onSubmit={manejarEnvio}>
-          <CRow className="g-3">
-            <CCol md={5}>
-              <CFormLabel htmlFor="idEdificio" className="sigma-obligatorio">
-                edificio
-              </CFormLabel>
-              <CFormSelect
-                id="idEdificio"
-                value={idEdificio}
-                onChange={(evento) => setIdEdificio(evento.target.value)}
-                required
-              >
-                <option value="">Elegi un edificio...</option>
-                {edificios.map((edificio) => (
-                  <option key={edificio.idEdificio} value={edificio.idEdificio}>
-                    {edificio.nombre}
-                  </option>
-                ))}
-              </CFormSelect>
-              <CFormFeedback invalid>Hay que elegir el edificio.</CFormFeedback>
-            </CCol>
+          <div className="sigma-campos mb-4">
+            <Campo
+              id="idEdificio"
+              etiqueta="Edificio"
+              tipo="lista"
+              valor={idEdificio}
+              alCambiar={setIdEdificio}
+              opciones={opcionesEdificios}
+              placeholder="Elegir edificio"
+              obligatorio
+              anchoMinimo={18}
+              revisado={revisado}
+              error={errores.idEdificio}
+            />
 
-            <CCol md={7}>
-              <CFormLabel htmlFor="nombre" className="sigma-obligatorio">
-                Nombre
-              </CFormLabel>
-              <CFormInput
-                id="nombre"
-                value={nombre}
-                onChange={(evento) => setNombre(evento.target.value)}
-                placeholder="Aula 1"
-                required
-                maxLength={100}
-              />
-              <CFormFeedback invalid>El nombre es obligatorio.</CFormFeedback>
-            </CCol>
+            <Campo
+              id="nombre"
+              etiqueta="Nombre"
+              valor={nombre}
+              alCambiar={setNombre}
+              placeholder="Aula 1"
+              obligatorio
+              maxLength={100}
+              anchoMinimo={16}
+              revisado={revisado}
+              error={errores.nombre}
+            />
 
-            <CCol xs={6} md={3}>
-              <CFormLabel htmlFor="tipo" className="sigma-obligatorio">
-                Tipo
-              </CFormLabel>
-              <CFormSelect
-                id="idTipoEspacio"
-                value={idTipoEspacio}
-                onChange={(evento) => setIdTipoEspacio(evento.target.value)}
-                required
-              >
-                <option value="">Elegi el tipo...</option>
-                {tipos.map((unTipo) => (
-                  <option key={unTipo.idTipoEspacio} value={unTipo.idTipoEspacio}>
-                    {unTipo.nombre}
-                  </option>
-                ))}
-              </CFormSelect>
-              <CFormFeedback invalid>Hay que elegir el tipo de espacio.</CFormFeedback>
-            </CCol>
+            <Campo
+              id="idTipoEspacio"
+              etiqueta="Tipo"
+              tipo="lista"
+              valor={idTipoEspacio}
+              alCambiar={setIdTipoEspacio}
+              opciones={opcionesTipos}
+              placeholder="Elegir tipo"
+              obligatorio
+              anchoMinimo={14}
+              revisado={revisado}
+              error={errores.idTipoEspacio}
+            />
 
-            <CCol xs={6} md={3}>
-              <CFormLabel htmlFor="piso">Piso</CFormLabel>
-              <CFormInput
-                id="piso"
-                value={piso}
-                onChange={(evento) => setPiso(evento.target.value)}
-                placeholder="Planta baja"
-                maxLength={50}
-              />
-            </CCol>
+            <Campo
+              id="piso"
+              etiqueta="Piso"
+              valor={piso}
+              alCambiar={setPiso}
+              placeholder="Planta baja"
+              maxLength={50}
+              anchoMinimo={12}
+              revisado={revisado}
+            />
 
-            <CCol xs={4} md={2}>
-              <CFormLabel htmlFor="numero">Numero</CFormLabel>
-              <CFormInput
-                id="numero"
-                value={numero}
-                onChange={(evento) => setNumero(evento.target.value)}
-                placeholder="12"
-                maxLength={20}
-              />
-            </CCol>
+            <Campo
+              id="numero"
+              etiqueta="Numero"
+              valor={numero}
+              alCambiar={setNumero}
+              placeholder="12"
+              maxLength={20}
+              anchoMinimo={6}
+              anchoMaximo={10}
+              revisado={revisado}
+            />
 
-            <CCol xs={8} md={4}>
+            {/*
+              Las dimensiones son dos cajitas y no una, asi que no entran en
+              <Campo>. Se arman a mano con las mismas clases, para que queden
+              igual que el resto de la fila.
+            */}
+            <div className={`sigma-campo${errorDimensiones ? ' sigma-campo--error' : ''}`}>
               <CFormLabel htmlFor="ancho">Dimensiones</CFormLabel>
               <CInputGroup className="sigma-medidas">
                 <CFormInput
@@ -271,19 +284,29 @@ export default function FormularioEspacio({ espacio = null, onGuardar }) {
                 />
                 <CInputGroupText>m</CInputGroupText>
               </CInputGroup>
-              <CFormText>Ancho y largo, en metros.</CFormText>
-            </CCol>
-          </CRow>
+              <p
+                className={`sigma-campo-mensaje${errorDimensiones ? ' sigma-campo-mensaje--error' : ''}`}
+              >
+                {errorDimensiones || 'Ancho y largo, en metros.'}
+              </p>
+            </div>
+          </div>
+
+          {revisado && hayErrores && (
+            <p className="sigma-campo-mensaje sigma-campo-mensaje--error mb-3">
+              Revisa los campos marcados y volve a guardar.
+            </p>
+          )}
 
           <div className="d-flex gap-2 mt-4">
             <CButton type="submit" color="primary" disabled={guardando}>
-              {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Agregar espacio'}
+              {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Agregar'}
             </CButton>
             <BotonEnlace href="/espacios" color="secondary" variante="outline">
               Cancelar
             </BotonEnlace>
           </div>
-        </CForm>
+        </form>
       </CCardBody>
     </CCard>
   );

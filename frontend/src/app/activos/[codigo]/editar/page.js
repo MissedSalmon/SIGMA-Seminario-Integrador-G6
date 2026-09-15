@@ -33,10 +33,7 @@ export default function PantallaEditarActivo({ params }) {
 
   return (
     <>
-      <EncabezadoPagina
-        titulo="Editar activo"
-        descripcion={activo ? `${activo.codigo} — ${activo.descripcion || activo.nombreTipo}` : undefined}
-      />
+      <EncabezadoPagina titulo="Editar activo" />
 
       <Aviso mensaje={error} />
 

@@ -641,3 +641,17 @@ Se implementan como **criterios de aceptación de HU existentes** (evita fragmen
 4. Dependencia circular `areas ↔ autorizados`: ¿cómo la resolvemos? --- SOLUCIONADO: SE SEPARA, dejamos en la tabla de autorizados el FK al área
 5. ¿Mantenemos `tecnicoControlaActivo`?
 6. `personasConformanFacultad`: si la facultad es única, ¿pasa a atributo? SOLUCIÓN: La facultad no es única por lo que no la consideramos atributos, varias personas pueden trabajar en varias facultades 
+
+---
+
+## 14. Restricciones de Diseño y UI
+Las siguientes reglas deben aplicarse estrictamente durante el desarrollo de la interfaz:
+1. **Botones de Alta:** Los botones con la funcionalidad de un alta de algún registro tienen que llamarse estrictamente "Agregar".
+2. **Filtros (Barra de Filtros Horizontales):**
+   - **Estructura:** Campo de búsqueda global (input con ícono de lupa) a la izquierda, seguido de la etiqueta "Filtrar por:" y selectores desplegables (dropdowns) para las facetas (AND lógico).
+   - **Nombres de etiquetas:** NINGÚN filtro en su nombre (etiqueta) debe contener el prefijo "Tipo de ". Debe usarse directamente el sustantivo descriptivo (ej. "Activo", "Espacio", "Material", etc.).
+   - **Comportamiento:** Filtrado reactivo combinado en la misma línea superior, maximizando el espacio vertical, tal como el diseño utilizado en la pantalla "Listado de activos".
+3. **Casillas de Texto:** Deben tener el tamaño acorde a la información que va dentro. Se debe hacer un diseño detallado evaluando el tamaño convencional esperado.
+4. **Menús Laterales:** Revisar el tamaño del texto; tomar las medidas correspondientes para que la barra lateral no corte el texto.
+5. **Responsividad:** Todas las pantallas nuevas y ya creadas deben ser responsivas y multiplataforma, adaptándose a todos los tipos de pantallas y resoluciones.
+6. **Uso de Colores (MÁS IMPORTANTE):** Los textos no deben tener un formato de colores si no tienen una explicación o referencia de qué significa cada color. Si te piden que un texto tenga color, siempre debés solicitarle qué significado tiene cada uno.

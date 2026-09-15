@@ -8,9 +8,10 @@
  * 1. LA CAJA SE ADAPTA AL TEXTO. En vez de que todos los campos midan lo mismo
  *    (o lo que mida la columna de la grilla), cada caja mide lo que mide su
  *    contenido, entre un minimo y un maximo. Asi un numero de aula no ocupa el
- *    mismo ancho que una descripcion. El ancho se calcula en "ch" (el ancho de
- *    un caracter de la tipografia), mas el lugar del padding y de la marca.
- *    El textarea no crece a lo ancho sino a lo alto, a medida que se escribe.
+ *    mismo ancho que una descripcion, y una fecha mide lo que mide una fecha.
+ *    El ancho se calcula en "ch" (el ancho de un caracter de la tipografia),
+ *    mas el lugar del padding y de la marca. El textarea no crece a lo ancho
+ *    sino a lo alto, a medida que se escribe.
  *
  * 2. LA VALIDACION NO PINTA TODA LA CAJA. El `validated` de CoreUI (el
  *    was-validated de Bootstrap) pinta el borde entero de verde o de rojo y
@@ -44,17 +45,34 @@ const ANCHO_MINIMO = 12;
 const ANCHO_MAXIMO = 44;
 
 /**
- * El ancho que le corresponde a una caja segun lo que tiene escrito.
- *
- * A los caracteres del texto se les suma lo que ocupa todo lo que no es texto:
- * el padding de CoreUI (0.75rem de cada lado) y el lugar fijo de la marca
- * (1.25rem), que se reserva siempre para que la caja no pegue un salto cuando
- * la marca aparece. Una lista suma ademas la flechita del desplegable.
+ * Los caracteres que ocupa una fecha escrita (dd/mm/aaaa). Una caja de fecha
+ * mide siempre lo mismo: el navegador dibuja el dia, el mes y el anio, no lo
+ * que uno escribe.
  */
-function anchoDeLaCaja(texto, minimo, maximo, esLista) {
+const ANCHO_FECHA = 12;
+
+/**
+ * Lo que ocupa en la caja todo lo que no es texto, en rem: el padding de CoreUI
+ * (0.75rem de cada lado), el lugar fijo de la marca (que se reserva siempre
+ * para que la caja no pegue un salto cuando la marca aparece) y, cuando hace
+ * falta, el dibujo que pone el navegador (la flechita del desplegable, el
+ * almanaque de la fecha).
+ */
+const LUGAR_EXTRA = {
+  lista: 4.5,
+  fecha: 5.5,
+  texto: 2.75,
+};
+
+/** El ancho que le corresponde a una caja segun lo que tiene escrito. */
+function anchoDeLaCaja(texto, minimo, maximo, forma) {
+  if (forma === 'fecha') {
+    return `calc(${ANCHO_FECHA}ch + ${LUGAR_EXTRA.fecha}rem)`;
+  }
+
   const largo = String(texto ?? '').length;
   const caracteres = Math.min(maximo, Math.max(minimo, largo + 2));
-  return `calc(${caracteres}ch + ${esLista ? '4.5rem' : '2.75rem'})`;
+  return `calc(${caracteres}ch + ${LUGAR_EXTRA[forma]}rem)`;
 }
 
 export default function Campo({
@@ -69,11 +87,15 @@ export default function Campo({
   ayuda = '',
   obligatorio = false,
   deshabilitado = false,
+  soloLectura = false,
   error = '',
   revisado = false,
   anchoMinimo = ANCHO_MINIMO,
   anchoMaximo = ANCHO_MAXIMO,
   maxLength,
+  min,
+  max,
+  step,
   filas = 3,
 }) {
   const refArea = useRef(null);
@@ -95,14 +117,25 @@ export default function Campo({
   const textoVisible =
     tipo === 'lista' ? (opcionElegida ? opcionElegida.texto : placeholder) : valor || placeholder;
 
-  const clases = ['sigma-campo', tipo === 'area' && 'sigma-campo--ancho', marca && `sigma-campo--${marca}`]
+  const esFecha = tipo === 'texto' && tipoHtml === 'date';
+
+  const clases = [
+    'sigma-campo',
+    tipo === 'area' && 'sigma-campo--ancho',
+    marca && `sigma-campo--${marca}`,
+  ]
     .filter(Boolean)
     .join(' ');
 
   const anchoCaja =
     tipo === 'area'
       ? undefined
-      : anchoDeLaCaja(textoVisible, anchoMinimo, anchoMaximo, tipo === 'lista');
+      : anchoDeLaCaja(
+          textoVisible,
+          anchoMinimo,
+          anchoMaximo,
+          tipo === 'lista' ? 'lista' : esFecha ? 'fecha' : 'texto'
+        );
 
   const idMensaje = `${id}-mensaje`;
   const propiedadesComunes = {
@@ -148,6 +181,10 @@ export default function Campo({
             type={tipoHtml}
             placeholder={placeholder}
             maxLength={maxLength}
+            min={min}
+            max={max}
+            step={step}
+            readOnly={soloLectura}
           />
         )}
 

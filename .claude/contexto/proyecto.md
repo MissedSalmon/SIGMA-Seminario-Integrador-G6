@@ -115,3 +115,17 @@ El problema no es exclusivo de esta facultad. Ordenados por cercanía:
    circuito, menor escala.
 3. **Organizaciones no educativas** con edificios propios (municipios, hospitales, clubes,
    consorcios) — habría que adaptar vocabulario. Es proyección a futuro.
+
+---
+
+## Restricciones de Diseño y UI
+Las siguientes reglas deben aplicarse estrictamente en la UI:
+1. **Botones de Alta:** Los botones con la funcionalidad de un alta de algún registro tienen que llamarse estrictamente "Agregar".
+2. **Filtros (Barra de Filtros Horizontales):**
+   - **Estructura:** Campo de búsqueda global (input con ícono de lupa) a la izquierda, seguido de la etiqueta "Filtrar por:" y selectores desplegables (dropdowns) para las facetas (AND lógico).
+   - **Nombres de etiquetas:** NINGÚN filtro en su nombre (etiqueta) debe contener el prefijo "Tipo de ". Debe usarse directamente el sustantivo descriptivo (ej. "Activo", "Espacio", "Material", etc.).
+   - **Comportamiento:** Filtrado reactivo combinado en la misma línea superior, maximizando el espacio vertical, tal como el diseño utilizado en la pantalla "Listado de activos".
+3. **Casillas de Texto:** Deben tener el tamaño acorde a la información que va dentro.
+4. **Menús Laterales:** Evitar que el texto se corte.
+5. **Responsividad:** Todas las pantallas deben ser responsivas y multiplataforma.
+6. **Uso de Colores (MÁS IMPORTANTE):** Los textos no deben tener un formato de colores si no tienen una explicación o referencia de qué significa cada color. Siempre consultar el significado.

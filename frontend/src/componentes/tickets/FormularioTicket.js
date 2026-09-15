@@ -191,7 +191,7 @@ export default function FormularioTicket({ onGuardar }) {
 
   const opcionesActivos = activos.map((activo) => ({
     valor: activo.codigo,
-    texto: activo.descripcion ? `${activo.codigo} - ${activo.descripcion}` : activo.codigo,
+    texto: activo.nombreTipo ? `${activo.codigo} - ${activo.nombreTipo}` : activo.codigo,
   }));
 
   const opcionesEdificios = edificios.map((edificio) => ({
@@ -202,8 +202,8 @@ export default function FormularioTicket({ onGuardar }) {
   // Sin edificio elegido no se ofrece ningún espacio, aunque queden en memoria
   // los del edificio anterior.
   const opcionesEspacios = (idEdificio ? espacios : []).map((espacio) => ({
-    valor: espacio.espacioNum,
-    texto: espacio.nombre ? `${espacio.nombre} (${espacio.espacioNum})` : espacio.espacioNum,
+    valor: espacio.espacio_num,
+    texto: espacio.nombre ? `${espacio.nombre} (${espacio.espacio_num})` : espacio.espacio_num,
   }));
 
   return (
@@ -212,7 +212,7 @@ export default function FormularioTicket({ onGuardar }) {
         <Aviso mensaje={error} onCerrar={() => setError('')} />
 
         <form noValidate onSubmit={manejarEnvio}>
-          <h2 className="sigma-seccion-titulo">¿Qué se rompió?</h2>
+          <h2 className="sigma-seccion-titulo"></h2>
 
           <div className="mb-3">
             <CFormLabel className="sigma-obligatorio">¿De qué es el ticket?</CFormLabel>

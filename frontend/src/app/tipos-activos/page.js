@@ -120,7 +120,6 @@ export default function PantallaTiposActivos() {
     <>
       <EncabezadoPagina
         titulo="Tipos de activos"
-        descripcion="Las categorias con las que se agrupa el inventario."
         accion={{ direccion: '/tipos-activos/agregar' }}
       />
 
@@ -136,7 +135,6 @@ export default function PantallaTiposActivos() {
             placeholderBusqueda="Buscar por nombre..."
             cargando={cargando}
             textoVacio="Todavia no hay tipos de activos cargados."
-            accionVacio={{ direccion: '/tipos-activos/agregar' }}
           />
         </CCardBody>
       </CCard>

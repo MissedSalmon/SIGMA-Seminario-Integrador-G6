@@ -39,7 +39,6 @@ const COLUMNAS = `
 function aActivo(fila) {
   return {
     codigo: fila.activo_codigo,
-    descripcion: '', 
     idTipoActivo: fila.tipo_activo_id,
     nombreTipo: fila.tipo_activo ? fila.tipo_activo.tipo_activo_nom : '',
     idEdificio: fila.edificio_id,
@@ -48,7 +47,6 @@ function aActivo(fila) {
     nombreEspacio: fila.espacio ? fila.espacio.espacio_num : '',
     nombreEdificio: fila.espacio && fila.espacio.edificio ? fila.espacio.edificio.edificio_nom : '',
     fechaAlta: fila.activo_fecha_alta,
-    fechaInstalacion: fila.activo_fecha_alta,
     fechaUltimoMantenimiento: fila.activo_fecha_ult_maint,
     fechaUltimaReubicacion: null,
     estado: fila.activo_estado || ESTADO_INICIAL,
@@ -167,7 +165,7 @@ export async function crear(datos) {
       tipo_activo_id: idTipoActivo,
       edificio_id: idEdificio,
       espacio_id: espacio_id,
-      activo_fecha_alta: hoy(),
+      activo_fecha_alta: limpiar(datos.fechaAlta) ?? hoy(),
       activo_estado: ESTADO_INICIAL,
     })
     .select(COLUMNAS)
@@ -198,6 +196,7 @@ export async function actualizar(codigo, datos) {
     tipo_activo_id: idTipoActivo,
     edificio_id: idEdificio,
     espacio_id: espacio_id,
+    activo_fecha_alta: limpiar(datos.fechaAlta) ?? actual.fechaAlta,
     activo_estado: estado,
   };
 

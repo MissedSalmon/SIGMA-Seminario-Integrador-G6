@@ -7,7 +7,7 @@ import { crearEspecialidad } from '@/servicios/especialidades.js';
 export default function PantallaAgregarEspecialidad() {
   return (
     <>
-      <EncabezadoPagina titulo="Agregar especialidad" descripcion="Los campos marcados con * son obligatorios." />
+      <EncabezadoPagina titulo="Agregar especialidad" />
       <FormularioEspecialidad onGuardar={async ({ nombre }) => crearEspecialidad(nombre)} />
     </>
   );

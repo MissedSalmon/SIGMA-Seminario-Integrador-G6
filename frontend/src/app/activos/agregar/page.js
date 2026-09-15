@@ -10,10 +10,7 @@ import { crearActivo } from '@/servicios/activos.js';
 export default function PantallaAgregarActivo() {
   return (
     <>
-      <EncabezadoPagina
-        titulo="Agregar activo"
-        descripcion="Los campos marcados con * son obligatorios. El activo queda en estado Operativo."
-      />
+      <EncabezadoPagina titulo="Agregar activo" />
       <FormularioActivo onGuardar={crearActivo} />
     </>
   );

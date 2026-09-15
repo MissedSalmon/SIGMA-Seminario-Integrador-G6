@@ -21,6 +21,7 @@ import {
  * dice "Tipos de activos". Cada pantalla nueva se suma aca.
  */
 const NOMBRES = {
+  tickets: 'Tickets',
   edificios: 'Edificios',
   espacios: 'Espacios',
   tipos: 'Tipos de espacio',
@@ -29,6 +30,7 @@ const NOMBRES = {
   'tipos-activos': 'Tipos de activos',
   tecnicos: 'Técnicos',
   especialidades: 'Especialidades',
+  autorizados: 'Usuarios autorizados',
   agregar: 'Agregar',
   editar: 'Editar',
 };

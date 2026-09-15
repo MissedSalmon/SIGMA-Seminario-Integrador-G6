@@ -95,7 +95,6 @@ export default function PantallaEspecialidades() {
             placeholderBusqueda="Buscar por nombre..."
             cargando={cargando}
             textoVacio="Todavia no hay especialidades cargadas."
-            accionVacio={{ direccion: '/especialidades/agregar' }}
           />
         </CCardBody>
       </CCard>

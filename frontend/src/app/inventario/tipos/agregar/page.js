@@ -7,7 +7,7 @@ import { crearTipoInventario } from '@/servicios/inventario.js';
 export default function PantallaAgregarTipoInventario() {
   return (
     <>
-      <EncabezadoPagina titulo="Agregar tipo de inventario" descripcion="Define una categoria de material o herramienta." />
+      <EncabezadoPagina titulo="Agregar tipo" />
       <FormularioTipo onGuardar={crearTipoInventario} />
     </>
   );

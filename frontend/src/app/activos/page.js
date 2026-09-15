@@ -172,7 +172,6 @@ export default function PantallaActivos() {
     <>
       <EncabezadoPagina
         titulo="Activos"
-        descripcion="El inventario de la facultad: que hay, donde esta y en que estado."
         accion={{ direccion: '/activos/agregar' }}
       />
 
@@ -188,7 +187,7 @@ export default function PantallaActivos() {
             placeholderBusqueda="Buscar por codigo o tipo..."
             filtros={[
               {
-                etiqueta: 'espacio',
+                etiqueta: 'Espacio',
                 valor: filtroEspacio,
                 alCambiar: setFiltroEspacio,
                 opciones: espacios.map((espacio) => ({
@@ -217,9 +216,6 @@ export default function PantallaActivos() {
               hayFiltros
                 ? 'No hay activos que cumplan con esos filtros.'
                 : 'Todavia no hay activos cargados.'
-            }
-            accionVacio={
-              hayFiltros ? undefined : { direccion: '/activos/agregar' }
             }
           />
         </CCardBody>

@@ -19,7 +19,6 @@
  *     filtros={[ ... ver abajo ... ]}
  *     cargando={cargando}
  *     textoVacio="Todavia no hay edificios cargados."
- *     accionVacio={{ direccion: '/edificios/agregar' }}
  *   />
  *
  * Los filtros se pasan como datos, no como JSX. Los arma la tabla para que en
@@ -39,11 +38,20 @@
  * Con el desplegable cerrado y sin filtrar se lee el nombre de la columna
  * ("Tipo"), y al abrirlo la primera opcion dice "Todos". Las dos las agrega la
  * tabla sola: la pantalla no las escribe.
+ *
+ * Un filtro tambien puede ser una fecha (HU-10): en vez de opciones lleva
+ * `tipo: 'fecha'` y se muestra como una caja de fecha con su etiqueta adelante.
+ *
+ *   { etiqueta: 'Desde', tipo: 'fecha', valor: fechaDesde, alCambiar: setFechaDesde }
+ *
+ * Si la pantalla pasa `alLimpiar`, aparece un boton "Limpiar" al lado de los
+ * filtros cuando hay alguno aplicado. La tabla no sabe cuales: solo llama a la
+ * funcion, y la pantalla es la que los vacia.
  */
 import { useId, useMemo, useState } from 'react';
 import { CButton, CFormInput, CFormSelect, CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilChevronLeft, cilChevronRight, cilSearch } from '@coreui/icons';
+import { cilChevronLeft, cilChevronRight, cilSearch, cilX } from '@coreui/icons';
 
 import { EsqueletoFilas, SinDatos } from '@/componentes/EstadoTabla.js';
 
@@ -56,15 +64,17 @@ export default function TablaDatos({
   buscarPor = [],
   placeholderBusqueda = 'Buscar...',
   filtros = [],
+  alLimpiar,
   cargando = false,
   textoVacio = 'Todavia no hay datos cargados.',
-  accionVacio,
 }) {
   const [busqueda, setBusqueda] = useState('');
   const [paginaPedida, setPaginaPedida] = useState(1);
 
   // Para que cada desplegable tenga su propio id, aunque haya dos tablas.
   const idFiltros = useId();
+
+  const hayFiltrosAplicados = filtros.some((filtro) => filtro.valor !== '' && filtro.valor != null);
 
   const filasFiltradas = useMemo(() => {
     const texto = busqueda.trim().toLowerCase();
@@ -108,7 +118,20 @@ export default function TablaDatos({
             <>
               <span className="sigma-tabla-filtros-titulo">Filtrar por:</span>
 
-              {filtros.map((filtro) => (
+              {filtros.map((filtro) =>
+                filtro.tipo === 'fecha' ? (
+                  <label key={filtro.etiqueta} className="sigma-tabla-filtro-fecha">
+                    <span>{filtro.etiqueta}</span>
+                    <CFormInput
+                      type="date"
+                      size="sm"
+                      id={`${idFiltros}-${filtro.etiqueta}`}
+                      aria-label={`Filtrar por fecha: ${filtro.etiqueta.toLowerCase()}`}
+                      value={filtro.valor}
+                      onChange={(evento) => filtro.alCambiar(evento.target.value)}
+                    />
+                  </label>
+                ) : (
                 <CFormSelect
                   className="sigma-tabla-filtro"
                   size="sm"
@@ -137,7 +160,24 @@ export default function TablaDatos({
                     </option>
                   ))}
                 </CFormSelect>
-              ))}
+                )
+              )}
+
+              {alLimpiar && hayFiltrosAplicados && (
+                <CButton
+                  color="secondary"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    alLimpiar();
+                    setPaginaPedida(1);
+                  }}
+                  title="Quitar todos los filtros"
+                >
+                  <CIcon icon={cilX} size="sm" className="me-1" />
+                  Limpiar
+                </CButton>
+              )}
             </>
           )}
         </div>
@@ -148,7 +188,7 @@ export default function TablaDatos({
       </div>
 
       {!cargando && filas.length === 0 ? (
-        <SinDatos texto={textoVacio} accion={accionVacio} />
+        <SinDatos texto={textoVacio} />
       ) : !cargando && filasFiltradas.length === 0 ? (
         <SinDatos texto="No se encontro ningun resultado para la busqueda." />
       ) : (

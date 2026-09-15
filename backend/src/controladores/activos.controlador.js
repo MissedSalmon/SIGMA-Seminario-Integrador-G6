@@ -22,8 +22,8 @@ function leerCodigo(req) {
 
 /** Toma del cuerpo solo los campos que son del activo. */
 function leerCuerpo(req) {
-  const { codigo, idTipoActivo, espacio_id, estado } = req.body;
-  return { codigo, idTipoActivo, espacio_id, estado };
+  const { codigo, idTipoActivo, espacio_id, fechaAlta, estado } = req.body;
+  return { codigo, idTipoActivo, espacio_id, fechaAlta, estado };
 }
 
 /**
