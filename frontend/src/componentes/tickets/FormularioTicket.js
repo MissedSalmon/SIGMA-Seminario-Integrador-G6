@@ -72,12 +72,21 @@ export default function FormularioTicket({ onGuardar }) {
       .catch((fallo) => setError(fallo.message));
   }, []);
 
-  // Los espacios se piden recién cuando hay un edificio elegido.
   useEffect(() => {
     if (!idEdificio) return;
+
+    let vigente = true;
     listarEspacios(idEdificio)
-      .then(setEspacios)
-      .catch((fallo) => setError(fallo.message));
+      .then((lista) => {
+        if (vigente) setEspacios(lista);
+      })
+      .catch((fallo) => {
+        if (vigente) setError(fallo.message);
+      });
+
+    return () => {
+      vigente = false;
+    };
   }, [idEdificio]);
 
   /*
