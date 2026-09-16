@@ -14,23 +14,34 @@ import {
 } from '@coreui/react';
 
 /**
- * Como se muestra cada tramo de la direccion en las migas.
+ * Como se muestra cada pantalla en las migas.
  *
  * El texto tiene que ser el mismo que el titulo de la pantalla: si en la
- * direccion dice "tipos-activos" y arriba dice "Tipos de activos", la miga
- * dice "Tipos de activos". Cada pantalla nueva se suma aca.
+ * direccion dice "tipos-activos" y arriba dice "Tipos de activos", la miga dice
+ * "Tipos de activos". Cada pantalla nueva se suma aca.
+ *
+ * SE BUSCA POR LA DIRECCION ENTERA, no por el ultimo tramo. Es lo que permite
+ * que "tipos" signifique una cosa en espacios y otra en inventario: si se
+ * buscara por el tramo suelto, /inventario/tipos mostraria "Tipos de espacio".
  */
 const NOMBRES = {
-  tickets: 'Tickets',
-  edificios: 'Edificios',
-  espacios: 'Espacios',
-  tipos: 'Tipos de espacio',
-  areas: 'Áreas',
-  activos: 'Activos',
-  'tipos-activos': 'Tipos de activos',
-  tecnicos: 'Técnicos',
-  especialidades: 'Especialidades',
-  autorizados: 'Usuarios autorizados',
+  '/tickets': 'Tickets',
+  '/plantillas-tareas': 'Plantillas de tareas',
+  '/edificios': 'Edificios',
+  '/espacios': 'Espacios',
+  '/espacios/tipos': 'Tipos de espacio',
+  '/areas': 'Áreas',
+  '/activos': 'Activos',
+  '/tipos-activos': 'Tipos de activos',
+  '/inventario': 'Inventario',
+  '/inventario/tipos': 'Tipos de materiales y herramientas',
+  '/tecnicos': 'Técnicos',
+  '/especialidades': 'Especialidades',
+  '/autorizados': 'Usuarios autorizados',
+};
+
+/** Los tramos que se repiten igual en todos los modulos. */
+const NOMBRES_COMUNES = {
   agregar: 'Agregar',
   editar: 'Editar',
 };
@@ -54,7 +65,7 @@ function armarMigas(direccion) {
     if (/^\d+$/.test(tramo) || tramos[indice + 1] === 'editar') return;
 
     migas.push({
-      texto: NOMBRES[tramo] ?? tramo,
+      texto: NOMBRES[acumulada] ?? NOMBRES_COMUNES[tramo] ?? tramo,
       direccion: acumulada,
       ultima: indice === tramos.length - 1,
     });

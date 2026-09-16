@@ -53,7 +53,7 @@ export default function FormularioTipo({ tipo = null, onGuardar }) {
         tipo: 'exito',
         mensaje: editando
           ? `Se guardaron los cambios de "${nombre}".`
-          : `Se agrego el tipo "${nombre}".`,
+          : `Se agregó el tipo "${nombre}".`,
       });
       router.push('/inventario/tipos');
       router.refresh();
@@ -75,13 +75,13 @@ export default function FormularioTipo({ tipo = null, onGuardar }) {
               etiqueta="Nombre"
               valor={nombre}
               alCambiar={setNombre}
-              placeholder={clase === 'Herramienta' ? 'Herramientas electricas' : 'Cables'}
+              placeholder={clase === 'Herramienta' ? 'Herramientas eléctricas' : 'Cables'}
               obligatorio
               maxLength={150}
-              anchoMinimo={20}
+              ancho={20}
               revisado={revisado}
               error={errores.nombre}
-              ayuda="Asi va a aparecer en el desplegable al cargar un material o una herramienta."
+              ayuda="Así va a aparecer en el desplegable al cargar un material o una herramienta."
             />
 
             <Campo
@@ -91,9 +91,10 @@ export default function FormularioTipo({ tipo = null, onGuardar }) {
               valor={clase}
               alCambiar={setClase}
               opciones={CLASES.map((texto) => ({ valor: texto, texto }))}
+              placeholder="Elegir clase"
               obligatorio
               deshabilitado={editando}
-              anchoMinimo={14}
+              ancho={14}
               revisado={revisado}
               ayuda={
                 editando
@@ -104,11 +105,11 @@ export default function FormularioTipo({ tipo = null, onGuardar }) {
 
             <Campo
               id="descripcion"
-              etiqueta="Descripcion"
+              etiqueta="Descripción"
               tipo="area"
               valor={descripcion}
               alCambiar={setDescripcion}
-              placeholder="Opcional: que entra en esta categoria."
+              placeholder="Opcional: qué entra en esta categoría."
               maxLength={300}
               revisado={revisado}
             />
@@ -116,7 +117,7 @@ export default function FormularioTipo({ tipo = null, onGuardar }) {
 
           {revisado && hayErrores && (
             <p className="sigma-campo-mensaje sigma-campo-mensaje--error mb-3">
-              Revisa los campos marcados y volve a guardar.
+              Revisá los campos marcados y volvé a guardar.
             </p>
           )}
 

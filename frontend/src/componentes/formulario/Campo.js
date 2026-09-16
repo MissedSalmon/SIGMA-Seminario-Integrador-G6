@@ -3,15 +3,13 @@
 /**
  * Un campo de formulario de SIGMA: etiqueta + caja + marca de validacion.
  *
- * Resuelve dos cosas que CoreUI no hace solo:
+ * Resuelve tres cosas que CoreUI no hace solo:
  *
- * 1. LA CAJA SE ADAPTA AL TEXTO. En vez de que todos los campos midan lo mismo
- *    (o lo que mida la columna de la grilla), cada caja mide lo que mide su
- *    contenido, entre un minimo y un maximo. Asi un numero de aula no ocupa el
- *    mismo ancho que una descripcion, y una fecha mide lo que mide una fecha.
- *    El ancho se calcula en "ch" (el ancho de un caracter de la tipografia),
- *    mas el lugar del padding y de la marca. El textarea no crece a lo ancho
- *    sino a lo alto, a medida que se escribe.
+ * 1. CADA CAJA MIDE LO SUYO, Y NO SE MUEVE. En vez de que todos los campos
+ *    midan lo mismo (o lo que mida la columna de la grilla), cada uno declara su
+ *    `ancho` en caracteres: un numero de aula no ocupa lo mismo que una
+ *    descripcion. Ese ancho es fijo, no cambia con lo que se escribe, porque si
+ *    la caja creciera se corren de lugar todos los campos que siguen.
  *
  * 2. LA VALIDACION NO PINTA TODA LA CAJA. El `validated` de CoreUI (el
  *    was-validated de Bootstrap) pinta el borde entero de verde o de rojo y
@@ -19,6 +17,18 @@
  *    marca es chica: una barrita de color al costado izquierdo, un tilde o una
  *    cruz al final de la caja, y el motivo escrito abajo cuando algo esta mal.
  *    Se ve igual de claro que esta bien y que esta mal, sin gritar.
+ *
+ * 3. LA CAJA PUEDE ORDENAR LO QUE SE ESCRIBE. Con `formato` se le pasa una
+ *    funcion que acomoda el texto en cada tecla: asi el DNI no acepta letras y
+ *    el CUIL y el telefono muestran los guiones y el espacio solos, sin que
+ *    haga falta escribirlos (ver utils/validaciones.js).
+ *
+ *    El cursor se queda donde estaba. Hace falta cuidarlo a mano: al reescribir
+ *    el texto, el navegador manda el cursor al final, y entonces no se podia
+ *    corregir un numero del medio. Lo que se guarda no es la posicion (los
+ *    guiones y los espacios la corren) sino CUANTOS DIGITOS quedaban a la
+ *    izquierda; despues de formatear se busca el lugar que deja esos mismos
+ *    digitos atras.
  *
  * La marca aparece recien cuando el formulario se reviso (al apretar Guardar) y
  * de ahi en mas se actualiza sola mientras se escribe, asi se ve al momento que
@@ -35,14 +45,47 @@
  *     error={errores.descripcion}
  *   />
  */
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { CFormInput, CFormLabel, CFormSelect, CFormTextarea } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilCheckAlt, cilX } from '@coreui/icons';
 
-/** Ancho de la caja, en caracteres, cuando no se pide otra cosa. */
-const ANCHO_MINIMO = 12;
-const ANCHO_MAXIMO = 44;
+/** Ancho de la caja, en caracteres, cuando el campo no pide otro. */
+const ANCHO_POR_DEFECTO = 16;
+
+const ES_DIGITO = /\d/;
+
+function cuantosDigitos(texto) {
+  let cuenta = 0;
+  for (const caracter of texto) if (ES_DIGITO.test(caracter)) cuenta++;
+  return cuenta;
+}
+
+/** El lugar del texto que deja `cantidad` digitos a la izquierda. */
+function lugarTrasDigitos(texto, cantidad) {
+  if (cantidad === 0) return 0;
+
+  let vistos = 0;
+  for (let i = 0; i < texto.length; i++) {
+    if (!ES_DIGITO.test(texto[i])) continue;
+    vistos++;
+    if (vistos === cantidad) return i + 1;
+  }
+
+  return texto.length;
+}
+
+/** Saca el digito numero `cual` (1 es el primero). */
+function quitarDigito(texto, cual) {
+  let vistos = 0;
+  for (let i = 0; i < texto.length; i++) {
+    if (!ES_DIGITO.test(texto[i])) continue;
+    vistos++;
+    if (vistos === cual) return texto.slice(0, i) + texto.slice(i + 1);
+  }
+
+  return texto;
+}
 
 /**
  * Los caracteres que ocupa una fecha escrita (dd/mm/aaaa). Una caja de fecha
@@ -64,15 +107,13 @@ const LUGAR_EXTRA = {
   texto: 2.75,
 };
 
-/** El ancho que le corresponde a una caja segun lo que tiene escrito. */
-function anchoDeLaCaja(texto, minimo, maximo, forma) {
+/** El ancho de la caja: los caracteres que pide el campo mas el lugar extra. */
+function anchoDeLaCaja(ancho, forma) {
   if (forma === 'fecha') {
     return `calc(${ANCHO_FECHA}ch + ${LUGAR_EXTRA.fecha}rem)`;
   }
 
-  const largo = String(texto ?? '').length;
-  const caracteres = Math.min(maximo, Math.max(minimo, largo + 2));
-  return `calc(${caracteres}ch + ${LUGAR_EXTRA[forma]}rem)`;
+  return `calc(${ancho}ch + ${LUGAR_EXTRA[forma]}rem)`;
 }
 
 export default function Campo({
@@ -82,6 +123,7 @@ export default function Campo({
   tipoHtml = 'text',
   valor,
   alCambiar,
+  formato,
   opciones = [],
   placeholder = '',
   ayuda = '',
@@ -90,8 +132,7 @@ export default function Campo({
   soloLectura = false,
   error = '',
   revisado = false,
-  anchoMinimo = ANCHO_MINIMO,
-  anchoMaximo = ANCHO_MAXIMO,
+  ancho = ANCHO_POR_DEFECTO,
   maxLength,
   min,
   max,
@@ -99,6 +140,8 @@ export default function Campo({
   filas = 3,
 }) {
   const refArea = useRef(null);
+  const refCaja = useRef(null);
+  const lugarDelCursor = useRef(null);
 
   // El textarea crece a lo alto con lo que se escribe: se lo lleva a "auto"
   // para que scrollHeight mida el contenido real y despues se fija ese alto.
@@ -109,13 +152,63 @@ export default function Campo({
     area.style.height = `${area.scrollHeight}px`;
   }, [valor]);
 
+  /*
+   * Devuelve el cursor a donde estaba, despues de que React reescribio la caja.
+   * Va en un layout effect para que pase antes de que se dibuje la pantalla: si
+   * no, se ve el salto al final y vuelve.
+   */
+  useLayoutEffect(() => {
+    if (lugarDelCursor.current === null) return;
+    const caja = refCaja.current;
+    const lugar = lugarDelCursor.current;
+    lugarDelCursor.current = null;
+    if (caja) caja.setSelectionRange(lugar, lugar);
+  });
+
+  function alEscribir(evento) {
+    const caja = evento.target;
+    const escrito = caja.value;
+
+    if (!formato) {
+      alCambiar(escrito);
+      return;
+    }
+
+    const anterior = String(valor ?? '');
+    const cursor = caja.selectionStart ?? escrito.length;
+
+    let digitosALaIzquierda = cuantosDigitos(escrito.slice(0, cursor));
+    let ordenado = formato(escrito);
+
+    /*
+     * Borrar un guion o un espacio no borra nada, porque el formato lo vuelve a
+     * poner. Para que la tecla no quede muerta se borra el digito de antes, que
+     * es lo que se quiso borrar.
+     */
+    if (ordenado === anterior && escrito.length < anterior.length && digitosALaIzquierda > 0) {
+      ordenado = formato(quitarDigito(escrito, digitosALaIzquierda));
+      digitosALaIzquierda--;
+    }
+
+    const lugar = lugarTrasDigitos(ordenado, digitosALaIzquierda);
+    alCambiar(ordenado);
+
+    /*
+     * Si el texto quedo igual que antes (se escribio una letra, por ejemplo) no
+     * hay nada que volver a dibujar, asi que el layout effect no corre. React
+     * igual le devuelve a la caja el valor que conoce, y eso manda el cursor al
+     * final: hay que reponerlo cuando eso ya paso.
+     */
+    if (ordenado === anterior) {
+      queueMicrotask(() => caja.setSelectionRange(lugar, lugar));
+      return;
+    }
+
+    lugarDelCursor.current = lugar;
+  }
+
   const hayValor = String(valor ?? '').trim() !== '';
   const marca = revisado && error ? 'error' : revisado && hayValor ? 'ok' : null;
-
-  // En una lista, lo que se ve es el texto de la opcion elegida, no su valor.
-  const opcionElegida = opciones.find((opcion) => String(opcion.valor) === String(valor));
-  const textoVisible =
-    tipo === 'lista' ? (opcionElegida ? opcionElegida.texto : placeholder) : valor || placeholder;
 
   const esFecha = tipo === 'texto' && tipoHtml === 'date';
 
@@ -130,18 +223,13 @@ export default function Campo({
   const anchoCaja =
     tipo === 'area'
       ? undefined
-      : anchoDeLaCaja(
-          textoVisible,
-          anchoMinimo,
-          anchoMaximo,
-          tipo === 'lista' ? 'lista' : esFecha ? 'fecha' : 'texto'
-        );
+      : anchoDeLaCaja(ancho, tipo === 'lista' ? 'lista' : esFecha ? 'fecha' : 'texto');
 
   const idMensaje = `${id}-mensaje`;
   const propiedadesComunes = {
     id,
     value: valor,
-    onChange: (evento) => alCambiar(evento.target.value),
+    onChange: alEscribir,
     disabled: deshabilitado,
     'aria-invalid': marca === 'error',
     'aria-describedby': error || ayuda ? idMensaje : undefined,
@@ -178,6 +266,7 @@ export default function Campo({
         {tipo === 'texto' && (
           <CFormInput
             {...propiedadesComunes}
+            ref={refCaja}
             type={tipoHtml}
             placeholder={placeholder}
             maxLength={maxLength}
@@ -190,7 +279,8 @@ export default function Campo({
 
         {marca && (
           <span className="sigma-campo-marca" aria-hidden="true">
-            <CIcon icon={marca === 'ok' ? cilCheckAlt : cilX} size="sm" />
+            {/* El tamano lo pone globals.css, no el `size` de CoreUI: ver .sigma-campo-marca. */}
+            <CIcon icon={marca === 'ok' ? cilCheckAlt : cilX} />
           </span>
         )}
       </div>

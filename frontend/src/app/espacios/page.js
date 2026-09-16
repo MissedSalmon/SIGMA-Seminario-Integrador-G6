@@ -75,7 +75,7 @@ export default function PantallaEspacios() {
 
     try {
       await eliminarEspacio(aEliminar.idEspacio);
-      mostrarToast({ tipo: 'exito', mensaje: `Se elimino el espacio "${aEliminar.nombre}".` });
+      mostrarToast({ tipo: 'exito', mensaje: `Se eliminó el espacio "${aEliminar.nombre}".` });
       setAEliminar(null);
       setRecarga((numero) => numero + 1);
     } catch (fallo) {
@@ -94,7 +94,7 @@ export default function PantallaEspacios() {
     },
     {
       clave: 'edificio',
-      encabezado: 'edificio',
+      encabezado: 'Edificio',
       render: (espacio) => <span className="text-body-secondary">{espacio.nombreEdificio}</span>,
     },
     {
@@ -109,7 +109,7 @@ export default function PantallaEspacios() {
     },
     {
       clave: 'numero',
-      encabezado: 'Numero',
+      encabezado: 'Número',
       render: (espacio) => <span className="text-body-secondary">{espacio.numero ?? '-'}</span>,
     },
     {
@@ -153,7 +153,7 @@ export default function PantallaEspacios() {
             claveFila={(espacio) => `${espacio.idEdificio}-${espacio.espacio_num}`}
             columnas={columnas}
             buscarPor={['nombre', 'nombreEdificio', 'tipo', 'piso', 'numero']}
-            placeholderBusqueda="Buscar por nombre, tipo o piso..."
+            placeholderBusqueda="Buscar por nombre, edificio o tipo"
             filtros={[
               {
                 etiqueta: 'Edificio',
@@ -186,7 +186,7 @@ export default function PantallaEspacios() {
           <strong>{aEliminar?.nombreEdificio}</strong>.
         </p>
         <p className="text-body-secondary mt-2 mb-0">
-          Solo se puede eliminar si no tiene areas asociadas.
+          Solo se puede eliminar si no tiene áreas asociadas.
         </p>
       </DialogoEliminar>
     </>

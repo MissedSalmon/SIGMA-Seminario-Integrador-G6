@@ -21,7 +21,7 @@ const inter = Inter({
 
 export const metadata = {
   title: 'SIGMA',
-  description: 'Sistema Integral de Gestion de Mantenimiento de Activos - UTN FRRe',
+  description: 'Sistema Integral de Gestión de Mantenimiento de Activos - UTN FRRe',
 };
 
 export default function RootLayout({ children }) {

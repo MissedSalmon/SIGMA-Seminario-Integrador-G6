@@ -17,6 +17,15 @@
  */
 import { supabase } from '../config/supabase.js';
 import { datoInvalido, noEncontrado, conflicto } from '../utiles/errores.js';
+import {
+  normalizarCuil,
+  normalizarDni,
+  normalizarTelefono,
+  validarCuil,
+  validarDni,
+  validarEmail,
+  validarTelefono,
+} from '../utiles/validaciones.js';
 
 /**
  * El area viaja como relacion inversa: la trae PostgREST siguiendo la clave
@@ -33,12 +42,6 @@ function limpiar(texto) {
   if (typeof texto !== 'string') return null;
   const limpio = texto.trim();
   return limpio === '' ? null : limpio;
-}
-
-/** Deja solo los digitos: sirve para guardar DNI/CUIL sin importar si vienen con puntos o guiones. */
-function soloDigitos(texto) {
-  const limpio = limpiar(texto);
-  return limpio ? limpio.replace(/\D/g, '') : null;
 }
 
 /**
@@ -71,10 +74,7 @@ function aAutorizado(fila) {
  */
 function validarDatos(datos) {
   const nombre = limpiar(datos.nombre);
-  const dni = soloDigitos(datos.dni);
-  const cuil = soloDigitos(datos.cuil);
   const email = limpiar(datos.email);
-  const telefono = limpiar(datos.telefono);
   const fechaNacimiento = limpiar(datos.fechaNacimiento);
   const idArea = Number(datos.idArea);
 
@@ -82,22 +82,27 @@ function validarDatos(datos) {
 
   // El area es lo que habilita a cargar tickets: sin area el usuario no sirve.
   if (!Number.isInteger(idArea) || idArea <= 0) {
-    throw datoInvalido('Hay que asignarle un area de la que sea responsable.');
+    throw datoInvalido('Hay que asignarle un área de la que sea responsable.');
   }
 
-  if (dni && (dni.length < 7 || dni.length > 8)) {
-    throw datoInvalido('El DNI tiene que tener 7 u 8 digitos.');
-  }
+  if (!String(datos.dni ?? '').trim()) throw datoInvalido('El DNI es obligatorio.');
+  if (!fechaNacimiento) throw datoInvalido('La fecha de nacimiento es obligatoria.');
 
-  if (cuil && cuil.length !== 11) {
-    throw datoInvalido('El CUIL tiene que tener 11 digitos.');
-  }
+  // Estos campos siguen las reglas de utiles/validaciones.js, las mismas que
+  // usa la pantalla.
+  const problema =
+    validarDni(datos.dni) ||
+    validarCuil(datos.cuil, datos.dni) ||
+    validarTelefono(datos.telefono) ||
+    validarEmail(email);
 
-  if (email && !email.includes('@')) {
-    throw datoInvalido('El email no parece valido.');
-  }
+  if (problema) throw datoInvalido(problema);
 
-  if (fechaNacimiento && fechaNacimiento > new Date().toISOString().slice(0, 10)) {
+  const dni = normalizarDni(datos.dni);
+  const cuil = normalizarCuil(datos.cuil);
+  const telefono = normalizarTelefono(datos.telefono);
+
+  if (fechaNacimiento > new Date().toISOString().slice(0, 10)) {
     throw datoInvalido('La fecha de nacimiento no puede ser posterior a hoy.');
   }
 
@@ -116,7 +121,7 @@ async function validarAreaLibre(idArea, legajo) {
     .maybeSingle();
 
   if (error) throw new Error(error.message);
-  if (!data) throw datoInvalido(`No existe el area ${idArea}.`);
+  if (!data) throw datoInvalido(`No existe el área ${idArea}.`);
 
   if (data.autorizado_legajo && data.autorizado_legajo !== legajo) {
     throw conflicto(

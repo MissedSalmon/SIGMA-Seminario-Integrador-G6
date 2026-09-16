@@ -64,7 +64,7 @@ export default function PantallaTiposActivos() {
       await eliminarTipoActivo(aEliminar.idTipoActivo);
       mostrarToast({
         tipo: 'exito',
-        mensaje: `Se elimino el tipo de activo "${aEliminar.nombre}".`,
+        mensaje: `Se eliminó el tipo de activo "${aEliminar.nombre}".`,
       });
       setAEliminar(null);
       setRecarga((numero) => numero + 1);
@@ -132,7 +132,7 @@ export default function PantallaTiposActivos() {
             claveFila={(tipo) => tipo.idTipoActivo}
             columnas={columnas}
             buscarPor={['nombre', ]}
-            placeholderBusqueda="Buscar por nombre..."
+            placeholderBusqueda="Buscar por nombre"
             cargando={cargando}
             textoVacio="Todavia no hay tipos de activos cargados."
           />

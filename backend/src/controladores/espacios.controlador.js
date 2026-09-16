@@ -6,7 +6,7 @@ function leerId(req) {
   const idNum = Number(idStr);
 
   if (!idStr || !Number.isInteger(idNum)) {
-    throw datoInvalido(`"${req.params.id}" no es un numero de espacio valido.`);
+    throw datoInvalido(`"${req.params.id}" no es un número de espacio válido.`);
   }
 
   return idNum;
@@ -21,7 +21,7 @@ export async function listar(req, res) {
   const filtro = req.query.idEdificio ? Number(req.query.idEdificio) : null;
 
   if (filtro !== null && !Number.isInteger(filtro)) {
-    throw datoInvalido(`"${req.query.idEdificio}" no es un numero de edificio valido.`);
+    throw datoInvalido(`"${req.query.idEdificio}" no es un número de edificio válido.`);
   }
 
   const espacios = await espaciosServicio.obtenerTodos(filtro);
@@ -53,5 +53,5 @@ export async function actualizar(req, res) {
 export async function eliminar(req, res) {
   const espacio_id = leerId(req);
   const espacio = await espaciosServicio.eliminar(espacio_id);
-  res.json({ ok: true, datos: espacio, mensaje: `Se elimino el espacio.` });
+  res.json({ ok: true, datos: espacio, mensaje: `Se eliminó el espacio.` });
 }

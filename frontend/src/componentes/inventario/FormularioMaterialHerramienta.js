@@ -95,11 +95,11 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
   const errores = useMemo(() => {
     const encontrados = {};
 
-    if (!codigo.trim()) encontrados.codigo = 'El codigo es obligatorio y no se puede repetir.';
+    if (!codigo.trim()) encontrados.codigo = 'El código es obligatorio y no se puede repetir.';
     if (!nombre.trim()) encontrados.nombre = 'El nombre es obligatorio.';
-    if (!idTipo) encontrados.idTipo = 'Elegi el tipo.';
+    if (!idTipo) encontrados.idTipo = 'Elegí el tipo.';
     if (esMaterial && String(stockMinimo).trim() === '') {
-      encontrados.stockMinimo = 'Indica desde que cantidad hay que reponer.';
+      encontrados.stockMinimo = 'Indicá desde qué cantidad hay que reponer.';
     }
 
     return encontrados;
@@ -129,7 +129,7 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
         tipo: 'exito',
         mensaje: editando
           ? `Se guardaron los cambios de "${nombre}".`
-          : `Se agrego ${elArticulo(clase)} "${nombre}".`,
+          : `Se agregó ${elArticulo(clase)} "${nombre}".`,
       });
       router.push('/inventario');
       router.refresh();
@@ -150,7 +150,7 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
         <Aviso mensaje={error} onCerrar={() => setError('')} />
 
         <form noValidate onSubmit={manejarEnvio}>
-          <h2 className="sigma-seccion-titulo">Que es</h2>
+          <h2 className="sigma-seccion-titulo">¿Qué es?</h2>
 
           <div className="sigma-campos mb-4">
             <Campo
@@ -164,9 +164,10 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
                 setIdTipo('');
               }}
               opciones={CLASES.map((texto) => ({ valor: texto, texto }))}
+              placeholder="Elegir clase"
               obligatorio
               deshabilitado={editando}
-              anchoMinimo={14}
+              ancho={14}
               revisado={revisado}
               ayuda={
                 editando
@@ -185,7 +186,7 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
               placeholder={cargandoTipos ? 'Cargando...' : 'Elegir tipo'}
               deshabilitado={cargandoTipos}
               obligatorio
-              anchoMinimo={18}
+              ancho={18}
               revisado={revisado}
               error={errores.idTipo}
             />
@@ -196,18 +197,17 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
           <div className="sigma-campos mb-4">
             <Campo
               id="codigo"
-              etiqueta="Codigo"
+              etiqueta="Código"
               valor={codigo}
               alCambiar={setCodigo}
               placeholder="MAT-014"
               obligatorio
               maxLength={50}
               deshabilitado={editando}
-              anchoMinimo={10}
-              anchoMaximo={20}
+              ancho={10}
               revisado={revisado}
               error={errores.codigo}
-              ayuda={editando ? 'El codigo no se puede cambiar.' : ''}
+              ayuda={editando ? 'El código no se puede cambiar.' : ''}
             />
 
             <Campo
@@ -218,7 +218,7 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
               placeholder={esMaterial ? 'Cable 2.5 mm' : 'Taladro percutor'}
               obligatorio
               maxLength={150}
-              anchoMinimo={22}
+              ancho={22}
               revisado={revisado}
               error={errores.nombre}
             />
@@ -231,15 +231,14 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
                 alCambiar={() => {}}
                 soloLectura
                 deshabilitado
-                anchoMinimo={12}
-                anchoMaximo={16}
-                ayuda="Lo maneja el deposito con los prestamos y los consumos."
+                ancho={12}
+                ayuda="Lo maneja el depósito con los préstamos y los consumos."
               />
             )}
 
             <Campo
               id="descripcion"
-              etiqueta="Descripcion"
+              etiqueta="Descripción"
               tipo="area"
               valor={descripcion}
               alCambiar={setDescripcion}
@@ -257,15 +256,14 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
               <div className="sigma-campos mb-4">
                 <Campo
                   id="stockMinimo"
-                  etiqueta="Stock minimo"
+                  etiqueta="Stock mínimo"
                   tipoHtml="number"
                   min="0"
                   valor={stockMinimo}
                   alCambiar={setStockMinimo}
                   placeholder="10"
                   obligatorio
-                  anchoMinimo={6}
-                  anchoMaximo={10}
+                  ancho={6}
                   revisado={revisado}
                   error={errores.stockMinimo}
                   ayuda="Debajo de esta cantidad, el sistema avisa que hay que reponer."
@@ -286,7 +284,7 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
 
           {revisado && hayErrores && (
             <p className="sigma-campo-mensaje sigma-campo-mensaje--error mb-3">
-              Revisa los campos marcados y volve a guardar.
+              Revisá los campos marcados y volvé a guardar.
             </p>
           )}
 

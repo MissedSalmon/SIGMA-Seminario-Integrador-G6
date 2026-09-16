@@ -77,7 +77,7 @@ export async function crear(datos) {
   const nombreLimpio = limpiar(datos.nombre);
 
   if (!Number.isInteger(edificio)) throw datoInvalido('El edificio_id es obligatorio.');
-  if (!numeroLimpio) throw datoInvalido('El numero de espacio es obligatorio.');
+  if (!numeroLimpio) throw datoInvalido('El número de espacio es obligatorio.');
   if (!tipo_espacio_id) throw datoInvalido('El tipo de espacio es obligatorio.');
 
   const { data: existeEdificio } = await supabase.from('edificio').select('edificio_id').eq('edificio_id', edificio).maybeSingle();

@@ -103,14 +103,14 @@ export default function FormularioEspacio({ espacio = null, onGuardar }) {
   const errores = useMemo(() => {
     const encontrados = {};
 
-    if (!idEdificio) encontrados.idEdificio = 'Elegi a que edificio pertenece.';
+    if (!idEdificio) encontrados.idEdificio = 'Elegí a que edificio pertenece.';
     if (!nombre.trim()) encontrados.nombre = 'El nombre es obligatorio.';
-    if (!idTipoEspacio) encontrados.idTipoEspacio = 'Elegi el tipo de espacio.';
+    if (!idTipoEspacio) encontrados.idTipoEspacio = 'Elegí el tipo de espacio.';
 
     // Media medida no sirve para nada, y guardarla a medias seria peor que no
     // guardarla: mejor avisar.
     if (Boolean(String(ancho).trim()) !== Boolean(String(largo).trim())) {
-      encontrados.dimensiones = 'Carga el ancho y el largo, o deja los dos vacios.';
+      encontrados.dimensiones = 'Cargá el ancho y el largo, o dejá los dos vacíos.';
     }
 
     return encontrados;
@@ -139,7 +139,7 @@ export default function FormularioEspacio({ espacio = null, onGuardar }) {
         tipo: 'exito',
         mensaje: editando
           ? `Se guardaron los cambios de "${nombre}".`
-          : `Se agrego el espacio "${nombre}".`,
+          : `Se agregó el espacio "${nombre}".`,
       });
       router.push('/espacios');
       router.refresh();
@@ -198,7 +198,7 @@ export default function FormularioEspacio({ espacio = null, onGuardar }) {
               opciones={opcionesEdificios}
               placeholder="Elegir edificio"
               obligatorio
-              anchoMinimo={18}
+              ancho={18}
               revisado={revisado}
               error={errores.idEdificio}
             />
@@ -211,7 +211,7 @@ export default function FormularioEspacio({ espacio = null, onGuardar }) {
               placeholder="Aula 1"
               obligatorio
               maxLength={100}
-              anchoMinimo={16}
+              ancho={16}
               revisado={revisado}
               error={errores.nombre}
             />
@@ -225,7 +225,7 @@ export default function FormularioEspacio({ espacio = null, onGuardar }) {
               opciones={opcionesTipos}
               placeholder="Elegir tipo"
               obligatorio
-              anchoMinimo={14}
+              ancho={14}
               revisado={revisado}
               error={errores.idTipoEspacio}
             />
@@ -237,19 +237,18 @@ export default function FormularioEspacio({ espacio = null, onGuardar }) {
               alCambiar={setPiso}
               placeholder="Planta baja"
               maxLength={50}
-              anchoMinimo={12}
+              ancho={12}
               revisado={revisado}
             />
 
             <Campo
               id="numero"
-              etiqueta="Numero"
+              etiqueta="Número"
               valor={numero}
               alCambiar={setNumero}
               placeholder="12"
               maxLength={20}
-              anchoMinimo={6}
-              anchoMaximo={10}
+              ancho={6}
               revisado={revisado}
             />
 
@@ -294,7 +293,7 @@ export default function FormularioEspacio({ espacio = null, onGuardar }) {
 
           {revisado && hayErrores && (
             <p className="sigma-campo-mensaje sigma-campo-mensaje--error mb-3">
-              Revisa los campos marcados y volve a guardar.
+              Revisá los campos marcados y volvé a guardar.
             </p>
           )}
 

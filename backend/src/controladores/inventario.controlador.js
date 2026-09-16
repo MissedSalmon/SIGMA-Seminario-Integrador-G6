@@ -3,13 +3,13 @@ import { datoInvalido } from '../utiles/errores.js';
 
 function leerId(req) {
   const id = Number(req.params.id);
-  if (!Number.isInteger(id)) throw datoInvalido('El id del tipo de inventario no es valido.');
+  if (!Number.isInteger(id)) throw datoInvalido('El id del tipo de inventario no es válido.');
   return id;
 }
 
 function leerCodigo(req) {
   const codigo = String(req.params.codigo || '').trim();
-  if (!codigo) throw datoInvalido('Falta el codigo del material o de la herramienta.');
+  if (!codigo) throw datoInvalido('Falta el código del material o de la herramienta.');
   return codigo;
 }
 

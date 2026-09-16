@@ -26,12 +26,12 @@ export default function PantallaEditarArea({ params }) {
 
   return (
     <>
-      <EncabezadoPagina titulo="Editar area" />
+      <EncabezadoPagina titulo="Editar área" />
 
       <Aviso mensaje={error} />
 
       {cargando ? (
-        <Cargando texto="Cargando el area..." />
+        <Cargando texto="Cargando el área..." />
       ) : (
         area && <FormularioArea area={area} onGuardar={(datos) => actualizarArea(id, datos)} />
       )}

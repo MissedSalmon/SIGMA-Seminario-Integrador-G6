@@ -50,7 +50,7 @@ export default function FormularioTipoEspacio({ tipo = null, onGuardar }) {
         tipo: 'exito',
         mensaje: editando
           ? `Se guardaron los cambios de "${nombre}".`
-          : `Se agrego el tipo de espacio "${nombre}".`,
+          : `Se agregó el tipo de espacio "${nombre}".`,
       });
 
       router.push('/espacios/tipos');
@@ -76,16 +76,16 @@ export default function FormularioTipoEspacio({ tipo = null, onGuardar }) {
               placeholder="Laboratorio"
               obligatorio
               maxLength={100}
-              anchoMinimo={18}
+              ancho={18}
               revisado={revisado}
               error={errores.nombre}
-              ayuda="Asi va a aparecer en el desplegable al cargar un espacio."
+              ayuda="Así va a aparecer en el desplegable al cargar un espacio."
             />
           </div>
 
           {revisado && hayErrores && (
             <p className="sigma-campo-mensaje sigma-campo-mensaje--error mb-3">
-              Revisa los campos marcados y volve a guardar.
+              Revisá los campos marcados y volvé a guardar.
             </p>
           )}
 

@@ -10,7 +10,7 @@ import { crearArea } from '@/servicios/areas.js';
 export default function PantallaAgregarArea() {
   return (
     <>
-      <EncabezadoPagina titulo="Agregar area" />
+      <EncabezadoPagina titulo="Agregar área" />
       <FormularioArea onGuardar={crearArea} />
     </>
   );

@@ -27,12 +27,12 @@ export default function PantallaEditarTecnico({ params }) {
 
   return (
     <>
-      <EncabezadoPagina titulo="Editar tecnico" />
+      <EncabezadoPagina titulo="Editar técnico" />
 
       <Aviso mensaje={error} />
 
       {cargando ? (
-        <Cargando texto="Cargando el tecnico..." />
+        <Cargando texto="Cargando el técnico..." />
       ) : (
         tecnico && (
           <FormularioTecnico

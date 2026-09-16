@@ -52,5 +52,5 @@ export async function actualizar(req, res) {
 /** DELETE /api/autorizados/:legajo */
 export async function eliminar(req, res) {
   const autorizado = await autorizadosServicio.eliminar(leerLegajo(req));
-  res.json({ ok: true, datos: autorizado, mensaje: `Se elimino a "${autorizado.nombre}".` });
+  res.json({ ok: true, datos: autorizado, mensaje: `Se eliminó a "${autorizado.nombre}".` });
 }
