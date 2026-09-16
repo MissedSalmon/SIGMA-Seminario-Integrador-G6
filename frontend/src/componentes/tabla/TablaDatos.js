@@ -49,7 +49,7 @@
  * funcion, y la pantalla es la que los vacia.
  */
 import { useId, useMemo, useState } from 'react';
-import { CButton, CFormInput, CFormSelect, CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
+import { CButton, CButtonGroup, CFormInput, CFormSelect, CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilChevronLeft, cilChevronRight, cilSearch, cilX } from '@coreui/icons';
 
@@ -226,28 +226,30 @@ export default function TablaDatos({
               <span className="sigma-tabla-conteo">
                 Pagina {pagina} de {totalPaginas}
               </span>
-              <div className="d-flex gap-2">
+              <CButtonGroup size="sm">
                 <CButton
-                  color="secondary"
-                  variant="outline"
-                  size="sm"
+                  color="primary"
+                  variant="ghost"
+                  className="btn-icono"
                   disabled={pagina === 1}
                   onClick={() => setPaginaPedida(pagina - 1)}
+                  title="Pagina anterior"
+                  aria-label="Pagina anterior"
                 >
-                  <CIcon icon={cilChevronLeft} size="sm" className="me-1" />
-                  Anterior
+                  <CIcon icon={cilChevronLeft} />
                 </CButton>
                 <CButton
-                  color="secondary"
-                  variant="outline"
-                  size="sm"
+                  color="primary"
+                  variant="ghost"
+                  className="btn-icono"
                   disabled={pagina === totalPaginas}
                   onClick={() => setPaginaPedida(pagina + 1)}
+                  title="Pagina siguiente"
+                  aria-label="Pagina siguiente"
                 >
-                  Siguiente
-                  <CIcon icon={cilChevronRight} size="sm" className="ms-1" />
+                  <CIcon icon={cilChevronRight} />
                 </CButton>
-              </div>
+              </CButtonGroup>
             </div>
           )}
         </>
