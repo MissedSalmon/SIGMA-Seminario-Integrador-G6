@@ -79,6 +79,27 @@
   --cui-link-hover-color-rgb: 10, 94, 124;
 }
 
+/*
+  Tamano base de la letra.
+
+  Todo el sistema (CoreUI y nuestros estilos) mide en "rem", o sea en multiplos
+  de este numero. Subiendolo de los 16px de fabrica a 17px se agranda la letra
+  de todas las pantallas de una sola vez, y los espacios y las cajas crecen en
+  la misma proporcion, asi que nada se descuadra.
+
+  En celulares se vuelve a 16px: ahi la pantalla es angosta y la letra mas
+  grande empuja el contenido de costado.
+*/
+html {
+  font-size: 17px;
+}
+
+@media (max-width: 575.98px) {
+  html {
+    font-size: 16px;
+  }
+}
+
 body {
   color: var(--sigma-ink);
   letter-spacing: -0.006em;
@@ -182,7 +203,7 @@ body {
 
 .form-label {
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.95rem;
   color: var(--sigma-ink);
   margin-bottom: 0.375rem;
 }
@@ -197,7 +218,7 @@ body {
 .table {
   --cui-table-color: var(--sigma-ink);
   --cui-table-hover-bg: var(--sigma-teal-suave);
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 
 .table > thead {
@@ -206,7 +227,7 @@ body {
 
 .table thead th {
   text-transform: uppercase;
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   letter-spacing: 0.05em;
   font-weight: 700;
   border-bottom-width: 1px;
@@ -233,7 +254,7 @@ body {
 
 .sigma-marca {
   color: #fff;
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   font-weight: 700;
   letter-spacing: 0.16em;
 }
@@ -263,7 +284,7 @@ body {
   width: auto;
   white-space: normal;
   line-height: 1.2;
-  font-size: 0.85rem;
+  font-size: 0.92rem;
   font-weight: 500;
   border-left: 3px solid transparent;
 }
@@ -274,11 +295,57 @@ body {
 }
 
 .sidebar .nav-title {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  padding-block: 0.5rem;
-  margin-top: 0.5rem;
+  padding-block: 0.35rem;
+  margin-top: 0.4rem;
+}
+
+/*
+  La barra de desplazamiento del menu.
+
+  Cuando las opciones no entran en la pantalla, el navegador dibuja su barra
+  gris de siempre, con las flechitas arriba y abajo y el canal marcado. Sobre
+  el fondo oscuro del menu queda como un parche pegado. Se la reemplaza por
+  una linea fina y clara, sin flechitas y sin canal, que se apoya sobre el
+  mismo azul del menu y se aclara cuando el mouse esta encima.
+
+  Van las dos formas de escribirlo porque no hay una sola que sirva en todos
+  los navegadores: scrollbar-width/scrollbar-color es la estandar (Firefox) y
+  ::-webkit-scrollbar es la que entienden Chrome y Edge.
+*/
+.sidebar-nav {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+  /* Al llegar al final del menu, la rueda no sigue moviendo la pagina de atras. */
+  overscroll-behavior: contain;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Las flechitas de las puntas no hacen falta: alcanza con la rueda o arrastrar. */
+.sidebar-nav::-webkit-scrollbar-button {
+  display: none;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+}
+
+.sidebar-nav:hover {
+  scrollbar-color: rgba(255, 255, 255, 0.38) transparent;
+}
+
+.sidebar-nav:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.38);
 }
 
 /* Deja lugar a la barra lateral fija en pantallas grandes. */
@@ -315,7 +382,7 @@ body {
 .sigma-footer {
   background: transparent;
   color: var(--sigma-texto-secundario);
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   border-top: 1px solid var(--sigma-borde);
 }
 
@@ -323,14 +390,14 @@ body {
 
 .sigma-titulo {
   color: var(--sigma-ink);
-  font-size: 1.5rem;
+  font-size: 1.65rem;
   font-weight: 700;
   margin: 0;
   letter-spacing: -0.01em;
 }
 
 .sigma-seccion-titulo {
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--sigma-ink);
   margin-bottom: 1rem;
@@ -535,7 +602,7 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  font-size: 0.875rem;
+  font-size: 0.95rem;
 }
 
 /* Un nombre largo se corta con puntos suspensivos en vez de estirar la caja. */
@@ -552,7 +619,7 @@ body {
 
 /* La ayuda y el motivo del error van abajo del campo, en chico. */
 .sigma-campo-mensaje {
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   color: var(--sigma-texto-secundario);
   margin: 0.3rem 0 0;
   max-width: 32rem;
@@ -585,7 +652,7 @@ body {
   background: var(--sigma-superficie);
   border: 1px solid var(--sigma-borde);
   box-shadow: var(--sigma-sombra-md);
-  font-size: 0.9rem;
+  font-size: 1rem;
   color: var(--sigma-ink);
   animation: sigma-toast-entrada 0.18s ease-out;
 }
@@ -687,7 +754,7 @@ body {
 }
 
 .sigma-stat-numero {
-  font-size: 1.85rem;
+  font-size: 2rem;
   font-weight: 700;
   color: var(--sigma-ink);
   line-height: 1.1;
@@ -695,7 +762,7 @@ body {
 
 .sigma-stat-etiqueta {
   color: var(--sigma-texto-secundario);
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -753,7 +820,7 @@ body {
 */
 .sigma-tabla-filtros-titulo {
   color: var(--sigma-texto-secundario);
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   margin-left: 0.4rem;
   white-space: nowrap;
 }
@@ -774,7 +841,7 @@ body {
   gap: 0.35rem;
   margin: 0;
   color: var(--sigma-texto-secundario);
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   white-space: nowrap;
 }
 
@@ -797,7 +864,7 @@ body {
 
 .sigma-tabla-conteo {
   color: var(--sigma-texto-secundario);
-  font-size: 0.85rem;
+  font-size: 0.925rem;
   white-space: nowrap;
 }
 
@@ -818,6 +885,6 @@ body {
   align-items: center;
   padding: 0.3rem 0.7rem;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 0.825rem;
   font-weight: 700;
 }

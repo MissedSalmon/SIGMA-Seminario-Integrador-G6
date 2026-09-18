@@ -11,6 +11,10 @@
  *    activos de esa area (HU-9). Un area tiene un solo responsable, asi que el
  *    desplegable muestra unicamente las areas libres (y la propia, cuando se
  *    esta editando). Asi no hace falta rechazar el alta despues.
+ * 3. La fecha de nacimiento es obligatoria y tiene que dar 18 anios cumplidos:
+ *    un responsable de area firma el alta de tickets, asi que tiene que ser
+ *    mayor de edad. Si la fecha se pudiera dejar vacia, la regla no serviria de
+ *    nada, porque alcanzaria con no completarla.
  */
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
@@ -23,16 +27,16 @@ import Campo from '@/componentes/formulario/Campo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarAreas } from '@/servicios/areas.js';
 import { listarAutorizados } from '@/servicios/autorizados.js';
+import { hoyTexto, fechaMinimaParaEdad } from '@/utils/fechas.js';
+import { LARGO_TELEFONO, digitosDelTelefono, limpiarTelefono } from '@/utils/telefono.js';
 
 /** Deja solo los digitos, para poder contarlos sin importar puntos ni guiones. */
 function soloDigitos(texto) {
   return String(texto ?? '').replace(/\D/g, '');
 }
 
-/** La fecha de hoy en el formato que entiende un <input type="date">. */
-function hoy() {
-  return new Date().toISOString().slice(0, 10);
-}
+/** Los anios que hay que tener cumplidos para quedar registrado. */
+const EDAD_MINIMA = 18;
 
 export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
   const router = useRouter();
@@ -73,6 +77,13 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
       .finally(() => setCargando(false));
   }, [autorizado?.legajo]);
 
+  /*
+   * La fecha de nacimiento mas reciente que ya da los 18 cumplidos. Se calcula
+   * una sola vez por pantalla: se usa para validar y tambien como tope del
+   * almanaque, asi el que carga ni siquiera puede elegir una fecha mas nueva.
+   */
+  const fechaMinimaNacimiento = useMemo(() => fechaMinimaParaEdad(EDAD_MINIMA), []);
+
   const errores = useMemo(() => {
     const encontrados = {};
 
@@ -94,12 +105,26 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
       encontrados.email = 'Revisa el email: falta el @ o esta incompleto.';
     }
 
-    if (fechaNacimiento && fechaNacimiento > hoy()) {
+    /*
+     * Se cuentan los digitos de lo que hay guardado y no los de la caja: un
+     * telefono cargado antes de esta regla puede tener espacios o guiones, y
+     * hay que avisar igual si le faltan o le sobran numeros.
+     */
+    const digitosTelefono = digitosDelTelefono(telefono);
+    if (digitosTelefono && digitosTelefono.length !== LARGO_TELEFONO) {
+      encontrados.telefono = `El telefono tiene ${LARGO_TELEFONO} digitos y este tiene ${digitosTelefono.length}.`;
+    }
+
+    if (!fechaNacimiento) {
+      encontrados.fechaNacimiento = 'La fecha de nacimiento es obligatoria.';
+    } else if (fechaNacimiento > hoyTexto()) {
       encontrados.fechaNacimiento = 'La fecha no puede ser posterior a hoy.';
+    } else if (fechaNacimiento > fechaMinimaNacimiento) {
+      encontrados.fechaNacimiento = `Tiene que tener ${EDAD_MINIMA} anios cumplidos: con esa fecha todavia no los cumplio.`;
     }
 
     return encontrados;
-  }, [legajo, nombre, idArea, dni, cuil, email, fechaNacimiento]);
+  }, [legajo, nombre, idArea, dni, cuil, email, telefono, fechaNacimiento, fechaMinimaNacimiento]);
 
   const hayErrores = Object.keys(errores).length > 0;
 
@@ -122,7 +147,7 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
         cuil,
         email,
         telefono,
-        fechaNacimiento: fechaNacimiento || null,
+        fechaNacimiento,
         idArea: Number(idArea),
       });
 
@@ -209,9 +234,11 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
               tipoHtml="date"
               valor={fechaNacimiento}
               alCambiar={setFechaNacimiento}
-              max={hoy()}
+              obligatorio
+              max={fechaMinimaNacimiento}
               revisado={revisado}
               error={errores.fechaNacimiento}
+              ayuda={`Tiene que tener ${EDAD_MINIMA} anios cumplidos.`}
             />
 
             <Campo
@@ -254,12 +281,16 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
             <Campo
               id="telefono"
               etiqueta="Telefono"
+              tipoHtml="tel"
               valor={telefono}
-              alCambiar={setTelefono}
-              placeholder="3624 123456"
-              maxLength={30}
-              anchoMinimo={14}
+              alCambiar={(valor) => setTelefono(limpiarTelefono(valor))}
+              placeholder="3624123456"
+              maxLength={LARGO_TELEFONO}
+              anchoMinimo={LARGO_TELEFONO + 2}
+              anchoMaximo={LARGO_TELEFONO + 2}
               revisado={revisado}
+              error={errores.telefono}
+              ayuda={`${LARGO_TELEFONO} digitos, sin el 0 de adelante ni el 15.`}
             />
           </div>
 

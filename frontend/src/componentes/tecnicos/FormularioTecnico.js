@@ -18,6 +18,7 @@ import Campo from '@/componentes/formulario/Campo.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarEspecialidades } from '@/servicios/especialidades.js';
+import { LARGO_TELEFONO, digitosDelTelefono, limpiarTelefono } from '@/utils/telefono.js';
 
 const DISPONIBILIDADES = ['Disponible', 'No disponible'];
 
@@ -61,8 +62,18 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
       encontrados.especialidades = 'Elegi al menos una especialidad.';
     }
 
+    /*
+     * Se cuentan los digitos de lo que hay guardado y no los de la caja: un
+     * telefono cargado antes de esta regla puede tener espacios o guiones, y
+     * hay que avisar igual si le faltan o le sobran numeros.
+     */
+    const digitosTelefono = digitosDelTelefono(telefono);
+    if (digitosTelefono && digitosTelefono.length !== LARGO_TELEFONO) {
+      encontrados.telefono = `El telefono tiene ${LARGO_TELEFONO} digitos y este tiene ${digitosTelefono.length}.`;
+    }
+
     return encontrados;
-  }, [legajo, nombre, especialidadesElegidas]);
+  }, [legajo, nombre, especialidadesElegidas, telefono]);
 
   const hayErrores = Object.keys(errores).length > 0;
 
@@ -160,12 +171,14 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
               etiqueta="Telefono"
               tipoHtml="tel"
               valor={telefono}
-              alCambiar={setTelefono}
-              placeholder="3624 123456"
-              maxLength={50}
-              anchoMinimo={14}
-              anchoMaximo={20}
+              alCambiar={(valor) => setTelefono(limpiarTelefono(valor))}
+              placeholder="3624123456"
+              maxLength={LARGO_TELEFONO}
+              anchoMinimo={LARGO_TELEFONO + 2}
+              anchoMaximo={LARGO_TELEFONO + 2}
               revisado={revisado}
+              error={errores.telefono}
+              ayuda={`${LARGO_TELEFONO} digitos, sin el 0 de adelante ni el 15.`}
             />
           </div>
 
