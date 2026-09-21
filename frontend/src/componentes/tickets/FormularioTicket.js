@@ -16,8 +16,8 @@
  * verde o de rojo. Los errores se calculan acá, campo por campo, y los muestra
  * cada <Campo> con una marca chica. Ver src/componentes/formulario/Campo.js.
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { CButton, CCard, CCardBody, CFormCheck, CFormLabel } from '@coreui/react';
+import { useEffect, useRef, useState } from 'react';
+import { CButton, CCard, CCardBody, CFormLabel } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilImagePlus, cilTrash } from '@coreui/icons';
 
@@ -26,8 +26,6 @@ import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Campo from '@/componentes/formulario/Campo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarActivos } from '@/servicios/activos.js';
-import { listarEdificios } from '@/servicios/edificios.js';
-import { listarEspacios } from '@/servicios/espacios.js';
 import { subirEvidencia, TAMANO_MAXIMO } from '@/servicios/evidencias.js';
 
 /** Un activo retirado ya no se mantiene, así que no puede recibir un ticket. */
@@ -39,132 +37,69 @@ function pesoLegible(bytes) {
   return mega >= 1 ? `${mega.toFixed(1)} MB` : `${Math.round(bytes / 1024)} KB`;
 }
 
+/**
+ * Formulario para cargar un problema con un activo.
+ */
 export default function FormularioTicket({ onGuardar }) {
   const { mostrarToast } = useToast();
 
-  const [tipoObjeto, setTipoObjeto] = useState('activo');
   const [codigoActivo, setCodigoActivo] = useState('');
-  const [idEdificio, setIdEdificio] = useState('');
-  const [espacioNum, setEspacioNum] = useState('');
   const [descripcion, setDescripcion] = useState('');
-
-  // La foto: el archivo elegido, su miniatura y el motivo si no sirve.
   const [foto, setFoto] = useState(null);
-  const [miniatura, setMiniatura] = useState('');
-  const [errorFoto, setErrorFoto] = useState('');
-  const refArchivo = useRef(null);
+  const [miniatura, setMiniatura] = useState(null);
 
   const [activos, setActivos] = useState([]);
-  const [edificios, setEdificios] = useState([]);
-  const [espacios, setEspacios] = useState([]);
 
+  const [error, setError] = useState('');
+  const [errores, setErrores] = useState({});
   const [revisado, setRevisado] = useState(false);
   const [guardando, setGuardando] = useState(false);
-  const [error, setError] = useState('');
 
-  // Lo que hay para elegir como objeto afectado.
+  const refArchivo = useRef(null);
+
   useEffect(() => {
-    Promise.all([listarActivos(), listarEdificios()])
-      .then(([listaActivos, listaEdificios]) => {
-        setActivos(listaActivos.filter((activo) => activo.estado !== ESTADO_RETIRADO));
-        setEdificios(listaEdificios);
-      })
-      .catch((fallo) => setError(fallo.message));
+    // Al futuro: aqui habria que filtrar los activos por el area del usuario logueado.
+    listarActivos().then((listaActivos) => {
+      setActivos(listaActivos.filter((activo) => activo.estado !== ESTADO_RETIRADO));
+    });
   }, []);
-
-  useEffect(() => {
-    if (!idEdificio) return;
-
-    let vigente = true;
-    listarEspacios(idEdificio)
-      .then((lista) => {
-        if (vigente) setEspacios(lista);
-      })
-      .catch((fallo) => {
-        if (vigente) setError(fallo.message);
-      });
-
-    return () => {
-      vigente = false;
-    };
-  }, [idEdificio]);
-
-  /*
-   * Los errores de cada campo, recalculados en cada tecla. Mientras `revisado`
-   * sea falso nadie los muestra; después de apretar Guardar se ven, y se van
-   * actualizando solos a medida que se corrigen.
-   */
-  const errores = useMemo(() => {
-    const encontrados = {};
-
-    if (tipoObjeto === 'activo') {
-      if (!codigoActivo) encontrados.codigoActivo = 'Elegí el activo que falló.';
-    } else {
-      if (!idEdificio) encontrados.idEdificio = 'Elegí el edificio.';
-      if (!espacioNum) encontrados.espacioNum = 'Elegí el espacio.';
-    }
-
-    if (!descripcion.trim()) {
-      encontrados.descripcion = 'Contanos qué pasó: sin descripción no se puede evaluar el ticket.';
-    }
-
-    if (errorFoto) encontrados.foto = errorFoto;
-
-    return encontrados;
-  }, [tipoObjeto, codigoActivo, idEdificio, espacioNum, descripcion, errorFoto]);
 
   const hayErrores = Object.keys(errores).length > 0;
 
-  function cambiarTipoObjeto(nuevo) {
-    setTipoObjeto(nuevo);
-    // Se limpia lo del otro camino: un ticket apunta a uno solo de los dos.
-    setCodigoActivo('');
-    setIdEdificio('');
-    setEspacioNum('');
-  }
+  useEffect(() => {
+    const encontrados = {};
 
-  /**
-   * Se eligio una foto. Se revisa antes de aceptarla: que sea una imagen y que
-   * no pase de los 5 MB. La miniatura sale del archivo que esta en la maquina,
-   * asi se ve al instante y sin subir nada todavia.
-   */
+    if (!codigoActivo) encontrados.codigoActivo = 'Elegí el activo que falló.';
+
+    if (!descripcion.trim()) encontrados.descripcion = 'Falta describir el problema.';
+    else if (descripcion.trim().length < 10) encontrados.descripcion = 'Muy corta.';
+
+    if (foto && foto.size > TAMANO_MAXIMO) encontrados.foto = `Pesa más de ${pesoLegible(TAMANO_MAXIMO)}.`;
+
+    setErrores(encontrados);
+  }, [codigoActivo, descripcion, foto]);
+
   function elegirFoto(evento) {
-    const archivo = evento.target.files[0];
-    if (!archivo) return;
-
-    if (!archivo.type.startsWith('image/')) {
-      setErrorFoto('El archivo tiene que ser una imagen (jpg, png, etc.).');
-      return;
-    }
-    if (archivo.size > TAMANO_MAXIMO) {
-      setErrorFoto(`La foto pesa ${pesoLegible(archivo.size)} y el maximo son 5 MB.`);
-      return;
-    }
-
-    setErrorFoto('');
-    setFoto(archivo);
-    setMiniatura(URL.createObjectURL(archivo));
+    const elegida = evento.target.files[0];
+    if (!elegida) return;
+    setFoto(elegida);
+    setMiniatura(URL.createObjectURL(elegida));
   }
 
   function quitarFoto() {
     setFoto(null);
-    setMiniatura('');
-    setErrorFoto('');
-    // Sin esto, volver a elegir el mismo archivo no dispara el onChange.
+    if (miniatura) URL.revokeObjectURL(miniatura);
+    setMiniatura(null);
     if (refArchivo.current) refArchivo.current.value = '';
   }
 
-  // La miniatura ocupa memoria del navegador hasta que se la suelta.
   useEffect(() => {
     if (!miniatura) return undefined;
     return () => URL.revokeObjectURL(miniatura);
   }, [miniatura]);
 
   function limpiar() {
-    setTipoObjeto('activo');
     setCodigoActivo('');
-    setIdEdificio('');
-    setEspacioNum('');
     setDescripcion('');
     setRevisado(false);
     quitarFoto();
@@ -178,13 +113,10 @@ export default function FormularioTicket({ onGuardar }) {
 
     setGuardando(true);
     try {
-      // La foto va primero: al ticket se le guarda su direccion, no el archivo.
       const direccionFoto = foto ? await subirEvidencia(foto) : null;
 
       await onGuardar({
-        ...(tipoObjeto === 'activo'
-          ? { codigoActivo }
-          : { idEdificio: Number(idEdificio), espacioNum }),
+        codigoActivo,
         descripcion: descripcion.trim(),
         evidencia: direccionFoto,
       });
@@ -203,98 +135,29 @@ export default function FormularioTicket({ onGuardar }) {
     texto: activo.nombreTipo ? `${activo.codigo} - ${activo.nombreTipo}` : activo.codigo,
   }));
 
-  const opcionesEdificios = edificios.map((edificio) => ({
-    valor: edificio.idEdificio,
-    texto: edificio.nombre,
-  }));
-
-  // Sin edificio elegido no se ofrece ningún espacio, aunque queden en memoria
-  // los del edificio anterior.
-  const opcionesEspacios = (idEdificio ? espacios : []).map((espacio) => ({
-    valor: espacio.espacio_num,
-    texto: espacio.nombre ? `${espacio.nombre} (${espacio.espacio_num})` : espacio.espacio_num,
-  }));
-
   return (
     <CCard>
       <CCardBody>
         <Aviso mensaje={error} onCerrar={() => setError('')} />
 
         <form noValidate onSubmit={manejarEnvio}>
-          <h2 className="sigma-seccion-titulo"></h2>
-
-          <div className="mb-3">
-            <CFormLabel className="sigma-obligatorio">¿De qué es el ticket?</CFormLabel>
-            <div className="d-flex gap-4">
-              <CFormCheck
-                type="radio"
-                name="tipoObjeto"
-                id="objetoActivo"
-                label="Un activo"
-                checked={tipoObjeto === 'activo'}
-                onChange={() => cambiarTipoObjeto('activo')}
-              />
-              <CFormCheck
-                type="radio"
-                name="tipoObjeto"
-                id="objetoEspacio"
-                label="Un espacio"
-                checked={tipoObjeto === 'espacio'}
-                onChange={() => cambiarTipoObjeto('espacio')}
-              />
-            </div>
-          </div>
+          <h2 className="sigma-seccion-titulo">¿Qué activo falló?</h2>
 
           <div className="sigma-campos mb-4">
-            {tipoObjeto === 'activo' ? (
-              <Campo
-                id="codigoActivo"
-                etiqueta="Activo"
-                tipo="lista"
-                valor={codigoActivo}
-                alCambiar={setCodigoActivo}
-                opciones={opcionesActivos}
-                placeholder="Elegir activo"
-                obligatorio
-                ancho={30}
-                revisado={revisado}
-                error={errores.codigoActivo}
-                ayuda="Los activos retirados no aparecen en la lista."
-              />
-            ) : (
-              <>
-                <Campo
-                  id="idEdificio"
-                  etiqueta="Edificio"
-                  tipo="lista"
-                  valor={idEdificio}
-                  alCambiar={(valor) => {
-                    setIdEdificio(valor);
-                    setEspacioNum('');
-                  }}
-                  opciones={opcionesEdificios}
-                  placeholder="Elegir edificio"
-                  obligatorio
-                  ancho={24}
-                  revisado={revisado}
-                  error={errores.idEdificio}
-                />
-                <Campo
-                  id="espacioNum"
-                  etiqueta="Espacio"
-                  tipo="lista"
-                  valor={espacioNum}
-                  alCambiar={setEspacioNum}
-                  opciones={opcionesEspacios}
-                  placeholder={idEdificio ? 'Elegir espacio' : 'Primero el edificio'}
-                  deshabilitado={!idEdificio}
-                  obligatorio
-                  ancho={20}
-                  revisado={revisado}
-                  error={errores.espacioNum}
-                />
-              </>
-            )}
+            <Campo
+              id="codigoActivo"
+              etiqueta="Activo"
+              tipo="buscador"
+              valor={codigoActivo}
+              alCambiar={setCodigoActivo}
+              opciones={opcionesActivos}
+              placeholder="Buscar activo..."
+              obligatorio
+              ancho={30}
+              revisado={revisado}
+              error={errores.codigoActivo}
+              ayuda="Los activos retirados no aparecen en la lista."
+            />
           </div>
 
           <h2 className="sigma-seccion-titulo">¿Qué pasó?</h2>

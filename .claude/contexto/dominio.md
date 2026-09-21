@@ -8,6 +8,10 @@
 | **Técnico** | Ejecuta las tareas de la OT. Tiene especialidad y disponibilidad. Registra materiales consumidos, herramientas usadas y observaciones. |
 | **Usuario autorizado** | Es el responsable de un área. Registra tickets de su ámbito y consulta su estado. Es quien reporta el problema. |
 
+**Reglas clave de usuarios autorizados:**
+* **Edad:** Deben ser mayores de edad (>= 18 años). El sistema bloquea el alta si la fecha de nacimiento no cumple este requisito.
+* **Asignación de Áreas:** La relación con el Área es 1 a 1. Un área solo puede tener *un* responsable asignado. Al cargar o editar un usuario, el sistema solo lista las áreas "libres". Si todas las áreas ya tienen responsable, se debe crear un área nueva o liberar una existente.
+
 Los tres cubren todo el sistema y no se superponen.
 
 ---
@@ -16,7 +20,8 @@ Los tres cubren todo el sistema y no se superponen.
 
 ```
 1. El usuario autorizado detecta un desperfecto y registra un TICKET
-   (descripción, objeto afectado, foto opcional)
+   (descripción, objeto afectado -activo-, foto opcional). 
+   *Nota de negocio: El usuario autorizado solo puede registrar tickets sobre activos que pertenezcan a las áreas/espacios que tiene asignados bajo su legajo.*
         ↓
 2. El administrador VALIDA o RECHAZA el ticket
         ↓  (si valida)

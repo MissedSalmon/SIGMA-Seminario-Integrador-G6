@@ -288,3 +288,13 @@ sprint siguiente.
 `frontend/AGENTS.md` y `frontend/CLAUDE.md` los crea Next.js 16 cada vez que se ejecuta
 `npm run dev`. No los escribimos nosotros y no sirve borrarlos: se vuelven a crear. Se
 dejan versionados y listo.
+
+## Bajas Lógicas vs Físicas e Integridad Referencial
+
+El sistema SIGMA utiliza un modelo híbrido para el borrado de registros, diseñado para proteger la consistencia de los datos y el historial de mantenimiento:
+
+- **Activos (Baja Lógica):** Los activos (inventario físico) *nunca* se borran con `DELETE`. En su lugar, pasan a estado `Retirado` (actualizando `activo_estado` y seteando `activo_fecha_baja`). Esto es vital para no perder el historial de fallas, tickets y mantenimientos que sufrieron durante su ciclo de vida.
+- **Catálogos y Entidades Estructurales (Baja Física Restringida):** Entidades como `Edificio`, `Técnico`, `Tipo de Activo` o `Área` se borran físicamente (`DELETE`). Sin embargo, estas operaciones están protegidas por la base de datos mediante `ON DELETE RESTRICT`. Esto significa que es imposible borrar un edificio que contiene activos o un técnico que tiene tareas asignadas. 
+- **Entidades Débiles/Relacionales (Baja Física en Cascada):** Solo se usa `ON DELETE CASCADE` donde corresponde semánticamente (ej: al borrar un Edificio vacío, se borran sus Espacios; al borrar un Técnico sin tareas, se borran sus especialidades asociadas).
+
+*(Nota: En futuras iteraciones, evaluar la transición a baja lógica para los `Técnicos` y `Prestadores` si la retención de historial de las tareas de personal que se desvincula se vuelve un cuello de botella para la base de datos).*
