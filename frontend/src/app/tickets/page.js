@@ -181,7 +181,7 @@ export default function PantallaTickets() {
             claveFila={(ticket) => ticket.id}
             columnas={columnas}
             buscarPor={['descripcion', 'codigoActivo']}
-            placeholderBusqueda="Buscar por descripción o activo..."
+            placeholderBusqueda="Buscar por descripción o activo"
             filtros={[
               {
                 etiqueta: 'Estado',

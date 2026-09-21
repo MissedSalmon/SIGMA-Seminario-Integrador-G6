@@ -106,6 +106,17 @@ src/app/tickets/agregar/page.js  →  /tickets/agregar
 src/app/tickets/[id]/page.js     →  /tickets/5
 ```
 
+**Los tipos cuelgan de su módulo** (15/09/2026): `/espacios/tipos` y `/inventario/tipos`.
+(`/tipos-activos` quedó de antes con la otra forma.)
+
+Para que eso funcione, **el breadcrumb busca por la dirección entera y no por el último
+tramo**. Si buscara por el tramo suelto, `tipos` tendría que significar una sola cosa y
+`/inventario/tipos` mostraría *"Tipos de espacio"*, que es lo que pasaba. Cada pantalla
+nueva se agrega a `NOMBRES` en `Encabezado.js` con su dirección completa.
+
+⚠️ Ojo al tocar esto: en `servicios/inventario.js`, `/inventario/tipos` es la dirección de
+la **API**, no de la pantalla. Esa no se cambia.
+
 ---
 
 ### El armazón de las pantallas
@@ -136,6 +147,58 @@ frontend/src/componentes/
   de Next va en el `CNavLink` de adentro.
 - `CButton`, cuando recibe `href`, ignora el `as` y arma un `<a>` común: cada clic
   recarga toda la aplicación. Para eso está `BotonEnlace`.
+
+### Los campos tienen ancho fijo (15/09/2026)
+
+Cada `<Campo>` declara su `ancho` en caracteres y **esa medida no cambia con lo que se
+escribe**. Antes la caja crecía con el texto, y al escribir un nombre largo se corrían de
+lugar todos los campos que seguían. El que no declara nada mide 16 caracteres.
+
+Las fechas y los `tipo="area"` no usan `ancho`: la fecha la dibuja el navegador y siempre
+mide lo mismo, y el área ocupa el renglón entero (sí crece a lo alto).
+
+### Las reglas de DNI, CUIL y teléfono (15/09/2026)
+
+Antes cada pantalla tenía su propia copia de estas reglas y no coincidían entre sí: el
+teléfono aceptaba 30 caracteres en una pantalla y 50 en otra, y ninguna de las dos
+controlaba que fueran números. Ahora las reglas están escritas una sola vez:
+
+| Archivo | Para qué |
+|---|---|
+| `frontend/src/utils/validaciones.js` | Las reglas del lado de la pantalla. |
+| `backend/src/utiles/validaciones.js` | Las mismas reglas del lado de la API. |
+| `frontend/src/componentes/formulario/CampoDni.js` | El campo de DNI, listo para usar. |
+| `frontend/src/componentes/formulario/CampoCuil.js` | El campo de CUIL. |
+| `frontend/src/componentes/formulario/CampoTelefono.js` | El campo de teléfono. |
+
+Una pantalla que pida estos datos **no escribe sus propias reglas**: usa los tres campos
+de arriba y llama a `validarDni`, `validarCuil` y `validarTelefono`.
+
+Lo que se decidió:
+
+- **DNI**: 8 dígitos exactos.
+- **CUIL**: se escribe a mano. Los guiones se ponen solos (`20-34567883-4`) y al guardar
+  se controla el dígito verificador, que es lo que detecta un número mal tipeado. Si
+  además hay DNI cargado, se controla que los 8 del medio coincidan.
+- **Teléfono**: 10 dígitos, característica y número separados con un espacio
+  (`362 4123456`). El 0 de adelante y el 15 se sacan solos.
+- **Email**: tiene que tener algo antes del `@`, algo después y terminar en un punto con
+  al menos dos letras. Así no pasa un `juan@` ni un `juan@gmail`.
+- **Cómo se guarda**: el dato se guarda ya ordenado, tal como se lee.
+- En usuarios autorizados, **DNI y fecha de nacimiento son obligatorios**.
+
+⬜ **Las reglas están repetidas a propósito en los dos archivos**, porque a la API se le
+puede pegar directo sin pasar por la pantalla. Si se cambia una regla en un lado, hay que
+cambiarla en el otro. Las restricciones en la base quedan para después.
+
+### Elegir varias opciones a la vez (15/09/2026)
+
+`frontend/src/componentes/formulario/SeleccionMultiple.js` es un desplegable donde cada
+opción es una casilla para tildar, con una casilla arriba de todo que marca y desmarca
+todas juntas. Lo usa el formulario de técnicos para las especialidades.
+
+Se armó a mano porque el `CMultiSelect` de CoreUI **es de la versión paga**: está hecho
+con `CDropdown` y `CFormCheck`. El menú no se cierra al tildar (`autoClose="outside"`).
 
 ---
 
@@ -225,3 +288,13 @@ sprint siguiente.
 `frontend/AGENTS.md` y `frontend/CLAUDE.md` los crea Next.js 16 cada vez que se ejecuta
 `npm run dev`. No los escribimos nosotros y no sirve borrarlos: se vuelven a crear. Se
 dejan versionados y listo.
+
+## Bajas Lógicas vs Físicas e Integridad Referencial
+
+El sistema SIGMA utiliza un modelo híbrido para el borrado de registros, diseñado para proteger la consistencia de los datos y el historial de mantenimiento:
+
+- **Activos (Baja Lógica):** Los activos (inventario físico) *nunca* se borran con `DELETE`. En su lugar, pasan a estado `Retirado` (actualizando `activo_estado` y seteando `activo_fecha_baja`). Esto es vital para no perder el historial de fallas, tickets y mantenimientos que sufrieron durante su ciclo de vida.
+- **Catálogos y Entidades Estructurales (Baja Física Restringida):** Entidades como `Edificio`, `Técnico`, `Tipo de Activo` o `Área` se borran físicamente (`DELETE`). Sin embargo, estas operaciones están protegidas por la base de datos mediante `ON DELETE RESTRICT`. Esto significa que es imposible borrar un edificio que contiene activos o un técnico que tiene tareas asignadas. 
+- **Entidades Débiles/Relacionales (Baja Física en Cascada):** Solo se usa `ON DELETE CASCADE` donde corresponde semánticamente (ej: al borrar un Edificio vacío, se borran sus Espacios; al borrar un Técnico sin tareas, se borran sus especialidades asociadas).
+
+*(Nota: En futuras iteraciones, evaluar la transición a baja lógica para los `Técnicos` y `Prestadores` si la retención de historial de las tareas de personal que se desvincula se vuelve un cuello de botella para la base de datos).*

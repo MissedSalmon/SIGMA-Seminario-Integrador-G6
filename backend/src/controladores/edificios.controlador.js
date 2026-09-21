@@ -13,7 +13,7 @@ function leerId(req) {
   const id = Number(req.params.id);
 
   if (!Number.isInteger(id)) {
-    throw datoInvalido(`"${req.params.id}" no es un numero de edificio valido.`);
+    throw datoInvalido(`"${req.params.id}" no es un número de edificio válido.`);
   }
 
   return id;
@@ -48,5 +48,5 @@ export async function actualizar(req, res) {
 /** DELETE /api/edificios/:id */
 export async function eliminar(req, res) {
   const edificio = await edificiosServicio.eliminar(leerId(req));
-  res.json({ ok: true, datos: edificio, mensaje: `Se elimino "${edificio.nombre}".` });
+  res.json({ ok: true, datos: edificio, mensaje: `Se eliminó "${edificio.nombre}".` });
 }

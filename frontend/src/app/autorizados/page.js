@@ -163,7 +163,7 @@ export default function PantallaAutorizados() {
             claveFila={(autorizado) => autorizado.legajo}
             columnas={columnas}
             buscarPor={['nombre', 'legajo', 'dni', 'email', 'nombreArea']}
-            placeholderBusqueda="Buscar por nombre, legajo o DNI..."
+            placeholderBusqueda="Buscar por nombre, legajo o DNI"
             filtros={[
               {
                 etiqueta: 'Área',

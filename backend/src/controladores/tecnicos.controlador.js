@@ -9,7 +9,7 @@ function leerLegajo(req) {
   const legajo = Number(req.params.legajo);
 
   if (!Number.isInteger(legajo)) {
-    throw datoInvalido(`"${req.params.legajo}" no es un legajo valido.`);
+    throw datoInvalido(`"${req.params.legajo}" no es un legajo válido.`);
   }
 
   return legajo;
@@ -52,5 +52,5 @@ export async function actualizar(req, res) {
 /** DELETE /api/tecnicos/:legajo */
 export async function eliminar(req, res) {
   const tecnico = await tecnicosServicio.eliminar(leerLegajo(req));
-  res.json({ ok: true, datos: tecnico, mensaje: `Se elimino a "${tecnico.nombre} ${tecnico.apellido}".` });
+  res.json({ ok: true, datos: tecnico, mensaje: `Se eliminó a "${tecnico.nombre} ${tecnico.apellido}".` });
 }

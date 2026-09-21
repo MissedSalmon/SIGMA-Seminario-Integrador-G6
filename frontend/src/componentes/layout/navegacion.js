@@ -123,7 +123,7 @@ export const navegacion = [
   },
   {
     tipo: 'titulo',
-    texto: 'Gestion de inventario',
+    texto: 'Gestión de inventario',
   },
   {
     tipo: 'grupo',
@@ -156,7 +156,7 @@ export const navegacion = [
   },
   {
     tipo: 'item',
-    texto: 'Tecnicos',
+    texto: 'Técnicos',
     direccion: '/tecnicos',
     icono: cilPeople,
   },

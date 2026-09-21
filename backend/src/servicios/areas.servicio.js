@@ -40,7 +40,7 @@ export async function obtenerPorId(idArea) {
     espacio_id
   `).eq('area_id', idArea).single();
   
-  if (error || !data) throw noEncontrado(`No existe el area ${idArea}.`);
+  if (error || !data) throw noEncontrado(`No existe el área ${idArea}.`);
   
   return {
     idArea: data.area_id,
@@ -59,11 +59,11 @@ export async function crear(datos) {
   const nombreLimpio = limpiar(datos.nombre);
   const idEspacio = Number(datos.idEspacio);
   
-  if (!nombreLimpio) throw datoInvalido('El nombre del area es obligatorio.');
+  if (!nombreLimpio) throw datoInvalido('El nombre del área es obligatorio.');
   if (!idEspacio || isNaN(idEspacio)) throw datoInvalido('El espacio es obligatorio.');
 
   const { data: existente } = await supabase.from('area').select('area_id').ilike('area_nom', nombreLimpio).maybeSingle();
-  if (existente) throw conflicto(`Ya existe un area con el nombre "${nombreLimpio}".`);
+  if (existente) throw conflicto(`Ya existe un área con el nombre "${nombreLimpio}".`);
 
   const idEdificio = await obtenerEdificioDeEspacio(idEspacio);
 
@@ -86,11 +86,11 @@ export async function actualizar(idArea, datos) {
   const nombreLimpio = limpiar(datos.nombre);
   const idEspacio = Number(datos.idEspacio);
 
-  if (!nombreLimpio) throw datoInvalido('El nombre del area es obligatorio.');
+  if (!nombreLimpio) throw datoInvalido('El nombre del área es obligatorio.');
   if (!idEspacio || isNaN(idEspacio)) throw datoInvalido('El espacio es obligatorio.');
 
   const { data: existente } = await supabase.from('area').select('area_id').ilike('area_nom', nombreLimpio).neq('area_id', idArea).maybeSingle();
-  if (existente) throw conflicto(`Ya existe un area con el nombre "${nombreLimpio}".`);
+  if (existente) throw conflicto(`Ya existe un área con el nombre "${nombreLimpio}".`);
 
   const idEdificio = await obtenerEdificioDeEspacio(idEspacio);
 
@@ -100,7 +100,7 @@ export async function actualizar(idArea, datos) {
     edificio_id: idEdificio
   }).eq('area_id', idArea).select().single();
 
-  if (error || !data) throw noEncontrado(`No existe el area ${idArea}.`);
+  if (error || !data) throw noEncontrado(`No existe el área ${idArea}.`);
 
   return {
     idArea: data.area_id,
@@ -110,7 +110,7 @@ export async function actualizar(idArea, datos) {
 
 export async function eliminar(idArea) {
   const { data, error } = await supabase.from('area').delete().eq('area_id', idArea).select().single();
-  if (error || !data) throw noEncontrado(`No existe el area ${idArea}.`);
+  if (error || !data) throw noEncontrado(`No existe el área ${idArea}.`);
 
   return {
     idArea: data.area_id,

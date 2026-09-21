@@ -51,7 +51,7 @@ export default function FormularioTipoActivo({ tipo = null, onGuardar }) {
         tipo: 'exito',
         mensaje: editando
           ? `Se guardaron los cambios de "${nombre}".`
-          : `Se agrego el tipo de activo "${nombre}".`,
+          : `Se agregó el tipo de activo "${nombre}".`,
       });
 
       router.push('/tipos-activos');
@@ -77,16 +77,16 @@ export default function FormularioTipoActivo({ tipo = null, onGuardar }) {
               placeholder="Aires acondicionados"
               obligatorio
               maxLength={100}
-              anchoMinimo={20}
+              ancho={20}
               revisado={revisado}
               error={errores.nombre}
-              ayuda="Asi va a aparecer en el desplegable al cargar un activo."
+              ayuda="Así va a aparecer en el desplegable al cargar un activo."
             />
           </div>
 
           {revisado && hayErrores && (
             <p className="sigma-campo-mensaje sigma-campo-mensaje--error mb-3">
-              Revisa los campos marcados y volve a guardar.
+              Revisá los campos marcados y volvé a guardar.
             </p>
           )}
 

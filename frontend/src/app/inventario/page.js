@@ -37,7 +37,7 @@ export default function PantallaInventario() {
     setEliminando(true);
     try {
       await eliminarItem(aEliminar.codigo);
-      mostrarToast({ tipo: 'exito', mensaje: `Se elimino "${aEliminar.nombre}".` });
+      mostrarToast({ tipo: 'exito', mensaje: `Se eliminó "${aEliminar.nombre}".` });
       setAEliminar(null);
       setRecarga((numero) => numero + 1);
     } catch (fallo) {
@@ -51,7 +51,7 @@ export default function PantallaInventario() {
   const columnas = [
     {
       clave: 'codigo',
-      encabezado: 'Codigo',
+      encabezado: 'Código',
       render: (fila) => <span className="fw-semibold">{fila.codigo}</span>,
     },
     { clave: 'nombre', encabezado: 'Nombre', render: (fila) => fila.nombre },
@@ -63,7 +63,7 @@ export default function PantallaInventario() {
     },
     {
       clave: 'stock',
-      encabezado: 'Stock minimo',
+      encabezado: 'Stock mínimo',
       render: (fila) => (fila.clase === 'Material' ? fila.stockMinimo : '-'),
     },
     { clave: 'estado', encabezado: 'Estado', render: (fila) => fila.estado },
@@ -111,7 +111,7 @@ export default function PantallaInventario() {
             claveFila={(fila) => fila.codigo}
             columnas={columnas}
             buscarPor={['codigo', 'nombre', 'descripcion', 'nombreTipo']}
-            placeholderBusqueda="Buscar por codigo, nombre o tipo..."
+            placeholderBusqueda="Buscar por código, nombre o tipo"
             filtros={[
               {
                 etiqueta: 'Clase',

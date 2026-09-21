@@ -483,16 +483,30 @@ body {
   overflow: hidden;
 }
 
+/*
+  El tilde y la cruz.
+
+  Van en pixeles enteros y miden 16, no 14, a proposito. El dibujo del icono
+  tiene un trazo de 1/16 de su alto: a 16px eso da 1px justo y sale limpio, pero
+  a 14px daba 0.875px y el navegador lo repartia entre dos pixeles. Como ademas
+  la posicion estaba en rem (0.6rem = 9.6px), cada campo lo redondeaba distinto
+  y la cruz se veia deformada de una manera en cada uno.
+*/
 .sigma-campo-marca {
   position: absolute;
-  top: 0.55rem;
-  right: 0.6rem;
+  top: 11px;
+  right: 10px;
   display: inline-flex;
   pointer-events: none;
 }
 
+.sigma-campo-marca svg.icon {
+  width: 16px;
+  height: 16px;
+}
+
 .sigma-campo-caja .form-select ~ .sigma-campo-marca {
-  right: 2.2rem;
+  right: 36px;
 }
 
 /*
@@ -504,7 +518,7 @@ body {
 }
 
 .sigma-campo-caja input[type='date'] ~ .sigma-campo-marca {
-  right: 2.1rem;
+  right: 34px;
 }
 
 /*
@@ -542,6 +556,49 @@ body {
 
 .sigma-campo--error .sigma-campo-opciones {
   border-left: 3px solid var(--cui-danger, #e55353);
+}
+
+/*
+  El desplegable de varias opciones (src/componentes/formulario/SeleccionMultiple.js).
+
+  El boton se disfraza de lista comun: mismo borde, mismo fondo y el texto a la
+  izquierda, para que en una fila de campos no se note que es un boton.
+*/
+.sigma-seleccion-boton {
+  --cui-btn-bg: var(--cui-body-bg, #fff);
+  --cui-btn-color: var(--cui-body-color);
+  --cui-btn-border-color: var(--cui-border-color, var(--sigma-borde));
+  --cui-btn-hover-bg: var(--cui-body-bg, #fff);
+  --cui-btn-hover-color: var(--cui-body-color);
+  --cui-btn-hover-border-color: var(--cui-border-color, var(--sigma-borde));
+  --cui-btn-active-bg: var(--cui-body-bg, #fff);
+  --cui-btn-active-color: var(--cui-body-color);
+  text-align: left;
+  min-width: 18rem;
+  max-width: 100%;
+}
+
+.sigma-campo--error .sigma-seleccion-boton {
+  border-left: 3px solid var(--cui-danger, #e55353);
+}
+
+.sigma-campo--ok .sigma-seleccion-boton {
+  border-left: 3px solid var(--cui-success, #1b9e5a);
+}
+
+.sigma-seleccion-menu {
+  padding: 0.5rem 0.75rem;
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.sigma-seleccion-menu .form-check {
+  margin-bottom: 0.35rem;
+}
+
+.sigma-seleccion-raya {
+  margin: 0.5rem 0;
+  opacity: 0.25;
 }
 
 /*
@@ -806,11 +863,16 @@ body {
   min-width: 0;
 }
 
+/*
+  El buscador tiene que entrar entero: el texto de adentro dice por que columnas
+  busca ("Buscar por nombre, espacio o edificio") y antes se cortaba a la mitad,
+  que es peor que no decir nada.
+*/
 .sigma-tabla-buscador {
   position: relative;
-  flex: 1 1 8rem;
+  flex: 1 1 18rem;
   min-width: 0;
-  max-width: 15rem;
+  max-width: 22rem;
 }
 
 /*

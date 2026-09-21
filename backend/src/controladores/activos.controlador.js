@@ -14,7 +14,7 @@ function leerCodigo(req) {
   const codigo = String(req.params.codigo ?? '').trim();
 
   if (!codigo) {
-    throw datoInvalido('Falta el codigo del activo.');
+    throw datoInvalido('Falta el código del activo.');
   }
 
   return codigo;
@@ -36,7 +36,7 @@ export async function listar(req, res) {
   const { idEdificio, espacio_num, idTipoActivo, estado } = req.query;
 
   if (estado && !ESTADOS.includes(estado)) {
-    throw datoInvalido(`"${estado}" no es un estado de activo valido.`);
+    throw datoInvalido(`"${estado}" no es un estado de activo válido.`);
   }
 
   const activos = await activosServicio.obtenerTodos({

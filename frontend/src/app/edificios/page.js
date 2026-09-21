@@ -60,7 +60,7 @@ export default function PantallaEdificios() {
 
     try {
       await eliminarEdificio(aEliminar.idEdificio);
-      mostrarToast({ tipo: 'exito', mensaje: `Se elimino el edificio "${aEliminar.nombre}".` });
+      mostrarToast({ tipo: 'exito', mensaje: `Se eliminó el edificio "${aEliminar.nombre}".` });
       setAEliminar(null);
       setRecarga((numero) => numero + 1);
     } catch (fallo) {
@@ -79,7 +79,7 @@ export default function PantallaEdificios() {
     },
     {
       clave: 'direccion',
-      encabezado: 'Direccion',
+      encabezado: 'Dirección',
       render: (edificio) => <span className="text-body-secondary">{edificio.direccion ?? '-'}</span>,
     },
     {
@@ -126,7 +126,7 @@ export default function PantallaEdificios() {
             claveFila={(edificio) => edificio.idEdificio}
             columnas={columnas}
             buscarPor={['nombre', 'direccion']}
-            placeholderBusqueda="Buscar por nombre o direccion..."
+            placeholderBusqueda="Buscar por nombre o dirección"
             cargando={cargando}
             textoVacio="Todavia no hay edificios cargados."
           />
