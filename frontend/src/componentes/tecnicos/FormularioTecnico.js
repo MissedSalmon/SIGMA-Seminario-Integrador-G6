@@ -10,17 +10,15 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CButton, CCard, CCardBody } from '@coreui/react';
+import { CButton, CCard, CCardBody, CFormCheck, CFormLabel } from '@coreui/react';
 
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Campo from '@/componentes/formulario/Campo.js';
-import CampoTelefono from '@/componentes/formulario/CampoTelefono.js';
-import SeleccionMultiple from '@/componentes/formulario/SeleccionMultiple.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarEspecialidades } from '@/servicios/especialidades.js';
-import { validarTelefono } from '@/utils/validaciones.js';
+import { LARGO_TELEFONO, digitosDelTelefono, limpiarTelefono } from '@/utils/telefono.js';
 
 const DISPONIBILIDADES = ['Disponible', 'No disponible'];
 
@@ -61,16 +59,31 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
     if (!String(legajo).trim()) encontrados.legajo = 'El legajo es obligatorio.';
     if (!nombre.trim()) encontrados.nombre = 'El nombre es obligatorio.';
     if (especialidadesElegidas.length === 0) {
-      encontrados.especialidades = 'Elegí al menos una especialidad.';
+      encontrados.especialidades = 'Elegi al menos una especialidad.';
     }
 
-    const errorTelefono = validarTelefono(telefono);
-    if (errorTelefono) encontrados.telefono = errorTelefono;
+    /*
+     * Se cuentan los digitos de lo que hay guardado y no los de la caja: un
+     * telefono cargado antes de esta regla puede tener espacios o guiones, y
+     * hay que avisar igual si le faltan o le sobran numeros.
+     */
+    const digitosTelefono = digitosDelTelefono(telefono);
+    if (digitosTelefono && digitosTelefono.length !== LARGO_TELEFONO) {
+      encontrados.telefono = `El telefono tiene ${LARGO_TELEFONO} digitos y este tiene ${digitosTelefono.length}.`;
+    }
 
     return encontrados;
-  }, [legajo, nombre, telefono, especialidadesElegidas]);
+  }, [legajo, nombre, especialidadesElegidas, telefono]);
 
   const hayErrores = Object.keys(errores).length > 0;
+
+  function alternarEspecialidad(idEspecialidad) {
+    setEspecialidadesElegidas((actuales) =>
+      actuales.includes(idEspecialidad)
+        ? actuales.filter((id) => id !== idEspecialidad)
+        : [...actuales, idEspecialidad]
+    );
+  }
 
   async function manejarEnvio(evento) {
     evento.preventDefault();
@@ -92,7 +105,7 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
         tipo: 'exito',
         mensaje: editando
           ? `Se guardaron los cambios de "${nombre}".`
-          : `Se agregó el tecnico "${nombre}".`,
+          : `Se agrego el tecnico "${nombre}".`,
       });
       router.push('/tecnicos');
       router.refresh();
@@ -111,6 +124,8 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
       </CCard>
     );
   }
+
+  const errorEspecialidades = revisado ? errores.especialidades : '';
 
   return (
     <CCard>
@@ -131,10 +146,11 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
               placeholder="1024"
               obligatorio
               deshabilitado={editando}
-              ancho={8}
+              anchoMinimo={8}
+              anchoMaximo={12}
               revisado={revisado}
               error={errores.legajo}
-              ayuda={editando ? 'No se puede cambiar.' : ''}
+              ayuda={editando ? 'El legajo identifica al tecnico y no se puede cambiar.' : ''}
             />
 
             <Campo
@@ -145,44 +161,66 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
               placeholder="Juan Perez"
               obligatorio
               maxLength={100}
-              ancho={20}
+              anchoMinimo={20}
               revisado={revisado}
               error={errores.nombre}
             />
 
-            <CampoTelefono
+            <Campo
+              id="telefono"
+              etiqueta="Telefono"
+              tipoHtml="tel"
               valor={telefono}
-              alCambiar={setTelefono}
+              alCambiar={(valor) => setTelefono(limpiarTelefono(valor))}
+              placeholder="3624123456"
+              maxLength={LARGO_TELEFONO}
+              anchoMinimo={LARGO_TELEFONO + 2}
+              anchoMaximo={LARGO_TELEFONO + 2}
               revisado={revisado}
               error={errores.telefono}
+              ayuda={`${LARGO_TELEFONO} digitos, sin el 0 de adelante ni el 15.`}
             />
           </div>
 
           <h2 className="sigma-seccion-titulo">Especialidad y disponibilidad</h2>
 
           <div className="sigma-campos mb-4">
-            {especialidades.length === 0 ? (
-              <Aviso
-                color="warning"
-                mensaje="Todavía no hay especialidades cargadas: hace falta al menos una para poder dar de alta un técnico."
-              />
-            ) : (
-              <SeleccionMultiple
-                id="especialidades"
-                etiqueta="Especialidades"
-                opciones={especialidades.map((especialidad) => ({
-                  valor: especialidad.idEspecialidad,
-                  texto: especialidad.nombre,
-                }))}
-                elegidos={especialidadesElegidas}
-                alCambiar={setEspecialidadesElegidas}
-                textoTodas="Todas las especialidades"
-                placeholder="Seleccionar especialidades"
-                obligatorio
-                revisado={revisado}
-                error={errores.especialidades}
-              />
-            )}
+            {/*
+              Las especialidades son varias casillas y no una caja, asi que no
+              entran en <Campo>. Se arman a mano con las mismas clases, para que
+              el recuadro y la marca de error queden igual que en el resto.
+            */}
+            <div
+              className={`sigma-campo sigma-campo--ancho${errorEspecialidades ? ' sigma-campo--error' : ''}`}
+            >
+              <CFormLabel className="sigma-obligatorio">Especialidades</CFormLabel>
+
+              {especialidades.length === 0 ? (
+                <Aviso
+                  color="warning"
+                  mensaje="Todavia no hay especialidades cargadas: hace falta al menos una para poder dar de alta un tecnico."
+                />
+              ) : (
+                <>
+                  <div className="sigma-campo-opciones">
+                    {especialidades.map((especialidad) => (
+                      <CFormCheck
+                        key={especialidad.idEspecialidad}
+                        id={`especialidad-${especialidad.idEspecialidad}`}
+                        label={especialidad.nombre}
+                        checked={especialidadesElegidas.includes(especialidad.idEspecialidad)}
+                        onChange={() => alternarEspecialidad(especialidad.idEspecialidad)}
+                      />
+                    ))}
+                  </div>
+                  <p
+                    className={`sigma-campo-mensaje${errorEspecialidades ? ' sigma-campo-mensaje--error' : ''}`}
+                  >
+                    {errorEspecialidades || 'Un tecnico puede tener mas de una.'}
+                  </p>
+                </>
+              )}
+            </div>
 
             <Campo
               id="disponibilidad"
@@ -191,17 +229,20 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
               valor={disponibilidad}
               alCambiar={setDisponibilidad}
               opciones={DISPONIBILIDADES.map((texto) => ({ valor: texto, texto }))}
-              placeholder="Elegir disponibilidad"
               obligatorio
-              ancho={14}
+              anchoMinimo={14}
               revisado={revisado}
-              ayuda={editando ? '"No disponible" no lo elimina: queda con su historial.' : ''}
+              ayuda={
+                editando
+                  ? 'Marcarlo como "No disponible" no lo elimina: sigue en el sistema con su historial.'
+                  : ''
+              }
             />
           </div>
 
           {revisado && hayErrores && (
             <p className="sigma-campo-mensaje sigma-campo-mensaje--error mb-3">
-              Revisá los campos marcados y volvé a guardar.
+              Revisa los campos marcados y volve a guardar.
             </p>
           )}
 

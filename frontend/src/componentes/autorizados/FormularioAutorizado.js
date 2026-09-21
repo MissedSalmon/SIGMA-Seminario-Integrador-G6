@@ -11,6 +11,10 @@
  *    activos de esa area (HU-9). Un area tiene un solo responsable, asi que el
  *    desplegable muestra unicamente las areas libres (y la propia, cuando se
  *    esta editando). Asi no hace falta rechazar el alta despues.
+ * 3. La fecha de nacimiento es obligatoria y tiene que dar 18 anios cumplidos:
+ *    un responsable de area firma el alta de tickets, asi que tiene que ser
+ *    mayor de edad. Si la fecha se pudiera dejar vacia, la regla no serviria de
+ *    nada, porque alcanzaria con no completarla.
  */
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
@@ -20,24 +24,19 @@ import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
 import Campo from '@/componentes/formulario/Campo.js';
-import CampoCuil from '@/componentes/formulario/CampoCuil.js';
-import CampoDni from '@/componentes/formulario/CampoDni.js';
-import CampoTelefono from '@/componentes/formulario/CampoTelefono.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarAreas } from '@/servicios/areas.js';
 import { listarAutorizados } from '@/servicios/autorizados.js';
-import { validarCuil, validarDni, validarEmail, validarTelefono } from '@/utils/validaciones.js';
+import { hoyTexto, fechaMinimaParaEdad } from '@/utils/fechas.js';
+import { LARGO_TELEFONO, digitosDelTelefono, limpiarTelefono } from '@/utils/telefono.js';
 
-/** La fecha de hoy en el formato que entiende un <input type="date">. */
-function hoy() {
-  return new Date().toISOString().slice(0, 10);
+/** Deja solo los digitos, para poder contarlos sin importar puntos ni guiones. */
+function soloDigitos(texto) {
+  return String(texto ?? '').replace(/\D/g, '');
 }
 
-function fechaHace18Anios() {
-  const d = new Date();
-  d.setFullYear(d.getFullYear() - 18);
-  return d.toISOString().slice(0, 10);
-}
+/** Los anios que hay que tener cumplidos para quedar registrado. */
+const EDAD_MINIMA = 18;
 
 export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
   const router = useRouter();
@@ -78,40 +77,54 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
       .finally(() => setCargando(false));
   }, [autorizado?.legajo]);
 
+  /*
+   * La fecha de nacimiento mas reciente que ya da los 18 cumplidos. Se calcula
+   * una sola vez por pantalla: se usa para validar y tambien como tope del
+   * almanaque, asi el que carga ni siquiera puede elegir una fecha mas nueva.
+   */
+  const fechaMinimaNacimiento = useMemo(() => fechaMinimaParaEdad(EDAD_MINIMA), []);
+
   const errores = useMemo(() => {
     const encontrados = {};
 
     if (!String(legajo).trim()) encontrados.legajo = 'El legajo es obligatorio.';
     if (!nombre.trim()) encontrados.nombre = 'El nombre y apellido es obligatorio.';
-    if (!idArea) encontrados.idArea = 'Hay que elegir el área de la que es responsable.';
+    if (!idArea) encontrados.idArea = 'Hay que elegir el area de la que es responsable.';
 
-    // Las reglas de estos campos son las mismas en todo el sistema.
-    if (!String(dni).trim()) {
-      encontrados.dni = 'El DNI es obligatorio.';
-    } else {
-      const errorDni = validarDni(dni);
-      if (errorDni) encontrados.dni = errorDni;
+    const digitosDni = soloDigitos(dni);
+    if (digitosDni && (digitosDni.length < 7 || digitosDni.length > 8)) {
+      encontrados.dni = 'El DNI tiene 7 u 8 digitos.';
     }
 
-    const errorCuil = validarCuil(cuil, dni);
-    if (errorCuil) encontrados.cuil = errorCuil;
+    const digitosCuil = soloDigitos(cuil);
+    if (digitosCuil && digitosCuil.length !== 11) {
+      encontrados.cuil = 'El CUIL tiene 11 digitos.';
+    }
 
-    const errorTelefono = validarTelefono(telefono);
-    if (errorTelefono) encontrados.telefono = errorTelefono;
+    if (email.trim() && !email.includes('@')) {
+      encontrados.email = 'Revisa el email: falta el @ o esta incompleto.';
+    }
 
-    const errorEmail = validarEmail(email);
-    if (errorEmail) encontrados.email = errorEmail;
+    /*
+     * Se cuentan los digitos de lo que hay guardado y no los de la caja: un
+     * telefono cargado antes de esta regla puede tener espacios o guiones, y
+     * hay que avisar igual si le faltan o le sobran numeros.
+     */
+    const digitosTelefono = digitosDelTelefono(telefono);
+    if (digitosTelefono && digitosTelefono.length !== LARGO_TELEFONO) {
+      encontrados.telefono = `El telefono tiene ${LARGO_TELEFONO} digitos y este tiene ${digitosTelefono.length}.`;
+    }
 
     if (!fechaNacimiento) {
       encontrados.fechaNacimiento = 'La fecha de nacimiento es obligatoria.';
-    } else if (fechaNacimiento > hoy()) {
+    } else if (fechaNacimiento > hoyTexto()) {
       encontrados.fechaNacimiento = 'La fecha no puede ser posterior a hoy.';
-    } else if (fechaNacimiento > fechaHace18Anios()) {
-      encontrados.fechaNacimiento = 'El usuario autorizado debe tener al menos 18 años.';
+    } else if (fechaNacimiento > fechaMinimaNacimiento) {
+      encontrados.fechaNacimiento = `Tiene que tener ${EDAD_MINIMA} anios cumplidos: con esa fecha todavia no los cumplio.`;
     }
 
     return encontrados;
-  }, [legajo, nombre, idArea, dni, cuil, telefono, email, fechaNacimiento]);
+  }, [legajo, nombre, idArea, dni, cuil, email, telefono, fechaNacimiento, fechaMinimaNacimiento]);
 
   const hayErrores = Object.keys(errores).length > 0;
 
@@ -134,7 +147,7 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
         cuil,
         email,
         telefono,
-        fechaNacimiento: fechaNacimiento || null,
+        fechaNacimiento,
         idArea: Number(idArea),
       });
 
@@ -142,7 +155,7 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
         tipo: 'exito',
         mensaje: editando
           ? `Se guardaron los cambios de "${nombre}".`
-          : `Se agregó el usuario autorizado "${nombre}".`,
+          : `Se agrego el usuario autorizado "${nombre}".`,
       });
 
       router.push('/autorizados');
@@ -181,34 +194,24 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
               obligatorio
               maxLength={50}
               deshabilitado={editando}
-              ancho={8}
+              anchoMinimo={8}
               revisado={revisado}
               error={errores.legajo}
-              ayuda={editando ? 'No se puede cambiar.' : ''}
+              ayuda={editando ? 'El legajo identifica a la persona y no se puede cambiar.' : ''}
             />
 
             <Campo
               id="nombre"
-              etiqueta="Nombre y Apellido"
+              etiqueta="Nombre y apellido"
               valor={nombre}
               alCambiar={setNombre}
               placeholder="Juan Perez"
               obligatorio
               maxLength={150}
-              ancho={24}
+              anchoMinimo={24}
               revisado={revisado}
               error={errores.nombre}
             />
-
-            <CampoDni
-              valor={dni}
-              alCambiar={setDni}
-              obligatorio
-              revisado={revisado}
-              error={errores.dni}
-            />
-
-            <CampoCuil valor={cuil} alCambiar={setCuil} revisado={revisado} error={errores.cuil} />
 
             <Campo
               id="fechaNacimiento"
@@ -216,16 +219,37 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
               tipoHtml="date"
               valor={fechaNacimiento}
               alCambiar={setFechaNacimiento}
-              max={fechaHace18Anios()}
               obligatorio
+              max={fechaMinimaNacimiento}
               revisado={revisado}
               error={errores.fechaNacimiento}
+              ayuda={`Tiene que tener ${EDAD_MINIMA} anios cumplidos.`}
             />
-          </div>
 
-          <h2 className="sigma-seccion-titulo">Contacto</h2>
+            <Campo
+              id="dni"
+              etiqueta="DNI"
+              valor={dni}
+              alCambiar={setDni}
+              placeholder="20345678"
+              maxLength={8}
+              anchoMinimo={10}
+              revisado={revisado}
+              error={errores.dni}
+            />
 
-          <div className="sigma-campos mb-4">
+            <Campo
+              id="cuil"
+              etiqueta="CUIL"
+              valor={cuil}
+              alCambiar={setCuil}
+              placeholder="20203456783"
+              maxLength={11}
+              anchoMinimo={13}
+              revisado={revisado}
+              error={errores.cuil}
+            />
+
             <Campo
               id="email"
               etiqueta="Email"
@@ -234,25 +258,33 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
               alCambiar={setEmail}
               placeholder="jperez@frre.utn.edu.ar"
               maxLength={150}
-              ancho={24}
+              anchoMinimo={24}
               revisado={revisado}
               error={errores.email}
             />
 
-            <CampoTelefono
+            <Campo
+              id="telefono"
+              etiqueta="Telefono"
+              tipoHtml="tel"
               valor={telefono}
-              alCambiar={setTelefono}
+              alCambiar={(valor) => setTelefono(limpiarTelefono(valor))}
+              placeholder="3624123456"
+              maxLength={LARGO_TELEFONO}
+              anchoMinimo={LARGO_TELEFONO + 2}
+              anchoMaximo={LARGO_TELEFONO + 2}
               revisado={revisado}
               error={errores.telefono}
+              ayuda={`${LARGO_TELEFONO} digitos, sin el 0 de adelante ni el 15.`}
             />
           </div>
 
-          <h2 className="sigma-seccion-titulo">Área a cargo</h2>
+          <h2 className="sigma-seccion-titulo">Area a cargo</h2>
 
           <div className="sigma-campos mb-4">
             <Campo
               id="idArea"
-              etiqueta="Área"
+              etiqueta="Area"
               tipo="lista"
               valor={idArea}
               alCambiar={setIdArea}
@@ -260,16 +292,16 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
               placeholder={areas.length === 0 ? 'No hay áreas libres' : 'Elegí el área...'}
               deshabilitado={areas.length === 0}
               obligatorio
-              ancho={24}
+              anchoMinimo={24}
               revisado={revisado}
               error={errores.idArea}
-              ayuda={areas.length === 0 ? "No hay áreas libres: cargá una nueva o sacásela a otro responsable." : "Solo se listan las áreas que todavía no tienen responsable."}
+              ayuda={areas.length === 0 ? "No hay áreas libres: cargá una nueva o sacásela a otro responsable." : "Queda habilitado para cargar tickets sobre los activos de esta área. Solo se listan las áreas que todavía no tienen responsable."}
             />
           </div>
 
           {revisado && hayErrores && (
             <p className="sigma-campo-mensaje sigma-campo-mensaje--error mb-3">
-              Revisá los campos marcados y volvé a guardar.
+              Revisa los campos marcados y volve a guardar.
             </p>
           )}
 

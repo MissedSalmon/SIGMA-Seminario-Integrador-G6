@@ -5,11 +5,14 @@
  *
  * Muestra todo lo que se sabe del ticket: sus datos, el activo afectado y
  * donde esta, el area, quien lo registro, la foto si la hay y la orden de
- * trabajo si ya se genero. Cuando algo no existe (sin foto, sin OT) se dice
- * con todas las letras, para que no quede la duda de si no cargo.
+ * trabajo si ya se genero. Cuando algo no existe (por ejemplo, si no tiene
+ * foto) se dice con todas las letras, para que no quede la duda de si no
+ * cargo.
+ *
+ * La excepcion es la orden de trabajo: ver ESTADOS_SIN_OT mas abajo.
  */
 import { use, useEffect, useState } from 'react';
-import { CButton, CCard, CCardBody, CCardHeader, CCol, CRow, CModal, CModalHeader, CModalTitle, CModalBody, CModalFooter, CFormTextarea, CFormLabel } from '@coreui/react';
+import { CButton, CCard, CCardBody, CCardHeader, CCol, CRow, CModal, CModalHeader, CModalTitle, CModalBody, CModalFooter, CFormTextarea, CFormSelect, CFormLabel } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilArrowLeft, cilExternalLink, cilCheckAlt, cilX } from '@coreui/icons';
 
@@ -19,8 +22,37 @@ import BotonEnlace from '@/componentes/BotonEnlace.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
 import EtiquetaEstadoTicket from '@/componentes/tickets/EtiquetaEstadoTicket.js';
 import { obtenerTicket, validarTicket, rechazarTicket } from '@/servicios/tickets.js';
+import { obtenerActivo, actualizarActivo } from '@/servicios/activos.js';
 import { formatearFechaHora } from '@/utils/fechas.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
+
+/*
+ * Los estados en los que no corresponde hablar todavia de la orden de trabajo.
+ *
+ *   Creado     el administrador todavia no decidio nada: no es que "falte" la
+ *              OT, es que primero hay que validar el ticket.
+ *   Rechazado  no va a haber ninguna OT, ni ahora ni nunca.
+ *
+ * En esos dos casos la tarjeta de la OT no se muestra. Decir "todavia no tiene
+ * una OT generada" confundia mas de lo que informaba: daba a entender que
+ * falta algo por cargar, cuando en realidad no corresponde que exista.
+ */
+const ESTADOS_SIN_OT = ['Creado', 'Rechazado'];
+
+/*
+ * Los estados de activo que el administrador puede poner a mano al validar.
+ *
+ * Son los mismos que ofrece la pantalla de activos, y los unicos que acepta la
+ * API: en backend/src/servicios/activos.servicio.js, ESTADOS_MANUALES deja
+ * pasar Operativo, Fuera de servicio y Retirado. "Retirado" no se ofrece aca
+ * porque dar de baja un activo es otra cosa y tiene su propio boton en el
+ * listado. "En mantenimiento" tampoco: hoy la API lo rechaza.
+ *
+ * No hay una opcion de "dejarlo como esta": al validar hay que decir en que
+ * estado queda el activo, y se elige una de las dos. Arranca marcado el estado
+ * que el activo ya tiene, asi que dejarlo igual es no tocar el desplegable.
+ */
+const ESTADOS_DE_ACTIVO = ['Operativo', 'Fuera de servicio'];
 
 /** Un renglon "etiqueta: valor" de la ficha. */
 function Dato({ etiqueta, children }) {
@@ -50,6 +82,10 @@ export default function PantallaDetalleTicket({ params }) {
   const [motivoRechazo, setMotivoRechazo] = useState('');
   const [errorRechazo, setErrorRechazo] = useState('');
 
+  const [modalValidarVisible, setModalValidarVisible] = useState(false);
+  const [estadoNuevoDelActivo, setEstadoNuevoDelActivo] = useState('');
+  const [errorValidar, setErrorValidar] = useState('');
+
   const cargarTicket = () => {
     obtenerTicket(id)
       .then(setTicket)
@@ -62,17 +98,77 @@ export default function PantallaDetalleTicket({ params }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  function abrirModalValidar() {
+    /*
+     * Arranca marcado el estado que el activo tiene ahora, para que validar sin
+     * tocar el desplegable no lo cambie por accidente. Si hoy esta en un estado
+     * que no es ninguno de los dos ("En mantenimiento", por ejemplo), queda
+     * marcado el primero y hay que elegir igual.
+     */
+    const estadoActual = ticket?.activo?.estado;
+    setEstadoNuevoDelActivo(
+      ESTADOS_DE_ACTIVO.includes(estadoActual) ? estadoActual : ESTADOS_DE_ACTIVO[0]
+    );
+    setErrorValidar('');
+    setModalValidarVisible(true);
+  }
+
+  /*
+   * Validar el ticket y, si se pidio, cambiar el estado del activo.
+   *
+   * El orden importa: primero se valida el ticket, que es lo que se vino a
+   * hacer. Si despues falla el cambio de estado del activo, el ticket igual
+   * quedo validado y se avisa aparte que el activo no se pudo actualizar. Al
+   * reves seria peor: dejaria el activo tocado y el ticket sin validar.
+   */
   async function handleValidar() {
     setProcesando(true);
     setError('');
+    setErrorValidar('');
+
     try {
       await validarTicket(id);
-      mostrarToast({ tipo: 'exito', mensaje: 'El ticket ha sido validado correctamente.' });
-      cargarTicket();
     } catch (err) {
-      setError(err.message);
+      setErrorValidar(err.message);
       setProcesando(false);
+      return;
     }
+
+    let avisoDelActivo = '';
+
+    // Si se deja el estado que ya tenia, no se molesta a la API al pedo.
+    if (estadoNuevoDelActivo && estadoNuevoDelActivo !== ticket.activo?.estado) {
+      try {
+        await cambiarEstadoDelActivo(ticket.codigoActivo, estadoNuevoDelActivo);
+        avisoDelActivo = ` El activo ${ticket.codigoActivo} quedó como ${estadoNuevoDelActivo}.`;
+      } catch (err) {
+        avisoDelActivo = '';
+        setError(
+          `El ticket se validó, pero no se pudo cambiar el estado del activo ${ticket.codigoActivo}: ${err.message}`
+        );
+      }
+    }
+
+    mostrarToast({ tipo: 'exito', mensaje: `El ticket se validó correctamente.${avisoDelActivo}` });
+    setModalValidarVisible(false);
+    setProcesando(false);
+    cargarTicket();
+  }
+
+  /*
+   * La API de activos pide el tipo y el espacio aunque solo se cambie el
+   * estado, asi que primero se lee el activo y se le devuelven esos dos datos
+   * tal cual estaban. La fecha de alta no se manda: el backend deja la que ya
+   * tenia, y asi no se arriesga nada al convertirla de ida y de vuelta.
+   */
+  async function cambiarEstadoDelActivo(codigo, estado) {
+    const activo = await obtenerActivo(codigo);
+
+    await actualizarActivo(codigo, {
+      idTipoActivo: activo.idTipoActivo,
+      espacio_id: activo.espacio_id,
+      estado,
+    });
   }
 
   async function handleRechazar() {
@@ -125,7 +221,7 @@ export default function PantallaDetalleTicket({ params }) {
                           <CIcon icon={cilX} className="me-1" />
                           Rechazar
                         </CButton>
-                        <CButton color="success" className="text-white" size="sm" onClick={handleValidar} disabled={procesando}>
+                        <CButton color="success" className="text-white" size="sm" onClick={abrirModalValidar} disabled={procesando}>
                           <CIcon icon={cilCheckAlt} className="me-1" />
                           {procesando ? 'Procesando...' : 'Validar'}
                         </CButton>
@@ -238,47 +334,97 @@ export default function PantallaDetalleTicket({ params }) {
                   </CCardBody>
                 </CCard>
 
-                <CCard className="mb-4">
-                  <CCardHeader className="fw-semibold">Orden de trabajo</CCardHeader>
-                  <CCardBody>
-                    {ticket.ot ? (
-                      <CRow>
-                        <CCol sm={6}>
-                          <Dato etiqueta="Número de OT">
-                            <span className="fw-semibold">#{ticket.ot.id}</span>
-                          </Dato>
-                        </CCol>
-                        <CCol sm={6}>
-                          <Dato etiqueta="Estado">{ticket.ot.estado || '-'}</Dato>
-                        </CCol>
-                        <CCol sm={6}>
-                          <Dato etiqueta="Fecha de alta">{formatearFechaHora(ticket.ot.fechaAlta)}</Dato>
-                        </CCol>
-                        <CCol sm={6}>
-                          <Dato etiqueta="Fecha de cierre">
-                            {ticket.ot.fechaCierre ? formatearFechaHora(ticket.ot.fechaCierre) : <SinDato>Todavía abierta</SinDato>}
-                          </Dato>
-                        </CCol>
-                        {ticket.ot.descripcion && (
-                          <CCol sm={12}>
-                            <Dato etiqueta="Descripción">{ticket.ot.descripcion}</Dato>
+                {(ticket.ot || !ESTADOS_SIN_OT.includes(ticket.estado)) && (
+                  <CCard className="mb-4">
+                    <CCardHeader className="fw-semibold">Orden de trabajo</CCardHeader>
+                    <CCardBody>
+                      {ticket.ot ? (
+                        <CRow>
+                          <CCol sm={6}>
+                            <Dato etiqueta="Número de OT">
+                              <span className="fw-semibold">#{ticket.ot.id}</span>
+                            </Dato>
                           </CCol>
-                        )}
-                      </CRow>
-                    ) : (
-                      <>
-                        <p className="mb-1 fw-semibold">Este ticket todavía no tiene una OT generada.</p>
-                        <p className="text-body-secondary small mb-0">
-                          {ticket.estado === 'Rechazado' 
-                            ? 'Este ticket fue rechazado, por lo que no se generará una orden de trabajo.'
-                            : 'La orden de trabajo se genera automáticamente cuando el administrador valida el ticket.'}
-                        </p>
-                      </>
-                    )}
-                  </CCardBody>
-                </CCard>
+                          <CCol sm={6}>
+                            <Dato etiqueta="Estado">{ticket.ot.estado || '-'}</Dato>
+                          </CCol>
+                          <CCol sm={6}>
+                            <Dato etiqueta="Fecha de alta">{formatearFechaHora(ticket.ot.fechaAlta)}</Dato>
+                          </CCol>
+                          <CCol sm={6}>
+                            <Dato etiqueta="Fecha de cierre">
+                              {ticket.ot.fechaCierre ? formatearFechaHora(ticket.ot.fechaCierre) : <SinDato>Todavía abierta</SinDato>}
+                            </Dato>
+                          </CCol>
+                          {ticket.ot.descripcion && (
+                            <CCol sm={12}>
+                              <Dato etiqueta="Descripción">{ticket.ot.descripcion}</Dato>
+                            </CCol>
+                          )}
+                        </CRow>
+                      ) : (
+                        <>
+                          <p className="mb-1 fw-semibold">Este ticket todavía no tiene una OT generada.</p>
+                          <p className="text-body-secondary small mb-0">
+                            La orden de trabajo se genera automáticamente al validar el ticket.
+                          </p>
+                        </>
+                      )}
+                    </CCardBody>
+                  </CCard>
+                )}
               </CCol>
             </CRow>
+
+            <CModal visible={modalValidarVisible} onClose={() => setModalValidarVisible(false)} alignment="center">
+              <CModalHeader>
+                <CModalTitle>Validar ticket</CModalTitle>
+              </CModalHeader>
+              <CModalBody>
+                <Aviso mensaje={errorValidar} color="danger" />
+
+                <p>
+                  Se va a validar el ticket <strong>#{ticket.id}</strong> y se va a generar la orden
+                  de trabajo.
+                </p>
+
+                <div className="mb-2">
+                  <CFormLabel htmlFor="estadoNuevoDelActivo" className="sigma-obligatorio">
+                    Estado del activo {ticket.codigoActivo}
+                  </CFormLabel>
+                  <CFormSelect
+                    id="estadoNuevoDelActivo"
+                    value={estadoNuevoDelActivo}
+                    onChange={(e) => setEstadoNuevoDelActivo(e.target.value)}
+                    style={{ maxWidth: '20rem' }}
+                  >
+                    {ESTADOS_DE_ACTIVO.map((estado) => (
+                      <option key={estado} value={estado}>
+                        {estado}
+                      </option>
+                    ))}
+                  </CFormSelect>
+                  <p className="sigma-campo-mensaje">
+                    {ticket.activo?.estado
+                      ? `Ahora está en "${ticket.activo.estado}".`
+                      : 'Elegí en qué estado queda el activo.'}
+                  </p>
+                </div>
+              </CModalBody>
+              <CModalFooter>
+                <CButton
+                  color="secondary"
+                  variant="outline"
+                  onClick={() => setModalValidarVisible(false)}
+                  disabled={procesando}
+                >
+                  Cancelar
+                </CButton>
+                <CButton color="success" className="text-white" onClick={handleValidar} disabled={procesando}>
+                  {procesando ? 'Validando...' : 'Validar ticket'}
+                </CButton>
+              </CModalFooter>
+            </CModal>
 
             <CModal visible={modalRechazoVisible} onClose={() => setModalRechazoVisible(false)} alignment="center">
               <CModalHeader>
