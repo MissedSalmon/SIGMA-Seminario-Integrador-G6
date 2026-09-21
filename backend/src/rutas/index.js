@@ -56,6 +56,15 @@ router.use('/autorizados', rutasAutorizados);
 import rutasTickets from './tickets.rutas.js';
 router.use('/tickets', rutasTickets);
 
+// Ordenes de trabajo y sus tareas (HU-14)
+import rutasOrdenesTrabajo from './ordenesTrabajo.rutas.js';
+router.use('/ordenes-trabajo', rutasOrdenesTrabajo);
+
+// Prestadores de servicio: solo lectura, para asignarlos a una tarea (HU-14).
+// El ABM es la HU-33.
+import rutasPrestadores from './prestadores.rutas.js';
+router.use('/prestadores', rutasPrestadores);
+
 // Sirve para verificar que la API esta viva. No consulta la base de datos.
 router.get('/salud', (req, res) => {
   res.json({

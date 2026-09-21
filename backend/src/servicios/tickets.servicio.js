@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabase.js';
 import { datoInvalido, noEncontrado } from '../utiles/errores.js';
+import * as ordenesTrabajo from './ordenesTrabajo.servicio.js';
 
 /**
  * Los estados por los que pasa un ticket (ver .claude/contexto/dominio.md).
@@ -255,27 +256,42 @@ export async function crear(datos) {
 
 /**
  * Valida un ticket que esta en estado 'Creado'.
- * Pasa a estado 'Validado'.
+ * Pasa a estado 'Validado' y se le genera la orden de trabajo (HU-14).
+ *
+ * El orden importa: primero se valida, que es lo que se vino a hacer, y recien
+ * despues se genera la OT. Si la OT falla, el ticket igual queda validado y se
+ * avisa con todas las letras: desde el detalle del ticket se puede generar a
+ * mano con el boton "Crear OT".
  */
 export async function validar(id) {
   const ticket = await obtenerPorId(id);
-  
+
   if (ticket.estado !== ESTADO_INICIAL) {
     throw datoInvalido(`El ticket solo se puede validar si está en estado ${ESTADO_INICIAL}. Estado actual: ${ticket.estado}`);
   }
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('ticket')
     .update({ ticket_estado: 'Validado' })
     .eq('ticket_id', id)
-    .select(COLUMNAS)
+    .select('ticket_id')
     .single();
 
   if (error) {
     throw new Error(error.message);
   }
 
-  return aTicket(data);
+  try {
+    await ordenesTrabajo.crearDesdeTicket(id);
+  } catch (fallo) {
+    throw new Error(
+      `El ticket ${id} se validó, pero no se pudo generar la orden de trabajo: ${fallo.message} ` +
+        'Podés generarla desde el detalle del ticket, con el botón "Crear OT".'
+    );
+  }
+
+  // Se vuelve a leer para devolver el ticket ya con su OT.
+  return obtenerPorId(id);
 }
 
 /**
