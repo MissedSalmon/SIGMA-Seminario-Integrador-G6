@@ -106,6 +106,9 @@ en los **issues de GitHub**, y el modelo de datos en `supabase/migrations/`.
   HU-2 espacios y HU-3 áreas** (ABM completo, 28/08/2026), con la interfaz armada sobre
   la plantilla de administración de CoreUI. Los tres andan contra **datos de prueba en
   memoria** (`backend/src/datos-mock/`), no contra la base aún.
+- **HU-14 (crear la OT) está hecha (21/09/2026):** la OT se genera sola al validar el
+  ticket y se planifica en `/ordenes-trabajo`, cargándole las tareas con su prioridad y su
+  responsable. Los **prestadores de servicio** son sólo lectura hasta que se haga la HU-33.
 - **El proyecto en Supabase** y la conexión con **Vercel** en producción.
 
 *(Nota: La base de datos ya fue refactorizada e integrada con Supabase CLI en la carpeta `supabase/migrations/`)*

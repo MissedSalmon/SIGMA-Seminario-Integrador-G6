@@ -70,6 +70,36 @@ Una OT viene **o de un ticket, o de un plan preventivo**. Nunca de los dos.
 >   El ticket no tiene FK a área. Si el espacio no tiene área asignada, el ticket se muestra
 >   "Sin área".
 
+> **Decisiones del 21/09/2026 (HU-14, crear la OT):**
+> - Los estados de la OT y de sus tareas, y las prioridades, viven en
+>   `backend/src/servicios/ordenesTrabajo.servicio.js` y se exponen en
+>   `GET /api/ordenes-trabajo/estados` y `/prioridades`. Como pasó con los tickets, la base
+>   guarda los valores viejos en mayúscula (`PENDIENTE`, `MEDIA`): el backend los lee como
+>   "Creada" y "Media". No se cambió la base.
+> - **La OT sale de un ticket VALIDADO y de ninguno otro.** Antes de validarlo no se sabe si
+>   el trabajo se va a hacer; y si el ticket ya avanzó (asignado, en ejecución, cerrado) su OT
+>   ya existe. El botón "Crear OT" del detalle del ticket sólo aparece si está "Validado".
+> - **Las tareas se planifican para adelante:** ni el inicio ni el fin previstos pueden ser
+>   anteriores a hoy. Al editar una tarea vieja, la fecha que ya estaba guardada se respeta:
+>   sólo se rechaza si se la cambia por otra que también quedó atrás.
+> - **La prioridad es de la TAREA, no de la OT.** La tabla `tarea_ot` ya tiene
+>   `tarea_prioridad`, y una misma OT puede tener una tarea urgente y otra que puede esperar.
+>   La OT muestra la prioridad más alta de sus tareas; no se guarda.
+> - **El estado de la OT no se carga a mano, se calcula:** sin tareas, o con alguna sin
+>   responsable, queda en "Creada"; cuando todas tienen responsable pasa a "Asignada".
+> - **El ticket acompaña a su OT:** cuando la OT queda "Asignada", el ticket pasa a
+>   "Asignado", y vuelve a "Validado" si la OT vuelve a "Creada". Sólo se mueve entre esos
+>   dos estados: si el ticket ya está más adelante en el flujo, no retrocede.
+> - **Una tarea tiene un solo responsable:** un técnico propio *o* un prestador externo,
+>   nunca los dos (corrección #13 de la profe). Puede quedar sin asignar mientras se planifica.
+> - Los **prestadores de servicio** son por ahora de sólo lectura (`GET /api/prestadores`):
+>   se listan para poder elegirlos en una tarea. El ABM es la HU-33.
+> - **La duración de una tarea se escribe y se lee en horas y minutos** ("30 min", "1 h 30 min"),
+>   aunque en la base siga guardándose en horas con decimales (`tarea_ot.tarea_hom`, 0.5 = 30 min).
+>   La caja deja escribir libremente y sugiere las duraciones más comunes (de 15 min a 8 h);
+>   entiende "30 min", "1h30", "1:30", "2 hs" y un número solo (que son horas). Las cuentas
+>   están en `frontend/src/utils/duracion.js`.
+
 ---
 
 ## Automatismos

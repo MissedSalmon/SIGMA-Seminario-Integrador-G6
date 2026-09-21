@@ -134,6 +134,7 @@ export default function Campo({
   error = '',
   revisado = false,
   ancho = ANCHO_POR_DEFECTO,
+  sugerencias,
   maxLength,
   min,
   max,
@@ -290,17 +291,34 @@ export default function Campo({
         )}
 
         {tipo === 'texto' && (
-          <CFormInput
-            {...propiedadesComunes}
-            ref={refCaja}
-            type={tipoHtml}
-            placeholder={placeholder}
-            maxLength={maxLength}
-            min={min}
-            max={max}
-            step={step}
-            readOnly={soloLectura}
-          />
+          <>
+            <CFormInput
+              {...propiedadesComunes}
+              ref={refCaja}
+              type={tipoHtml}
+              placeholder={placeholder}
+              maxLength={maxLength}
+              min={min}
+              max={max}
+              step={step}
+              readOnly={soloLectura}
+              list={sugerencias ? `${id}-sugerencias` : undefined}
+            />
+
+            {/*
+              Las sugerencias son una ayuda, no una lista cerrada: el navegador
+              las muestra al hacer foco en la caja, pero se puede escribir
+              cualquier otra cosa. Se usa para la duracion de una tarea de la
+              OT ("30 min", "1 h 30 min").
+            */}
+            {sugerencias && (
+              <datalist id={`${id}-sugerencias`}>
+                {sugerencias.map((sugerencia) => (
+                  <option key={sugerencia} value={sugerencia} />
+                ))}
+              </datalist>
+            )}
+          </>
         )}
 
         {marca && (
