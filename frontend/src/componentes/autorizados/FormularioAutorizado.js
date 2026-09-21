@@ -33,6 +33,12 @@ function hoy() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function fechaHace18Anios() {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 18);
+  return d.toISOString().slice(0, 10);
+}
+
 export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
   const router = useRouter();
   const { mostrarToast } = useToast();
@@ -100,6 +106,8 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
       encontrados.fechaNacimiento = 'La fecha de nacimiento es obligatoria.';
     } else if (fechaNacimiento > hoy()) {
       encontrados.fechaNacimiento = 'La fecha no puede ser posterior a hoy.';
+    } else if (fechaNacimiento > fechaHace18Anios()) {
+      encontrados.fechaNacimiento = 'El usuario autorizado debe tener al menos 18 años.';
     }
 
     return encontrados;
@@ -152,21 +160,6 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
           <Cargando texto="Cargando el formulario..." />
         </CCardBody>
       </CCard>
-    );
-  }
-
-  // Sin area no se puede registrar a nadie: es lo que lo habilita a cargar tickets.
-  if (areas.length === 0) {
-    return (
-      <>
-        <Aviso
-          color="warning"
-          mensaje="No hay áreas disponibles para asignar: o todavía no se cargó ninguna, o todas ya tienen un responsable. Cargá un área nueva o sacale el área a quien la tenga."
-        />
-        <BotonEnlace href="/areas" color="secondary" variante="outline">
-          Ir a áreas
-        </BotonEnlace>
-      </>
     );
   }
 
@@ -223,7 +216,7 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
               tipoHtml="date"
               valor={fechaNacimiento}
               alCambiar={setFechaNacimiento}
-              max={hoy()}
+              max={fechaHace18Anios()}
               obligatorio
               revisado={revisado}
               error={errores.fechaNacimiento}
@@ -264,12 +257,13 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
               valor={idArea}
               alCambiar={setIdArea}
               opciones={areas.map((area) => ({ valor: area.idArea, texto: area.nombre }))}
-              placeholder="Elegí el área..."
+              placeholder={areas.length === 0 ? 'No hay áreas libres' : 'Elegí el área...'}
+              deshabilitado={areas.length === 0}
               obligatorio
               ancho={24}
               revisado={revisado}
               error={errores.idArea}
-              ayuda="Solo se listan las áreas que todavía no tienen responsable."
+              ayuda={areas.length === 0 ? "No hay áreas libres: cargá una nueva o sacásela a otro responsable." : "Solo se listan las áreas que todavía no tienen responsable."}
             />
           </div>
 

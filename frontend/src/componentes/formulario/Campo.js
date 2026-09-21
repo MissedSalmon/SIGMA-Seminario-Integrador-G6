@@ -49,6 +49,7 @@ import { useEffect, useLayoutEffect, useRef } from 'react';
 import { CFormInput, CFormLabel, CFormSelect, CFormTextarea } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilCheckAlt, cilX } from '@coreui/icons';
+import Select from 'react-select';
 
 /** Ancho de la caja, en caracteres, cuando el campo no pide otro. */
 const ANCHO_POR_DEFECTO = 16;
@@ -251,6 +252,31 @@ export default function Campo({
               </option>
             ))}
           </CFormSelect>
+        )}
+
+        {tipo === 'buscador' && (
+          <Select
+            id={id}
+            options={opciones.map(opt => ({ value: opt.valor, label: opt.texto }))}
+            value={opciones.find(opt => opt.valor === valor) ? { value: valor, label: opciones.find(opt => opt.valor === valor).texto } : null}
+            onChange={(selected) => alCambiar(selected ? selected.value : '')}
+            placeholder={placeholder || 'Buscar...'}
+            isClearable
+            isDisabled={deshabilitado}
+            className="react-select-container"
+            classNamePrefix="react-select"
+            styles={{
+              control: (base) => ({
+                ...base,
+                borderColor: marca === 'error' ? 'var(--cui-form-invalid-border-color)' : 'var(--cui-input-border-color, #b1b7c1)',
+                minHeight: 'calc(1.5em + 0.75rem + 2px)',
+                boxShadow: 'none',
+                '&:hover': {
+                  borderColor: 'var(--cui-input-border-color, #b1b7c1)'
+                }
+              })
+            }}
+          />
         )}
 
         {tipo === 'area' && (

@@ -102,8 +102,16 @@ function validarDatos(datos) {
   const cuil = normalizarCuil(datos.cuil);
   const telefono = normalizarTelefono(datos.telefono);
 
-  if (fechaNacimiento > new Date().toISOString().slice(0, 10)) {
+  const fechaNac = new Date(fechaNacimiento);
+  const hace18Anios = new Date();
+  hace18Anios.setFullYear(hace18Anios.getFullYear() - 18);
+
+  if (fechaNac > new Date()) {
     throw datoInvalido('La fecha de nacimiento no puede ser posterior a hoy.');
+  }
+  
+  if (fechaNac > hace18Anios) {
+    throw datoInvalido('El usuario autorizado debe tener al menos 18 años.');
   }
 
   return { nombre, dni, cuil, email, telefono, fechaNacimiento, idArea };
