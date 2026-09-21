@@ -259,12 +259,13 @@ export default function FormularioTicket({ onGuardar }) {
             <Campo
               id="codigoActivo"
               etiqueta="Activo"
-              tipo="lista"
+              tipo="buscador"
               valor={codigoActivo}
               alCambiar={elegirActivo}
               opciones={opcionesActivos}
-              placeholder="Elegir activo"
+              placeholder="Buscar activo..."
               obligatorio
+              ancho={30}
               revisado={revisado}
               error={errores.codigoActivo}
               ayuda="Los activos retirados no aparecen en la lista."

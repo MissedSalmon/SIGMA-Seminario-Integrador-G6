@@ -176,21 +176,6 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
     );
   }
 
-  // Sin area no se puede registrar a nadie: es lo que lo habilita a cargar tickets.
-  if (areas.length === 0) {
-    return (
-      <>
-        <Aviso
-          color="warning"
-          mensaje="No hay areas disponibles para asignar: o todavia no se cargo ninguna, o todas ya tienen un responsable. Carga un area nueva o sacale el area a quien la tenga."
-        />
-        <BotonEnlace href="/areas" color="secondary" variante="outline">
-          Ir a areas
-        </BotonEnlace>
-      </>
-    );
-  }
-
   return (
     <CCard>
       <CCardBody>
@@ -304,12 +289,13 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
               valor={idArea}
               alCambiar={setIdArea}
               opciones={areas.map((area) => ({ valor: area.idArea, texto: area.nombre }))}
-              placeholder="Elegi el area..."
+              placeholder={areas.length === 0 ? 'No hay áreas libres' : 'Elegí el área...'}
+              deshabilitado={areas.length === 0}
               obligatorio
               anchoMinimo={24}
               revisado={revisado}
               error={errores.idArea}
-              ayuda="Queda habilitado para cargar tickets sobre los activos de esta area. Solo se listan las areas que todavia no tienen responsable."
+              ayuda={areas.length === 0 ? "No hay áreas libres: cargá una nueva o sacásela a otro responsable." : "Queda habilitado para cargar tickets sobre los activos de esta área. Solo se listan las áreas que todavía no tienen responsable."}
             />
           </div>
 
