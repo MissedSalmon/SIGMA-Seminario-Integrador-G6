@@ -1,6 +1,7 @@
 /*
-  Estilos de HeroUI, que en SIGMA se usan para una sola cosa: el campo de
-  fecha (ver componentes/formulario/CampoFecha.js).
+  Estilos de HeroUI, que en SIGMA se usan para dos cosas: el campo de fecha
+  (componentes/formulario/CampoFecha.js) y el campo para elegir una opcion
+  (componentes/formulario/CampoLista.js).
 
   Por que este archivo existe y no alcanza con importar el CSS del paquete:
 
@@ -48,15 +49,15 @@
 
   HeroUI da por hecho que el preflight de Tailwind ya corrio. No dibuja bordes
   ni rellenos en sus botones: cuenta con que el reset los haya puesto en cero
-  antes. Como aca el preflight quedo afuera (punto 2 de arriba), los botones
-  del almanaque se quedaban con lo que el navegador les pone de fabrica:
+  antes. Como aca el preflight quedo afuera (punto 2 de arriba), sus botones
+  se quedaban con lo que el navegador les pone de fabrica:
   `border: 2px outset` (el borde biselado de los botones de Windows 95, claro
   arriba y oscuro abajo) y `padding: 1px 6px`. Por eso la flechita de mes y la
   pastilla del anio se veian con un aro gris cortado y el fondo gris.
 
-  Asi que se repone el reset, pero ACOTADO al campo de fecha y al almanaque, y
-  con las dos unicas reglas de preflight que HeroUI usa. Al resto de la
-  pantalla (que es CoreUI) no la toca.
+  Asi que se repone el reset, pero ACOTADO a los campos de HeroUI y a sus
+  desplegables, y con las dos unicas reglas de preflight que HeroUI usa. Al
+  resto de la pantalla (que es CoreUI) no la toca.
 
   Va dentro de layer(base) a proposito, que es donde el preflight iria: asi le
   gana a lo de fabrica del navegador pero PIERDE contra la capa de componentes
@@ -67,7 +68,9 @@
 */
 @layer base {
   .sigma-fecha :is(button, input, select, textarea),
-  .date-picker__popover :is(button, input, select, textarea) {
+  .sigma-lista :is(button, input, select, textarea),
+  .date-picker__popover :is(button, input, select, textarea),
+  .sigma-lista-popover :is(button, input, select, textarea) {
     margin: 0;
     padding: 0;
     border: 0 solid;
@@ -103,20 +106,24 @@
   ganarle. "revert-layer" quiere decir "para esta propiedad, olvidate de lo que
   dice CoreUI y usa lo que dicen las capas", o sea HeroUI.
 
-  Se aplica solo adentro de un campo de fecha (.sigma-fecha) y del almanaque
-  desplegable (.date-picker__popover, que el navegador dibuja al final del
-  <body> y por eso no queda adentro de .sigma-fecha).
+  Se aplica solo adentro de los dos campos que dibuja HeroUI (.sigma-fecha y
+  .sigma-lista) y de sus desplegables (.date-picker__popover y
+  .sigma-lista-popover, que el navegador dibuja al final del <body> y por eso
+  no quedan adentro del campo).
 */
 .sigma-fecha button,
-.date-picker__popover button {
+.sigma-lista button,
+.date-picker__popover button,
+.sigma-lista-popover button {
   border-radius: revert-layer;
 }
 
 /*
-  El almanaque se dibuja al final del <body>, fuera del panel de CoreUI, y ahi
-  el sidebar y el header de la plantilla llegan hasta z-index 1030. HeroUI
+  Los desplegables se dibujan al final del <body>, fuera del panel de CoreUI, y
+  ahi el sidebar y el header de la plantilla llegan hasta z-index 1030. HeroUI
   publica su propio nivel en --z-index-overlay (100000), asi que se usa ese.
 */
-.date-picker__popover {
+.date-picker__popover,
+.sigma-lista-popover {
   z-index: var(--z-index-overlay, 100000);
 }

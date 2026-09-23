@@ -37,7 +37,8 @@
  *
  * Con el desplegable cerrado y sin filtrar se lee el nombre de la columna
  * ("Tipo"), y al abrirlo la primera opcion dice "Todos". Las dos las agrega la
- * tabla sola: la pantalla no las escribe.
+ * tabla sola: la pantalla no las escribe. La lista tambien se puede filtrar
+ * escribiendo, que es util cuando hay muchas opciones.
  *
  * Un filtro tambien puede ser una fecha (HU-10): en vez de opciones lleva
  * `tipo: 'fecha'` y se muestra como una caja de fecha con su etiqueta adelante.
@@ -57,12 +58,13 @@
  * funcion, y la pantalla es la que los vacia.
  */
 import { useId, useMemo, useState } from 'react';
-import { CButton, CButtonGroup, CFormInput, CFormSelect, CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
+import { CButton, CButtonGroup, CFormInput, CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilChevronLeft, cilChevronRight, cilSearch, cilX } from '@coreui/icons';
 
 import { EsqueletoFilas, SinDatos } from '@/componentes/EstadoTabla.js';
 import CampoFecha from '@/componentes/formulario/CampoFecha.js';
+import CampoLista from '@/componentes/formulario/CampoLista.js';
 
 const TAMANO_PAGINA = 10;
 
@@ -140,34 +142,25 @@ export default function TablaDatos({
                     maximo={filtro.maximo}
                   />
                 ) : (
-                <CFormSelect
-                  className="sigma-tabla-filtro"
-                  size="sm"
-                  key={filtro.etiqueta}
-                  id={`${idFiltros}-${filtro.etiqueta}`}
-                  aria-label={`Filtrar por ${filtro.etiqueta.toLowerCase()}`}
-                  value={filtro.valor}
-                  onChange={(evento) => filtro.alCambiar(evento.target.value)}
-                >
-                  {/*
-                    Las dos primeras opciones valen lo mismo (vacio: sin
-                    filtrar) pero se muestran distinto, y eso es a proposito.
-                    La primera lleva "hidden": no aparece en la lista al
-                    desplegar, pero es la que se ve con el desplegable cerrado,
-                    porque el navegador toma la primera que coincide con el
-                    valor. Asi cerrado se lee el nombre de la columna
-                    ("espacio") y al abrirlo la opcion de siempre ("Todos").
-                  */}
-                  <option value="" hidden>
-                    {filtro.etiqueta}
-                  </option>
-                  <option value="">{filtro.textoTodos ?? 'Todos'}</option>
-                  {filtro.opciones.map((opcion) => (
-                    <option key={opcion.valor} value={opcion.valor}>
-                      {opcion.texto}
-                    </option>
-                  ))}
-                </CFormSelect>
+                  /*
+                    Cerrado y sin filtrar se lee el nombre de la columna
+                    ("Espacio"), que va como placeholder de la caja; al abrirlo,
+                    arriba de la lista esta la opcion de siempre ("Todos"), que
+                    saca el filtro. Se ve igual que antes, con el agregado de
+                    que ahora la lista se puede filtrar escribiendo.
+                  */
+                  <CampoLista
+                    key={filtro.etiqueta}
+                    compacto
+                    etiquetaOculta
+                    id={`${idFiltros}-${filtro.etiqueta}`}
+                    etiqueta={filtro.etiqueta}
+                    valor={filtro.valor}
+                    alCambiar={filtro.alCambiar}
+                    opciones={filtro.opciones}
+                    textoVacio={filtro.textoTodos ?? 'Todos'}
+                    ancho={filtro.ancho ?? 9}
+                  />
                 )
               )}
 

@@ -217,6 +217,47 @@ Lo que se decidió:
 puede pegar directo sin pasar por la pantalla. Si se cambia una regla en un lado, hay que
 cambiarla en el otro. Las restricciones en la base quedan para después.
 
+### Elegir una opción usa HeroUI (23/09/2026)
+
+Todos los selectores de SIGMA son `frontend/src/componentes/formulario/CampoLista.js`,
+que es el **ComboBox de HeroUI**. Reemplaza a los dos que había: el `<select>` de CoreUI
+(18 campos) y `react-select` (el buscador de activos del ticket). Los 16 desplegables de
+las barras de filtros de las tablas también son este componente.
+
+**Qué gana:** la lista **se filtra escribiendo**, que es lo que hacía falta en las listas
+largas (espacios, activos). El filtrado lo hace react-aria solo: alcanza con **no** pasarle
+`items` y entonces filtra la lista que le dimos comparando lo tecleado con el texto de cada
+opción. No se puede escribir cualquier cosa: si lo escrito no está en la lista, al salir del
+campo vuelve a lo que había.
+
+**Las pantallas no cambiaron.** Se sigue escribiendo `<Campo tipo="lista">` (o
+`tipo="buscador"`) como siempre: `Campo.js` delega solo. Y hacia afuera el campo sigue
+hablando en texto, igual que el `<select>`: lo que llega a `alCambiar` es siempre una cadena
+(`"5"`, o `""` si no hay nada elegido), así que los formularios que hacían `Number(idTipo)`
+andan sin tocar nada.
+
+⬜ **Las claves de las opciones se pasan a texto a propósito.** react-aria compara la clave
+elegida con la de cada opción, y para él un `5` no es un `"5"`. Si no se convierten, al
+editar un registro el campo aparece vacío aunque el valor esté.
+
+**Cómo se vacía:** un `<select>` tenía una opción vacía arriba; acá eso se pide con
+`textoVacio`. Es lo que usan los filtros para su "Todos".
+
+**Los colores son los de SIGMA**, no los de HeroUI, y salen de las mismas variables
+`--field-*` que usa el campo de fecha (ver la sección de abajo). La lista desplegada se
+dibuja al final del `<body>`, así que sus colores van aparte, con la clase
+`.sigma-lista-popover`: fondo blanco y la opción bajo el puntero en el celeste suave de la
+marca, el mismo de las filas de las tablas.
+
+⬜ **El ancho de los filtros no se fija en el componente**, se deja en `globals.css` con un
+`flex` que se encoge. Con un ancho fijo la barra se iba a un renglón de más en las pantallas
+medianas, y la regla 2 del CLAUDE.md pide que entre en una sola línea.
+
+⬜ **`react-select` quedó sin usar.** Sigue en `frontend/package.json` porque sacar una
+dependencia se avisa al equipo (regla 6). Se puede borrar. Con el cambio se fue de paso un
+aviso de hidratación de React que tiraba `/tickets/agregar`: react-select generaba ids
+distintos en el servidor y en el navegador.
+
 ### El campo de fecha usa HeroUI (23/09/2026)
 
 Todas las fechas de SIGMA se cargan con `frontend/src/componentes/formulario/CampoFecha.js`,
@@ -295,7 +336,11 @@ reset en lugar de tapar el síntoma.
 
 `frontend/src/componentes/formulario/SeleccionMultiple.js` es un desplegable donde cada
 opción es una casilla para tildar, con una casilla arriba de todo que marca y desmarca
-todas juntas. Lo usa el formulario de técnicos para las especialidades.
+todas juntas.
+
+⬜ **Hoy no lo usa ninguna pantalla** (comprobado el 23/09/2026). El formulario de técnicos
+terminó mostrando las especialidades como una grilla de casillas a la vista, sin
+desplegable. Queda para decidir si se borra o si se vuelve a usar.
 
 Se armó a mano porque el `CMultiSelect` de CoreUI **es de la versión paga**: está hecho
 con `CDropdown` y `CFormCheck`. El menú no se cierra al tildar (`autoClose="outside"`).

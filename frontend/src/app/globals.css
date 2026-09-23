@@ -683,8 +683,12 @@ body {
 
   El fondo es --cui-body-bg porque de ahi lo saca CoreUI para sus cajas (mas
   arriba en este archivo se le puso --sigma-fondo): son grises, no blancas.
+
+  Valen para los dos campos que dibuja HeroUI, la fecha y la lista: los dos usan
+  las mismas variables por debajo.
 */
-.sigma-fecha {
+.sigma-fecha,
+.sigma-lista {
   --field-background: var(--cui-body-bg);
   --field-hover: var(--cui-body-bg);
   --field-focus: var(--cui-body-bg);
@@ -781,10 +785,159 @@ body {
 
 /* Del alto de un control "sm" de CoreUI, para no desalinear la barra. */
 .sigma-fecha--compacto .date-input-group {
-  /* Igual de angosta que los desplegables de al lado: ver .sigma-tabla-filtro. */
+  /* Igual de angosta que los desplegables de al lado: ver .sigma-lista--compacto. */
   width: calc(10ch + 3.25rem);
   height: calc(1.5em + 0.5rem + 2px);
   font-size: 0.875rem;
+}
+
+/*
+  ---------- El campo para elegir una opcion (HeroUI) ----------
+
+  Es el ComboBox de HeroUI y reemplaza a los dos selectores que habia: el
+  <select> de CoreUI y react-select. Ver componentes/formulario/CampoLista.js.
+
+  Como con la fecha, aca solo esta lo que hace falta para que se vea como un
+  campo mas de SIGMA. Los colores salen de las variables --field-* de mas
+  arriba, que son las mismas para los dos.
+*/
+
+.sigma-lista {
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+}
+
+/* La etiqueta y la caja, con la misma separacion que el resto de los campos. */
+.sigma-lista .combo-box {
+  gap: 0.375rem;
+}
+
+.sigma-lista .label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--sigma-ink);
+}
+
+/* El grupo ocupa todo el ancho que declara el campo. */
+.sigma-lista .combo-box__input-group {
+  width: 100%;
+}
+
+/*
+  La caja: misma altura, mismo texto y mismas esquinas que un .form-control de
+  CoreUI. El ancho del borde y el redondeo van como propiedades por el mismo
+  motivo que en la fecha (ver el comentario de .sigma-fecha .date-input-group).
+
+  El relleno de la derecha deja lugar para dos cosas que van encima de la caja:
+  la marca de validacion y la flechita de abrir.
+*/
+.sigma-lista .input {
+  width: 100%;
+  height: calc(1.5em + 0.75rem + 2px);
+  padding-right: 3.4rem;
+  font-size: 1rem;
+  border-width: 1px;
+  border-radius: var(--sigma-radio-sm);
+}
+
+/* El tilde y la cruz, al lado de la flechita. Mismo criterio que en Campo.js. */
+.sigma-lista-marca {
+  position: absolute;
+  top: 50%;
+  right: 2rem;
+  transform: translateY(-50%);
+  display: inline-flex;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.sigma-lista-marca svg.icon {
+  width: 16px;
+  height: 16px;
+}
+
+/*
+  La barrita de color al costado izquierdo en lugar de pintar todo el borde, la
+  misma decision que en Campo.js y en la fecha. El :focus se repite porque el
+  foco pisa el color de todo el borde.
+*/
+.sigma-lista--ok .input,
+.sigma-lista--ok .input:focus {
+  border-left: 3px solid var(--cui-success, #1b9e5a);
+}
+
+.sigma-lista--ok .sigma-lista-marca {
+  color: var(--cui-success, #1b9e5a);
+}
+
+.sigma-lista--error .input,
+.sigma-lista--error .input:focus {
+  border-left: 3px solid var(--cui-danger, #e55353);
+}
+
+.sigma-lista--error .sigma-lista-marca {
+  color: var(--cui-danger, #e55353);
+}
+
+/*
+  La version compacta, para la barra de filtros: sin etiqueta arriba (el nombre
+  de la columna se lee dentro de la caja) y del alto de un control "sm" de
+  CoreUI, para no desalinear la barra.
+*/
+/*
+  El ancho de un filtro (que se estira y se encoge) lo pone CampoLista.js, no
+  este archivo: ver MEDIDA_COMPACTA alla. Aca queda solo el alto y la letra.
+*/
+.sigma-lista--compacto .input {
+  height: calc(1.5em + 0.5rem + 2px);
+  padding-right: 2.6rem;
+  font-size: 0.875rem;
+}
+
+.sigma-lista--compacto .sigma-lista-marca {
+  right: 1.6rem;
+}
+
+/*
+  ---------- La lista desplegada ----------
+
+  Se dibuja al final del <body>, fuera de .sigma-lista, asi que los colores no
+  se pueden heredar: van aca, con la clase que le pone CampoLista.
+
+  Los colores son los de SIGMA: fondo blanco de tarjeta, y la opcion bajo el
+  puntero en el celeste suave de la marca, el mismo que usan las filas de las
+  tablas al pasar por encima (--cui-table-hover-bg mas arriba).
+*/
+.sigma-lista-popover {
+  background: var(--sigma-superficie);
+  border: 1px solid var(--sigma-borde);
+  border-radius: var(--sigma-radio-md);
+  box-shadow: var(--sigma-sombra-md);
+  color: var(--cui-body-color);
+  font-size: 0.95rem;
+}
+
+.sigma-lista-popover .list-box-item {
+  border-radius: var(--sigma-radio-sm);
+  color: var(--cui-body-color);
+}
+
+.sigma-lista-popover .list-box-item:hover,
+.sigma-lista-popover .list-box-item[data-hovered='true'],
+.sigma-lista-popover .list-box-item[data-focused='true'] {
+  background: var(--sigma-teal-suave);
+  color: var(--sigma-teal-enfasis);
+}
+
+/* La elegida queda marcada con el tilde y con el color de la marca. */
+.sigma-lista-popover .list-box-item[data-selected='true'] {
+  color: var(--sigma-teal-enfasis);
+  font-weight: 600;
+}
+
+.sigma-lista-popover .list-box-item__indicator {
+  color: var(--sigma-teal);
 }
 
 /*
@@ -1040,12 +1193,6 @@ body {
   font-size: 0.875rem;
   margin-left: 0.4rem;
   white-space: nowrap;
-}
-
-.sigma-tabla-filtro {
-  flex: 1 1 7rem;
-  min-width: 0;
-  max-width: 11rem;
 }
 
 /*

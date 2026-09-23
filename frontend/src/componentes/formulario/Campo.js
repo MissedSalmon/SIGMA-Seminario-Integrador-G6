@@ -46,12 +46,12 @@
  *   />
  */
 import { useEffect, useLayoutEffect, useRef } from 'react';
-import { CFormInput, CFormLabel, CFormSelect, CFormTextarea } from '@coreui/react';
+import { CFormInput, CFormLabel, CFormTextarea } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilCheckAlt, cilX } from '@coreui/icons';
-import Select from 'react-select';
 
 import CampoFecha from './CampoFecha.js';
+import CampoLista from './CampoLista.js';
 
 /** Ancho de la caja, en caracteres, cuando el campo no pide otro. */
 const ANCHO_POR_DEFECTO = 16;
@@ -92,21 +92,17 @@ function quitarDigito(texto, cual) {
 
 /**
  * Lo que ocupa en la caja todo lo que no es texto, en rem: el padding de CoreUI
- * (0.75rem de cada lado), el lugar fijo de la marca (que se reserva siempre
- * para que la caja no pegue un salto cuando la marca aparece) y, cuando hace
- * falta, la flechita que el navegador le pone al desplegable.
+ * (0.75rem de cada lado) y el lugar fijo de la marca, que se reserva siempre
+ * para que la caja no pegue un salto cuando la marca aparece.
  *
- * Las fechas no estan en esta lista: las dibuja CampoFecha, que mide siempre lo
- * mismo (dd/mm/aaaa) y se encarga de su propio ancho en globals.css.
+ * Los desplegables y las fechas no estan aca: los dibujan CampoLista y
+ * CampoFecha, y cada uno se encarga de su propio ancho.
  */
-const LUGAR_EXTRA = {
-  lista: 4.5,
-  texto: 2.75,
-};
+const LUGAR_EXTRA = 2.75;
 
 /** El ancho de la caja: los caracteres que pide el campo mas el lugar extra. */
-function anchoDeLaCaja(ancho, forma) {
-  return `calc(${ancho}ch + ${LUGAR_EXTRA[forma]}rem)`;
+function anchoDeLaCaja(ancho) {
+  return `calc(${ancho}ch + ${LUGAR_EXTRA}rem)`;
 }
 
 export default function Campo({
@@ -209,6 +205,34 @@ export default function Campo({
    * afuera se ven apagados y no se pueden elegir. Son los mismos que antes iban
    * al input, asi que ninguna pantalla pierde su restriccion.
    */
+  /*
+   * Elegir una opcion lo dibuja CampoLista (el ComboBox de HeroUI), tanto el
+   * desplegable comun como el buscador: antes eran dos cosas distintas (el
+   * <select> de CoreUI y react-select) y ahora es una sola.
+   *
+   * `textoVacio` es la opcion que deja el campo sin elegir. Es el reemplazo de
+   * la <option value=""> que encabezaba el desplegable, y lleva el mismo texto
+   * que llevaba esa, para que nada cambie de lugar.
+   */
+  if (tipo === 'lista' || tipo === 'buscador') {
+    return (
+      <CampoLista
+        id={id}
+        etiqueta={etiqueta}
+        valor={valor}
+        alCambiar={alCambiar}
+        opciones={opciones}
+        placeholder={placeholder || (tipo === 'buscador' ? 'Buscar...' : 'Seleccionar')}
+        textoVacio={placeholder || 'Seleccionar'}
+        obligatorio={obligatorio}
+        deshabilitado={deshabilitado}
+        error={error}
+        revisado={revisado}
+        ancho={ancho}
+      />
+    );
+  }
+
   if (tipo === 'texto' && tipoHtml === 'date') {
     return (
       <CampoFecha
@@ -238,8 +262,7 @@ export default function Campo({
     .filter(Boolean)
     .join(' ');
 
-  const anchoCaja =
-    tipo === 'area' ? undefined : anchoDeLaCaja(ancho, tipo === 'lista' ? 'lista' : 'texto');
+  const anchoCaja = tipo === 'area' ? undefined : anchoDeLaCaja(ancho);
 
   const idMensaje = `${id}-mensaje`;
   const propiedadesComunes = {
@@ -258,42 +281,6 @@ export default function Campo({
       </CFormLabel>
 
       <div className="sigma-campo-caja" style={anchoCaja ? { width: anchoCaja } : undefined}>
-        {tipo === 'lista' && (
-          <CFormSelect {...propiedadesComunes}>
-            <option value="">{placeholder || 'Seleccionar'}</option>
-            {opciones.map((opcion) => (
-              <option key={opcion.valor} value={opcion.valor}>
-                {opcion.texto}
-              </option>
-            ))}
-          </CFormSelect>
-        )}
-
-        {tipo === 'buscador' && (
-          <Select
-            id={id}
-            options={opciones.map(opt => ({ value: opt.valor, label: opt.texto }))}
-            value={opciones.find(opt => opt.valor === valor) ? { value: valor, label: opciones.find(opt => opt.valor === valor).texto } : null}
-            onChange={(selected) => alCambiar(selected ? selected.value : '')}
-            placeholder={placeholder || 'Buscar...'}
-            isClearable
-            isDisabled={deshabilitado}
-            className="react-select-container"
-            classNamePrefix="react-select"
-            styles={{
-              control: (base) => ({
-                ...base,
-                borderColor: marca === 'error' ? 'var(--cui-form-invalid-border-color)' : 'var(--cui-input-border-color, #b1b7c1)',
-                minHeight: 'calc(1.5em + 0.75rem + 2px)',
-                boxShadow: 'none',
-                '&:hover': {
-                  borderColor: 'var(--cui-input-border-color, #b1b7c1)'
-                }
-              })
-            }}
-          />
-        )}
-
         {tipo === 'area' && (
           <CFormTextarea
             {...propiedadesComunes}
