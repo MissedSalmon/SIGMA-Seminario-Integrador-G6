@@ -219,7 +219,6 @@ export default function FormularioTareaOT({
               texto: plantilla.descripcion,
             }))}
             placeholder="Escribir una tarea nueva"
-            ayuda="Trae una de las tareas cargadas para este tipo de activo. Después se puede editar."
             ancho={40}
           />
         )}
@@ -245,7 +244,6 @@ export default function FormularioTareaOT({
               valor={valores.prioridad}
               alCambiar={(valor) => cambiar('prioridad', valor)}
               opciones={prioridades.map((una) => ({ valor: una, texto: una }))}
-              ayuda="Ordena el trabajo del técnico: primero las altas."
               ancho={10}
             />
           </CCol>
@@ -286,7 +284,6 @@ export default function FormularioTareaOT({
               valor={valores.tipoResponsable}
               alCambiar={cambiarTipoDeResponsable}
               opciones={TIPOS_DE_RESPONSABLE.map((tipo) => ({ valor: tipo, texto: tipo }))}
-              ayuda="Un técnico de la facultad o un prestador externo."
               ancho={12}
             />
           </CCol>
@@ -342,7 +339,6 @@ export default function FormularioTareaOT({
           alCambiar={(valor) => cambiar('horasEstimadas', valor)}
           sugerencias={SUGERENCIAS}
           placeholder="30 min"
-          ayuda={ayudaDeLaDuracion(valores.horasEstimadas)}
           revisado={revisado}
           error={errores.horasEstimadas}
           ancho={14}
@@ -359,24 +355,6 @@ export default function FormularioTareaOT({
       </CModalFooter>
     </CModal>
   );
-}
-
-/**
- * La ayuda que va debajo de la caja de la duración.
- *
- * Mientras se escribe, muestra cómo quedó entendido lo que se puso ("2 h 30
- * min"). Así, si alguien escribe "30" pensando en minutos, ve en el momento
- * que el sistema lo tomó como 30 horas y lo corrige.
- */
-function ayudaDeLaDuracion(escrito) {
-  if (escrito.trim() === '') {
-    return 'Cuánto se calcula que lleva el trabajo. Se puede dejar vacío.';
-  }
-
-  const horas = interpretarDuracion(escrito);
-  if (horas === null) return 'Por ejemplo: 30 min, 1 h 30 min, 2 h.';
-
-  return `Queda como ${formatearDuracion(horas)}.`;
 }
 
 /**

@@ -51,6 +51,8 @@ import CIcon from '@coreui/icons-react';
 import { cilCheckAlt, cilX } from '@coreui/icons';
 import Select from 'react-select';
 
+import CampoFecha from './CampoFecha.js';
+
 /** Ancho de la caja, en caracteres, cuando el campo no pide otro. */
 const ANCHO_POR_DEFECTO = 16;
 
@@ -89,31 +91,21 @@ function quitarDigito(texto, cual) {
 }
 
 /**
- * Los caracteres que ocupa una fecha escrita (dd/mm/aaaa). Una caja de fecha
- * mide siempre lo mismo: el navegador dibuja el dia, el mes y el anio, no lo
- * que uno escribe.
- */
-const ANCHO_FECHA = 12;
-
-/**
  * Lo que ocupa en la caja todo lo que no es texto, en rem: el padding de CoreUI
  * (0.75rem de cada lado), el lugar fijo de la marca (que se reserva siempre
  * para que la caja no pegue un salto cuando la marca aparece) y, cuando hace
- * falta, el dibujo que pone el navegador (la flechita del desplegable, el
- * almanaque de la fecha).
+ * falta, la flechita que el navegador le pone al desplegable.
+ *
+ * Las fechas no estan en esta lista: las dibuja CampoFecha, que mide siempre lo
+ * mismo (dd/mm/aaaa) y se encarga de su propio ancho en globals.css.
  */
 const LUGAR_EXTRA = {
   lista: 4.5,
-  fecha: 5.5,
   texto: 2.75,
 };
 
 /** El ancho de la caja: los caracteres que pide el campo mas el lugar extra. */
 function anchoDeLaCaja(ancho, forma) {
-  if (forma === 'fecha') {
-    return `calc(${ANCHO_FECHA}ch + ${LUGAR_EXTRA.fecha}rem)`;
-  }
-
   return `calc(${ancho}ch + ${LUGAR_EXTRA[forma]}rem)`;
 }
 
@@ -127,7 +119,6 @@ export default function Campo({
   formato,
   opciones = [],
   placeholder = '',
-  ayuda = '',
   obligatorio = false,
   deshabilitado = false,
   soloLectura = false,
@@ -209,10 +200,35 @@ export default function Campo({
     lugarDelCursor.current = lugar;
   }
 
+  /*
+   * Las fechas las dibuja CampoFecha (el DatePicker de HeroUI) y no un
+   * <input type="date">. Se delega desde aca, y no cambiando cada formulario,
+   * para que todos sigan escribiendo <Campo tipoHtml="date"> como siempre.
+   *
+   * `min` y `max` pasan a ser los limites del almanaque: los dias que quedan
+   * afuera se ven apagados y no se pueden elegir. Son los mismos que antes iban
+   * al input, asi que ninguna pantalla pierde su restriccion.
+   */
+  if (tipo === 'texto' && tipoHtml === 'date') {
+    return (
+      <CampoFecha
+        id={id}
+        etiqueta={etiqueta}
+        valor={valor}
+        alCambiar={alCambiar}
+        minimo={min}
+        maximo={max}
+        obligatorio={obligatorio}
+        deshabilitado={deshabilitado}
+        soloLectura={soloLectura}
+        error={error}
+        revisado={revisado}
+      />
+    );
+  }
+
   const hayValor = String(valor ?? '').trim() !== '';
   const marca = revisado && error ? 'error' : revisado && hayValor ? 'ok' : null;
-
-  const esFecha = tipo === 'texto' && tipoHtml === 'date';
 
   const clases = [
     'sigma-campo',
@@ -223,9 +239,7 @@ export default function Campo({
     .join(' ');
 
   const anchoCaja =
-    tipo === 'area'
-      ? undefined
-      : anchoDeLaCaja(ancho, tipo === 'lista' ? 'lista' : esFecha ? 'fecha' : 'texto');
+    tipo === 'area' ? undefined : anchoDeLaCaja(ancho, tipo === 'lista' ? 'lista' : 'texto');
 
   const idMensaje = `${id}-mensaje`;
   const propiedadesComunes = {
@@ -234,7 +248,7 @@ export default function Campo({
     onChange: alEscribir,
     disabled: deshabilitado,
     'aria-invalid': marca === 'error',
-    'aria-describedby': error || ayuda ? idMensaje : undefined,
+    'aria-describedby': error ? idMensaje : undefined,
   };
 
   return (
@@ -329,16 +343,10 @@ export default function Campo({
         )}
       </div>
 
-      {marca === 'error' ? (
+      {marca === 'error' && (
         <p id={idMensaje} className="sigma-campo-mensaje sigma-campo-mensaje--error">
           {error}
         </p>
-      ) : (
-        ayuda && (
-          <p id={idMensaje} className="sigma-campo-mensaje">
-            {ayuda}
-          </p>
-        )
       )}
     </div>
   );

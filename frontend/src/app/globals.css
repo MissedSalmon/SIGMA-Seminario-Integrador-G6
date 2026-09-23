@@ -510,18 +510,6 @@ body {
 }
 
 /*
-  La fecha la dibuja el navegador (dd/mm/aaaa y el almanaque), asi que la marca
-  se corre para no taparle el almanaque, igual que con la flechita de una lista.
-*/
-.sigma-campo-caja input[type='date'] {
-  padding-right: 3.4rem;
-}
-
-.sigma-campo-caja input[type='date'] ~ .sigma-campo-marca {
-  right: 34px;
-}
-
-/*
   A los campos numericos se les sacan las flechitas de subir y bajar: en una
   caja angosta ocupan mas de lo que sirven, y el teclado ya alcanza.
 */
@@ -630,6 +618,173 @@ body {
 
 .sigma-campo--error .sigma-campo-marca {
   color: var(--cui-danger, #e55353);
+}
+
+/*
+  ---------- El campo de fecha (HeroUI) ----------
+
+  La fecha es el unico campo de SIGMA que no dibuja CoreUI: la dibuja el
+  DatePicker de HeroUI, porque el <input type="date"> del navegador se ve
+  distinto en cada navegador y no se le puede dar estilo. Ver
+  componentes/formulario/CampoFecha.js y app/heroui.css.
+
+  Lo que hay aca es solo lo que hace falta para que se vea como un campo mas de
+  SIGMA: el mismo ancho, la misma etiqueta y la misma marca de validacion. El
+  resto (el almanaque, los casilleros) ya viene de HeroUI.
+*/
+
+.sigma-fecha {
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+}
+
+/*
+  Una fecha ocupa siempre lo mismo (dd/mm/aaaa): el ancho es fijo y no depende
+  de la columna donde caiga el campo. Los caracteres son los de la fecha; los
+  rem son el padding de la caja, el lugar del tilde y el del almanaque.
+
+  La etiqueta y la caja son las dos hijas de .date-picker (HeroUI las envuelve
+  ahi), asi que la separacion se pone como gap de ese contenedor y no como
+  margen de la etiqueta. Es la misma que usan los demas campos.
+*/
+.sigma-fecha .date-picker {
+  width: calc(10ch + 4.75rem);
+  max-width: 100%;
+  gap: 0.375rem;
+}
+
+/*
+  La etiqueta se calca de .form-label (mas arriba en este archivo): HeroUI la
+  trae mas chica y en otro color, y al lado de un campo de CoreUI se notaba.
+*/
+.sigma-fecha .label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--sigma-ink);
+}
+
+/*
+  HeroUI le pone su propio asterisco a los campos obligatorios y SIGMA le pone
+  el suyo con .sigma-obligatorio. Los dos usan ::after, y como globals.css no
+  esta dentro de una @layer le gana al de HeroUI: queda uno solo, el de SIGMA,
+  del mismo color que en los demas campos. No hace falta apagar nada.
+*/
+
+/* El borde de la caja, con los colores de la plantilla y no los de HeroUI. */
+/*
+  Los colores de la caja.
+
+  Se ponen con las variables que HeroUI expone para sus campos (las --field-*),
+  que es el camino que la libreria deja justamente para esto, y no pisando
+  propiedad por propiedad. Cada una toma el valor que ya usa un .form-control de
+  CoreUI, asi la caja de la fecha se ve igual que la de al lado y sigue los
+  colores de SIGMA sola si algun dia cambian.
+
+  El fondo es --cui-body-bg porque de ahi lo saca CoreUI para sus cajas (mas
+  arriba en este archivo se le puso --sigma-fondo): son grises, no blancas.
+*/
+.sigma-fecha {
+  --field-background: var(--cui-body-bg);
+  --field-hover: var(--cui-body-bg);
+  --field-focus: var(--cui-body-bg);
+  --field-foreground: var(--cui-body-color);
+  --field-placeholder: var(--cui-secondary-color);
+  --field-border: var(--sigma-borde);
+  --field-border-hover: var(--sigma-borde);
+  --field-border-focus: var(--sigma-teal);
+  /* Las cajas de CoreUI son planas: HeroUI le pone una sombrita. */
+  --field-shadow: none;
+}
+
+.sigma-fecha .date-input-group {
+  /*
+    La altura y el tamano del texto son los de un .form-control de CoreUI, y no
+    los que trae HeroUI (que usa un texto mas chico): si no, la caja de la fecha
+    quedaba 7px mas alta que la de al lado y con la letra mas chica.
+  */
+  height: calc(1.5em + 0.75rem + 2px);
+  font-size: 1rem;
+
+  /*
+    El ancho del borde y el redondeo van como propiedades y no como variables
+    --field-*, al contrario de los colores de arriba. Es que HeroUI no las lee
+    directo: las pasa antes por otra variable (--border-width-field, que sale de
+    --field-border-width) y esa cuenta la resuelve una sola vez arriba de todo,
+    en :root. Redefinirla acá abajo no cambia nada: el borde quedaba en 0 y la
+    caja se veía sin contorno.
+  */
+  border-width: 1px;
+  border-radius: var(--sigma-radio-sm);
+}
+
+/* El tilde y la cruz: mismo tamano y mismo color que en Campo.js. */
+.sigma-fecha-marca {
+  display: inline-flex;
+  margin-right: 0.4rem;
+  pointer-events: none;
+}
+
+.sigma-fecha-marca svg.icon {
+  width: 16px;
+  height: 16px;
+}
+
+/*
+  La barrita de color al costado izquierdo, en lugar de pintar todo el borde.
+  Es la misma decision que en Campo.js: con varios campos juntos, el borde
+  entero de color queda como un semaforo.
+
+  El :focus-within se repite a proposito: mientras se corrige, el foco pisa el
+  color de todo el borde y la barrita tiene que seguir marcando el error.
+*/
+.sigma-fecha--ok .date-input-group,
+.sigma-fecha--ok .date-input-group:focus-within {
+  border-left: 3px solid var(--cui-success, #1b9e5a);
+}
+
+.sigma-fecha--ok .sigma-fecha-marca {
+  color: var(--cui-success, #1b9e5a);
+}
+
+.sigma-fecha--error .date-input-group,
+.sigma-fecha--error .date-input-group:focus-within {
+  border-left: 3px solid var(--cui-danger, #e55353);
+}
+
+.sigma-fecha--error .sigma-fecha-marca {
+  color: var(--cui-danger, #e55353);
+}
+
+/*
+  La version compacta, para la barra de filtros de las tablas: la etiqueta
+  ("Desde", "Hasta") va al costado y no arriba, para que todos los filtros
+  entren en un solo renglon y no se coma el espacio vertical de la tabla.
+
+  Aca el ancho fijo va en la caja y no en .date-picker, porque .date-picker
+  ahora tambien contiene la etiqueta.
+*/
+.sigma-fecha--compacto .date-picker {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35rem;
+  width: auto;
+}
+
+.sigma-fecha--compacto .label {
+  /* Es el nombre de un filtro, no de un campo: va liviana, como las demas. */
+  font-weight: 400;
+  font-size: 0.875rem;
+  color: var(--sigma-texto-secundario);
+  white-space: nowrap;
+}
+
+/* Del alto de un control "sm" de CoreUI, para no desalinear la barra. */
+.sigma-fecha--compacto .date-input-group {
+  /* Igual de angosta que los desplegables de al lado: ver .sigma-tabla-filtro. */
+  width: calc(10ch + 3.25rem);
+  height: calc(1.5em + 0.5rem + 2px);
+  font-size: 0.875rem;
 }
 
 /*
@@ -895,22 +1050,9 @@ body {
 
 /*
   Filtro por fecha (HU-10): la etiqueta ("Desde", "Hasta") va pegada a la caja,
-  en el mismo renglon que los desplegables.
+  en el mismo renglon que los desplegables. Lo dibuja CampoFecha con
+  `compacto`; el estilo esta mas abajo, en la seccion del campo de fecha.
 */
-.sigma-tabla-filtro-fecha {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin: 0;
-  color: var(--sigma-texto-secundario);
-  font-size: 0.875rem;
-  white-space: nowrap;
-}
-
-.sigma-tabla-filtro-fecha input {
-  width: 9.5rem;
-}
-
 .sigma-tabla-buscador svg {
   position: absolute;
   left: 0.75rem;

@@ -31,6 +31,10 @@ usa una versión distinta, aparecen errores que no se pueden reproducir.
 | **@coreui/react** | 5.13.0 |
 | **@coreui/coreui** | 5.9.0 |
 | **@coreui/icons / icons-react** | 3.1.0 / 2.3.0 |
+| **@heroui/react** | 3.2.6 (sólo el campo de fecha) |
+| **tailwindcss / @tailwindcss/postcss** | 4 (sólo para compilar HeroUI) |
+| **react-aria / react-aria-components** | 3.52.1 / 1.21.1 (los pide HeroUI) |
+| **@internationalized/date** | 3.12.4 (los pide HeroUI) |
 
 Decisiones tomadas:
 
@@ -154,8 +158,30 @@ Cada `<Campo>` declara su `ancho` en caracteres y **esa medida no cambia con lo 
 escribe**. Antes la caja crecía con el texto, y al escribir un nombre largo se corrían de
 lugar todos los campos que seguían. El que no declara nada mide 16 caracteres.
 
-Las fechas y los `tipo="area"` no usan `ancho`: la fecha la dibuja el navegador y siempre
-mide lo mismo, y el área ocupa el renglón entero (sí crece a lo alto).
+Las fechas y los `tipo="area"` no usan `ancho`: la fecha siempre mide lo mismo
+(dd/mm/aaaa) y su ancho lo pone `globals.css`, y el área ocupa el renglón entero (sí
+crece a lo alto).
+
+### Los campos no llevan descripción (23/09/2026)
+
+Debajo de la caja de un campo **sólo aparece el motivo cuando algo está mal**. No va una
+línea gris explicando para qué es el campo: eso lo dice la etiqueta.
+
+Antes había 28 de esas descripciones repartidas por los formularios ("No se puede repetir:
+identifica al activo", "Un material se consume; una herramienta se presta", etc.). Se
+sacaron todas, junto con la prop `ayuda` de `Campo`, `CampoFecha` y `SeleccionMultiple`,
+que era la que las dibujaba. Si algún día se quieren volver a poner hay que reponer la
+prop en esos tres componentes.
+
+⬜ **Quedaron cuatro avisos afuera que no eran descripciones**, sino información que no se
+lee en ningún otro lado. Están anotados como pendientes de decidir:
+
+| Dónde | Qué decía |
+|---|---|
+| Activos, Espacio | La fecha de la última reubicación del activo. |
+| Activos, Estado | Que ese estado lo maneja la OT y por eso está deshabilitado. |
+| Inventario, Stock | Que el stock lo mueven los préstamos, no el formulario. |
+| Usuarios autorizados, Área | El aviso de que no hay áreas libres, cuando la lista viene vacía. |
 
 ### Las reglas de DNI, CUIL y teléfono (15/09/2026)
 
@@ -190,6 +216,80 @@ Lo que se decidió:
 ⬜ **Las reglas están repetidas a propósito en los dos archivos**, porque a la API se le
 puede pegar directo sin pasar por la pantalla. Si se cambia una regla en un lado, hay que
 cambiarla en el otro. Las restricciones en la base quedan para después.
+
+### El campo de fecha usa HeroUI (23/09/2026)
+
+Todas las fechas de SIGMA se cargan con `frontend/src/componentes/formulario/CampoFecha.js`,
+que es el `DatePicker` de **HeroUI v3**. Antes era el `<input type="date">` del navegador.
+
+**Por qué se cambió:** ese input lo dibuja cada navegador a su manera. El almanaque de
+Chrome no se parece al de Firefox ni al del celular, y no se le puede dar el estilo de la
+plantilla. El de HeroUI se ve igual en todas partes, sale en castellano (`es-AR`, con los
+casilleros en orden dd/mm/aaaa) y trae selector de año, que hacía falta para una fecha de
+nacimiento.
+
+**Las pantallas no cambiaron.** Se sigue escribiendo `<Campo tipoHtml="date">` como
+siempre: `Campo.js` delega solo en `CampoFecha`. Hacia afuera el campo sigue hablando en
+texto `"2026-09-14"`, igual que antes, así que los formularios guardan y comparan texto
+como venían haciendo. La traducción al `CalendarDate` que pide HeroUI la hacen
+`aFechaCalendario` y `deFechaCalendario`, en `frontend/src/utils/fechas.js`.
+
+**Los límites de cada fecha** (`min` y `max` del `<Campo>`, en el mismo formato de texto)
+apagan los días que no se pueden elegir en el almanaque:
+
+| Pantalla | Campo | Límite |
+|---|---|---|
+| Activos | Fecha de alta | No posterior a hoy: todavía no pasó. |
+| Usuarios autorizados | Fecha de nacimiento | Hasta hoy menos 18 años. El almanaque abre directamente en ese año. |
+| Inventario | Vence el | **No anterior a hoy** (decisión del 23/09/2026): un material no se carga ya vencido. Editando uno que ya estaba vencido, el mínimo es su propia fecha, para poder guardar los demás cambios. |
+| Órdenes de trabajo | Inicio y fin previstos | No anteriores a hoy, y el fin no antes del inicio. |
+| Tickets y Órdenes | Filtros Desde / Hasta | El rango no se puede dar vuelta: el "Desde" no pasa del "Hasta" y al revés. |
+
+⬜ **El límite del almanaque es una ayuda, no el control.** Los formularios son
+`noValidate` y la fecha se puede tipear a mano en los casilleros, así que el que corta de
+verdad sigue siendo la validación del formulario. Toda fecha con límite tiene las dos
+cosas.
+
+⬜ **En `CampoFecha.js` los límites se pasan dos veces a propósito**, al `DatePicker` y al
+`Calendar`. No está repetido por descuido: el `CalendarRoot` de HeroUI no hereda el
+`minValue`/`maxValue` del `DatePicker`, usa los suyos (1900 a 2099) si no se los pasan, y
+entonces el almanaque deja elegir cualquier día. Si se saca una de las dos, el límite deja
+de cumplirse de un lado.
+
+#### Lo que hubo que hacer para que HeroUI conviva con CoreUI
+
+HeroUI está hecho con **Tailwind v4** y su CSS viene sin compilar, así que se agregó
+`frontend/postcss.config.mjs`. Lo único que se compila es `frontend/src/app/heroui.css`;
+el resto de SIGMA sigue siendo CoreUI + `globals.css`, **sin Tailwind**.
+
+Dos cuidados, los dos explicados en el comentario de `heroui.css`:
+
+- **El reset de Tailwind queda afuera.** El import normal de HeroUI arrastra el
+  "preflight", un reset global que pone `margin:0`, `padding:0` y `border:0` en todo y
+  aplana los títulos. Sobre Bootstrap eso desarma **todas** las pantallas, no sólo las
+  fechas. Por eso se importan a mano las partes de Tailwind que hacen falta y se deja el
+  preflight afuera.
+- **Hay que reponerle a HeroUI el reset que espera.** HeroUI no dibuja bordes ni rellenos
+  en sus botones: da por hecho que el preflight ya los puso en cero. Sin preflight, los
+  botones del almanaque se quedaban con lo de fábrica del navegador (`border: 2px outset`,
+  el borde biselado de Windows 95, y `padding: 1px 6px`), y la flechita de mes y la
+  pastilla del año se veían con un aro gris cortado y fondo gris. Se repone el reset, pero
+  **acotado al campo de fecha y al almanaque**, y sólo con las dos reglas que HeroUI usa.
+  Va dentro de `layer(base)`, que es donde iría el preflight: así le gana a lo de fábrica
+  del navegador pero **pierde** contra la capa de componentes de HeroUI, que es la que
+  después pone el relleno y las esquinas de cada cosa. Fuera de las capas le ganaría
+  también a HeroUI y le borraría esos rellenos.
+- **Que CoreUI no le pise las esquinas.** CoreUI no está dentro de ninguna `@layer`, y en
+  CSS lo que no está en capas le gana a lo que sí está, sin importar la especificidad.
+  Por eso su `button{border-radius:0}` le ganaba al `rounded-2xl` de HeroUI y las
+  flechitas quedaban cuadradas. Se arregla con una regla `revert-layer` acotada al campo
+  de fecha y al almanaque.
+
+⬜ **Regla práctica si algo del almanaque se ve raro:** casi siempre es una de estas dos
+cosas, no un problema de HeroUI. Conviene comparar contra
+[heroui.com](https://heroui.com) antes de agregar CSS propio: si hace falta forzar un
+ancho o un relleno para que algo se vea bien, probablemente falte reponer un pedazo del
+reset en lugar de tapar el síntoma.
 
 ### Elegir varias opciones a la vez (15/09/2026)
 

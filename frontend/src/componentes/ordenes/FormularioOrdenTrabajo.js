@@ -148,7 +148,6 @@ export default function FormularioOrdenTrabajo() {
                 ancho={48}
                 revisado={revisado}
                 error={errores.idTicket}
-                ayuda="Sólo se listan los tickets validados que todavía no tienen orden de trabajo."
               />
 
               <Campo
@@ -159,7 +158,6 @@ export default function FormularioOrdenTrabajo() {
                 valor={descripcion}
                 alCambiar={setDescripcion}
                 revisado={revisado}
-                ayuda="Arranca con el motivo que escribió quien reportó el problema. Se puede cambiar."
               />
             </div>
 

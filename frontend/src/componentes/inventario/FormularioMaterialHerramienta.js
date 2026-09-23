@@ -28,6 +28,7 @@ import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Campo from '@/componentes/formulario/Campo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarTiposInventario } from '@/servicios/inventario.js';
+import { hoyTexto } from '@/utils/fechas.js';
 
 const CLASES = ['Material', 'Herramienta'];
 
@@ -92,6 +93,21 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
    * Los errores se recalculan en cada tecla, pero no se muestran hasta apretar
    * Guardar. De ahi en mas se actualizan solos mientras se corrige.
    */
+  const hoy = hoyTexto();
+  const vencimientoOriginal = articulo?.fechaVencimiento?.slice(0, 10) ?? '';
+
+  /*
+   * Un material que se carga hoy no puede venir ya vencido: la fecha mas
+   * temprana que se puede elegir es hoy (decision del 23/09/2026).
+   *
+   * La excepcion es editar algo que YA estaba vencido en el deposito: ahi el
+   * minimo es su propia fecha, porque si no no se podria guardar ningun otro
+   * cambio de ese material. Es el mismo criterio que usan las fechas de una
+   * tarea de la OT (ver FormularioTareaOT.js).
+   */
+  const minimoVencimiento =
+    vencimientoOriginal && vencimientoOriginal < hoy ? vencimientoOriginal : hoy;
+
   const errores = useMemo(() => {
     const encontrados = {};
 
@@ -102,8 +118,17 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
       encontrados.stockMinimo = 'Indicá desde qué cantidad hay que reponer.';
     }
 
+    /*
+     * El almanaque ya apaga los dias de antes, pero el formulario es noValidate
+     * y la fecha se puede escribir a mano en los casilleros: el que corta de
+     * verdad es este control.
+     */
+    if (esMaterial && fechaVencimiento && fechaVencimiento < minimoVencimiento) {
+      encontrados.fechaVencimiento = 'La fecha de vencimiento no puede ser anterior a hoy.';
+    }
+
     return encontrados;
-  }, [codigo, nombre, idTipo, esMaterial, stockMinimo]);
+  }, [codigo, nombre, idTipo, esMaterial, stockMinimo, fechaVencimiento, minimoVencimiento]);
 
   const hayErrores = Object.keys(errores).length > 0;
 
@@ -169,11 +194,6 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
               deshabilitado={editando}
               ancho={14}
               revisado={revisado}
-              ayuda={
-                editando
-                  ? 'La clase no se puede cambiar despues del alta.'
-                  : 'Un material se consume; una herramienta se presta y se devuelve.'
-              }
             />
 
             <Campo
@@ -207,7 +227,6 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
               ancho={10}
               revisado={revisado}
               error={errores.codigo}
-              ayuda={editando ? 'El código no se puede cambiar.' : ''}
             />
 
             <Campo
@@ -232,7 +251,6 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
                 soloLectura
                 deshabilitado
                 ancho={12}
-                ayuda="Lo maneja el depósito con los préstamos y los consumos."
               />
             )}
 
@@ -266,7 +284,6 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
                   ancho={6}
                   revisado={revisado}
                   error={errores.stockMinimo}
-                  ayuda="Debajo de esta cantidad, el sistema avisa que hay que reponer."
                 />
 
                 <Campo
@@ -275,8 +292,9 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
                   tipoHtml="date"
                   valor={fechaVencimiento}
                   alCambiar={setFechaVencimiento}
+                  min={minimoVencimiento}
                   revisado={revisado}
-                  ayuda="Solo si el material vence."
+                  error={errores.fechaVencimiento}
                 />
               </div>
             </>

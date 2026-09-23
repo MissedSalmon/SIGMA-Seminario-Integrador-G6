@@ -44,6 +44,14 @@
  *
  *   { etiqueta: 'Desde', tipo: 'fecha', valor: fechaDesde, alCambiar: setFechaDesde }
  *
+ * Un filtro de fecha puede ademas acotar el almanaque con `minimo` y `maximo`
+ * (texto "2026-09-14"). Se usa para que un rango no se pueda dar vuelta: al
+ * "Desde" se le pone como maximo el "Hasta" elegido, y al "Hasta" como minimo
+ * el "Desde".
+ *
+ *   { etiqueta: 'Hasta', tipo: 'fecha', valor: fechaHasta, alCambiar: setFechaHasta,
+ *     minimo: fechaDesde }
+ *
  * Si la pantalla pasa `alLimpiar`, aparece un boton "Limpiar" al lado de los
  * filtros cuando hay alguno aplicado. La tabla no sabe cuales: solo llama a la
  * funcion, y la pantalla es la que los vacia.
@@ -54,6 +62,7 @@ import CIcon from '@coreui/icons-react';
 import { cilChevronLeft, cilChevronRight, cilSearch, cilX } from '@coreui/icons';
 
 import { EsqueletoFilas, SinDatos } from '@/componentes/EstadoTabla.js';
+import CampoFecha from '@/componentes/formulario/CampoFecha.js';
 
 const TAMANO_PAGINA = 10;
 
@@ -120,17 +129,16 @@ export default function TablaDatos({
 
               {filtros.map((filtro) =>
                 filtro.tipo === 'fecha' ? (
-                  <label key={filtro.etiqueta} className="sigma-tabla-filtro-fecha">
-                    <span>{filtro.etiqueta}</span>
-                    <CFormInput
-                      type="date"
-                      size="sm"
-                      id={`${idFiltros}-${filtro.etiqueta}`}
-                      aria-label={`Filtrar por fecha: ${filtro.etiqueta.toLowerCase()}`}
-                      value={filtro.valor}
-                      onChange={(evento) => filtro.alCambiar(evento.target.value)}
-                    />
-                  </label>
+                  <CampoFecha
+                    key={filtro.etiqueta}
+                    compacto
+                    id={`${idFiltros}-${filtro.etiqueta}`}
+                    etiqueta={filtro.etiqueta}
+                    valor={filtro.valor}
+                    alCambiar={filtro.alCambiar}
+                    minimo={filtro.minimo}
+                    maximo={filtro.maximo}
+                  />
                 ) : (
                 <CFormSelect
                   className="sigma-tabla-filtro"
