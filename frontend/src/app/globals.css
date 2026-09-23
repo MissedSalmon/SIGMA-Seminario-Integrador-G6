@@ -363,18 +363,55 @@ body {
   box-shadow: 0 1px 0 var(--sigma-borde);
 }
 
-.sigma-header .breadcrumb-item + .breadcrumb-item::before {
-  color: var(--sigma-borde);
+/*
+  ---------- La ruta de migas (HeroUI) ----------
+
+  Es el Breadcrumbs de HeroUI (ver componentes/layout/Encabezado.js). Aca van
+  los colores y el tamano de SIGMA, que son los mismos que tenia con CoreUI:
+  el texto grande y semi-negrita del encabezado, los enlaces en el teal
+  institucional y la pantalla donde estamos parados en gris.
+*/
+.sigma-migas {
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 
-.sigma-header .breadcrumb-item a {
+/*
+  Cada miga hereda el tamano del rastro; HeroUI las trae chicas.
+
+  El subrayado se apaga a mano: HeroUI ya le pone "sin subrayado" al enlace,
+  pero eso vive en una @layer y el `a { text-decoration: underline }` de
+  Bootstrap no, asi que le gana y salian todas subrayadas. Queda solo al pasar
+  por encima, que es como se ve en HeroUI.
+*/
+.sigma-migas .breadcrumbs__link {
+  font-size: inherit;
+  font-weight: inherit;
+  color: var(--cui-link-color);
+  text-decoration: none;
+}
+
+.sigma-migas .breadcrumbs__link:hover {
+  color: var(--cui-link-hover-color);
+  text-decoration: underline;
+}
+
+/*
+  La pantalla donde estamos parados: en gris y sin enlace. react-aria le pone
+  data-current a la ultima miga sola, no hay que marcarla a mano.
+*/
+.sigma-migas .breadcrumbs__link[data-current='true'],
+.sigma-migas .breadcrumbs__link[data-current='true']:hover {
+  color: var(--cui-secondary-color);
+  text-decoration: none;
+  cursor: default;
+}
+
+/* La flechita entre migas, del tamano del texto y en el gris de los bordes. */
+.sigma-migas .breadcrumbs__separator {
+  width: 0.7em;
+  height: 0.7em;
   color: var(--sigma-texto-secundario);
-  font-weight: 500;
-}
-
-.sigma-header .breadcrumb-item.active {
-  color: var(--sigma-ink);
-  font-weight: 700;
 }
 
 /* ---------- Pie de pagina ---------- */

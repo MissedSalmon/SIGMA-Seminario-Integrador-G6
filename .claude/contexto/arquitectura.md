@@ -217,6 +217,36 @@ Lo que se decidió:
 puede pegar directo sin pasar por la pantalla. Si se cambia una regla en un lado, hay que
 cambiarla en el otro. Las restricciones en la base quedan para después.
 
+### La ruta de migas usa HeroUI (23/09/2026)
+
+El "Inicio › Inventario › Tipos de materiales" de arriba de cada pantalla es el
+`Breadcrumbs` de HeroUI. Antes era el de CoreUI. Está en un solo lugar,
+`frontend/src/componentes/layout/Encabezado.js`, así que sale igual en las 29 pantallas.
+
+Lo que cambia para quien lo lee: el separador ahora es una flechita (`›`), que es la de
+HeroUI, en lugar de la barra (`/`) de CoreUI. **Los colores y el tamaño son los mismos que
+antes** (1.25rem, semi-negrita, los enlaces en el teal institucional y la pantalla actual en
+gris), y de paso se arreglaron dos cosas:
+
+- **Todos los enlaces se ven igual.** Antes "Inicio" quedaba subrayado y los demás no,
+  porque el `text-decoration-none` caía en el `<li>` y no en el enlace. Ahora el subrayado
+  aparece sólo al pasar por encima.
+- **`/ordenes-trabajo` mostraba "ordenes-trabajo"**, en minúscula y con guión, porque
+  faltaba en el mapa `NOMBRES`.
+
+⬜ **Cada pantalla nueva se anota en `NOMBRES`**, con el mismo texto que su título. Si no,
+la miga muestra el tramo de la dirección tal cual (que es lo que pasaba con las órdenes de
+trabajo). El mapa se busca por la dirección entera y no por el último tramo, para que
+"tipos" pueda significar una cosa en espacios y otra en inventario.
+
+⬜ **La última miga la marca el componente solo.** No se le pasa dirección y react-aria ya
+la muestra como "estás acá", sin enlace. Antes había que decirle cuál era la última a mano.
+
+⬜ **Las migas navegan por dentro gracias a `RouterProvider`.** Los enlaces de react-aria
+son `<a>` comunes hasta que se le dice cómo navegar; sin eso, cada clic recargaría la
+pantalla entera en lugar de moverse como un `<Link>` de Next. Comprobado: cero recargas al
+hacer clic.
+
 ### Elegir una opción usa HeroUI (23/09/2026)
 
 Todos los selectores de SIGMA son `frontend/src/componentes/formulario/CampoLista.js`,

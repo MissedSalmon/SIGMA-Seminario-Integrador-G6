@@ -3,15 +3,29 @@
 /**
  * Barra de arriba: el boton que abre el menu en el celular y la ruta de
  * migas (el "Inicio / Edificios / Agregar" que indica donde estas parado).
+ *
+ * Las migas son el componente Breadcrumbs de HeroUI. Antes era el de CoreUI.
+ * El cambio trae dos cosas:
+ *
+ * - LA ULTIMA MIGA LA MARCA EL COMPONENTE. A la que corresponde a la pantalla
+ *   donde estamos no se le pasa direccion, y con eso react-aria ya la muestra
+ *   como "estas aca" (sin enlace y con data-current). Antes habia que decirle
+ *   cual era la ultima a mano.
+ *
+ * - LOS ENLACES SE VEN TODOS IGUAL. Antes "Inicio" quedaba subrayado y los
+ *   demas no, porque el "text-decoration-none" caia en el <li> y no en el
+ *   enlace. Ahora el subrayado aparece solo al pasar por encima, parejo.
+ *
+ * Los colores y el tamano siguen siendo los de SIGMA, no los de HeroUI: eso
+ * esta en globals.css, en .sigma-migas.
+ *
+ * RouterProvider es lo que hace que un clic en una miga navegue por dentro
+ * (como un <Link> de Next) y no recargue la pantalla entera: los enlaces de
+ * react-aria son <a> comunes hasta que se les dice como navegar.
  */
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import {
-  CBreadcrumb,
-  CBreadcrumbItem,
-  CContainer,
-  CHeader,
-} from '@coreui/react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Breadcrumbs, RouterProvider } from '@heroui/react';
+import { CContainer, CHeader } from '@coreui/react';
 
 /**
  * Como se muestra cada pantalla en las migas.
@@ -26,6 +40,7 @@ import {
  */
 const NOMBRES = {
   '/tickets': 'Tickets',
+  '/ordenes-trabajo': 'Órdenes de trabajo',
   '/plantillas-tareas': 'Plantillas de tareas',
   '/edificios': 'Edificios',
   '/espacios': 'Espacios',
@@ -76,25 +91,27 @@ function armarMigas(direccion) {
 
 export default function Encabezado() {
   const direccionActual = usePathname();
+  const router = useRouter();
   const migas = armarMigas(direccionActual);
 
   return (
     <CHeader position="sticky" className="mb-4 p-0">
       <CContainer className="border-bottom px-4 py-3" fluid>
-        <CBreadcrumb className="my-0 fs-5 fw-semibold">
-          <CBreadcrumbItem href="/" className="text-decoration-none">Inicio</CBreadcrumbItem>
-          {migas.map((miga) =>
-            miga.ultima ? (
-              <CBreadcrumbItem key={miga.direccion} active>
+        <RouterProvider navigate={router.push}>
+          <Breadcrumbs className="sigma-migas">
+            {/* En la pantalla de inicio, "Inicio" es la unica miga y es la actual. */}
+            <Breadcrumbs.Item href={migas.length > 0 ? '/' : undefined}>Inicio</Breadcrumbs.Item>
+
+            {migas.map((miga) => (
+              <Breadcrumbs.Item
+                key={miga.direccion}
+                href={miga.ultima ? undefined : miga.direccion}
+              >
                 {miga.texto}
-              </CBreadcrumbItem>
-            ) : (
-              <CBreadcrumbItem key={miga.direccion}>
-                <Link href={miga.direccion} className="text-decoration-none">{miga.texto}</Link>
-              </CBreadcrumbItem>
-            )
-          )}
-        </CBreadcrumb>
+              </Breadcrumbs.Item>
+            ))}
+          </Breadcrumbs>
+        </RouterProvider>
       </CContainer>
     </CHeader>
   );
