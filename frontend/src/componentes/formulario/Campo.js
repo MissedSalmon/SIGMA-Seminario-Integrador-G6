@@ -51,6 +51,7 @@ import CIcon from '@coreui/icons-react';
 import { cilCheckAlt, cilX } from '@coreui/icons';
 
 import CampoDuracion from './CampoDuracion.js';
+import CampoNumero from './CampoNumero.js';
 import CampoFecha from './CampoFecha.js';
 import CampoLista from './CampoLista.js';
 
@@ -230,6 +231,31 @@ export default function Campo({
    * casilleros de reloj, hh:mm. Igual que la fecha, hacia afuera habla en texto
    * ("01:30"), asi que el formulario guarda y compara texto.
    */
+  /*
+   * Una cantidad la dibuja CampoNumero (el NumberField de HeroUI), que trae los
+   * botones de + y -. Es a pedido con tipo="numero" y no automatico para todo
+   * tipoHtml="number", porque hay numeros que no son cantidades: un legajo se
+   * escribe con digitos pero no tiene sentido subirlo de a uno.
+   */
+  if (tipo === 'numero') {
+    return (
+      <CampoNumero
+        id={id}
+        etiqueta={etiqueta}
+        valor={valor}
+        alCambiar={alCambiar}
+        minimo={min === undefined || min === '' ? undefined : Number(min)}
+        maximo={max === undefined || max === '' ? undefined : Number(max)}
+        paso={step === undefined || step === '' ? 1 : Number(step)}
+        obligatorio={obligatorio}
+        deshabilitado={deshabilitado}
+        error={error}
+        revisado={revisado}
+        ancho={ancho}
+      />
+    );
+  }
+
   if (tipo === 'duracion') {
     return (
       <CampoDuracion

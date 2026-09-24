@@ -1,8 +1,8 @@
 /*
-  Estilos de HeroUI, que en SIGMA se usan para tres cosas: el campo de fecha
-  (componentes/formulario/CampoFecha.js), el de duracion
-  (componentes/formulario/CampoDuracion.js) y el de elegir una opcion
-  (componentes/formulario/CampoLista.js).
+  Estilos de HeroUI, que en SIGMA visten cuatro campos: la fecha
+  (componentes/formulario/CampoFecha.js), la duracion (CampoDuracion.js), la
+  cantidad con + y - (CampoNumero.js) y el de elegir una opcion
+  (CampoLista.js).
 
   Por que este archivo existe y no alcanza con importar el CSS del paquete:
 
@@ -70,6 +70,7 @@
 @layer base {
   .sigma-fecha :is(button, input, select, textarea),
   .sigma-duracion :is(button, input, select, textarea),
+  .sigma-numero :is(button, input, select, textarea),
   .sigma-lista :is(button, input, select, textarea),
   .date-picker__popover :is(button, input, select, textarea),
   .sigma-lista-popover :is(button, input, select, textarea) {
@@ -115,6 +116,7 @@
 */
 .sigma-fecha button,
 .sigma-duracion button,
+.sigma-numero button,
 .sigma-lista button,
 .date-picker__popover button,
 .sigma-lista-popover button {

@@ -499,9 +499,6 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
                   value={descripcion}
                   onChange={(evento) => setDescripcion(evento.target.value)}
                 />
-                <p className="sigma-campo-mensaje">
-                  Arranca con el motivo que escribió quien reportó el problema.
-                </p>
               </CModalBody>
               <CModalFooter>
                 <CButton

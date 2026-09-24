@@ -12,7 +12,7 @@
  * La excepcion es la orden de trabajo: ver ESTADOS_SIN_OT mas abajo.
  */
 import { use, useEffect, useState } from 'react';
-import { CButton, CCard, CCardBody, CCardHeader, CCol, CRow, CModal, CModalHeader, CModalTitle, CModalBody, CModalFooter, CFormTextarea, CFormSelect, CFormLabel } from '@coreui/react';
+import { CButton, CCard, CCardBody, CCardHeader, CCol, CRow, CModal, CModalHeader, CModalTitle, CModalBody, CModalFooter, CFormTextarea, CFormLabel } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilArrowLeft, cilExternalLink, cilCheckAlt, cilX, cilPlus, cilDescription } from '@coreui/icons';
 
@@ -20,6 +20,7 @@ import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
+import CampoLista from '@/componentes/formulario/CampoLista.js';
 import EtiquetaEstadoTicket from '@/componentes/tickets/EtiquetaEstadoTicket.js';
 import { obtenerTicket, validarTicket, rechazarTicket } from '@/servicios/tickets.js';
 import { crearOrdenDesdeTicket } from '@/servicios/ordenesTrabajo.js';
@@ -446,26 +447,15 @@ export default function PantallaDetalleTicket({ params }) {
                 </p>
 
                 <div className="mb-2">
-                  <CFormLabel htmlFor="estadoNuevoDelActivo" className="sigma-obligatorio">
-                    Estado del activo {ticket.codigoActivo}
-                  </CFormLabel>
-                  <CFormSelect
+                  <CampoLista
                     id="estadoNuevoDelActivo"
-                    value={estadoNuevoDelActivo}
-                    onChange={(e) => setEstadoNuevoDelActivo(e.target.value)}
-                    style={{ maxWidth: '20rem' }}
-                  >
-                    {ESTADOS_DE_ACTIVO.map((estado) => (
-                      <option key={estado} value={estado}>
-                        {estado}
-                      </option>
-                    ))}
-                  </CFormSelect>
-                  <p className="sigma-campo-mensaje">
-                    {ticket.activo?.estado
-                      ? `Ahora está en "${ticket.activo.estado}".`
-                      : 'Elegí en qué estado queda el activo.'}
-                  </p>
+                    etiqueta={`Estado del activo ${ticket.codigoActivo}`}
+                    valor={estadoNuevoDelActivo}
+                    alCambiar={setEstadoNuevoDelActivo}
+                    opciones={ESTADOS_DE_ACTIVO.map((estado) => ({ valor: estado, texto: estado }))}
+                    obligatorio
+                    ancho={18}
+                  />
                 </div>
               </CModalBody>
               <CModalFooter>

@@ -173,7 +173,13 @@ sacaron todas, junto con la prop `ayuda` de `Campo`, `CampoFecha` y `SeleccionMu
 que era la que las dibujaba. Si algún día se quieren volver a poner hay que reponer la
 prop en esos tres componentes.
 
-⬜ **Quedaron cuatro avisos afuera que no eran descripciones**, sino información que no se
+⬜ **La primera pasada se quedó corta.** Tres descripciones sobrevivieron porque estaban
+escritas a mano (no como prop `ayuda`) y en pantallas que no entraron en la revisión: las
+dimensiones de un espacio, el modal de editar la descripción de una OT y el modal de
+validar un ticket. Se limpiaron el 24/09/2026. **Los modales hay que abrirlos para
+revisarlos**: un recorrido que sólo carga pantallas no los ve.
+
+⬜ **Quedaron cinco avisos afuera que no eran descripciones**, sino información que no se
 lee en ningún otro lado. Están anotados como pendientes de decidir:
 
 | Dónde | Qué decía |
@@ -182,6 +188,7 @@ lee en ningún otro lado. Están anotados como pendientes de decidir:
 | Activos, Estado | Que ese estado lo maneja la OT y por eso está deshabilitado. |
 | Inventario, Stock | Que el stock lo mueven los préstamos, no el formulario. |
 | Usuarios autorizados, Área | El aviso de que no hay áreas libres, cuando la lista viene vacía. |
+| Tickets, modal Validar | En qué estado está hoy el activo ("Ahora está en Operativo"). |
 
 ### Las reglas de DNI, CUIL y teléfono (15/09/2026)
 
@@ -216,6 +223,28 @@ Lo que se decidió:
 ⬜ **Las reglas están repetidas a propósito en los dos archivos**, porque a la API se le
 puede pegar directo sin pasar por la pantalla. Si se cambia una regla en un lado, hay que
 cambiarla en el otro. Las restricciones en la base quedan para después.
+
+### Las cantidades se cargan con + y - (24/09/2026)
+
+Un campo de **cantidad** se pide con `<Campo tipo="numero">` y lo dibuja el `NumberField` de
+HeroUI: **+ a la izquierda, el número en el medio, - a la derecha**. Así se puede cargar sin
+teclear. Hoy lo usa el "Stock mínimo" del inventario.
+
+⬜ **El orden de los botones es el que se pidió.** Lo más habitual es el revés
+(`- número +`); si se quiere cambiar, alcanza con dar vuelta las dos líneas del componente,
+porque el lugar lo decide el orden en que están escritas y no el CSS.
+
+**Los botones respetan el `min` y el `max`** del campo: con `min="0"`, al llegar a 0 el
+botón `-` se apaga solo. Igual se puede escribir a mano.
+
+⬜ **Es a pedido y no automático para todo `tipoHtml="number"`.** Hay números que no son
+cantidades: un **legajo** se escribe con dígitos pero no tiene sentido subirlo de a uno, así
+que sigue siendo un campo de texto común. Quedan afuera a propósito:
+
+| Campo | Por qué |
+|---|---|
+| Legajo (técnicos) | Es un identificador, no una cantidad. |
+| Dimensiones de un espacio (ancho × largo) | Son metros con dos decimales, así que cada clic subiría 0,01; y son dos cajitas unidas con "×" y "m", donde los botones no entran. |
 
 ### La duración se carga como un reloj (24/09/2026)
 

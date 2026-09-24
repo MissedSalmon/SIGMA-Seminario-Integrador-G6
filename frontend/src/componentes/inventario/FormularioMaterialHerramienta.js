@@ -275,7 +275,7 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
                 <Campo
                   id="stockMinimo"
                   etiqueta="Stock mínimo"
-                  tipoHtml="number"
+                  tipo="numero"
                   min="0"
                   valor={stockMinimo}
                   alCambiar={setStockMinimo}
