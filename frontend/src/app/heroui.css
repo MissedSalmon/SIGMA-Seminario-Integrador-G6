@@ -1,6 +1,7 @@
 /*
-  Estilos de HeroUI, que en SIGMA se usan para dos cosas: el campo de fecha
-  (componentes/formulario/CampoFecha.js) y el campo para elegir una opcion
+  Estilos de HeroUI, que en SIGMA se usan para tres cosas: el campo de fecha
+  (componentes/formulario/CampoFecha.js), el de duracion
+  (componentes/formulario/CampoDuracion.js) y el de elegir una opcion
   (componentes/formulario/CampoLista.js).
 
   Por que este archivo existe y no alcanza con importar el CSS del paquete:
@@ -68,6 +69,7 @@
 */
 @layer base {
   .sigma-fecha :is(button, input, select, textarea),
+  .sigma-duracion :is(button, input, select, textarea),
   .sigma-lista :is(button, input, select, textarea),
   .date-picker__popover :is(button, input, select, textarea),
   .sigma-lista-popover :is(button, input, select, textarea) {
@@ -92,30 +94,47 @@
     font-weight: inherit;
     text-align: inherit;
   }
+
 }
 
 /*
-  Lo unico que CoreUI le pisa de verdad a HeroUI: las esquinas de los botones.
+  ---------- Lo que CoreUI le pisa a HeroUI ----------
 
   CoreUI no esta dentro de ninguna @layer, y en CSS lo que NO esta en capas le
-  gana a lo que si esta, sin importar la especificidad. Entonces su
-  `button{border-radius:0}` le gana al rounded-2xl de HeroUI y las flechitas
-  del almanaque quedan cuadradas.
+  gana a lo que si esta, sin importar la especificidad. Por eso estas dos reglas
+  van a proposito fuera de toda capa: es la unica forma de ganarle.
 
-  Esta regla va a proposito fuera de toda capa, que es la unica forma de
-  ganarle. "revert-layer" quiere decir "para esta propiedad, olvidate de lo que
-  dice CoreUI y usa lo que dicen las capas", o sea HeroUI.
+  Ojo con la diferencia respecto del reset de mas arriba: ese repone lo que trae
+  el NAVEGADOR de fabrica, y para eso una capa alcanza. Estas dos, en cambio,
+  corrigen lo que pone CoreUI, y contra eso una capa no puede.
 
-  Se aplica solo adentro de los dos campos que dibuja HeroUI (.sigma-fecha y
-  .sigma-lista) y de sus desplegables (.date-picker__popover y
-  .sigma-lista-popover, que el navegador dibuja al final del <body> y por eso
-  no quedan adentro del campo).
+  1. LAS ESQUINAS DE LOS BOTONES. El `button{border-radius:0}` de CoreUI le gana
+     al rounded-2xl de HeroUI y las flechitas del almanaque quedan cuadradas.
+     "revert-layer" quiere decir "para esta propiedad, olvidate de lo que dice
+     CoreUI y usa lo que dicen las capas", o sea HeroUI.
 */
 .sigma-fecha button,
+.sigma-duracion button,
 .sigma-lista button,
 .date-picker__popover button,
 .sigma-lista-popover button {
   border-radius: revert-layer;
+}
+
+/*
+  2. EL SANGRADO DE LA RUTA DE MIGAS. El rastro es un <ol>, y CoreUI le pone a
+     todas las listas `padding-inline-start: 2rem` y `margin-bottom: 1rem`. Con
+     eso el rastro arrancaba 34px mas a la derecha que el titulo de la pantalla
+     (o sea, separado del menu) y dejaba 17px de aire abajo.
+
+     Aca va el valor directo y no "revert-layer", justamente porque no hay nada
+     atras: HeroUI no le pone relleno al rastro, asi que revertir lo dejaria con
+     los 40px que le pone el navegador a un <ol>, que es peor.
+*/
+.sigma-migas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 /*

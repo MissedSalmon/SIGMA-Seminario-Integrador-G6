@@ -61,7 +61,7 @@ import { listarPlantillas } from '@/servicios/plantillasTareas.js';
 import { listarPrestadores } from '@/servicios/prestadores.js';
 import { listarTecnicos } from '@/servicios/tecnicos.js';
 import { formatearFechaHora } from '@/utils/fechas.js';
-import { formatearDuracion } from '@/utils/duracion.js';
+import { comoHoraMinuto } from '@/utils/duracion.js';
 
 /** Una OT en estos estados ya no se planifica. */
 const ESTADOS_CERRADOS = ['Finalizada', 'Cancelada'];
@@ -410,7 +410,7 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
                             </CTableDataCell>
 
                             <CTableDataCell className="text-nowrap text-body-secondary">
-                              {formatearDuracion(tarea.horasEstimadas) ?? '-'}
+                              {comoHoraMinuto(tarea.horasEstimadas) || '-'}
                             </CTableDataCell>
 
                             <CTableDataCell className="text-body-secondary">{tarea.estado}</CTableDataCell>

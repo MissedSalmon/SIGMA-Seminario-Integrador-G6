@@ -217,6 +217,30 @@ Lo que se decidió:
 puede pegar directo sin pasar por la pantalla. Si se cambia una regla en un lado, hay que
 cambiarla en el otro. Las restricciones en la base quedan para después.
 
+### La duración se carga como un reloj (24/09/2026)
+
+La "Duración prevista" de una tarea de la OT se carga en **hh:mm**, con el `TimeField` de
+HeroUI: dos casilleros, horas y minutos. Antes era una caja de texto libre donde había que
+escribir "30 min" o "1 h 30 min" y el sistema lo interpretaba.
+
+En la base **no cambia nada**: se sigue guardando en horas con decimales
+(`tarea_ot.tarea_hom`), porque así está el modelo. Las cuentas de ida y vuelta están en
+`frontend/src/utils/duracion.js`: `comoHoraMinuto(1.5)` da `"01:30"` y `aHorasDecimales`
+hace lo inverso. Comprobado que el redondeo cierra con la columna `NUMERIC(5,2)`: 3.33 sale
+como "03:20" y vuelve a entrar como 3.33.
+
+**La tabla de tareas del detalle de la OT también muestra hh:mm**, para que se lea igual
+que se carga.
+
+⬜ **El tope pasó a ser 23:59.** Lo impone el campo, que son dos casilleros de reloj. Antes
+se podían cargar hasta 1000 horas, pero ninguna tarea de mantenimiento se acerca a eso. Si
+alguna vez hiciera falta algo más largo, hay que cambiar el campo, no la cuenta.
+
+⬜ **Se dejaron de aceptar las formas escritas a mano** ("30 min", "1 h 30 min", "1,5"). Ya
+no hacen falta: los casilleros sólo toman números y cada uno sabe hasta dónde llega, así
+que no hay nada que interpretar ni que pueda entenderse mal. Por eso la validación quedó en
+una sola línea: que no sea 00:00.
+
 ### La ruta de migas usa HeroUI (23/09/2026)
 
 El "Inicio › Inventario › Tipos de materiales" de arriba de cada pantalla es el
@@ -241,6 +265,11 @@ trabajo). El mapa se busca por la dirección entera y no por el último tramo, p
 
 ⬜ **La última miga la marca el componente solo.** No se le pasa dirección y react-aria ya
 la muestra como "estás acá", sin enlace. Antes había que decirle cuál era la última a mano.
+
+⬜ **El rastro arranca alineado con el título de la pantalla**, a 26px del menú. Hubo que
+ponerle el sangrado en cero a mano: es un `<ol>` y CoreUI le pone `padding-inline-start:
+2rem` a todas las listas, así que arrancaba 34px más a la derecha que el título y dejaba
+17px de aire abajo. Ver la tabla de "cuál de las dos es, importa" más abajo.
 
 ⬜ **Las migas navegan por dentro gracias a `RouterProvider`.** Los enlaces de react-aria
 son `<a>` comunes hasta que se le dice cómo navegar; sin eso, cada clic recargaría la
@@ -356,11 +385,23 @@ Dos cuidados, los dos explicados en el comentario de `heroui.css`:
   flechitas quedaban cuadradas. Se arregla con una regla `revert-layer` acotada al campo
   de fecha y al almanaque.
 
-⬜ **Regla práctica si algo del almanaque se ve raro:** casi siempre es una de estas dos
-cosas, no un problema de HeroUI. Conviene comparar contra
-[heroui.com](https://heroui.com) antes de agregar CSS propio: si hace falta forzar un
-ancho o un relleno para que algo se vea bien, probablemente falte reponer un pedazo del
-reset en lugar de tapar el síntoma.
+⬜ **Cuál de las dos es, importa.** Las dos se arreglan en `heroui.css`, pero en lugares
+distintos, y confundirlos hace perder tiempo:
+
+| Quién mete el estilo de más | Dónde se corrige | Por qué |
+|---|---|---|
+| El **navegador** (el `border: 2px outset` de un `<button>`) | dentro de `@layer base` | Lo de fábrica es lo más débil de todo: una capa ya le gana, y así HeroUI sigue pudiendo poner lo suyo encima. |
+| **CoreUI** (`button{border-radius:0}`, `ol{padding-inline-start:2rem}`) | **fuera** de toda capa | CoreUI no está en capas, y lo no-encapado le gana a lo encapado sin importar la especificidad. Una regla dentro de una capa no lo puede corregir. |
+
+Ya pasó tres veces: el bisel de los botones del almanaque, las esquinas cuadradas de las
+flechitas, y la ruta de migas corrida 34px a la derecha (un `<ol>` con el sangrado que
+CoreUI le pone a todas las listas).
+
+⬜ **Regla práctica si algo de HeroUI se ve raro:** casi siempre es una de esas dos cosas,
+no un problema de la librería. Conviene comparar contra [heroui.com](https://heroui.com)
+antes de agregar CSS propio: si hace falta forzar un ancho, un relleno o un margen para que
+algo se vea bien, probablemente falte reponer un pedazo del reset (o corregir a CoreUI
+fuera de las capas) en lugar de tapar el síntoma.
 
 ### Elegir varias opciones a la vez (15/09/2026)
 

@@ -50,6 +50,7 @@ import { CFormInput, CFormLabel, CFormTextarea } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilCheckAlt, cilX } from '@coreui/icons';
 
+import CampoDuracion from './CampoDuracion.js';
 import CampoFecha from './CampoFecha.js';
 import CampoLista from './CampoLista.js';
 
@@ -197,15 +198,6 @@ export default function Campo({
   }
 
   /*
-   * Las fechas las dibuja CampoFecha (el DatePicker de HeroUI) y no un
-   * <input type="date">. Se delega desde aca, y no cambiando cada formulario,
-   * para que todos sigan escribiendo <Campo tipoHtml="date"> como siempre.
-   *
-   * `min` y `max` pasan a ser los limites del almanaque: los dias que quedan
-   * afuera se ven apagados y no se pueden elegir. Son los mismos que antes iban
-   * al input, asi que ninguna pantalla pierde su restriccion.
-   */
-  /*
    * Elegir una opcion lo dibuja CampoLista (el ComboBox de HeroUI), tanto el
    * desplegable comun como el buscador: antes eran dos cosas distintas (el
    * <select> de CoreUI y react-select) y ahora es una sola.
@@ -233,6 +225,36 @@ export default function Campo({
     );
   }
 
+  /*
+   * La duracion la dibuja CampoDuracion (el TimeField de HeroUI): dos
+   * casilleros de reloj, hh:mm. Igual que la fecha, hacia afuera habla en texto
+   * ("01:30"), asi que el formulario guarda y compara texto.
+   */
+  if (tipo === 'duracion') {
+    return (
+      <CampoDuracion
+        id={id}
+        etiqueta={etiqueta}
+        valor={valor}
+        alCambiar={alCambiar}
+        obligatorio={obligatorio}
+        deshabilitado={deshabilitado}
+        soloLectura={soloLectura}
+        error={error}
+        revisado={revisado}
+      />
+    );
+  }
+
+  /*
+   * Las fechas las dibuja CampoFecha (el DatePicker de HeroUI) y no un
+   * <input type="date">. Se delega desde aca, y no cambiando cada formulario,
+   * para que todos sigan escribiendo <Campo tipoHtml="date"> como siempre.
+   *
+   * `min` y `max` pasan a ser los limites del almanaque: los dias que quedan
+   * afuera se ven apagados y no se pueden elegir. Son los mismos que antes iban
+   * al input, asi que ninguna pantalla pierde su restriccion.
+   */
   if (tipo === 'texto' && tipoHtml === 'date') {
     return (
       <CampoFecha

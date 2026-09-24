@@ -33,7 +33,7 @@ import {
 
 import Aviso from '@/componentes/Aviso.js';
 import Campo from '@/componentes/formulario/Campo.js';
-import { SUGERENCIAS, formatearDuracion, interpretarDuracion } from '@/utils/duracion.js';
+import { aHorasDecimales, comoHoraMinuto } from '@/utils/duracion.js';
 import { hoyTexto } from '@/utils/fechas.js';
 
 /** Quién puede hacerse cargo de una tarea. */
@@ -69,8 +69,8 @@ function comoValores(tarea) {
     idPrestador: tarea.responsable?.tipo === 'Prestador' ? String(tarea.responsable.idPrestador) : '',
     fechaInicio: soloFecha(tarea.fechaInicio),
     fechaFin: soloFecha(tarea.fechaFin),
-    // Se muestra como se escribe ("1 h 30 min"), no como se guarda (1.5).
-    horasEstimadas: formatearDuracion(tarea.horasEstimadas) ?? '',
+    // Se muestra como se carga ("01:30"), no como se guarda (1.5).
+    horasEstimadas: comoHoraMinuto(tarea.horasEstimadas),
     idPlantilla: tarea.idPlantilla ? String(tarea.idPlantilla) : '',
   };
 }
@@ -168,14 +168,12 @@ export default function FormularioTareaOT({
       fallos.fechaFin = 'No puede ser anterior a la fecha de inicio.';
     }
 
-    if (valores.horasEstimadas.trim() !== '') {
-      const horas = interpretarDuracion(valores.horasEstimadas);
-
-      if (horas === null) {
-        fallos.horasEstimadas = 'No se entiende. Escribilo como "30 min", "1 h 30 min" o "2 h".';
-      } else if (horas <= 0 || horas >= 1000) {
-        fallos.horasEstimadas = 'Tiene que ser más de 0 y menos de 1000 horas.';
-      }
+    /*
+     * Los casilleros del reloj no dejan escribir cualquier cosa, asi que lo
+     * unico que puede pasar es que quede en 00:00, que no es una duracion.
+     */
+    if (valores.horasEstimadas !== '' && aHorasDecimales(valores.horasEstimadas) === 0) {
+      fallos.horasEstimadas = 'Tiene que ser más de 00:00.';
     }
 
     setErrores(fallos);
@@ -194,7 +192,7 @@ export default function FormularioTareaOT({
       idPlantilla: valores.idPlantilla ? Number(valores.idPlantilla) : null,
       fechaInicio: valores.fechaInicio || null,
       fechaFin: valores.fechaFin || null,
-      horasEstimadas: interpretarDuracion(valores.horasEstimadas),
+      horasEstimadas: aHorasDecimales(valores.horasEstimadas),
     });
   }
 
@@ -335,13 +333,11 @@ export default function FormularioTareaOT({
         <Campo
           id="horasEstimadas"
           etiqueta="Duración prevista"
+          tipo="duracion"
           valor={valores.horasEstimadas}
           alCambiar={(valor) => cambiar('horasEstimadas', valor)}
-          sugerencias={SUGERENCIAS}
-          placeholder="30 min"
           revisado={revisado}
           error={errores.horasEstimadas}
-          ancho={14}
         />
       </CModalBody>
 
