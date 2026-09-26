@@ -47,19 +47,8 @@ import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
 import EtiquetaEstadoOT from '@/componentes/ordenes/EtiquetaEstadoOT.js';
 import EtiquetaPrioridad from '@/componentes/ordenes/EtiquetaPrioridad.js';
-import FormularioTareaOT from '@/componentes/ordenes/FormularioTareaOT.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
-import {
-  obtenerOrden,
-  actualizarOrden,
-  agregarTarea,
-  actualizarTarea,
-  eliminarTarea,
-  listarPrioridades,
-} from '@/servicios/ordenesTrabajo.js';
-import { listarPlantillas } from '@/servicios/plantillasTareas.js';
-import { listarPrestadores } from '@/servicios/prestadores.js';
-import { listarTecnicos } from '@/servicios/tecnicos.js';
+import { obtenerOrden, actualizarOrden, eliminarTarea } from '@/servicios/ordenesTrabajo.js';
 import { formatearFechaHora } from '@/utils/fechas.js';
 import { comoHoraMinuto } from '@/utils/duracion.js';
 
@@ -96,16 +85,7 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
-  // Lo que se puede elegir al cargar una tarea.
-  const [prioridades, setPrioridades] = useState(['Alta', 'Media', 'Baja']);
-  const [plantillas, setPlantillas] = useState([]);
-  const [tecnicos, setTecnicos] = useState([]);
-  const [prestadores, setPrestadores] = useState([]);
-
-  const [formularioVisible, setFormularioVisible] = useState(false);
-  const [tareaEnEdicion, setTareaEnEdicion] = useState(null);
   const [guardando, setGuardando] = useState(false);
-  const [errorFormulario, setErrorFormulario] = useState('');
 
   const [tareaAEliminar, setTareaAEliminar] = useState(null);
   const [eliminando, setEliminando] = useState(false);
@@ -121,66 +101,7 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
       .finally(() => setCargando(false));
   }, [id]);
 
-  // Los técnicos, los prestadores y las prioridades no dependen de la OT.
-  useEffect(() => {
-    Promise.all([listarPrioridades(), listarTecnicos(), listarPrestadores()])
-      .then(([listaPrioridades, listaTecnicos, listaPrestadores]) => {
-        setPrioridades(listaPrioridades);
-        setTecnicos(listaTecnicos);
-        setPrestadores(listaPrestadores);
-      })
-      .catch((fallo) => setError(fallo.message));
-  }, []);
-
-  /*
-   * Las tareas estándar sí dependen de la OT: son las plantillas cargadas para
-   * el tipo de activo del ticket (HU-12). Si la OT no tiene activo, no hay
-   * plantillas que ofrecer y el desplegable no aparece.
-   */
-  useEffect(() => {
-    const idTipoActivo = orden?.activo?.idTipoActivo;
-    if (!idTipoActivo) return;
-
-    listarPlantillas(idTipoActivo)
-      .then(setPlantillas)
-      .catch(() => setPlantillas([]));
-  }, [orden?.activo?.idTipoActivo]);
-
   const cerrada = orden ? ESTADOS_CERRADOS.includes(orden.estado) : false;
-
-  function abrirAlta() {
-    setTareaEnEdicion(null);
-    setErrorFormulario('');
-    setFormularioVisible(true);
-  }
-
-  function abrirEdicion(tarea) {
-    setTareaEnEdicion(tarea);
-    setErrorFormulario('');
-    setFormularioVisible(true);
-  }
-
-  async function guardarTarea(datos) {
-    setGuardando(true);
-    setErrorFormulario('');
-
-    try {
-      const actualizada = tareaEnEdicion
-        ? await actualizarTarea(orden.id, tareaEnEdicion.idTarea, datos)
-        : await agregarTarea(orden.id, datos);
-
-      setOrden(actualizada);
-      setFormularioVisible(false);
-      mostrarToast({
-        tipo: 'exito',
-        mensaje: tareaEnEdicion ? 'Se guardaron los cambios de la tarea.' : 'Se agregó la tarea.',
-      });
-    } catch (fallo) {
-      setErrorFormulario(fallo.message);
-    } finally {
-      setGuardando(false);
-    }
-  }
 
   async function confirmarEliminar() {
     setEliminando(true);
@@ -343,10 +264,10 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
               <CCardHeader className="d-flex flex-wrap justify-content-between align-items-center gap-2">
                 <span className="fw-semibold">Tareas</span>
                 {!cerrada && (
-                  <CButton color="primary" size="sm" onClick={abrirAlta}>
+                  <BotonEnlace href={`/ordenes-trabajo/${orden.id}/tareas/agregar`} tamano="sm">
                     <CIcon icon={cilPlus} size="sm" className="me-1" />
                     Agregar
-                  </CButton>
+                  </BotonEnlace>
                 )}
               </CCardHeader>
               <CCardBody>
@@ -417,17 +338,17 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
 
                             {!cerrada && (
                               <CTableDataCell className="text-end text-nowrap">
-                                <CButton
+                                <BotonEnlace
+                                  href={`/ordenes-trabajo/${orden.id}/tareas/${tarea.idTarea}/editar`}
                                   color="secondary"
-                                  variant="outline"
-                                  size="sm"
+                                  variante="outline"
+                                  tamano="sm"
                                   className="me-2"
-                                  onClick={() => abrirEdicion(tarea)}
                                   title="Editar la tarea"
                                   aria-label={`Editar la tarea ${tarea.idTarea}`}
                                 >
                                   <CIcon icon={cilPencil} size="sm" />
-                                </CButton>
+                                </BotonEnlace>
                                 <CButton
                                   color="danger"
                                   variant="outline"
@@ -448,26 +369,6 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
                 )}
               </CCardBody>
             </CCard>
-
-            {/*
-              La ventana de la tarea se monta recién al abrirla y se desmonta
-              al cerrarla: así las cajas arrancan siempre con la tarea que se
-              eligió, sin tener que vaciarlas a mano.
-            */}
-            {formularioVisible && (
-            <FormularioTareaOT
-              visible
-              tarea={tareaEnEdicion}
-              prioridades={prioridades}
-              plantillas={plantillas}
-              tecnicos={tecnicos}
-              prestadores={prestadores}
-              guardando={guardando}
-              error={errorFormulario}
-              onGuardar={guardarTarea}
-              onCancelar={() => setFormularioVisible(false)}
-            />
-            )}
 
             <DialogoEliminar
               visible={Boolean(tareaAEliminar)}

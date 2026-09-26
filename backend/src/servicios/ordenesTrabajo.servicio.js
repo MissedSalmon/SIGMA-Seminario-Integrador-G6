@@ -246,9 +246,20 @@ function aOrden(fila, asignaciones = []) {
   const areas = espacio?.area ?? [];
   const autorizado = ticket?.autorizado ?? null;
 
+  /*
+   * Las tareas van por prioridad: primero las Alta, después las Media y al
+   * final las Baja (26/09/2026). Dentro de la misma prioridad, por número.
+   */
+  const lugarDe = (prioridad) => {
+    const lugar = PRIORIDADES.indexOf(prioridad);
+    return lugar === -1 ? PRIORIDADES.length : lugar;
+  };
+
   const tareas = (fila.tarea_ot ?? [])
     .map((tarea) => aTarea(tarea, asignaciones))
-    .sort((una, otra) => una.idTarea - otra.idTarea);
+    .sort(
+      (una, otra) => lugarDe(una.prioridad) - lugarDe(otra.prioridad) || una.idTarea - otra.idTarea
+    );
 
   return {
     id: fila.ot_id,
@@ -520,8 +531,12 @@ async function validarTarea(datos, fechasActuales = {}) {
     if (!data) throw datoInvalido(`No existe el prestador de servicio ${idPrestador}.`);
   }
 
+  // La tarea estándar es obligatoria (26/09/2026).
   const idPlantilla = datos.idPlantilla ? Number(datos.idPlantilla) : null;
-  if (idPlantilla !== null && !Number.isInteger(idPlantilla)) {
+  if (idPlantilla === null) {
+    throw datoInvalido('Hay que elegir la tarea estándar.');
+  }
+  if (!Number.isInteger(idPlantilla)) {
     throw datoInvalido('La plantilla elegida no es válida.');
   }
 

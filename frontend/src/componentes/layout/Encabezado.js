@@ -79,6 +79,20 @@ function armarMigas(direccion) {
 
     if (/^\d+$/.test(tramo) || tramos[indice + 1] === 'editar') return;
 
+    /*
+     * Las tareas de una OT no tienen listado propio: viven en el detalle de la
+     * OT. Por eso en /ordenes-trabajo/5/tareas/agregar el tramo "tareas" se
+     * muestra como la OT y lleva a su detalle.
+     */
+    if (tramo === 'tareas' && tramos[indice - 2] === 'ordenes-trabajo') {
+      migas.push({
+        texto: `Orden de trabajo #${tramos[indice - 1]}`,
+        direccion: `/ordenes-trabajo/${tramos[indice - 1]}`,
+        ultima: false,
+      });
+      return;
+    }
+
     migas.push({
       texto: NOMBRES[acumulada] ?? NOMBRES_COMUNES[tramo] ?? tramo,
       direccion: acumulada,

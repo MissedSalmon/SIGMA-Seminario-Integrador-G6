@@ -176,7 +176,7 @@ Agrupadas por tema, para tener el mapa general:
 | **Remito** | Comprobante del ingreso de materiales al depósito. |
 | **Stock** | Cantidad disponible de un material. |
 | **Stock mínimo** | Cantidad mínima que hay que tener. Al llegar, el sistema avisa. |
-| **Tarea (de OT)** | Actividad concreta dentro de una OT. Cuando todas están completas, la OT se finaliza. |
+| **Tarea (de OT)** | Actividad concreta dentro de una OT. Cuando todas están completas, la OT se finaliza. Siempre sale de una tarea estándar (plantilla) del tipo de activo; su descripción se puede ajustar (decisión del 26/09/2026). |
 | **Técnico** | Personal de la facultad que ejecuta las tareas. |
 | **Ticket** | Registro formal de una necesidad de mantenimiento. Es la puerta de entrada al sistema. |
 | **Tipo de activo** | Categoría de activos: aires acondicionados, mobiliario, luminarias. |
