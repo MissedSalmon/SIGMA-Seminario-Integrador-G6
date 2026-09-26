@@ -31,6 +31,10 @@ usa una versión distinta, aparecen errores que no se pueden reproducir.
 | **@coreui/react** | 5.13.0 |
 | **@coreui/coreui** | 5.9.0 |
 | **@coreui/icons / icons-react** | 3.1.0 / 2.3.0 |
+| **@heroui/react** | 3.2.6 (sólo el campo de fecha) |
+| **tailwindcss / @tailwindcss/postcss** | 4 (sólo para compilar HeroUI) |
+| **react-aria / react-aria-components** | 3.52.1 / 1.21.1 (los pide HeroUI) |
+| **@internationalized/date** | 3.12.4 (los pide HeroUI) |
 
 Decisiones tomadas:
 
@@ -154,8 +158,37 @@ Cada `<Campo>` declara su `ancho` en caracteres y **esa medida no cambia con lo 
 escribe**. Antes la caja crecía con el texto, y al escribir un nombre largo se corrían de
 lugar todos los campos que seguían. El que no declara nada mide 16 caracteres.
 
-Las fechas y los `tipo="area"` no usan `ancho`: la fecha la dibuja el navegador y siempre
-mide lo mismo, y el área ocupa el renglón entero (sí crece a lo alto).
+Las fechas y los `tipo="area"` no usan `ancho`: la fecha siempre mide lo mismo
+(dd/mm/aaaa) y su ancho lo pone `globals.css`, y el área ocupa el renglón entero (sí
+crece a lo alto).
+
+### Los campos no llevan descripción (23/09/2026)
+
+Debajo de la caja de un campo **sólo aparece el motivo cuando algo está mal**. No va una
+línea gris explicando para qué es el campo: eso lo dice la etiqueta.
+
+Antes había 28 de esas descripciones repartidas por los formularios ("No se puede repetir:
+identifica al activo", "Un material se consume; una herramienta se presta", etc.). Se
+sacaron todas, junto con la prop `ayuda` de `Campo`, `CampoFecha` y `SeleccionMultiple`,
+que era la que las dibujaba. Si algún día se quieren volver a poner hay que reponer la
+prop en esos tres componentes.
+
+⬜ **La primera pasada se quedó corta.** Tres descripciones sobrevivieron porque estaban
+escritas a mano (no como prop `ayuda`) y en pantallas que no entraron en la revisión: las
+dimensiones de un espacio, el modal de editar la descripción de una OT y el modal de
+validar un ticket. Se limpiaron el 24/09/2026. **Los modales hay que abrirlos para
+revisarlos**: un recorrido que sólo carga pantallas no los ve.
+
+⬜ **Quedaron cinco avisos afuera que no eran descripciones**, sino información que no se
+lee en ningún otro lado. Están anotados como pendientes de decidir:
+
+| Dónde | Qué decía |
+|---|---|
+| Activos, Espacio | La fecha de la última reubicación del activo. |
+| Activos, Estado | Que ese estado lo maneja la OT y por eso está deshabilitado. |
+| Inventario, Stock | Que el stock lo mueven los préstamos, no el formulario. |
+| Usuarios autorizados, Área | El aviso de que no hay áreas libres, cuando la lista viene vacía. |
+| Tickets, modal Validar | En qué estado está hoy el activo ("Ahora está en Operativo"). |
 
 ### Las reglas de DNI, CUIL y teléfono (15/09/2026)
 
@@ -191,11 +224,223 @@ Lo que se decidió:
 puede pegar directo sin pasar por la pantalla. Si se cambia una regla en un lado, hay que
 cambiarla en el otro. Las restricciones en la base quedan para después.
 
+### Las cantidades se cargan con + y - (24/09/2026)
+
+Un campo de **cantidad** se pide con `<Campo tipo="numero">` y lo dibuja el `NumberField` de
+HeroUI: **+ a la izquierda, el número en el medio, - a la derecha**. Así se puede cargar sin
+teclear. Hoy lo usa el "Stock mínimo" del inventario.
+
+⬜ **El orden de los botones es el que se pidió.** Lo más habitual es el revés
+(`- número +`); si se quiere cambiar, alcanza con dar vuelta las dos líneas del componente,
+porque el lugar lo decide el orden en que están escritas y no el CSS.
+
+**Los botones respetan el `min` y el `max`** del campo: con `min="0"`, al llegar a 0 el
+botón `-` se apaga solo. Igual se puede escribir a mano.
+
+⬜ **Es a pedido y no automático para todo `tipoHtml="number"`.** Hay números que no son
+cantidades: un **legajo** se escribe con dígitos pero no tiene sentido subirlo de a uno, así
+que sigue siendo un campo de texto común. Quedan afuera a propósito:
+
+| Campo | Por qué |
+|---|---|
+| Legajo (técnicos) | Es un identificador, no una cantidad. |
+| Dimensiones de un espacio (ancho × largo) | Son metros con dos decimales, así que cada clic subiría 0,01; y son dos cajitas unidas con "×" y "m", donde los botones no entran. |
+
+### La duración se carga como un reloj (24/09/2026)
+
+La "Duración prevista" de una tarea de la OT se carga en **hh:mm**, con el `TimeField` de
+HeroUI: dos casilleros, horas y minutos. Antes era una caja de texto libre donde había que
+escribir "30 min" o "1 h 30 min" y el sistema lo interpretaba.
+
+En la base **no cambia nada**: se sigue guardando en horas con decimales
+(`tarea_ot.tarea_hom`), porque así está el modelo. Las cuentas de ida y vuelta están en
+`frontend/src/utils/duracion.js`: `comoHoraMinuto(1.5)` da `"01:30"` y `aHorasDecimales`
+hace lo inverso. Comprobado que el redondeo cierra con la columna `NUMERIC(5,2)`: 3.33 sale
+como "03:20" y vuelve a entrar como 3.33.
+
+**La tabla de tareas del detalle de la OT también muestra hh:mm**, para que se lea igual
+que se carga.
+
+⬜ **El tope pasó a ser 23:59.** Lo impone el campo, que son dos casilleros de reloj. Antes
+se podían cargar hasta 1000 horas, pero ninguna tarea de mantenimiento se acerca a eso. Si
+alguna vez hiciera falta algo más largo, hay que cambiar el campo, no la cuenta.
+
+⬜ **Se dejaron de aceptar las formas escritas a mano** ("30 min", "1 h 30 min", "1,5"). Ya
+no hacen falta: los casilleros sólo toman números y cada uno sabe hasta dónde llega, así
+que no hay nada que interpretar ni que pueda entenderse mal. Por eso la validación quedó en
+una sola línea: que no sea 00:00.
+
+### La ruta de migas usa HeroUI (23/09/2026)
+
+El "Inicio › Inventario › Tipos de materiales" de arriba de cada pantalla es el
+`Breadcrumbs` de HeroUI. Antes era el de CoreUI. Está en un solo lugar,
+`frontend/src/componentes/layout/Encabezado.js`, así que sale igual en las 29 pantallas.
+
+Lo que cambia para quien lo lee: el separador ahora es una flechita (`›`), que es la de
+HeroUI, en lugar de la barra (`/`) de CoreUI. **Los colores y el tamaño son los mismos que
+antes** (1.25rem, semi-negrita, los enlaces en el teal institucional y la pantalla actual en
+gris), y de paso se arreglaron dos cosas:
+
+- **Todos los enlaces se ven igual.** Antes "Inicio" quedaba subrayado y los demás no,
+  porque el `text-decoration-none` caía en el `<li>` y no en el enlace. Ahora el subrayado
+  aparece sólo al pasar por encima.
+- **`/ordenes-trabajo` mostraba "ordenes-trabajo"**, en minúscula y con guión, porque
+  faltaba en el mapa `NOMBRES`.
+
+⬜ **Cada pantalla nueva se anota en `NOMBRES`**, con el mismo texto que su título. Si no,
+la miga muestra el tramo de la dirección tal cual (que es lo que pasaba con las órdenes de
+trabajo). El mapa se busca por la dirección entera y no por el último tramo, para que
+"tipos" pueda significar una cosa en espacios y otra en inventario.
+
+⬜ **La última miga la marca el componente solo.** No se le pasa dirección y react-aria ya
+la muestra como "estás acá", sin enlace. Antes había que decirle cuál era la última a mano.
+
+⬜ **El rastro arranca alineado con el título de la pantalla**, a 26px del menú. Hubo que
+ponerle el sangrado en cero a mano: es un `<ol>` y CoreUI le pone `padding-inline-start:
+2rem` a todas las listas, así que arrancaba 34px más a la derecha que el título y dejaba
+17px de aire abajo. Ver la tabla de "cuál de las dos es, importa" más abajo.
+
+⬜ **Las migas navegan por dentro gracias a `RouterProvider`.** Los enlaces de react-aria
+son `<a>` comunes hasta que se le dice cómo navegar; sin eso, cada clic recargaría la
+pantalla entera en lugar de moverse como un `<Link>` de Next. Comprobado: cero recargas al
+hacer clic.
+
+### Elegir una opción usa HeroUI (23/09/2026)
+
+Todos los selectores de SIGMA son `frontend/src/componentes/formulario/CampoLista.js`,
+que es el **ComboBox de HeroUI**. Reemplaza a los dos que había: el `<select>` de CoreUI
+(18 campos) y `react-select` (el buscador de activos del ticket). Los 16 desplegables de
+las barras de filtros de las tablas también son este componente.
+
+**Qué gana:** la lista **se filtra escribiendo**, que es lo que hacía falta en las listas
+largas (espacios, activos). El filtrado lo hace react-aria solo: alcanza con **no** pasarle
+`items` y entonces filtra la lista que le dimos comparando lo tecleado con el texto de cada
+opción. No se puede escribir cualquier cosa: si lo escrito no está en la lista, al salir del
+campo vuelve a lo que había.
+
+**Las pantallas no cambiaron.** Se sigue escribiendo `<Campo tipo="lista">` (o
+`tipo="buscador"`) como siempre: `Campo.js` delega solo. Y hacia afuera el campo sigue
+hablando en texto, igual que el `<select>`: lo que llega a `alCambiar` es siempre una cadena
+(`"5"`, o `""` si no hay nada elegido), así que los formularios que hacían `Number(idTipo)`
+andan sin tocar nada.
+
+⬜ **Las claves de las opciones se pasan a texto a propósito.** react-aria compara la clave
+elegida con la de cada opción, y para él un `5` no es un `"5"`. Si no se convierten, al
+editar un registro el campo aparece vacío aunque el valor esté.
+
+**Cómo se vacía:** un `<select>` tenía una opción vacía arriba; acá eso se pide con
+`textoVacio`. Es lo que usan los filtros para su "Todos".
+
+**Los colores son los de SIGMA**, no los de HeroUI, y salen de las mismas variables
+`--field-*` que usa el campo de fecha (ver la sección de abajo). La lista desplegada se
+dibuja al final del `<body>`, así que sus colores van aparte, con la clase
+`.sigma-lista-popover`: fondo blanco y la opción bajo el puntero en el celeste suave de la
+marca, el mismo de las filas de las tablas.
+
+⬜ **El ancho de los filtros no se fija en el componente**, se deja en `globals.css` con un
+`flex` que se encoge. Con un ancho fijo la barra se iba a un renglón de más en las pantallas
+medianas, y la regla 2 del CLAUDE.md pide que entre en una sola línea.
+
+⬜ **`react-select` quedó sin usar.** Sigue en `frontend/package.json` porque sacar una
+dependencia se avisa al equipo (regla 6). Se puede borrar. Con el cambio se fue de paso un
+aviso de hidratación de React que tiraba `/tickets/agregar`: react-select generaba ids
+distintos en el servidor y en el navegador.
+
+### El campo de fecha usa HeroUI (23/09/2026)
+
+Todas las fechas de SIGMA se cargan con `frontend/src/componentes/formulario/CampoFecha.js`,
+que es el `DatePicker` de **HeroUI v3**. Antes era el `<input type="date">` del navegador.
+
+**Por qué se cambió:** ese input lo dibuja cada navegador a su manera. El almanaque de
+Chrome no se parece al de Firefox ni al del celular, y no se le puede dar el estilo de la
+plantilla. El de HeroUI se ve igual en todas partes, sale en castellano (`es-AR`, con los
+casilleros en orden dd/mm/aaaa) y trae selector de año, que hacía falta para una fecha de
+nacimiento.
+
+**Las pantallas no cambiaron.** Se sigue escribiendo `<Campo tipoHtml="date">` como
+siempre: `Campo.js` delega solo en `CampoFecha`. Hacia afuera el campo sigue hablando en
+texto `"2026-09-14"`, igual que antes, así que los formularios guardan y comparan texto
+como venían haciendo. La traducción al `CalendarDate` que pide HeroUI la hacen
+`aFechaCalendario` y `deFechaCalendario`, en `frontend/src/utils/fechas.js`.
+
+**Los límites de cada fecha** (`min` y `max` del `<Campo>`, en el mismo formato de texto)
+apagan los días que no se pueden elegir en el almanaque:
+
+| Pantalla | Campo | Límite |
+|---|---|---|
+| Activos | Fecha de alta | No posterior a hoy: todavía no pasó. |
+| Usuarios autorizados | Fecha de nacimiento | Hasta hoy menos 18 años. El almanaque abre directamente en ese año. |
+| Inventario | Vence el | **No anterior a hoy** (decisión del 23/09/2026): un material no se carga ya vencido. Editando uno que ya estaba vencido, el mínimo es su propia fecha, para poder guardar los demás cambios. |
+| Órdenes de trabajo | Inicio y fin previstos | No anteriores a hoy, y el fin no antes del inicio. |
+| Tickets y Órdenes | Filtros Desde / Hasta | El rango no se puede dar vuelta: el "Desde" no pasa del "Hasta" y al revés. |
+
+⬜ **El límite del almanaque es una ayuda, no el control.** Los formularios son
+`noValidate` y la fecha se puede tipear a mano en los casilleros, así que el que corta de
+verdad sigue siendo la validación del formulario. Toda fecha con límite tiene las dos
+cosas.
+
+⬜ **En `CampoFecha.js` los límites se pasan dos veces a propósito**, al `DatePicker` y al
+`Calendar`. No está repetido por descuido: el `CalendarRoot` de HeroUI no hereda el
+`minValue`/`maxValue` del `DatePicker`, usa los suyos (1900 a 2099) si no se los pasan, y
+entonces el almanaque deja elegir cualquier día. Si se saca una de las dos, el límite deja
+de cumplirse de un lado.
+
+#### Lo que hubo que hacer para que HeroUI conviva con CoreUI
+
+HeroUI está hecho con **Tailwind v4** y su CSS viene sin compilar, así que se agregó
+`frontend/postcss.config.mjs`. Lo único que se compila es `frontend/src/app/heroui.css`;
+el resto de SIGMA sigue siendo CoreUI + `globals.css`, **sin Tailwind**.
+
+Dos cuidados, los dos explicados en el comentario de `heroui.css`:
+
+- **El reset de Tailwind queda afuera.** El import normal de HeroUI arrastra el
+  "preflight", un reset global que pone `margin:0`, `padding:0` y `border:0` en todo y
+  aplana los títulos. Sobre Bootstrap eso desarma **todas** las pantallas, no sólo las
+  fechas. Por eso se importan a mano las partes de Tailwind que hacen falta y se deja el
+  preflight afuera.
+- **Hay que reponerle a HeroUI el reset que espera.** HeroUI no dibuja bordes ni rellenos
+  en sus botones: da por hecho que el preflight ya los puso en cero. Sin preflight, los
+  botones del almanaque se quedaban con lo de fábrica del navegador (`border: 2px outset`,
+  el borde biselado de Windows 95, y `padding: 1px 6px`), y la flechita de mes y la
+  pastilla del año se veían con un aro gris cortado y fondo gris. Se repone el reset, pero
+  **acotado al campo de fecha y al almanaque**, y sólo con las dos reglas que HeroUI usa.
+  Va dentro de `layer(base)`, que es donde iría el preflight: así le gana a lo de fábrica
+  del navegador pero **pierde** contra la capa de componentes de HeroUI, que es la que
+  después pone el relleno y las esquinas de cada cosa. Fuera de las capas le ganaría
+  también a HeroUI y le borraría esos rellenos.
+- **Que CoreUI no le pise las esquinas.** CoreUI no está dentro de ninguna `@layer`, y en
+  CSS lo que no está en capas le gana a lo que sí está, sin importar la especificidad.
+  Por eso su `button{border-radius:0}` le ganaba al `rounded-2xl` de HeroUI y las
+  flechitas quedaban cuadradas. Se arregla con una regla `revert-layer` acotada al campo
+  de fecha y al almanaque.
+
+⬜ **Cuál de las dos es, importa.** Las dos se arreglan en `heroui.css`, pero en lugares
+distintos, y confundirlos hace perder tiempo:
+
+| Quién mete el estilo de más | Dónde se corrige | Por qué |
+|---|---|---|
+| El **navegador** (el `border: 2px outset` de un `<button>`) | dentro de `@layer base` | Lo de fábrica es lo más débil de todo: una capa ya le gana, y así HeroUI sigue pudiendo poner lo suyo encima. |
+| **CoreUI** (`button{border-radius:0}`, `ol{padding-inline-start:2rem}`) | **fuera** de toda capa | CoreUI no está en capas, y lo no-encapado le gana a lo encapado sin importar la especificidad. Una regla dentro de una capa no lo puede corregir. |
+
+Ya pasó tres veces: el bisel de los botones del almanaque, las esquinas cuadradas de las
+flechitas, y la ruta de migas corrida 34px a la derecha (un `<ol>` con el sangrado que
+CoreUI le pone a todas las listas).
+
+⬜ **Regla práctica si algo de HeroUI se ve raro:** casi siempre es una de esas dos cosas,
+no un problema de la librería. Conviene comparar contra [heroui.com](https://heroui.com)
+antes de agregar CSS propio: si hace falta forzar un ancho, un relleno o un margen para que
+algo se vea bien, probablemente falte reponer un pedazo del reset (o corregir a CoreUI
+fuera de las capas) en lugar de tapar el síntoma.
+
 ### Elegir varias opciones a la vez (15/09/2026)
 
 `frontend/src/componentes/formulario/SeleccionMultiple.js` es un desplegable donde cada
 opción es una casilla para tildar, con una casilla arriba de todo que marca y desmarca
-todas juntas. Lo usa el formulario de técnicos para las especialidades.
+todas juntas.
+
+⬜ **Hoy no lo usa ninguna pantalla** (comprobado el 23/09/2026). El formulario de técnicos
+terminó mostrando las especialidades como una grilla de casillas a la vista, sin
+desplegable. Queda para decidir si se borra o si se vuelve a usar.
 
 Se armó a mano porque el `CMultiSelect` de CoreUI **es de la versión paga**: está hecho
 con `CDropdown` y `CFormCheck`. El menú no se cierra al tildar (`autoClose="outside"`).

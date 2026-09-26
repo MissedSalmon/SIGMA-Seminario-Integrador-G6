@@ -10,8 +10,9 @@
  * en un alta comun no hace falta.
  *
  * El encabezado es el titulo y nada mas: no lleva una linea de explicacion
- * abajo. Lo que hay que aclarar de un campo va en la ayuda de ese campo
- * (ver src/componentes/formulario/Campo.js), donde se lee justo cuando sirve.
+ * abajo. Los campos tampoco llevan descripcion (decision del 23/09/2026): la
+ * etiqueta dice que va en cada uno, y lo unico que aparece debajo de la caja es
+ * el motivo cuando algo esta mal.
  */
 import CIcon from '@coreui/icons-react';
 import { cilPlus } from '@coreui/icons';

@@ -4,12 +4,14 @@
  * Todas las pantallas quedan dentro del panel de administracion (barra
  * lateral + encabezado + pie), asi que el armazon se aplica una sola vez aca.
  *
- * El orden de los estilos importa: primero CoreUI, despues globals.css, que
- * es donde ajustamos los colores de SIGMA sobre la plantilla.
+ * El orden de los estilos importa: primero CoreUI, despues heroui.css (que
+ * solo viste el campo de fecha) y al final globals.css, que es donde
+ * ajustamos los colores de SIGMA sobre la plantilla.
  */
 import { Inter } from 'next/font/google';
 
 import '@coreui/coreui/dist/css/coreui.min.css';
+import './heroui.css';
 import './globals.css';
 
 import LayoutAdmin from '@/componentes/layout/LayoutAdmin.js';

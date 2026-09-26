@@ -1,0 +1,150 @@
+/*
+  Estilos de HeroUI, que en SIGMA visten cuatro campos: la fecha
+  (componentes/formulario/CampoFecha.js), la duracion (CampoDuracion.js), la
+  cantidad con + y - (CampoNumero.js) y el de elegir una opcion
+  (CampoLista.js).
+
+  Por que este archivo existe y no alcanza con importar el CSS del paquete:
+
+  1. HEROUI VIENE SIN COMPILAR. Su CSS esta escrito con @apply de Tailwind v4,
+     asi que hay que pasarlo por Tailwind. Eso lo hace postcss.config.mjs.
+
+  2. EL RESET DE TAILWIND NO ENTRA. El import normal de HeroUI es
+     @import "tailwindcss", que arrastra el "preflight": un reset global que
+     pone margin:0, padding:0 y border:0 en todos los elementos y aplana los
+     titulos (h1..h6 con font-size:inherit). SIGMA es CoreUI + Bootstrap: ese
+     reset desarma TODAS las pantallas, no solo las fechas.
+
+     Por eso abajo se importan a mano las dos partes de Tailwind que si hacen
+     falta (theme y utilities) y se deja afuera la tercera (preflight). Es la
+     forma que Tailwind v4 documenta para esto.
+
+  3. NO SE ESCANEA CODIGO. Va "source(none)" porque HeroUI v3 no usa clases de
+     Tailwind en su JavaScript: pone nombres propios (.date-picker,
+     .calendar__cell) y todo su estilo sale del @apply de su propio CSS. No hay
+     nada que buscar en nuestros archivos, y asi tampoco se generan utilidades
+     que podrian chocar con las clases de CoreUI.
+
+  El orden de capas y los imports de HeroUI de aca abajo son los mismos que
+  trae su index.css. Si algun dia se actualiza el paquete, conviene comparar
+  contra node_modules/@heroui/styles/dist/index.css.
+*/
+
+@layer theme, base, components, utilities;
+
+/* Tailwind v4, sin el preflight (ver punto 2 de arriba). */
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities) source(none);
+@import 'tw-animate-css';
+
+/* HeroUI */
+@import '@heroui/styles/base' layer(base);
+@import '@heroui/styles/base/scrollbar.css' layer(base);
+@import '@heroui/styles/components/index.css' layer(components);
+@import '@heroui/styles/themes/default' layer(theme);
+@import '@heroui/styles/utilities';
+@import '@heroui/styles/variants';
+
+/*
+  ---------- El reset que HeroUI necesita, pero solo para el ----------
+
+  HeroUI da por hecho que el preflight de Tailwind ya corrio. No dibuja bordes
+  ni rellenos en sus botones: cuenta con que el reset los haya puesto en cero
+  antes. Como aca el preflight quedo afuera (punto 2 de arriba), sus botones
+  se quedaban con lo que el navegador les pone de fabrica:
+  `border: 2px outset` (el borde biselado de los botones de Windows 95, claro
+  arriba y oscuro abajo) y `padding: 1px 6px`. Por eso la flechita de mes y la
+  pastilla del anio se veian con un aro gris cortado y el fondo gris.
+
+  Asi que se repone el reset, pero ACOTADO a los campos de HeroUI y a sus
+  desplegables, y con las dos unicas reglas de preflight que HeroUI usa. Al
+  resto de la pantalla (que es CoreUI) no la toca.
+
+  Va dentro de layer(base) a proposito, que es donde el preflight iria: asi le
+  gana a lo de fabrica del navegador pero PIERDE contra la capa de componentes
+  de HeroUI, que es la que despues pone el relleno y las esquinas de cada cosa
+  (el p-1 del boton del almanaque, el rounded-2xl de las flechitas). Si esto
+  estuviera fuera de las capas le ganaria tambien a HeroUI y le borraria esos
+  rellenos.
+*/
+@layer base {
+  .sigma-fecha :is(button, input, select, textarea),
+  .sigma-duracion :is(button, input, select, textarea),
+  .sigma-numero :is(button, input, select, textarea),
+  .sigma-lista :is(button, input, select, textarea),
+  .date-picker__popover :is(button, input, select, textarea),
+  .sigma-lista-popover :is(button, input, select, textarea) {
+    margin: 0;
+    padding: 0;
+    border: 0 solid;
+    border-radius: 0;
+    background-color: transparent;
+    font: inherit;
+    letter-spacing: inherit;
+    color: inherit;
+    opacity: 1;
+  }
+
+  /* El almanaque es una <table>, y sus celdas tampoco llevan borde ni relleno. */
+  .date-picker__popover :is(table, thead, tbody, tr, th, td) {
+    margin: 0;
+    padding: 0;
+    border: 0 solid;
+    border-collapse: collapse;
+    text-indent: 0;
+    font-weight: inherit;
+    text-align: inherit;
+  }
+
+}
+
+/*
+  ---------- Lo que CoreUI le pisa a HeroUI ----------
+
+  CoreUI no esta dentro de ninguna @layer, y en CSS lo que NO esta en capas le
+  gana a lo que si esta, sin importar la especificidad. Por eso estas dos reglas
+  van a proposito fuera de toda capa: es la unica forma de ganarle.
+
+  Ojo con la diferencia respecto del reset de mas arriba: ese repone lo que trae
+  el NAVEGADOR de fabrica, y para eso una capa alcanza. Estas dos, en cambio,
+  corrigen lo que pone CoreUI, y contra eso una capa no puede.
+
+  1. LAS ESQUINAS DE LOS BOTONES. El `button{border-radius:0}` de CoreUI le gana
+     al rounded-2xl de HeroUI y las flechitas del almanaque quedan cuadradas.
+     "revert-layer" quiere decir "para esta propiedad, olvidate de lo que dice
+     CoreUI y usa lo que dicen las capas", o sea HeroUI.
+*/
+.sigma-fecha button,
+.sigma-duracion button,
+.sigma-numero button,
+.sigma-lista button,
+.date-picker__popover button,
+.sigma-lista-popover button {
+  border-radius: revert-layer;
+}
+
+/*
+  2. EL SANGRADO DE LA RUTA DE MIGAS. El rastro es un <ol>, y CoreUI le pone a
+     todas las listas `padding-inline-start: 2rem` y `margin-bottom: 1rem`. Con
+     eso el rastro arrancaba 34px mas a la derecha que el titulo de la pantalla
+     (o sea, separado del menu) y dejaba 17px de aire abajo.
+
+     Aca va el valor directo y no "revert-layer", justamente porque no hay nada
+     atras: HeroUI no le pone relleno al rastro, asi que revertir lo dejaria con
+     los 40px que le pone el navegador a un <ol>, que es peor.
+*/
+.sigma-migas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+  Los desplegables se dibujan al final del <body>, fuera del panel de CoreUI, y
+  ahi el sidebar y el header de la plantilla llegan hasta z-index 1030. HeroUI
+  publica su propio nivel en --z-index-overlay (100000), asi que se usa ese.
+*/
+.date-picker__popover,
+.sigma-lista-popover {
+  z-index: var(--z-index-overlay, 100000);
+}

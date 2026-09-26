@@ -46,10 +46,14 @@
  *   />
  */
 import { useEffect, useLayoutEffect, useRef } from 'react';
-import { CFormInput, CFormLabel, CFormSelect, CFormTextarea } from '@coreui/react';
+import { CFormInput, CFormLabel, CFormTextarea } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilCheckAlt, cilX } from '@coreui/icons';
-import Select from 'react-select';
+
+import CampoDuracion from './CampoDuracion.js';
+import CampoNumero from './CampoNumero.js';
+import CampoFecha from './CampoFecha.js';
+import CampoLista from './CampoLista.js';
 
 /** Ancho de la caja, en caracteres, cuando el campo no pide otro. */
 const ANCHO_POR_DEFECTO = 16;
@@ -89,32 +93,18 @@ function quitarDigito(texto, cual) {
 }
 
 /**
- * Los caracteres que ocupa una fecha escrita (dd/mm/aaaa). Una caja de fecha
- * mide siempre lo mismo: el navegador dibuja el dia, el mes y el anio, no lo
- * que uno escribe.
- */
-const ANCHO_FECHA = 12;
-
-/**
  * Lo que ocupa en la caja todo lo que no es texto, en rem: el padding de CoreUI
- * (0.75rem de cada lado), el lugar fijo de la marca (que se reserva siempre
- * para que la caja no pegue un salto cuando la marca aparece) y, cuando hace
- * falta, el dibujo que pone el navegador (la flechita del desplegable, el
- * almanaque de la fecha).
+ * (0.75rem de cada lado) y el lugar fijo de la marca, que se reserva siempre
+ * para que la caja no pegue un salto cuando la marca aparece.
+ *
+ * Los desplegables y las fechas no estan aca: los dibujan CampoLista y
+ * CampoFecha, y cada uno se encarga de su propio ancho.
  */
-const LUGAR_EXTRA = {
-  lista: 4.5,
-  fecha: 5.5,
-  texto: 2.75,
-};
+const LUGAR_EXTRA = 2.75;
 
 /** El ancho de la caja: los caracteres que pide el campo mas el lugar extra. */
-function anchoDeLaCaja(ancho, forma) {
-  if (forma === 'fecha') {
-    return `calc(${ANCHO_FECHA}ch + ${LUGAR_EXTRA.fecha}rem)`;
-  }
-
-  return `calc(${ancho}ch + ${LUGAR_EXTRA[forma]}rem)`;
+function anchoDeLaCaja(ancho) {
+  return `calc(${ancho}ch + ${LUGAR_EXTRA}rem)`;
 }
 
 export default function Campo({
@@ -127,13 +117,13 @@ export default function Campo({
   formato,
   opciones = [],
   placeholder = '',
-  ayuda = '',
   obligatorio = false,
   deshabilitado = false,
   soloLectura = false,
   error = '',
   revisado = false,
   ancho = ANCHO_POR_DEFECTO,
+  sugerencias,
   maxLength,
   min,
   max,
@@ -208,10 +198,109 @@ export default function Campo({
     lugarDelCursor.current = lugar;
   }
 
+  /*
+   * Elegir una opcion lo dibuja CampoLista (el ComboBox de HeroUI), tanto el
+   * desplegable comun como el buscador: antes eran dos cosas distintas (el
+   * <select> de CoreUI y react-select) y ahora es una sola.
+   *
+   * `textoVacio` es la opcion que deja el campo sin elegir. Es el reemplazo de
+   * la <option value=""> que encabezaba el desplegable, y lleva el mismo texto
+   * que llevaba esa, para que nada cambie de lugar.
+   */
+  if (tipo === 'lista' || tipo === 'buscador') {
+    return (
+      <CampoLista
+        id={id}
+        etiqueta={etiqueta}
+        valor={valor}
+        alCambiar={alCambiar}
+        opciones={opciones}
+        placeholder={placeholder || (tipo === 'buscador' ? 'Buscar...' : 'Seleccionar')}
+        textoVacio={placeholder || 'Seleccionar'}
+        obligatorio={obligatorio}
+        deshabilitado={deshabilitado}
+        error={error}
+        revisado={revisado}
+        ancho={ancho}
+      />
+    );
+  }
+
+  /*
+   * La duracion la dibuja CampoDuracion (el TimeField de HeroUI): dos
+   * casilleros de reloj, hh:mm. Igual que la fecha, hacia afuera habla en texto
+   * ("01:30"), asi que el formulario guarda y compara texto.
+   */
+  /*
+   * Una cantidad la dibuja CampoNumero (el NumberField de HeroUI), que trae los
+   * botones de + y -. Es a pedido con tipo="numero" y no automatico para todo
+   * tipoHtml="number", porque hay numeros que no son cantidades: un legajo se
+   * escribe con digitos pero no tiene sentido subirlo de a uno.
+   */
+  if (tipo === 'numero') {
+    return (
+      <CampoNumero
+        id={id}
+        etiqueta={etiqueta}
+        valor={valor}
+        alCambiar={alCambiar}
+        minimo={min === undefined || min === '' ? undefined : Number(min)}
+        maximo={max === undefined || max === '' ? undefined : Number(max)}
+        paso={step === undefined || step === '' ? 1 : Number(step)}
+        obligatorio={obligatorio}
+        deshabilitado={deshabilitado}
+        error={error}
+        revisado={revisado}
+        ancho={ancho}
+      />
+    );
+  }
+
+  if (tipo === 'duracion') {
+    return (
+      <CampoDuracion
+        id={id}
+        etiqueta={etiqueta}
+        valor={valor}
+        alCambiar={alCambiar}
+        obligatorio={obligatorio}
+        deshabilitado={deshabilitado}
+        soloLectura={soloLectura}
+        error={error}
+        revisado={revisado}
+      />
+    );
+  }
+
+  /*
+   * Las fechas las dibuja CampoFecha (el DatePicker de HeroUI) y no un
+   * <input type="date">. Se delega desde aca, y no cambiando cada formulario,
+   * para que todos sigan escribiendo <Campo tipoHtml="date"> como siempre.
+   *
+   * `min` y `max` pasan a ser los limites del almanaque: los dias que quedan
+   * afuera se ven apagados y no se pueden elegir. Son los mismos que antes iban
+   * al input, asi que ninguna pantalla pierde su restriccion.
+   */
+  if (tipo === 'texto' && tipoHtml === 'date') {
+    return (
+      <CampoFecha
+        id={id}
+        etiqueta={etiqueta}
+        valor={valor}
+        alCambiar={alCambiar}
+        minimo={min}
+        maximo={max}
+        obligatorio={obligatorio}
+        deshabilitado={deshabilitado}
+        soloLectura={soloLectura}
+        error={error}
+        revisado={revisado}
+      />
+    );
+  }
+
   const hayValor = String(valor ?? '').trim() !== '';
   const marca = revisado && error ? 'error' : revisado && hayValor ? 'ok' : null;
-
-  const esFecha = tipo === 'texto' && tipoHtml === 'date';
 
   const clases = [
     'sigma-campo',
@@ -221,10 +310,7 @@ export default function Campo({
     .filter(Boolean)
     .join(' ');
 
-  const anchoCaja =
-    tipo === 'area'
-      ? undefined
-      : anchoDeLaCaja(ancho, tipo === 'lista' ? 'lista' : esFecha ? 'fecha' : 'texto');
+  const anchoCaja = tipo === 'area' ? undefined : anchoDeLaCaja(ancho);
 
   const idMensaje = `${id}-mensaje`;
   const propiedadesComunes = {
@@ -233,7 +319,7 @@ export default function Campo({
     onChange: alEscribir,
     disabled: deshabilitado,
     'aria-invalid': marca === 'error',
-    'aria-describedby': error || ayuda ? idMensaje : undefined,
+    'aria-describedby': error ? idMensaje : undefined,
   };
 
   return (
@@ -243,42 +329,6 @@ export default function Campo({
       </CFormLabel>
 
       <div className="sigma-campo-caja" style={anchoCaja ? { width: anchoCaja } : undefined}>
-        {tipo === 'lista' && (
-          <CFormSelect {...propiedadesComunes}>
-            <option value="">{placeholder || 'Seleccionar'}</option>
-            {opciones.map((opcion) => (
-              <option key={opcion.valor} value={opcion.valor}>
-                {opcion.texto}
-              </option>
-            ))}
-          </CFormSelect>
-        )}
-
-        {tipo === 'buscador' && (
-          <Select
-            id={id}
-            options={opciones.map(opt => ({ value: opt.valor, label: opt.texto }))}
-            value={opciones.find(opt => opt.valor === valor) ? { value: valor, label: opciones.find(opt => opt.valor === valor).texto } : null}
-            onChange={(selected) => alCambiar(selected ? selected.value : '')}
-            placeholder={placeholder || 'Buscar...'}
-            isClearable
-            isDisabled={deshabilitado}
-            className="react-select-container"
-            classNamePrefix="react-select"
-            styles={{
-              control: (base) => ({
-                ...base,
-                borderColor: marca === 'error' ? 'var(--cui-form-invalid-border-color)' : 'var(--cui-input-border-color, #b1b7c1)',
-                minHeight: 'calc(1.5em + 0.75rem + 2px)',
-                boxShadow: 'none',
-                '&:hover': {
-                  borderColor: 'var(--cui-input-border-color, #b1b7c1)'
-                }
-              })
-            }}
-          />
-        )}
-
         {tipo === 'area' && (
           <CFormTextarea
             {...propiedadesComunes}
@@ -290,17 +340,34 @@ export default function Campo({
         )}
 
         {tipo === 'texto' && (
-          <CFormInput
-            {...propiedadesComunes}
-            ref={refCaja}
-            type={tipoHtml}
-            placeholder={placeholder}
-            maxLength={maxLength}
-            min={min}
-            max={max}
-            step={step}
-            readOnly={soloLectura}
-          />
+          <>
+            <CFormInput
+              {...propiedadesComunes}
+              ref={refCaja}
+              type={tipoHtml}
+              placeholder={placeholder}
+              maxLength={maxLength}
+              min={min}
+              max={max}
+              step={step}
+              readOnly={soloLectura}
+              list={sugerencias ? `${id}-sugerencias` : undefined}
+            />
+
+            {/*
+              Las sugerencias son una ayuda, no una lista cerrada: el navegador
+              las muestra al hacer foco en la caja, pero se puede escribir
+              cualquier otra cosa. Se usa para la duracion de una tarea de la
+              OT ("30 min", "1 h 30 min").
+            */}
+            {sugerencias && (
+              <datalist id={`${id}-sugerencias`}>
+                {sugerencias.map((sugerencia) => (
+                  <option key={sugerencia} value={sugerencia} />
+                ))}
+              </datalist>
+            )}
+          </>
         )}
 
         {marca && (
@@ -311,16 +378,10 @@ export default function Campo({
         )}
       </div>
 
-      {marca === 'error' ? (
+      {marca === 'error' && (
         <p id={idMensaje} className="sigma-campo-mensaje sigma-campo-mensaje--error">
           {error}
         </p>
-      ) : (
-        ayuda && (
-          <p id={idMensaje} className="sigma-campo-mensaje">
-            {ayuda}
-          </p>
-        )
       )}
     </div>
   );
