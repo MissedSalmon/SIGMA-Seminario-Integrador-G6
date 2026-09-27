@@ -31,6 +31,9 @@ export const ESTADO_TAREA_INICIAL = 'Pendiente';
 export const PRIORIDADES = ['Alta', 'Media', 'Baja'];
 export const PRIORIDAD_POR_DEFECTO = 'Media';
 
+/** Tipos de falla que puede registrar el técnico al diagnosticar la tarea. */
+export const TIPOS_FALLA = ['Eléctrica', 'Mecánica', 'Estructural', 'Sanitaria', 'Otra'];
+
 /**
  * La base guarda los valores por defecto en mayuscula ('PENDIENTE', 'MEDIA'),
  * igual que paso con los tickets. Para el sistema son los mismos: al leer se
@@ -118,6 +121,21 @@ const COLUMNAS = `
   ot_fecha_cierre,
   ot_estado,
   ot_desc,
+  mantenimiento_preventivo (
+    mant_prev_id,
+    activo_codigo,
+    activo (
+      activo_codigo,
+      activo_estado,
+      tipo_activo_id,
+      tipo_activo ( tipo_activo_nom ),
+      espacio (
+        espacio_num,
+        edificio ( edificio_nom ),
+        area ( area_id, area_nom )
+      )
+    )
+  ),
   ticket (
     ticket_id,
     ticket_desc,
@@ -165,6 +183,11 @@ const COLUMNAS = `
     plantilla_de_tarea (
       tarea_plan_id,
       tarea_plan_nom
+    ),
+    falla!falla_tarea_fk (
+      falla_id,
+      falla_tipo,
+      falla_desc
     )
   )
 `;
@@ -224,6 +247,8 @@ function aTarea(fila, asignaciones) {
     };
   }
 
+  const filaFalla = Array.isArray(fila.falla) ? fila.falla[0] : fila.falla;
+
   return {
     idOt: fila.ot_id,
     idTarea: fila.tarea_id,
@@ -236,12 +261,16 @@ function aTarea(fila, asignaciones) {
     idPlantilla: fila.tarea_plan_id,
     nombrePlantilla: fila.plantilla_de_tarea?.tarea_plan_nom ?? null,
     responsable,
+    falla: filaFalla
+      ? { tipo: filaFalla.falla_tipo, descripcion: filaFalla.falla_desc }
+      : null,
   };
 }
 
 function aOrden(fila, asignaciones = []) {
   const ticket = fila.ticket ?? null;
-  const activo = ticket?.activo ?? null;
+  const mantenimientoPreventivo = fila.mantenimiento_preventivo ?? null;
+  const activo = ticket?.activo ?? mantenimientoPreventivo?.activo ?? null;
   const espacio = activo?.espacio ?? null;
   const areas = espacio?.area ?? [];
   const autorizado = ticket?.autorizado ?? null;
@@ -278,7 +307,7 @@ function aOrden(fila, asignaciones = []) {
           fechaAlta: ticket.ticket_fecha_alta,
         }
       : null,
-    codigoActivo: ticket?.activo_codigo ?? null,
+    codigoActivo: ticket?.activo_codigo ?? mantenimientoPreventivo?.activo_codigo ?? null,
     activo: activo
       ? {
           codigo: activo.activo_codigo,
@@ -457,10 +486,13 @@ export async function actualizar(id, datos) {
  * ------------------------------------------------------------------ */
 
 /** La OT tal cual esta en la base, para las validaciones de las tareas. */
-async function ordenPlanificable(idOt) {
+async function ordenPlanificable(idOt, incluirActivo = false) {
+  const columnas = incluirActivo
+    ? 'ot_id, ot_estado, ticket_id, ticket(activo_codigo), mantenimiento_preventivo(activo_codigo)'
+    : 'ot_id, ot_estado, ticket_id';
   const { data, error } = await supabase
     .from('orden_trabajo')
-    .select('ot_id, ot_estado, ticket_id')
+    .select(columnas)
     .eq('ot_id', idOt)
     .maybeSingle();
 
@@ -808,10 +840,62 @@ export async function eliminarTarea(idOt, idTarea) {
     );
   }
 
+  const { data: falla, error: errorFalla } = await supabase
+    .from('falla')
+    .select('falla_id')
+    .eq('ot_id', idOt)
+    .eq('tarea_id', idTarea)
+    .maybeSingle();
+
+  if (errorFalla) throw new Error(errorFalla.message);
+  if (falla) throw conflicto(`La tarea ${idTarea} tiene un diagnóstico y no se puede eliminar.`);
+
   const { error } = await supabase.from('tarea_ot').delete().eq('ot_id', idOt).eq('tarea_id', idTarea);
   if (error) throw new Error(error.message);
 
   await recalcularEstado(idOt);
+
+  return obtenerPorId(idOt);
+}
+
+/** Registra o actualiza el diagnóstico único de una tarea. */
+export async function registrarFalla(idOt, idTarea, datos) {
+  const tipo = limpiar(datos.tipo);
+  const descripcion = limpiar(datos.descripcion);
+
+  if (!tipo || !TIPOS_FALLA.includes(tipo)) {
+    throw datoInvalido(`Elegí un tipo de falla válido: ${TIPOS_FALLA.join(', ')}.`);
+  }
+  if (!descripcion) throw datoInvalido('La descripción de la falla es obligatoria.');
+
+  const orden = await ordenPlanificable(idOt, true);
+  const codigoActivo = orden.ticket?.activo_codigo ?? orden.mantenimiento_preventivo?.activo_codigo;
+  if (!codigoActivo) {
+    throw datoInvalido('La orden de trabajo no tiene un activo asociado para registrar la falla.');
+  }
+
+  const { data: tarea, error: errorTarea } = await supabase
+    .from('tarea_ot')
+    .select('ot_id, tarea_id')
+    .eq('ot_id', idOt)
+    .eq('tarea_id', idTarea)
+    .maybeSingle();
+
+  if (errorTarea) throw new Error(errorTarea.message);
+  if (!tarea) throw noEncontrado(`La orden de trabajo ${idOt} no tiene la tarea ${idTarea}.`);
+
+  const { error } = await supabase.from('falla').upsert(
+    {
+      ot_id: idOt,
+      tarea_id: idTarea,
+      activo_codigo: codigoActivo,
+      falla_tipo: tipo,
+      falla_desc: descripcion,
+    },
+    { onConflict: 'ot_id,tarea_id' }
+  );
+
+  if (error) throw new Error(error.message);
 
   return obtenerPorId(idOt);
 }
