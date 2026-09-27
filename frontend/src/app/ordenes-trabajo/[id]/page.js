@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * /ordenes-trabajo/5 - la orden de trabajo y su planificación (HU-14).
+ * /ordenes-trabajo/5 - la orden, su planificación y el diagnóstico de tareas.
  *
  * Es la pantalla donde el administrador arma la OT: le carga las tareas, les
  * pone prioridad y define quién hace cada una (un técnico de la facultad o un
@@ -45,10 +45,17 @@ import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
+import Campo from '@/componentes/formulario/Campo.js';
 import EtiquetaEstadoOT from '@/componentes/ordenes/EtiquetaEstadoOT.js';
 import EtiquetaPrioridad from '@/componentes/ordenes/EtiquetaPrioridad.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
-import { obtenerOrden, actualizarOrden, eliminarTarea } from '@/servicios/ordenesTrabajo.js';
+import {
+  obtenerOrden,
+  actualizarOrden,
+  eliminarTarea,
+  listarTiposFalla,
+  registrarFalla,
+} from '@/servicios/ordenesTrabajo.js';
 import { formatearFechaHora } from '@/utils/fechas.js';
 import { comoHoraMinuto } from '@/utils/duracion.js';
 
@@ -84,6 +91,7 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
   const [orden, setOrden] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  const [tiposFalla, setTiposFalla] = useState([]);
 
   const [guardando, setGuardando] = useState(false);
 
@@ -94,12 +102,25 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
   const [descripcion, setDescripcion] = useState('');
   const [errorDescripcion, setErrorDescripcion] = useState('');
 
+  const [tareaDiagnostico, setTareaDiagnostico] = useState(null);
+  const [tipoFalla, setTipoFalla] = useState('');
+  const [descripcionFalla, setDescripcionFalla] = useState('');
+  const [errorFalla, setErrorFalla] = useState('');
+  const [revisadoFalla, setRevisadoFalla] = useState(false);
+  const [guardandoFalla, setGuardandoFalla] = useState(false);
+
   useEffect(() => {
     obtenerOrden(id)
       .then(setOrden)
       .catch((fallo) => setError(fallo.message))
       .finally(() => setCargando(false));
   }, [id]);
+
+  useEffect(() => {
+    listarTiposFalla()
+      .then(setTiposFalla)
+      .catch((fallo) => setError(fallo.message));
+  }, []);
 
   const cerrada = orden ? ESTADOS_CERRADOS.includes(orden.estado) : false;
 
@@ -142,6 +163,36 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
       setErrorDescripcion(fallo.message);
     } finally {
       setGuardando(false);
+    }
+  }
+
+  function abrirDiagnostico(tarea) {
+    setTareaDiagnostico(tarea);
+    setTipoFalla(tarea.falla?.tipo ?? '');
+    setDescripcionFalla(tarea.falla?.descripcion ?? '');
+    setErrorFalla('');
+    setRevisadoFalla(false);
+  }
+
+  async function guardarDiagnostico() {
+    setRevisadoFalla(true);
+    if (!tipoFalla || !descripcionFalla.trim()) return;
+
+    setGuardandoFalla(true);
+    setErrorFalla('');
+
+    try {
+      const actualizada = await registrarFalla(orden.id, tareaDiagnostico.idTarea, {
+        tipo: tipoFalla,
+        descripcion: descripcionFalla.trim(),
+      });
+      setOrden(actualizada);
+      setTareaDiagnostico(null);
+      mostrarToast({ tipo: 'exito', mensaje: 'Se guardó el diagnóstico de la tarea.' });
+    } catch (fallo) {
+      setErrorFalla(fallo.message);
+    } finally {
+      setGuardandoFalla(false);
     }
   }
 
@@ -297,6 +348,7 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
                           <CTableHeaderCell>Previsto</CTableHeaderCell>
                           <CTableHeaderCell>Duración</CTableHeaderCell>
                           <CTableHeaderCell>Estado</CTableHeaderCell>
+                          <CTableHeaderCell>Falla</CTableHeaderCell>
                           {!cerrada && <CTableHeaderCell className="text-end">Acciones</CTableHeaderCell>}
                         </CTableRow>
                       </CTableHead>
@@ -336,8 +388,28 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
 
                             <CTableDataCell className="text-body-secondary">{tarea.estado}</CTableDataCell>
 
+                            <CTableDataCell style={{ minWidth: '12rem' }}>
+                              {tarea.falla ? (
+                                <>
+                                  <div className="fw-semibold">{tarea.falla.tipo}</div>
+                                  <div style={{ whiteSpace: 'pre-wrap' }}>{tarea.falla.descripcion}</div>
+                                </>
+                              ) : (
+                                <SinDato>Sin diagnóstico</SinDato>
+                              )}
+                            </CTableDataCell>
+
                             {!cerrada && (
                               <CTableDataCell className="text-end text-nowrap">
+                                <CButton
+                                  color="secondary"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => abrirDiagnostico(tarea)}
+                                  className="me-2"
+                                >
+                                  {tarea.falla ? 'Editar diagnóstico' : 'Registrar falla'}
+                                </CButton>
                                 <BotonEnlace
                                   href={`/ordenes-trabajo/${orden.id}/tareas/${tarea.idTarea}/editar`}
                                   color="secondary"
@@ -384,6 +456,59 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
                 </p>
               )}
             </DialogoEliminar>
+
+            <CModal
+              visible={Boolean(tareaDiagnostico)}
+              onClose={() => !guardandoFalla && setTareaDiagnostico(null)}
+              alignment="center"
+            >
+              <CModalHeader>
+                <CModalTitle>Diagnóstico de la tarea {tareaDiagnostico?.idTarea}</CModalTitle>
+              </CModalHeader>
+              <CModalBody>
+                <Aviso mensaje={errorFalla} />
+                <div className="mb-3">
+                  <Campo
+                    id="tipoFalla"
+                    etiqueta="Tipo de falla"
+                    tipo="lista"
+                    valor={tipoFalla}
+                    alCambiar={setTipoFalla}
+                    opciones={tiposFalla.map((tipo) => ({ valor: tipo, texto: tipo }))}
+                    placeholder="Elegir tipo"
+                    obligatorio
+                    deshabilitado={tiposFalla.length === 0}
+                    revisado={revisadoFalla}
+                    error={revisadoFalla && !tipoFalla ? 'Elegí el tipo de falla.' : ''}
+                    ancho={18}
+                  />
+                </div>
+                <Campo
+                  id="descripcionFalla"
+                  etiqueta="Descripción"
+                  tipo="area"
+                  filas={4}
+                  valor={descripcionFalla}
+                  alCambiar={setDescripcionFalla}
+                  obligatorio
+                  revisado={revisadoFalla}
+                  error={revisadoFalla && !descripcionFalla.trim() ? 'Escribí la descripción de la falla.' : ''}
+                />
+              </CModalBody>
+              <CModalFooter>
+                <CButton
+                  color="secondary"
+                  variant="outline"
+                  onClick={() => setTareaDiagnostico(null)}
+                  disabled={guardandoFalla}
+                >
+                  Cancelar
+                </CButton>
+                <CButton color="primary" onClick={guardarDiagnostico} disabled={guardandoFalla}>
+                  {guardandoFalla ? 'Guardando...' : 'Guardar diagnóstico'}
+                </CButton>
+              </CModalFooter>
+            </CModal>
 
             <CModal visible={modalDescripcion} onClose={() => setModalDescripcion(false)} alignment="center">
               <CModalHeader>
