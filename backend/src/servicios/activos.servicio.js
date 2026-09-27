@@ -243,6 +243,7 @@ export async function validarImportacion(filas) {
 
   const codigos = filas.map(f => f.activoCodigo).filter(Boolean);
   const tiposIds = [...new Set(filas.map(f => f.tipoActivoId).filter(Boolean))];
+  const tiposNoms = [...new Set(filas.map(f => f.tipoActivoNom).filter(Boolean))];
   const edificioIds = [...new Set(filas.map(f => f.edificioId).filter(Boolean))];
 
   let codigosExistentes = new Set();
@@ -253,11 +254,19 @@ export async function validarImportacion(filas) {
     }
   }
 
-  let tiposExistentes = new Set();
+  let tiposExistentesPorId = new Set();
   if (tiposIds.length > 0) {
     const { data: tiposDB } = await supabase.from('tipo_activo').select('tipo_activo_id').in('tipo_activo_id', tiposIds);
     if (tiposDB) {
-      tiposDB.forEach(t => tiposExistentes.add(t.tipo_activo_id));
+      tiposDB.forEach(t => tiposExistentesPorId.add(t.tipo_activo_id));
+    }
+  }
+
+  let tiposExistentesPorNombre = new Map();
+  if (tiposNoms.length > 0) {
+    const { data: tiposNomsDB } = await supabase.from('tipo_activo').select('tipo_activo_id, tipo_activo_nom').in('tipo_activo_nom', tiposNoms);
+    if (tiposNomsDB) {
+      tiposNomsDB.forEach(t => tiposExistentesPorNombre.set(t.tipo_activo_nom.toLowerCase(), t.tipo_activo_id));
     }
   }
 
@@ -275,12 +284,15 @@ export async function validarImportacion(filas) {
 
   for (const fila of filas) {
     const errores = [];
-    const { activoCodigo, activoDesc, tipoActivoId, edificioId, espacioNum, activoEstado } = fila;
+    const { activoCodigo, activoDesc, tipoActivoId, tipoActivoNom, edificioId, espacioNum, activoEstado } = fila;
 
     if (!activoCodigo) errores.push("Falta el código del activo.");
     if (!activoDesc) errores.push("Falta la descripción del activo.");
-    if (!tipoActivoId) errores.push("Falta el tipo de activo.");
     if (!activoEstado) errores.push("Falta el estado del activo.");
+
+    if (!tipoActivoId && !tipoActivoNom) {
+      errores.push("Falta el tipo de activo (proveer ID o Nombre).");
+    }
 
     if (activoCodigo) {
       if (codigosVistos.has(activoCodigo)) {
@@ -298,8 +310,13 @@ export async function validarImportacion(filas) {
       errores.push(`El estado "${activoEstado}" no es válido.`);
     }
 
-    if (tipoActivoId && !tiposExistentes.has(Number(tipoActivoId))) {
-      errores.push(`El tipo de activo ${tipoActivoId} no existe.`);
+    if (tipoActivoId && !tiposExistentesPorId.has(Number(tipoActivoId))) {
+      errores.push(`El tipo de activo ID ${tipoActivoId} no existe.`);
+    } else if (!tipoActivoId && tipoActivoNom) {
+      const idExistente = tiposExistentesPorNombre.get(tipoActivoNom.toLowerCase());
+      if (idExistente) {
+        fila.tipoActivoId = idExistente;
+      }
     }
 
     if (edificioId && espacioNum) {
@@ -323,6 +340,31 @@ export async function validarImportacion(filas) {
 export async function confirmarImportacion(filasValidas) {
   if (!filasValidas || filasValidas.length === 0) return [];
   
+  // Procesar creación de nuevos tipos de activos on-the-fly
+  const tiposACrear = new Map();
+  for (const f of filasValidas) {
+    if (!f.tipoActivoId && f.tipoActivoNom) {
+      tiposACrear.set(f.tipoActivoNom.toLowerCase(), f.tipoActivoNom);
+    }
+  }
+
+  if (tiposACrear.size > 0) {
+    const recordsNuevosTipos = Array.from(tiposACrear.values()).map(nom => ({ tipo_activo_nom: nom }));
+    const { data: nuevosTiposGuardados, error: errTipos } = await supabase.from('tipo_activo').insert(recordsNuevosTipos).select('tipo_activo_id, tipo_activo_nom');
+    
+    if (errTipos) throw new Error("Error al crear nuevos tipos de activo: " + errTipos.message);
+    
+    // Mapear los IDs generados a las filas
+    const mapaNuevosTipos = new Map();
+    nuevosTiposGuardados.forEach(t => mapaNuevosTipos.set(t.tipo_activo_nom.toLowerCase(), t.tipo_activo_id));
+
+    for (const f of filasValidas) {
+      if (!f.tipoActivoId && f.tipoActivoNom) {
+        f.tipoActivoId = mapaNuevosTipos.get(f.tipoActivoNom.toLowerCase());
+      }
+    }
+  }
+
   const edificioIds = [...new Set(filasValidas.map(f => f.edificioId).filter(Boolean))];
   const { data: espaciosDB } = await supabase.from('espacio').select('espacio_id, edificio_id, espacio_num').in('edificio_id', edificioIds);
   
@@ -340,7 +382,7 @@ export async function confirmarImportacion(filasValidas) {
       tipo_activo_id: Number(f.tipoActivoId),
       edificio_id: Number(f.edificioId),
       espacio_id: espacio_id,
-      activo_fecha_alta: limpiar(f.activoFechaAlta) || hoy(),
+      activo_fecha_alta: f.activoFechaAlta ? f.activoFechaAlta : hoy(),
       activo_estado: f.activoEstado
     };
   });

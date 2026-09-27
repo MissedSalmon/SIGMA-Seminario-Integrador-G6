@@ -30,7 +30,7 @@ export default function DialogoImportar({ visible, onCerrar, onRecargar }) {
 
   const descargarPlantilla = () => {
     const encabezados = [
-      'activoCodigo', 'activoDesc', 'tipoActivoId', 'edificioId',
+      'activoCodigo', 'activoDesc', 'tipoActivoId', 'tipoActivoNom', 'edificioId',
       'espacioNum', 'activoFechaAlta', 'activoFechaInst', 'activoEstado'
     ];
     const hoja = xlsx.utils.aoa_to_sheet([encabezados]);
