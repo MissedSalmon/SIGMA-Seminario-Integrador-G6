@@ -1,7 +1,13 @@
 'use client';
 
 /**
- * /inventario - listado de materiales y herramientas del deposito (HU-15).
+ * /inventario/materiales - catalogo y stock de materiales del deposito
+ * (HU-15 y HU-16). Los materiales se manejan distinto que las herramientas
+ * (llevan stock, no se prestan), por eso tienen su propia pantalla en vez de
+ * compartir el listado.
+ *
+ * Muestra el stock minimo y actual de cada material (el actual en negrita si
+ * esta por debajo del minimo).
  */
 import { useEffect, useState } from 'react';
 import { CButton, CButtonGroup, CCard, CCardBody } from '@coreui/react';
@@ -16,10 +22,18 @@ import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { eliminarItem, listarItems } from '@/servicios/inventario.js';
 
-export default function PantallaInventario() {
+const ESTADOS_STOCK = ['Sin stock', 'Stock mínimo', 'Stock suficiente'];
+
+function estadoStockDe(fila) {
+  if (fila.stockActual === 0) return 'Sin stock';
+  return fila.bajoMinimo ? 'Stock mínimo' : 'Stock suficiente';
+}
+
+export default function PantallaMateriales() {
   const { mostrarToast } = useToast();
-  const [articulos, setArticulos] = useState([]);
-  const [clase, setClase] = useState('');
+  const [materiales, setMateriales] = useState([]);
+  const [categoria, setCategoria] = useState('');
+  const [estadoStock, setEstadoStock] = useState('');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [aEliminar, setAEliminar] = useState(null);
@@ -27,11 +41,11 @@ export default function PantallaInventario() {
   const [recarga, setRecarga] = useState(0);
 
   useEffect(() => {
-    listarItems(clase || null)
-      .then(setArticulos)
+    listarItems('Material')
+      .then(setMateriales)
       .catch((fallo) => setError(fallo.message))
       .finally(() => setCargando(false));
-  }, [clase, recarga]);
+  }, [recarga]);
 
   async function confirmarBaja() {
     setEliminando(true);
@@ -48,6 +62,15 @@ export default function PantallaInventario() {
     }
   }
 
+  const filas = materiales.map((fila) => ({ ...fila, estadoStock: estadoStockDe(fila) }));
+  const filasVisibles = filas
+    .filter((fila) => !categoria || fila.nombreTipo === categoria)
+    .filter((fila) => !estadoStock || fila.estadoStock === estadoStock);
+
+  const categorias = [...new Set(filas.map((fila) => fila.nombreTipo).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b, 'es')
+  );
+
   const columnas = [
     {
       clave: 'codigo',
@@ -55,18 +78,18 @@ export default function PantallaInventario() {
       render: (fila) => <span className="fw-semibold">{fila.codigo}</span>,
     },
     { clave: 'nombre', encabezado: 'Nombre', render: (fila) => fila.nombre },
-    { clave: 'clase', encabezado: 'Clase', render: (fila) => fila.clase },
     {
       clave: 'nombreTipo',
-      encabezado: 'Tipo',
+      encabezado: 'Categoría',
       render: (fila) => <span className="text-body-secondary">{fila.nombreTipo || '-'}</span>,
     },
+    { clave: 'stockMinimo', encabezado: 'Stock mínimo', render: (fila) => fila.stockMinimo },
     {
-      clave: 'stock',
-      encabezado: 'Stock mínimo',
-      render: (fila) => (fila.clase === 'Material' ? fila.stockMinimo : '-'),
+      clave: 'stockActual',
+      encabezado: 'Stock actual',
+      render: (fila) => (fila.bajoMinimo ? <strong>{fila.stockActual}</strong> : fila.stockActual),
     },
-    { clave: 'estado', encabezado: 'Estado', render: (fila) => fila.estado },
+    { clave: 'estadoStock', encabezado: 'Estado', render: (fila) => fila.estadoStock },
     {
       clave: 'acciones',
       encabezado: 'Acciones',
@@ -74,7 +97,7 @@ export default function PantallaInventario() {
       render: (fila) => (
         <CButtonGroup size="sm">
           <BotonEnlace
-            href={`/inventario/${encodeURIComponent(fila.codigo)}/editar`}
+            href={`/inventario/materiales/${encodeURIComponent(fila.codigo)}/editar`}
             variante="ghost"
             className="btn-icono"
             title="Editar"
@@ -97,34 +120,43 @@ export default function PantallaInventario() {
 
   return (
     <>
-      <EncabezadoPagina
-        titulo="Materiales y herramientas"
-        accion={{ direccion: '/inventario/agregar' }}
-      />
+      <EncabezadoPagina titulo="Materiales" accion={{ direccion: '/inventario/materiales/agregar' }} />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
 
       <CCard>
         <CCardBody>
           <TablaDatos
-            filas={articulos}
+            filas={filasVisibles}
             claveFila={(fila) => fila.codigo}
             columnas={columnas}
             buscarPor={['codigo', 'nombre', 'descripcion', 'nombreTipo']}
-            placeholderBusqueda="Buscar por código, nombre o tipo"
+            placeholderBusqueda="Buscar por código, nombre o categoría"
             filtros={[
+              // Solo tiene sentido si ya hay mas de una categoria cargada.
+              ...(categorias.length > 1
+                ? [
+                    {
+                      etiqueta: 'Categoría',
+                      valor: categoria,
+                      alCambiar: setCategoria,
+                      opciones: categorias.map((texto) => ({ valor: texto, texto })),
+                    },
+                  ]
+                : []),
               {
-                etiqueta: 'Clase',
-                valor: clase,
-                alCambiar: setClase,
-                opciones: [
-                  { valor: 'Material', texto: 'Materiales' },
-                  { valor: 'Herramienta', texto: 'Herramientas' },
-                ],
+                etiqueta: 'Estado',
+                valor: estadoStock,
+                alCambiar: setEstadoStock,
+                opciones: ESTADOS_STOCK.map((texto) => ({ valor: texto, texto })),
               },
             ]}
+            alLimpiar={() => {
+              setCategoria('');
+              setEstadoStock('');
+            }}
             cargando={cargando}
-            textoVacio="Todavia no hay materiales ni herramientas cargados."
+            textoVacio="Todavia no hay materiales cargados."
           />
         </CCardBody>
       </CCard>

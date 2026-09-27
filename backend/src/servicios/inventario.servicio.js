@@ -1,6 +1,11 @@
 import { supabase } from '../config/supabase.js';
 import { conflicto, datoInvalido, noEncontrado } from '../utiles/errores.js';
 
+/**
+ * Catalogo del deposito (HU-15): materiales (se consumen) y herramientas (se
+ * prestan y se devuelven). Cada clase tiene su tabla (material y herramienta);
+ * el codigo es unico entre las dos.
+ */
 const CLASES = ['Material', 'Herramienta'];
 
 function texto(valor) {
@@ -23,25 +28,79 @@ function aTipo(fila) {
   };
 }
 
-function aItem(fila) {
+function aMaterial(fila) {
+  const stockActual = Number(fila.mat_stock_actual ?? 0);
+  const stockMinimo = Number(fila.mat_stock_min ?? 0);
   return {
-    codigo: fila.inventarioitemcod,
-    nombre: fila.inventarioitemnom,
-    descripcion: fila.inventarioitemdesc || '',
+    codigo: fila.mat_cod,
+    nombre: fila.mat_nom,
+    descripcion: fila.mat_desc || '',
     idTipo: fila.inventariotipoid,
     nombreTipo: fila.inventariotipo?.inventariotiponom || '',
-    clase: fila.inventarioitemclase,
-    stockActual: fila.inventarioitemstockactual,
-    stockMinimo: fila.inventarioitemstockmin,
-    fechaVencimiento: fila.inventarioitemfechavenc,
-    estado: fila.inventarioitemestado,
+    clase: 'Material',
+    stockActual,
+    stockMinimo,
+    bajoMinimo: stockActual < stockMinimo,
+    fechaVencimiento: fila.mat_fecha_venc,
+    estado: null,
+    tecnico: null,
   };
 }
 
-const COLUMNAS = `
-  *,
-  inventariotipo (inventariotiponom)
-`;
+/**
+ * Deja el estado de una herramienta en uno de los tres que muestra el
+ * sistema, sin importar como se haya escrito en la base ('DISPONIBLE',
+ * 'Fuera_de_servicio'...). Tambien reconoce el nombre viejo ('En reparación')
+ * para no perder lo que ya este guardado con ese valor.
+ */
+function normalizarEstado(valor) {
+  const limpio = String(valor ?? '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[_\s]+/g, ' ')
+    .trim()
+    .toUpperCase();
+  if (limpio === 'EN USO') return 'En uso';
+  if (['FUERA DE SERVICIO', 'EN REPARACION', 'NO DISPONIBLE'].includes(limpio)) return 'Fuera de servicio';
+  return 'Disponible';
+}
+
+/**
+ * Una herramienta esta en uso mientras tenga un prestamo abierto en
+ * tecnico_utiliza_herramienta (sin fecha de devolucion), sin importar lo que
+ * diga la columna herr_estado.
+ */
+async function obtenerPrestamosAbiertos(codigo) {
+  let consulta = supabase
+    .from('tecnico_utiliza_herramienta')
+    .select('herr_cod, tecnico (tecnico_nom_ape)')
+    .is('tec_herr_fecha_dev', null);
+  if (codigo) consulta = consulta.eq('herr_cod', codigo);
+  const { data, error } = await consulta;
+  if (error) throw new Error(error.message);
+  return new Map(data.map((prestamo) => [prestamo.herr_cod, prestamo.tecnico?.tecnico_nom_ape ?? null]));
+}
+
+function aHerramienta(fila, prestamos = new Map()) {
+  const prestada = prestamos.has(fila.herr_cod);
+  const estadoGuardado = normalizarEstado(fila.herr_estado);
+  return {
+    codigo: fila.herr_cod,
+    nombre: fila.herr_nom,
+    descripcion: fila.herr_desc || '',
+    idTipo: fila.inventariotipoid,
+    nombreTipo: fila.inventariotipo?.inventariotiponom || '',
+    clase: 'Herramienta',
+    stockActual: null,
+    stockMinimo: null,
+    bajoMinimo: false,
+    fechaVencimiento: null,
+    estado: prestada ? 'En uso' : estadoGuardado === 'En uso' ? 'Disponible' : estadoGuardado,
+    tecnico: prestada ? prestamos.get(fila.herr_cod) : null,
+  };
+}
+
+const COLUMNAS = '*, inventariotipo (inventariotiponom)';
 
 async function verificarTipo(idTipo, clase) {
   const { data, error } = await supabase
@@ -56,24 +115,31 @@ async function verificarTipo(idTipo, clase) {
   }
 }
 
-function leerItem(datos) {
-  const codigo = texto(datos.codigo);
-  const nombre = texto(datos.nombre);
-  const clase = leerClase(datos.clase);
-  const idTipo = Number(datos.idTipo);
-  const stockMinimo = datos.stockMinimo === '' || datos.stockMinimo == null ? null : Number(datos.stockMinimo);
+async function contar(tabla, columna, codigo) {
+  const { count, error } = await supabase.from(tabla).select('*', { count: 'exact', head: true }).eq(columna, codigo);
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
 
-  if (!codigo) throw datoInvalido('El código es obligatorio.');
-  if (!nombre) throw datoInvalido('El nombre es obligatorio.');
-  if (!Number.isInteger(idTipo)) throw datoInvalido('Hay que indicar un tipo de inventario.');
-  if (clase === 'Material' && (!Number.isInteger(stockMinimo) || stockMinimo < 0)) {
-    throw datoInvalido('El stock mínimo del material es obligatorio y no puede ser negativo.');
-  }
-  if (clase === 'Herramienta' && (stockMinimo !== null || datos.fechaVencimiento)) {
-    throw datoInvalido('Una herramienta no lleva stock mínimo ni fecha de vencimiento.');
-  }
+async function buscarMaterial(codigo) {
+  const { data, error } = await supabase.from('material').select(COLUMNAS).eq('mat_cod', codigo).maybeSingle();
+  if (error) throw new Error(error.message);
+  return data;
+}
 
-  return { codigo, nombre, clase, idTipo, stockMinimo, descripcion: texto(datos.descripcion), fechaVencimiento: datos.fechaVencimiento || null };
+async function buscarHerramienta(codigo) {
+  const { data, error } = await supabase.from('herramienta').select(COLUMNAS).eq('herr_cod', codigo).maybeSingle();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+/** Devuelve el item con ese codigo, sea material o herramienta. */
+export async function obtenerItem(codigo) {
+  const material = await buscarMaterial(codigo);
+  if (material) return aMaterial(material);
+  const herramienta = await buscarHerramienta(codigo);
+  if (herramienta) return aHerramienta(herramienta, await obtenerPrestamosAbiertos(codigo));
+  throw noEncontrado(`No existe el código "${codigo}" en el depósito.`);
 }
 
 export async function obtenerTipos(clase) {
@@ -115,8 +181,8 @@ export async function actualizarTipo(id, datos) {
 }
 
 export async function eliminarTipo(id) {
-  const { count } = await supabase.from('inventarioitem').select('*', { count: 'exact', head: true }).eq('inventariotipoid', id);
-  if (count) throw conflicto('No se puede eliminar un tipo que tiene materiales o herramientas asociados.');
+  const usados = (await contar('material', 'inventariotipoid', id)) + (await contar('herramienta', 'inventariotipoid', id));
+  if (usados) throw conflicto('No se puede eliminar un tipo que tiene materiales o herramientas asociados.');
   const tipo = await obtenerTipo(id);
   const { error } = await supabase.from('inventariotipo').delete().eq('inventariotipoid', id);
   if (error) throw new Error(error.message);
@@ -124,44 +190,131 @@ export async function eliminarTipo(id) {
 }
 
 export async function obtenerItems(clase) {
-  let consulta = supabase.from('inventarioitem').select(COLUMNAS).order('inventarioitemnom');
-  if (clase) consulta = consulta.eq('inventarioitemclase', leerClase(clase));
-  const { data, error } = await consulta;
-  if (error) throw new Error(error.message);
-  return data.map(aItem);
+  if (clase) leerClase(clase);
+  const items = [];
+
+  if (clase !== 'Herramienta') {
+    const { data, error } = await supabase.from('material').select(COLUMNAS);
+    if (error) throw new Error(error.message);
+    items.push(...data.map(aMaterial));
+  }
+  if (clase !== 'Material') {
+    const [{ data, error }, prestamos] = await Promise.all([
+      supabase.from('herramienta').select(COLUMNAS),
+      obtenerPrestamosAbiertos(),
+    ]);
+    if (error) throw new Error(error.message);
+    items.push(...data.map((fila) => aHerramienta(fila, prestamos)));
+  }
+
+  return items.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
 }
 
-export async function obtenerItem(codigo) {
-  const { data, error } = await supabase.from('inventarioitem').select(COLUMNAS).eq('inventarioitemcod', codigo).maybeSingle();
-  if (error) throw new Error(error.message);
-  if (!data) throw noEncontrado(`No existe el código "${codigo}" en el depósito.`);
-  return aItem(data);
+function leerDatos(datos) {
+  const nombre = texto(datos.nombre);
+  const clase = leerClase(datos.clase);
+  const descripcion = texto(datos.descripcion);
+  const idTipo = Number(datos.idTipo);
+  const hayMinimo = datos.stockMinimo !== '' && datos.stockMinimo != null;
+  const stockMinimo = hayMinimo ? Number(datos.stockMinimo) : null;
+
+  if (!nombre) throw datoInvalido('El nombre es obligatorio.');
+  if (!Number.isInteger(idTipo)) throw datoInvalido('Hay que indicar un tipo.');
+  if (clase === 'Material' && (!Number.isInteger(stockMinimo) || stockMinimo < 0)) {
+    throw datoInvalido('El stock mínimo del material es obligatorio y no puede ser negativo.');
+  }
+  if (clase === 'Herramienta' && (hayMinimo || datos.fechaVencimiento)) {
+    throw datoInvalido('Una herramienta no lleva stock mínimo ni fecha de vencimiento.');
+  }
+
+  return { nombre, clase, descripcion, idTipo, stockMinimo, fechaVencimiento: datos.fechaVencimiento || null };
 }
 
 export async function crearItem(datos) {
-  const item = leerItem(datos);
-  const { data: repetido } = await supabase.from('inventarioitem').select('inventarioitemcod').ilike('inventarioitemcod', item.codigo).maybeSingle();
-  if (repetido) throw conflicto(`Ya existe un material o una herramienta con el código "${item.codigo}".`);
+  const codigo = texto(datos.codigo);
+  if (!codigo) throw datoInvalido('El código es obligatorio.');
+  const item = leerDatos(datos);
   await verificarTipo(item.idTipo, item.clase);
-  const { data, error } = await supabase.from('inventarioitem').insert({ inventarioitemcod: item.codigo, inventarioitemnom: item.nombre, inventarioitemdesc: item.descripcion, inventariotipoid: item.idTipo, inventarioitemclase: item.clase, inventarioitemstockmin: item.stockMinimo, inventarioitemfechavenc: item.fechaVencimiento, inventarioitemestado: item.clase === 'Herramienta' ? 'Disponible' : 'Disponible' }).select(COLUMNAS).single();
+
+  const [material, herramienta] = await Promise.all([buscarMaterial(codigo), buscarHerramienta(codigo)]);
+  if (material || herramienta) {
+    throw conflicto(`Ya existe un material o una herramienta con el código "${codigo}".`);
+  }
+
+  if (item.clase === 'Material') {
+    const { data, error } = await supabase
+      .from('material')
+      .insert({
+        mat_cod: codigo,
+        mat_nom: item.nombre,
+        mat_desc: item.descripcion,
+        inventariotipoid: item.idTipo,
+        mat_stock_actual: 0,
+        mat_stock_min: item.stockMinimo,
+        mat_fecha_venc: item.fechaVencimiento,
+      })
+      .select(COLUMNAS)
+      .single();
+    if (error) throw new Error(error.message);
+    return aMaterial(data);
+  }
+
+  const { data, error } = await supabase
+    .from('herramienta')
+    .insert({ herr_cod: codigo, herr_nom: item.nombre, herr_desc: item.descripcion, inventariotipoid: item.idTipo, herr_estado: 'Disponible' })
+    .select(COLUMNAS)
+    .single();
   if (error) throw new Error(error.message);
-  return aItem(data);
+  return aHerramienta(data);
 }
 
 export async function actualizarItem(codigo, datos) {
-  const item = leerItem({ ...datos, codigo });
-  await obtenerItem(codigo);
+  const actual = await obtenerItem(codigo);
+  if (datos.clase !== actual.clase) throw datoInvalido('La clase no se puede cambiar después del alta.');
+  const item = leerDatos(datos);
   await verificarTipo(item.idTipo, item.clase);
-  const { data, error } = await supabase.from('inventarioitem').update({ inventarioitemnom: item.nombre, inventarioitemdesc: item.descripcion, inventariotipoid: item.idTipo, inventarioitemclase: item.clase, inventarioitemstockmin: item.stockMinimo, inventarioitemfechavenc: item.fechaVencimiento }).eq('inventarioitemcod', codigo).select(COLUMNAS).single();
+
+  if (actual.clase === 'Material') {
+    const { data, error } = await supabase
+      .from('material')
+      .update({
+        mat_nom: item.nombre,
+        mat_desc: item.descripcion,
+        inventariotipoid: item.idTipo,
+        mat_stock_min: item.stockMinimo,
+        mat_fecha_venc: item.fechaVencimiento,
+      })
+      .eq('mat_cod', codigo)
+      .select(COLUMNAS)
+      .single();
+    if (error) throw new Error(error.message);
+    return aMaterial(data);
+  }
+
+  const { data, error } = await supabase
+    .from('herramienta')
+    .update({ herr_nom: item.nombre, herr_desc: item.descripcion, inventariotipoid: item.idTipo })
+    .eq('herr_cod', codigo)
+    .select(COLUMNAS)
+    .single();
   if (error) throw new Error(error.message);
-  return aItem(data);
+  return aHerramienta(data);
 }
 
+/** No se elimina un item que ya tuvo movimientos: compras, consumos o prestamos. */
 export async function eliminarItem(codigo) {
-  const { count } = await supabase.from('inventariomovimiento').select('*', { count: 'exact', head: true }).eq('inventarioitemcod', codigo);
-  if (count) throw conflicto('No se puede eliminar algo que tiene movimientos registrados.');
   const item = await obtenerItem(codigo);
-  const { error } = await supabase.from('inventarioitem').delete().eq('inventarioitemcod', codigo);
+
+  const movimientos =
+    item.clase === 'Material'
+      ? (await contar('linea_compra', 'mat_cod', codigo)) + (await contar('tarea_ot_consume_material', 'mat_cod', codigo))
+      : (await contar('linea_compra', 'herr_cod', codigo)) + (await contar('tecnico_utiliza_herramienta', 'herr_cod', codigo));
+  if (movimientos) throw conflicto('No se puede eliminar algo que tiene movimientos registrados.');
+
+  const { error } =
+    item.clase === 'Material'
+      ? await supabase.from('material').delete().eq('mat_cod', codigo)
+      : await supabase.from('herramienta').delete().eq('herr_cod', codigo);
   if (error) throw new Error(error.message);
   return item;
 }

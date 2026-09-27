@@ -377,6 +377,24 @@ body {
   font-weight: 700;
 }
 
+/*
+ * Migas de pan iguales en todas las pantallas: solo "Inicio" va en azul y sin
+ * subrayar; el resto (enlaces o no) va en el mismo gris claro.
+ */
+.header .breadcrumb-item a {
+  text-decoration: none;
+}
+
+.header .breadcrumb-item:first-child a {
+  color: var(--cui-primary);
+}
+
+.header .breadcrumb-item:not(:first-child),
+.header .breadcrumb-item:not(:first-child) a {
+  color: var(--cui-breadcrumb-item-active-color, var(--cui-secondary-color));
+  font-weight: 600;
+}
+
 /* ---------- Pie de pagina ---------- */
 
 .sigma-footer {

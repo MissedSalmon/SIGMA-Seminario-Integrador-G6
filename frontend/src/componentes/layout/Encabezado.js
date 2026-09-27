@@ -33,8 +33,9 @@ const NOMBRES = {
   '/areas': 'Áreas',
   '/activos': 'Activos',
   '/tipos-activos': 'Tipos de activos',
-  '/inventario': 'Inventario',
   '/inventario/tipos': 'Tipos de materiales y herramientas',
+  '/inventario/materiales': 'Materiales',
+  '/inventario/herramientas': 'Herramientas',
   '/tecnicos': 'Técnicos',
   '/especialidades': 'Especialidades',
   '/autorizados': 'Usuarios autorizados',
@@ -64,6 +65,14 @@ function armarMigas(direccion) {
 
     if (/^\d+$/.test(tramo) || tramos[indice + 1] === 'editar') return;
 
+    // "Inventario" es el grupo del menu, no una pantalla: no tiene una
+    // pagina propia (/inventario no resuelve a nada), asi que se muestra
+    // como una miga sin enlace y nunca como la pantalla en si misma.
+    if (acumulada === '/inventario') {
+      migas.push({ texto: 'Inventario', direccion: null, ultima: false });
+      return;
+    }
+
     migas.push({
       texto: NOMBRES[acumulada] ?? NOMBRES_COMUNES[tramo] ?? tramo,
       direccion: acumulada,
@@ -88,6 +97,8 @@ export default function Encabezado() {
               <CBreadcrumbItem key={miga.direccion} active>
                 {miga.texto}
               </CBreadcrumbItem>
+            ) : !miga.direccion ? (
+              <CBreadcrumbItem key={miga.texto}>{miga.texto}</CBreadcrumbItem>
             ) : (
               <CBreadcrumbItem key={miga.direccion}>
                 <Link href={miga.direccion} className="text-decoration-none">{miga.texto}</Link>

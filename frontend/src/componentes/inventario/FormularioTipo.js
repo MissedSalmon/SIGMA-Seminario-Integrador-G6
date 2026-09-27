@@ -81,12 +81,11 @@ export default function FormularioTipo({ tipo = null, onGuardar }) {
               ancho={20}
               revisado={revisado}
               error={errores.nombre}
-              ayuda="Así va a aparecer en el desplegable al cargar un material o una herramienta."
             />
 
             <Campo
               id="clase"
-              etiqueta="Clase"
+              etiqueta="Tipo"
               tipo="lista"
               valor={clase}
               alCambiar={setClase}
@@ -96,11 +95,6 @@ export default function FormularioTipo({ tipo = null, onGuardar }) {
               deshabilitado={editando}
               ancho={14}
               revisado={revisado}
-              ayuda={
-                editando
-                  ? 'La clase no se puede cambiar despues del alta.'
-                  : 'Un tipo de material no sirve para una herramienta, ni al reves.'
-              }
             />
 
             <Campo

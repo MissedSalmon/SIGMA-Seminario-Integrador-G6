@@ -2,9 +2,12 @@
 
 /**
  * Alta y edicion de un material o de una herramienta del deposito (HU-15).
+ * Trabaja sobre las tablas material y herramienta.
  *
- * Los dos se cargan con el mismo formulario porque comparten casi todos los
- * datos; lo que los separa es la clase, y de la clase dependen dos campos:
+ * La clase (`clase="Material"` o `clase="Herramienta"`) la fija la pantalla
+ * que usa este formulario, no la persona: /inventario/materiales solo da de
+ * alta materiales, /inventario/herramientas solo herramientas. Por eso el
+ * formulario no la pregunta, y de la clase dependen dos campos:
  *
  *   - un MATERIAL se consume, asi que lleva stock minimo y, si vence, fecha de
  *     vencimiento;
@@ -29,64 +32,46 @@ import Campo from '@/componentes/formulario/Campo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarTiposInventario } from '@/servicios/inventario.js';
 
-const CLASES = ['Material', 'Herramienta'];
-
 /** "Se agrego el material" / "Se agrego la herramienta". */
 function elArticulo(clase) {
   return clase === 'Herramienta' ? 'la herramienta' : 'el material';
 }
 
-export default function FormularioMaterialHerramienta({ articulo = null, onGuardar }) {
+/** A donde vuelve el formulario despues de guardar o al cancelar. */
+function pantallaDeVuelta(clase) {
+  return clase === 'Herramienta' ? '/inventario/herramientas' : '/inventario/materiales';
+}
+
+export default function FormularioMaterialHerramienta({ clase, articulo = null, onGuardar }) {
   const router = useRouter();
   const { mostrarToast } = useToast();
   const editando = Boolean(articulo);
+  const esMaterial = clase === 'Material';
+  const volverA = pantallaDeVuelta(clase);
 
   const [codigo, setCodigo] = useState(articulo?.codigo ?? '');
   const [nombre, setNombre] = useState(articulo?.nombre ?? '');
   const [descripcion, setDescripcion] = useState(articulo?.descripcion ?? '');
-  const [clase, setClase] = useState(articulo?.clase ?? 'Material');
   const [idTipo, setIdTipo] = useState(articulo?.idTipo ?? '');
   const [stockMinimo, setStockMinimo] = useState(articulo?.stockMinimo ?? '');
   const [fechaVencimiento, setFechaVencimiento] = useState(
     articulo?.fechaVencimiento?.slice(0, 10) ?? ''
   );
 
-  /*
-   * Los tipos que se trajeron y de que clase son. Van juntos a proposito: asi
-   * se sabe si la lista que hay en pantalla es la de la clase elegida o la de
-   * la anterior, sin tener que llevar aparte un "cargando" que se desacomoda
-   * cuando alguien cambia la clase dos veces seguidas.
-   */
-  const [tiposTraidos, setTiposTraidos] = useState({ clase: null, lista: [] });
-
+  const [tipos, setTipos] = useState([]);
+  const [cargandoTipos, setCargandoTipos] = useState(true);
   const [revisado, setRevisado] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
-  const esMaterial = clase === 'Material';
-
-  // Los tipos son distintos para materiales y para herramientas, asi que la
-  // lista se vuelve a pedir cada vez que se cambia la clase.
+  // Las categorias son las del tipo de item de esta pantalla: se piden una
+  // sola vez, porque la clase no cambia mientras el formulario esta abierto.
   useEffect(() => {
-    // Si se vuelve a cambiar la clase antes de que conteste la API, la
-    // respuesta vieja se descarta: si no, pisaria a la nueva.
-    let vigente = true;
-
     listarTiposInventario(clase)
-      .then((lista) => {
-        if (vigente) setTiposTraidos({ clase, lista });
-      })
-      .catch((fallo) => {
-        if (vigente) setError(fallo.message);
-      });
-
-    return () => {
-      vigente = false;
-    };
+      .then(setTipos)
+      .catch((fallo) => setError(fallo.message))
+      .finally(() => setCargandoTipos(false));
   }, [clase]);
-
-  const cargandoTipos = tiposTraidos.clase !== clase;
-  const tipos = cargandoTipos ? [] : tiposTraidos.lista;
 
   /*
    * Los errores se recalculan en cada tecla, pero no se muestran hasta apretar
@@ -97,7 +82,7 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
 
     if (!codigo.trim()) encontrados.codigo = 'El código es obligatorio y no se puede repetir.';
     if (!nombre.trim()) encontrados.nombre = 'El nombre es obligatorio.';
-    if (!idTipo) encontrados.idTipo = 'Elegí el tipo.';
+    if (!idTipo) encontrados.idTipo = 'Elegí la categoría.';
     if (esMaterial && String(stockMinimo).trim() === '') {
       encontrados.stockMinimo = 'Indicá desde qué cantidad hay que reponer.';
     }
@@ -131,7 +116,7 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
           ? `Se guardaron los cambios de "${nombre}".`
           : `Se agregó ${elArticulo(clase)} "${nombre}".`,
       });
-      router.push('/inventario');
+      router.push(volverA);
       router.refresh();
     } catch (fallo) {
       setError(fallo.message);
@@ -150,51 +135,22 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
         <Aviso mensaje={error} onCerrar={() => setError('')} />
 
         <form noValidate onSubmit={manejarEnvio}>
-          <h2 className="sigma-seccion-titulo">¿Qué es?</h2>
-
           <div className="sigma-campos mb-4">
             <Campo
-              id="clase"
-              etiqueta="Clase"
-              tipo="lista"
-              valor={clase}
-              alCambiar={(valor) => {
-                setClase(valor);
-                // Los tipos de material no sirven para una herramienta.
-                setIdTipo('');
-              }}
-              opciones={CLASES.map((texto) => ({ valor: texto, texto }))}
-              placeholder="Elegir clase"
-              obligatorio
-              deshabilitado={editando}
-              ancho={14}
-              revisado={revisado}
-              ayuda={
-                editando
-                  ? 'La clase no se puede cambiar despues del alta.'
-                  : 'Un material se consume; una herramienta se presta y se devuelve.'
-              }
-            />
-
-            <Campo
               id="idTipo"
-              etiqueta="Tipo"
+              etiqueta="Categoría"
               tipo="lista"
               valor={idTipo}
               alCambiar={setIdTipo}
               opciones={opcionesTipos}
-              placeholder={cargandoTipos ? 'Cargando...' : 'Elegir tipo'}
+              placeholder={cargandoTipos ? 'Cargando...' : 'Elegir categoría'}
               deshabilitado={cargandoTipos}
               obligatorio
               ancho={18}
               revisado={revisado}
               error={errores.idTipo}
             />
-          </div>
 
-          <h2 className="sigma-seccion-titulo">Datos</h2>
-
-          <div className="sigma-campos mb-4">
             <Campo
               id="codigo"
               etiqueta="Código"
@@ -223,7 +179,8 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
               error={errores.nombre}
             />
 
-            {editando && (
+            {/* El estado solo existe para una herramienta: un material no lo tiene. */}
+            {editando && !esMaterial && (
               <Campo
                 id="estado"
                 etiqueta="Estado"
@@ -266,7 +223,6 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
                   ancho={6}
                   revisado={revisado}
                   error={errores.stockMinimo}
-                  ayuda="Debajo de esta cantidad, el sistema avisa que hay que reponer."
                 />
 
                 <Campo
@@ -276,7 +232,6 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
                   valor={fechaVencimiento}
                   alCambiar={setFechaVencimiento}
                   revisado={revisado}
-                  ayuda="Solo si el material vence."
                 />
               </div>
             </>
@@ -292,7 +247,7 @@ export default function FormularioMaterialHerramienta({ articulo = null, onGuard
             <CButton type="submit" color="primary" disabled={guardando}>
               {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Agregar'}
             </CButton>
-            <BotonEnlace href="/inventario" color="secondary" variante="outline">
+            <BotonEnlace href={volverA} color="secondary" variante="outline">
               Cancelar
             </BotonEnlace>
           </div>
