@@ -78,7 +78,6 @@ export default function FormularioEspecialidad({ especialidad = null, onGuardar 
               ancho={18}
               revisado={revisado}
               error={errores.nombre}
-              ayuda="Así va a aparecer al elegir las especialidades de un técnico."
             />
           </div>
 

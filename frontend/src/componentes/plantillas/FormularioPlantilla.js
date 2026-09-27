@@ -104,7 +104,6 @@ export default function FormularioPlantilla({ plantilla = null, onGuardar }) {
               ancho={24}
               revisado={revisado}
               error={errores.idTipoActivo}
-              ayuda="La tarea se va a precargar en las OT de los activos de este tipo."
             />
 
             <Campo
@@ -118,7 +117,6 @@ export default function FormularioPlantilla({ plantilla = null, onGuardar }) {
               ancho={36}
               revisado={revisado}
               error={errores.descripcion}
-              ayuda="Una tarea por plantilla, escrita como una instrucción."
             />
           </div>
 

@@ -194,12 +194,15 @@ export default function PantallaTickets() {
                 tipo: 'fecha',
                 valor: filtroDesde,
                 alCambiar: setFiltroDesde,
+                // Un rango no se puede dar vuelta: el desde no pasa del hasta.
+                maximo: filtroHasta,
               },
               {
                 etiqueta: 'Hasta',
                 tipo: 'fecha',
                 valor: filtroHasta,
                 alCambiar: setFiltroHasta,
+                minimo: filtroDesde,
               },
               {
                 etiqueta: 'Activo',

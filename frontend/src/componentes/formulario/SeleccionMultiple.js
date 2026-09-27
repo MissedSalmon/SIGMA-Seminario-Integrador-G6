@@ -42,7 +42,6 @@ export default function SeleccionMultiple({
   alCambiar,
   textoTodas = 'Todas',
   placeholder = 'Seleccionar',
-  ayuda = '',
   obligatorio = false,
   error = '',
   revisado = false,
@@ -75,7 +74,7 @@ export default function SeleccionMultiple({
           variant="outline"
           className="sigma-seleccion-boton"
           aria-invalid={marca === 'error'}
-          aria-describedby={error || ayuda ? idMensaje : undefined}
+          aria-describedby={error ? idMensaje : undefined}
         >
           {resumen(opciones, elegidos, placeholder, textoTodas)}
         </CDropdownToggle>
@@ -102,16 +101,10 @@ export default function SeleccionMultiple({
         </CDropdownMenu>
       </CDropdown>
 
-      {marca === 'error' ? (
+      {marca === 'error' && (
         <p id={idMensaje} className="sigma-campo-mensaje sigma-campo-mensaje--error">
           {error}
         </p>
-      ) : (
-        ayuda && (
-          <p id={idMensaje} className="sigma-campo-mensaje">
-            {ayuda}
-          </p>
-        )
       )}
     </div>
   );

@@ -135,7 +135,6 @@ export default function FormularioArea({ area = null, onGuardar }) {
               ancho={22}
               revisado={revisado}
               error={errores.idEspacio}
-              ayuda="El responsable del área se asigna después, al dar de alta al usuario autorizado."
             />
           </div>
 

@@ -80,7 +80,6 @@ export default function FormularioTipoActivo({ tipo = null, onGuardar }) {
               ancho={20}
               revisado={revisado}
               error={errores.nombre}
-              ayuda="Así va a aparecer en el desplegable al cargar un activo."
             />
           </div>
 

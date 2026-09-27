@@ -197,7 +197,6 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
               anchoMinimo={8}
               revisado={revisado}
               error={errores.legajo}
-              ayuda={editando ? 'El legajo identifica a la persona y no se puede cambiar.' : ''}
             />
 
             <Campo
@@ -223,7 +222,6 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
               max={fechaMinimaNacimiento}
               revisado={revisado}
               error={errores.fechaNacimiento}
-              ayuda={`Tiene que tener ${EDAD_MINIMA} anios cumplidos.`}
             />
 
             <Campo
@@ -275,7 +273,6 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
               anchoMaximo={LARGO_TELEFONO + 2}
               revisado={revisado}
               error={errores.telefono}
-              ayuda={`${LARGO_TELEFONO} digitos, sin el 0 de adelante ni el 15.`}
             />
           </div>
 
@@ -295,7 +292,6 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
               anchoMinimo={24}
               revisado={revisado}
               error={errores.idArea}
-              ayuda={areas.length === 0 ? "No hay áreas libres: cargá una nueva o sacásela a otro responsable." : "Queda habilitado para cargar tickets sobre los activos de esta área. Solo se listan las áreas que todavía no tienen responsable."}
             />
           </div>
 

@@ -12,16 +12,18 @@
  * La excepcion es la orden de trabajo: ver ESTADOS_SIN_OT mas abajo.
  */
 import { use, useEffect, useState } from 'react';
-import { CButton, CCard, CCardBody, CCardHeader, CCol, CRow, CModal, CModalHeader, CModalTitle, CModalBody, CModalFooter, CFormTextarea, CFormSelect, CFormLabel } from '@coreui/react';
+import { CButton, CCard, CCardBody, CCardHeader, CCol, CRow, CModal, CModalHeader, CModalTitle, CModalBody, CModalFooter, CFormTextarea, CFormLabel } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilArrowLeft, cilExternalLink, cilCheckAlt, cilX } from '@coreui/icons';
+import { cilArrowLeft, cilExternalLink, cilCheckAlt, cilX, cilPlus, cilDescription } from '@coreui/icons';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
+import CampoLista from '@/componentes/formulario/CampoLista.js';
 import EtiquetaEstadoTicket from '@/componentes/tickets/EtiquetaEstadoTicket.js';
 import { obtenerTicket, validarTicket, rechazarTicket } from '@/servicios/tickets.js';
+import { crearOrdenDesdeTicket } from '@/servicios/ordenesTrabajo.js';
 import { obtenerActivo, actualizarActivo } from '@/servicios/activos.js';
 import { formatearFechaHora } from '@/utils/fechas.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
@@ -85,6 +87,8 @@ export default function PantallaDetalleTicket({ params }) {
   const [modalValidarVisible, setModalValidarVisible] = useState(false);
   const [estadoNuevoDelActivo, setEstadoNuevoDelActivo] = useState('');
   const [errorValidar, setErrorValidar] = useState('');
+
+  const [creandoOT, setCreandoOT] = useState(false);
 
   const cargarTicket = () => {
     obtenerTicket(id)
@@ -187,6 +191,28 @@ export default function PantallaDetalleTicket({ params }) {
       setErrorRechazo(err.message);
     } finally {
       setProcesando(false);
+    }
+  }
+
+  /*
+   * Genera la OT a mano (HU-14).
+   *
+   * Normalmente no hace falta: la OT se crea sola al validar el ticket. Este
+   * boton es el respaldo para el ticket que quedo validado sin OT, por ejemplo
+   * si ese paso fallo.
+   */
+  async function handleCrearOT() {
+    setCreandoOT(true);
+    setError('');
+
+    try {
+      const orden = await crearOrdenDesdeTicket(ticket.id);
+      mostrarToast({ tipo: 'exito', mensaje: `Se generó la orden de trabajo #${orden.id}.` });
+      cargarTicket();
+    } catch (fallo) {
+      setError(fallo.message);
+    } finally {
+      setCreandoOT(false);
     }
   }
 
@@ -361,13 +387,45 @@ export default function PantallaDetalleTicket({ params }) {
                               <Dato etiqueta="Descripción">{ticket.ot.descripcion}</Dato>
                             </CCol>
                           )}
+                          <CCol sm={12}>
+                            <BotonEnlace
+                              href={`/ordenes-trabajo/${ticket.ot.id}`}
+                              color="secondary"
+                              variante="outline"
+                              tamano="sm"
+                              title="Ver la orden de trabajo y planificar sus tareas"
+                            >
+                              <CIcon icon={cilDescription} size="sm" className="me-1" />
+                              Ver la orden de trabajo
+                            </BotonEnlace>
+                          </CCol>
                         </CRow>
                       ) : (
                         <>
                           <p className="mb-1 fw-semibold">Este ticket todavía no tiene una OT generada.</p>
-                          <p className="text-body-secondary small mb-0">
-                            La orden de trabajo se genera automáticamente al validar el ticket.
-                          </p>
+
+                          {/*
+                            La OT sale de un ticket validado y de ninguno mas. Si el
+                            ticket ya avanzo (asignado, en ejecucion, cerrado) y no
+                            tiene OT, es que algo quedo mal de antes: se arregla a
+                            mano, no generando una OT nueva.
+                          */}
+                          {ticket.estado === 'Validado' ? (
+                            <>
+                              <p className="text-body-secondary small">
+                                La orden de trabajo se genera automáticamente al validar el ticket. Si
+                                este quedó validado sin OT, se puede generar ahora.
+                              </p>
+                              <CButton color="primary" size="sm" onClick={handleCrearOT} disabled={creandoOT}>
+                                <CIcon icon={cilPlus} size="sm" className="me-1" />
+                                {creandoOT ? 'Creando...' : 'Crear OT'}
+                              </CButton>
+                            </>
+                          ) : (
+                            <p className="text-body-secondary small mb-0">
+                              La orden de trabajo sólo se puede generar cuando el ticket está validado.
+                            </p>
+                          )}
                         </>
                       )}
                     </CCardBody>
@@ -389,26 +447,15 @@ export default function PantallaDetalleTicket({ params }) {
                 </p>
 
                 <div className="mb-2">
-                  <CFormLabel htmlFor="estadoNuevoDelActivo" className="sigma-obligatorio">
-                    Estado del activo {ticket.codigoActivo}
-                  </CFormLabel>
-                  <CFormSelect
+                  <CampoLista
                     id="estadoNuevoDelActivo"
-                    value={estadoNuevoDelActivo}
-                    onChange={(e) => setEstadoNuevoDelActivo(e.target.value)}
-                    style={{ maxWidth: '20rem' }}
-                  >
-                    {ESTADOS_DE_ACTIVO.map((estado) => (
-                      <option key={estado} value={estado}>
-                        {estado}
-                      </option>
-                    ))}
-                  </CFormSelect>
-                  <p className="sigma-campo-mensaje">
-                    {ticket.activo?.estado
-                      ? `Ahora está en "${ticket.activo.estado}".`
-                      : 'Elegí en qué estado queda el activo.'}
-                  </p>
+                    etiqueta={`Estado del activo ${ticket.codigoActivo}`}
+                    valor={estadoNuevoDelActivo}
+                    alCambiar={setEstadoNuevoDelActivo}
+                    opciones={ESTADOS_DE_ACTIVO.map((estado) => ({ valor: estado, texto: estado }))}
+                    obligatorio
+                    ancho={18}
+                  />
                 </div>
               </CModalBody>
               <CModalFooter>

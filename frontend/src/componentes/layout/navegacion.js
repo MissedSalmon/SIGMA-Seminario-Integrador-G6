@@ -33,6 +33,7 @@ import {
   cilListRich,
   cilUser,
   cilCog,
+  cilClipboard,
 } from '@coreui/icons';
 
 export const navegacion = [
@@ -57,6 +58,13 @@ export const navegacion = [
     texto: 'Tickets',
     direccion: '/tickets',
     icono: cilList,
+  },
+  {
+    // Va despues de los tickets: la OT nace de un ticket validado.
+    tipo: 'item',
+    texto: 'Órdenes de trabajo',
+    direccion: '/ordenes-trabajo',
+    icono: cilClipboard,
   },
   {
     tipo: 'item',

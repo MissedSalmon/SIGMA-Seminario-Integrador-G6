@@ -106,6 +106,9 @@ en los **issues de GitHub**, y el modelo de datos en `supabase/migrations/`.
   HU-2 espacios y HU-3 áreas** (ABM completo, 28/08/2026), con la interfaz armada sobre
   la plantilla de administración de CoreUI. Los tres andan contra **datos de prueba en
   memoria** (`backend/src/datos-mock/`), no contra la base aún.
+- **HU-14 (crear la OT) está hecha (21/09/2026):** la OT se genera sola al validar el
+  ticket y se planifica en `/ordenes-trabajo`, cargándole las tareas con su prioridad y su
+  responsable. Los **prestadores de servicio** son sólo lectura hasta que se haga la HU-33.
 - **El proyecto en Supabase** y la conexión con **Vercel** en producción.
 
 *(Nota: La base de datos ya fue refactorizada e integrada con Supabase CLI en la carpeta `supabase/migrations/`)*
@@ -124,3 +127,8 @@ Al trabajar en la interfaz gráfica, se deben seguir estrictamente estas reglas:
 4. **Menús Laterales:** El tamaño del texto de los menúes no debe ser cortado por la barra lateral.
 5. **Responsividad:** Todas las pantallas (nuevas y existentes) deben ser responsivas y multiplataforma (adaptables a todos los tipos de pantallas y resoluciones).
 6. **Uso de Colores:** Los textos no deben tener un formato de colores si no tienen una explicación de qué significa cada color. Si se solicita que el texto de la UI tenga colores, siempre se debe preguntar/solicitar el significado de cada uno para tener las referencias necesarias. (¡Restricción más importante!)
+7. **Fechas:** Todo campo de fecha se carga con `<Campo tipoHtml="date">`, que dibuja el `DatePicker` de HeroUI (ver `frontend/src/componentes/formulario/CampoFecha.js`). **No usar `<input type="date">`.** El valor sigue siendo texto `"2026-09-14"`. Cada fecha tiene que llevar sus límites en `min` / `max` según lo que se esté cargando (una fecha de alta no puede ser futura, un vencimiento no puede ser pasado, un rango no se puede dar vuelta), y esos límites van **siempre acompañados** de la validación en el formulario: el almanaque es una ayuda, no el control. Una **duración** (cuánto lleva algo, no cuándo pasa) va con `<Campo tipo="duracion">`, que dibuja el `TimeField` de HeroUI en hh:mm (ver `frontend/src/componentes/formulario/CampoDuracion.js`); el valor es texto `"01:30"` y el tope es 23:59. El detalle está en [arquitectura.md](.claude/contexto/arquitectura.md).
+8. **Sin descripciones en los campos:** debajo de la caja de un campo va **sólo el error**, nunca una línea explicando para qué sirve. La etiqueta ya lo dice. Los componentes de formulario no tienen prop para eso.
+9. **Elegir una opción:** todo selector se hace con `<Campo tipo="lista">` (o `tipo="buscador"`), que dibuja el `ComboBox` de HeroUI (ver `frontend/src/componentes/formulario/CampoLista.js`). **No usar `<select>`, `CFormSelect` ni `react-select`.** La lista se filtra escribiendo. El valor sigue siendo texto (`"5"` o `""`). Para que el campo se pueda vaciar hay que pasarle `textoVacio` con el texto de esa opción.
+10. **Ruta de migas:** el "Inicio › ..." de arriba lo dibuja el `Breadcrumbs` de HeroUI desde `frontend/src/componentes/layout/Encabezado.js`, una sola vez para todas las pantallas. **Cada pantalla nueva se agrega al mapa `NOMBRES` de ese archivo**, con el mismo texto que su título; si no, la miga muestra el tramo de la dirección en crudo.
+11. **Cantidades:** un campo de cantidad va con `<Campo tipo="numero">`, que dibuja el `NumberField` de HeroUI con los botones **+ número -** (ver `frontend/src/componentes/formulario/CampoNumero.js`). Los botones respetan el `min` y el `max`. **No es para todo número:** un legajo o cualquier número que sea un identificador sigue siendo un campo de texto, porque no tiene sentido subirlo de a uno.

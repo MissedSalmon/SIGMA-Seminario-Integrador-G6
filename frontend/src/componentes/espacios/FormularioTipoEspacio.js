@@ -79,7 +79,6 @@ export default function FormularioTipoEspacio({ tipo = null, onGuardar }) {
               ancho={18}
               revisado={revisado}
               error={errores.nombre}
-              ayuda="Así va a aparecer en el desplegable al cargar un espacio."
             />
           </div>
 

@@ -283,11 +283,9 @@ export default function FormularioEspacio({ espacio = null, onGuardar }) {
                 />
                 <CInputGroupText>m</CInputGroupText>
               </CInputGroup>
-              <p
-                className={`sigma-campo-mensaje${errorDimensiones ? ' sigma-campo-mensaje--error' : ''}`}
-              >
-                {errorDimensiones || 'Ancho y largo, en metros.'}
-              </p>
+              {errorDimensiones && (
+                <p className="sigma-campo-mensaje sigma-campo-mensaje--error">{errorDimensiones}</p>
+              )}
             </div>
           </div>
 

@@ -268,7 +268,6 @@ export default function FormularioTicket({ onGuardar }) {
               ancho={30}
               revisado={revisado}
               error={errores.codigoActivo}
-              ayuda="Los activos retirados no aparecen en la lista."
             />
           </div>
 
@@ -393,9 +392,9 @@ export default function FormularioTicket({ onGuardar }) {
                 </CButton>
               )}
 
-              <p className={`sigma-campo-mensaje${errores.foto ? ' sigma-campo-mensaje--error' : ''}`}>
-                {errores.foto || 'Una imagen de hasta 5 MB.'}
-              </p>
+              {errores.foto && (
+                <p className="sigma-campo-mensaje sigma-campo-mensaje--error">{errores.foto}</p>
+              )}
             </div>
           </div>
 

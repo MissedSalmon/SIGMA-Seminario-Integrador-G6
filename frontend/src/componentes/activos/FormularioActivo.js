@@ -44,13 +44,6 @@ function hoy() {
   return `${ahora.getFullYear()}-${mes}-${dia}`;
 }
 
-/** De "2026-08-30" arma "30/08/2026", que es como se lee una fecha aca. */
-function comoFecha(texto) {
-  if (!texto) return '';
-  const [anio, mes, dia] = String(texto).slice(0, 10).split('-');
-  return `${dia}/${mes}/${anio}`;
-}
-
 export default function FormularioActivo({ activo = null, onGuardar }) {
   const router = useRouter();
   const { mostrarToast } = useToast();
@@ -232,11 +225,6 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
               ancho={10}
               revisado={revisado}
               error={errores.codigo}
-              ayuda={
-                editando
-                  ? 'El codigo identifica al activo y no se puede cambiar.'
-                  : 'No se puede repetir: identifica al activo.'
-              }
             />
 
             <Campo
@@ -265,13 +253,6 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
               ancho={22}
               revisado={revisado}
               error={errores.idEspacio}
-              ayuda={
-                editando
-                  ? activo.fechaUltimaReubicacion
-                    ? `Elegir otro espacio reubica el activo. Ultima reubicacion: ${comoFecha(activo.fechaUltimaReubicacion)}.`
-                    : 'Elegir otro espacio reubica el activo y queda registrada la fecha.'
-                  : ''
-              }
             />
 
             <Campo
@@ -297,11 +278,6 @@ export default function FormularioActivo({ activo = null, onGuardar }) {
                 deshabilitado={estadoAutomatico}
                 ancho={16}
                 revisado={revisado}
-                ayuda={
-                  estadoAutomatico
-                    ? 'Este estado lo maneja la orden de trabajo, no se cambia desde aca.'
-                    : 'Para retirar el activo, usa el boton de baja en el listado.'
-                }
               />
             )}
           </div>

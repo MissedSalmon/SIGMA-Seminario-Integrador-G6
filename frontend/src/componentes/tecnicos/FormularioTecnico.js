@@ -150,7 +150,6 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
               anchoMaximo={12}
               revisado={revisado}
               error={errores.legajo}
-              ayuda={editando ? 'El legajo identifica al tecnico y no se puede cambiar.' : ''}
             />
 
             <Campo
@@ -178,7 +177,6 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
               anchoMaximo={LARGO_TELEFONO + 2}
               revisado={revisado}
               error={errores.telefono}
-              ayuda={`${LARGO_TELEFONO} digitos, sin el 0 de adelante ni el 15.`}
             />
           </div>
 
@@ -213,11 +211,11 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
                       />
                     ))}
                   </div>
-                  <p
-                    className={`sigma-campo-mensaje${errorEspecialidades ? ' sigma-campo-mensaje--error' : ''}`}
-                  >
-                    {errorEspecialidades || 'Un tecnico puede tener mas de una.'}
-                  </p>
+                  {errorEspecialidades && (
+                    <p className="sigma-campo-mensaje sigma-campo-mensaje--error">
+                      {errorEspecialidades}
+                    </p>
+                  )}
                 </>
               )}
             </div>
@@ -232,11 +230,6 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
               obligatorio
               anchoMinimo={14}
               revisado={revisado}
-              ayuda={
-                editando
-                  ? 'Marcarlo como "No disponible" no lo elimina: sigue en el sistema con su historial.'
-                  : ''
-              }
             />
           </div>
 

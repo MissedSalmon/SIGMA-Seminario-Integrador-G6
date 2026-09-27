@@ -6,6 +6,8 @@
  * leen en la facultad.
  */
 
+import { getLocalTimeZone, parseDate, today } from '@internationalized/date';
+
 /** De un ISO arma "13/09/2026 13:36". Si no hay fecha, devuelve "-". */
 export function formatearFechaHora(iso) {
   if (!iso) return '-';
@@ -86,4 +88,46 @@ export function hoyLegible() {
     month: '2-digit',
     year: 'numeric',
   });
+}
+
+/*
+ * ---------- Fechas para el campo de fecha de HeroUI ----------
+ *
+ * Todo SIGMA maneja las fechas como texto "2026-09-14": asi las guarda el
+ * estado de los formularios, asi se comparan (ordenan igual que en el
+ * almanaque) y asi viajan a la API. El campo de fecha de HeroUI, en cambio,
+ * trabaja con objetos CalendarDate.
+ *
+ * La traduccion vive aca y no en el componente para que el resto del codigo no
+ * se enteren del cambio: los formularios siguen leyendo y escribiendo texto.
+ */
+
+/**
+ * De "2026-09-14" al CalendarDate que entiende HeroUI.
+ *
+ * Devuelve null si no hay fecha o si el texto no es una fecha: parseDate tira
+ * error con cualquier cosa que no tenga la forma exacta, y un formulario a
+ * medio llenar no tiene por que romper la pantalla.
+ */
+export function aFechaCalendario(texto) {
+  if (!texto) return null;
+
+  try {
+    return parseDate(String(texto).slice(0, 10));
+  } catch {
+    return null;
+  }
+}
+
+/** Del CalendarDate de HeroUI al texto "2026-09-14". Sin fecha, cadena vacia. */
+export function deFechaCalendario(valor) {
+  return valor ? valor.toString() : '';
+}
+
+/**
+ * Hoy como CalendarDate, en la zona horaria de la maquina de quien mira la
+ * pantalla (el mismo criterio que hoyTexto: ver el comentario de esa funcion).
+ */
+export function hoyCalendario() {
+  return today(getLocalTimeZone());
 }
