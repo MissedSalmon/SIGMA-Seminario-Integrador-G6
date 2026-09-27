@@ -23,6 +23,14 @@ import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarEspacios } from '@/servicios/espacios.js';
 import { listarTiposActivos } from '@/servicios/tiposActivos.js';
 import { listarActivos, darDeBajaActivo } from '@/servicios/activos.js';
+import {
+  CDropdown,
+  CDropdownToggle,
+  CDropdownMenu,
+  CDropdownItem
+} from '@coreui/react';
+import * as xlsx from 'xlsx';
+import DialogoImportar from './DialogoImportar.js';
 
 const ESTADOS = ['Operativo', 'En mantenimiento', 'Fuera de servicio', 'Retirado'];
 
@@ -107,6 +115,23 @@ export default function PantallaActivos() {
     }
   }
 
+  const [mostrarImportar, setMostrarImportar] = useState(false);
+
+  const exportarActivos = () => {
+    // The columns should be: Código, Tipo, Edificio, Espacio, Estado
+    const datosExportar = activos.map(a => ({
+      'Código': a.codigo,
+      'Tipo': a.nombreTipo,
+      'Edificio': a.nombreEdificio,
+      'Espacio': a.nombreEspacio,
+      'Estado': a.estado,
+    }));
+    const hoja = xlsx.utils.json_to_sheet(datosExportar);
+    const libro = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(libro, hoja, 'Activos');
+    xlsx.writeFile(libro, 'activos_exportados.xlsx');
+  };
+
   const hayFiltros = Boolean(filtroEspacio || filtroTipo || filtroEstado);
 
   const columnas = [
@@ -168,11 +193,24 @@ export default function PantallaActivos() {
     },
   ];
 
+  const dropdownOpciones = (
+    <CDropdown>
+      <CDropdownToggle color="secondary" variant="outline">
+        Opciones
+      </CDropdownToggle>
+      <CDropdownMenu>
+        <CDropdownItem as="button" onClick={() => setMostrarImportar(true)}>Importar</CDropdownItem>
+        <CDropdownItem as="button" onClick={exportarActivos}>Exportar</CDropdownItem>
+      </CDropdownMenu>
+    </CDropdown>
+  );
+
   return (
     <>
       <EncabezadoPagina
         titulo="Activos"
         accion={{ direccion: '/activos/agregar' }}
+        accionesExtra={dropdownOpciones}
       />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
@@ -237,6 +275,12 @@ export default function PantallaActivos() {
           se conserva su historial de intervenciones.
         </p>
       </DialogoEliminar>
+
+      <DialogoImportar
+        visible={mostrarImportar}
+        onCerrar={() => setMostrarImportar(false)}
+        onRecargar={() => setRecarga(n => n + 1)}
+      />
     </>
   );
 }

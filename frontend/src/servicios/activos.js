@@ -53,3 +53,13 @@ export async function darDeBajaActivo(codigo) {
   const { data } = await api.delete(`/activos/${encodeURIComponent(codigo)}`);
   return data.datos;
 }
+
+export async function validarImportacion(filas) {
+  const { data } = await api.post('/activos/importar/validar', { filas });
+  return data.datos;
+}
+
+export async function confirmarImportacion(filas) {
+  const { data } = await api.post('/activos/importar/confirmar', { filas });
+  return data.datos;
+}
