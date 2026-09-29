@@ -55,11 +55,11 @@ export async function darDeBajaActivo(codigo) {
 }
 
 export async function validarImportacion(filas) {
-  const { data } = await api.post('/activos/importar/validar', { filas });
+  const { data } = await api.post('/activos/importar/validar', filas);
   return data.datos;
 }
 
 export async function confirmarImportacion(filas) {
-  const { data } = await api.post('/activos/importar/confirmar', { filas });
+  const { data } = await api.post('/activos/importar/confirmar', filas);
   return data.datos;
 }
