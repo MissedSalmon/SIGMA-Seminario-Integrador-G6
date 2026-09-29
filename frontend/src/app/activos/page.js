@@ -12,7 +12,7 @@
 import { useEffect, useState } from 'react';
 import { CButton, CButtonGroup, CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilPencil, cilTrash } from '@coreui/icons';
+import { cilPencil, cilTrash, cilCloudUpload, cilCloudDownload } from '@coreui/icons';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
@@ -31,7 +31,7 @@ import {
 } from '@coreui/react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import DialogoImportar from './DialogoImportar.js';
+
 
 const ESTADOS = ['Operativo', 'En mantenimiento', 'Fuera de servicio', 'Retirado'];
 
@@ -116,7 +116,7 @@ export default function PantallaActivos() {
     }
   }
 
-  const [mostrarImportar, setMostrarImportar] = useState(false);
+  
 
   const exportarActivos = async () => {
     const workbook = new ExcelJS.Workbook();
@@ -141,7 +141,7 @@ export default function PantallaActivos() {
     });
 
     const buffer = await workbook.xlsx.writeBuffer();
-    saveAs(new Blob([buffer]), 'activos_exportados.xlsx');
+    saveAs(new Blob([buffer]), 'listado activos.xlsx');
   };
 
   const hayFiltros = Boolean(filtroEspacio || filtroTipo || filtroEstado);
@@ -211,8 +211,14 @@ export default function PantallaActivos() {
         Opciones
       </CDropdownToggle>
       <CDropdownMenu>
-        <CDropdownItem as="button" onClick={() => setMostrarImportar(true)}>Importar</CDropdownItem>
-        <CDropdownItem as="button" onClick={exportarActivos}>Exportar</CDropdownItem>
+        <CDropdownItem href="/activos/importar">
+          <CIcon icon={cilCloudUpload} className="me-2" />
+          Importar
+        </CDropdownItem>
+        <CDropdownItem as="button" onClick={exportarActivos}>
+          <CIcon icon={cilCloudDownload} className="me-2" />
+          Exportar
+        </CDropdownItem>
       </CDropdownMenu>
     </CDropdown>
   );
@@ -288,11 +294,7 @@ export default function PantallaActivos() {
         </p>
       </DialogoEliminar>
 
-      <DialogoImportar
-        visible={mostrarImportar}
-        onCerrar={() => setMostrarImportar(false)}
-        onRecargar={() => setRecarga(n => n + 1)}
-      />
+      
     </>
   );
 }

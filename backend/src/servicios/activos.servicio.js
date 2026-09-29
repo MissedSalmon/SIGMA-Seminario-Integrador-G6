@@ -282,16 +282,45 @@ export async function validarImportacion(filas) {
     }
   }
 
+  const hoyDate = new Date();
+  hoyDate.setHours(0, 0, 0, 0);
+
   for (const fila of filas) {
     const errores = [];
-    const { activoCodigo, activoDesc, tipoActivoId, tipoActivoNom, edificioId, espacioNum, activoEstado } = fila;
+    let { activoCodigo, activoDesc, tipoActivoId, tipoActivoNom, edificioId, espacioNum, activoEstado, activoFechaAlta, activoFechaInst } = fila;
+
+    if (!activoEstado) {
+      activoEstado = 'Operativo';
+      fila.activoEstado = 'Operativo';
+    } else if (!ESTADOS.includes(activoEstado)) {
+      errores.push(`El estado "${activoEstado}" no es válido. Valores posibles: ${ESTADOS.join(', ')}`);
+    }
 
     if (!activoCodigo) errores.push("Falta el código del activo.");
     if (!activoDesc) errores.push("Falta la descripción del activo.");
-    if (!activoEstado) errores.push("Falta el estado del activo.");
 
     if (!tipoActivoId && !tipoActivoNom) {
       errores.push("Falta el tipo de activo (proveer ID o Nombre).");
+    }
+
+    if (activoFechaAlta) {
+      const fechaAltaObj = new Date(activoFechaAlta);
+      if (isNaN(fechaAltaObj.getTime())) {
+        errores.push(`La fecha de alta "${activoFechaAlta}" no es un formato de fecha válido.`);
+      } else {
+        const fechaAltaCompare = new Date(fechaAltaObj);
+        fechaAltaCompare.setHours(0, 0, 0, 0);
+        if (fechaAltaCompare > hoyDate) {
+          errores.push(`La fecha de alta no puede ser a futuro.`);
+        }
+      }
+    }
+
+    if (activoFechaInst) {
+      const fechaInstObj = new Date(activoFechaInst);
+      if (isNaN(fechaInstObj.getTime())) {
+        errores.push(`La fecha de instalación "${activoFechaInst}" no es un formato de fecha válido.`);
+      }
     }
 
     if (activoCodigo) {
@@ -304,10 +333,6 @@ export async function validarImportacion(filas) {
       if (codigosExistentes.has(activoCodigo)) {
         errores.push("El código ya existe en el catálogo.");
       }
-    }
-
-    if (activoEstado && !ESTADOS.includes(activoEstado)) {
-      errores.push(`El estado "${activoEstado}" no es válido.`);
     }
 
     if (tipoActivoId && !tiposExistentesPorId.has(Number(tipoActivoId))) {
@@ -382,7 +407,8 @@ export async function confirmarImportacion(filasValidas) {
       tipo_activo_id: Number(f.tipoActivoId),
       edificio_id: Number(f.edificioId),
       espacio_id: espacio_id,
-      activo_fecha_alta: f.activoFechaAlta ? f.activoFechaAlta : hoy(),
+      activo_fecha_alta: f.activoFechaAlta ? new Date(f.activoFechaAlta).toISOString().split('T')[0] : hoy(),
+      activo_fecha_inst: f.activoFechaInst ? new Date(f.activoFechaInst).toISOString().split('T')[0] : null,
       activo_estado: f.activoEstado
     };
   });
