@@ -28,6 +28,7 @@
     "exceljs": "^4.4.0",
     "file-saver": "^2.0.5",
     "next": "^16.3.3",
+    "papaparse": "^5.7.0",
     "react": "^19.2.8",
     "react-aria": "^3.52.1",
     "react-aria-components": "^1.21.1",

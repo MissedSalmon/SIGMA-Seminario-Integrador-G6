@@ -11,6 +11,7 @@ import {
   CBadge
 } from '@coreui/react';
 import ExcelJS from 'exceljs';
+import Papa from 'papaparse';
 import { saveAs } from 'file-saver';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { validarImportacion, confirmarImportacion } from '@/servicios/activos.js';
@@ -45,24 +46,34 @@ export default function DialogoImportar({ visible, onCerrar, onRecargar }) {
     setCargando(true);
     setErrorGlobal('');
     try {
-      const buffer = await archivo.arrayBuffer();
-      const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(buffer);
-      const worksheet = workbook.worksheets[0];
+      let json = [];
       
-      const json = [];
-      let headers = [];
-      worksheet.eachRow((row, rowNumber) => {
-        if (rowNumber === 1) {
-          headers = row.values.slice(1);
-        } else {
-          const rowData = {};
-          row.values.slice(1).forEach((val, i) => {
-            rowData[headers[i]] = val;
-          });
-          json.push(rowData);
+      if (archivo.name.toLowerCase().endsWith('.csv')) {
+        const text = await archivo.text();
+        const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+        if (parsed.errors.length > 0) {
+          throw new Error('Error al parsear el archivo CSV. Asegúrate de que el formato sea correcto.');
         }
-      });
+        json = parsed.data;
+      } else {
+        const buffer = await archivo.arrayBuffer();
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(buffer);
+        const worksheet = workbook.worksheets[0];
+        
+        let headers = [];
+        worksheet.eachRow((row, rowNumber) => {
+          if (rowNumber === 1) {
+            headers = row.values.slice(1);
+          } else {
+            const rowData = {};
+            row.values.slice(1).forEach((val, i) => {
+              rowData[headers[i]] = val;
+            });
+            json.push(rowData);
+          }
+        });
+      }
 
       const resultado = await validarImportacion(json);
       setFilasValidadas(resultado);
