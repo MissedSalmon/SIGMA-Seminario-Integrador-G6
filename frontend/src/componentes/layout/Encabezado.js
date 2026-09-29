@@ -26,6 +26,9 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { Breadcrumbs, RouterProvider } from '@heroui/react';
 import { CContainer, CHeader } from '@coreui/react';
+import CIcon from '@coreui/icons-react';
+import { cilMenu } from '@coreui/icons';
+import { useLayout } from './ContextoLayout.js';
 
 /**
  * Como se muestra cada pantalla en las migas.
@@ -139,13 +142,21 @@ function armarMigas(direccion) {
 }
 
 export default function Encabezado() {
+  const { barraVisible, setBarraVisible } = useLayout();
   const direccionActual = usePathname();
   const router = useRouter();
   const migas = armarMigas(direccionActual);
 
   return (
     <CHeader position="sticky" className="mb-4 p-0">
-      <CContainer className="border-bottom px-4 py-3" fluid>
+      <CContainer className="border-bottom px-4 py-3 d-flex align-items-center" fluid>
+        <button
+          className="btn btn-link text-body p-0 d-md-none me-3"
+          onClick={() => setBarraVisible(!barraVisible)}
+          aria-label="Alternar menú"
+        >
+          <CIcon icon={cilMenu} size="lg" />
+        </button>
         <RouterProvider navigate={router.push}>
           <Breadcrumbs className="sigma-migas">
             {/* En la pantalla de inicio, "Inicio" es la unica miga y es la actual. */}

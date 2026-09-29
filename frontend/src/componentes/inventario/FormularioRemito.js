@@ -376,12 +376,13 @@ export default function FormularioRemito({ onGuardar }) {
           <div className="d-flex flex-wrap align-items-center gap-3 mb-4">
             <CButton type="button" color="secondary" variant="outline" size="sm" onClick={agregarRenglon}>
               <CIcon icon={cilPlus} size="sm" className="me-1" />
-              Agregar renglón
+              Agregar
             </CButton>
 
             <small className="text-body-secondary">
-              ¿No encontrás el ítem? El remito no da de alta: cargalo primero en{' '}
-              <Link href="/inventario/agregar">el catálogo del depósito</Link>.
+              ¿No encontrás el ítem? El remito no da de alta: cargalo primero como{' '}
+              <Link href="/inventario/materiales/agregar">Material</Link> o{' '}
+              <Link href="/inventario/herramientas/agregar">Herramienta</Link>.
             </small>
           </div>
 

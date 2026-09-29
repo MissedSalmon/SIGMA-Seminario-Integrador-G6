@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "concurrently": "^10.0.5",
-    "supabase": "^2.116.0"
+    "supabase": "^2.118.0"
   },
   "allowScripts": {
     "unrs-resolver": true,
