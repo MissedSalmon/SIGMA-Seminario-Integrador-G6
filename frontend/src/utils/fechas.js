@@ -90,6 +90,23 @@ export function hoyLegible() {
   });
 }
 
+/**
+ * Una fecha SIN hora, como se lee en la facultad: de "2026-09-28" sale
+ * "28/09/2026". Si no hay fecha, devuelve "-".
+ *
+ * Se corta el texto en lugar de armar un Date a proposito. Un DATE de Postgres
+ * llega como "2026-09-28" o "2026-09-28T00:00:00+00:00", y las dos, pasadas por
+ * Date, se leen como medianoche en UTC: en Argentina eso es el dia anterior a
+ * las 21, asi que la fecha de recepcion de un remito se mostraria un dia
+ * corrida. Con el texto eso no pasa, porque no hay zona horaria de por medio.
+ */
+export function soloFechaLegible(iso) {
+  if (!iso) return '-';
+
+  const [anio, mes, dia] = String(iso).slice(0, 10).split('-');
+  return dia && mes && anio ? `${dia}/${mes}/${anio}` : '-';
+}
+
 /*
  * ---------- Fechas para el campo de fecha de HeroUI ----------
  *

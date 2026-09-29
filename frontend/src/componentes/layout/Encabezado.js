@@ -50,6 +50,7 @@ const NOMBRES = {
   '/tipos-activos': 'Tipos de activos',
   '/inventario': 'Inventario',
   '/inventario/tipos': 'Tipos de materiales y herramientas',
+  '/inventario/remitos': 'Ingresos por remito',
   '/tecnicos': 'Técnicos',
   '/especialidades': 'Especialidades',
   '/autorizados': 'Usuarios autorizados',
@@ -62,12 +63,23 @@ const NOMBRES_COMUNES = {
 };
 
 /**
+ * Los modulos cuyo registro se identifica con un codigo y no con un numero.
+ *
+ * Hace falta para la ficha de un item del deposito (/inventario/CA-111): el
+ * tramo "CA-111" es un identificador, pero no es un numero ni viene seguido de
+ * "editar", asi que las dos reglas de abajo no lo agarran y la miga terminaria
+ * mostrando el codigo.
+ */
+const MODULOS_CON_CODIGO = ['/activos', '/inventario', '/tecnicos'];
+
+/**
  * Convierte "/edificios/3/editar" en los tramos de la ruta de migas.
  *
  * Los identificadores no se muestran, porque no son una pantalla a la que se
  * pueda entrar. Un identificador es el tramo que va justo antes de "editar":
  * puede ser un numero (/edificios/3/editar) o un codigo, como el de inventario
- * de un activo (/activos/AC-014/editar).
+ * de un activo (/activos/AC-014/editar). Tambien lo es el tramo que cuelga
+ * directo de un modulo de MODULOS_CON_CODIGO (/inventario/CA-111).
  */
 function armarMigas(direccion) {
   const tramos = direccion.split('/').filter(Boolean);
@@ -75,9 +87,23 @@ function armarMigas(direccion) {
   let acumulada = '';
 
   tramos.forEach((tramo, indice) => {
+    const padre = acumulada;
     acumulada += `/${tramo}`;
 
     if (/^\d+$/.test(tramo) || tramos[indice + 1] === 'editar') return;
+
+    /*
+     * Un codigo colgado de un modulo es un identificador, salvo que ese tramo
+     * sea una pantalla: una con nombre propio (/inventario/tipos,
+     * /inventario/remitos) o una de las comunes (/activos/agregar).
+     */
+    if (
+      MODULOS_CON_CODIGO.includes(padre) &&
+      !NOMBRES[acumulada] &&
+      !NOMBRES_COMUNES[tramo]
+    ) {
+      return;
+    }
 
     /*
      * Las tareas de una OT no tienen listado propio: viven en el detalle de la

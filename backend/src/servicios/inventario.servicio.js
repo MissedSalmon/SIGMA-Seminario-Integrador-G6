@@ -1,5 +1,5 @@
 import { supabase } from '../config/supabase.js';
-import { conflicto, datoInvalido, noEncontrado } from '../utiles/errores.js';
+import { conflicto, datoInvalido, errorDeBase, noEncontrado } from '../utiles/errores.js';
 
 const CLASES = ['Material', 'Herramienta'];
 
@@ -155,6 +155,51 @@ export async function actualizarItem(codigo, datos) {
   const { data, error } = await supabase.from('inventarioitem').update({ inventarioitemnom: item.nombre, inventarioitemdesc: item.descripcion, inventariotipoid: item.idTipo, inventarioitemclase: item.clase, inventarioitemstockmin: item.stockMinimo, inventarioitemfechavenc: item.fechaVencimiento }).eq('inventarioitemcod', codigo).select(COLUMNAS).single();
   if (error) throw new Error(error.message);
   return aItem(data);
+}
+
+/**
+ * El historial de movimientos de un item (HU-16), del mas nuevo al mas viejo.
+ *
+ * Un movimiento de Ingreso viene de un remito y trae su numero y su proveedor.
+ * Un Consumo sale de una tarea de OT y no tiene remito: por eso remito_id es
+ * anulable y aca el origen queda en null.
+ */
+export async function obtenerMovimientos(codigo) {
+  // Que el item exista: si no, el historial vacio no se distingue de un codigo
+  // mal escrito.
+  await obtenerItem(codigo);
+
+  const { data, error } = await supabase
+    .from('inventariomovimiento')
+    .select(`
+      inventariomovimientoid,
+      inventariomovimientotipo,
+      inventariomovimientocantidad,
+      inventariomovimientofecha,
+      inventariomovimientousuario,
+      remito_id,
+      remito (
+        remito_num,
+        remito_proveedor
+      )
+    `)
+    .eq('inventarioitemcod', codigo)
+    .order('inventariomovimientofecha', { ascending: false })
+    .order('inventariomovimientoid', { ascending: false });
+
+  // El historial se une con remito, que llega con la migracion de HU-16.
+  if (error) throw errorDeBase(error, 'del remito');
+
+  return data.map((fila) => ({
+    id: fila.inventariomovimientoid,
+    tipo: fila.inventariomovimientotipo,
+    cantidad: fila.inventariomovimientocantidad,
+    fecha: fila.inventariomovimientofecha,
+    usuario: fila.inventariomovimientousuario ?? null,
+    idRemito: fila.remito_id ?? null,
+    numeroRemito: fila.remito?.remito_num ?? null,
+    proveedor: fila.remito?.remito_proveedor ?? null,
+  }));
 }
 
 export async function eliminarItem(codigo) {

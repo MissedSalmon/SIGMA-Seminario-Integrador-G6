@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react';
 import { CButton, CButtonGroup, CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilPencil, cilTrash } from '@coreui/icons';
+import { cilDescription, cilPencil, cilTrash } from '@coreui/icons';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
@@ -62,6 +62,11 @@ export default function PantallaInventario() {
       render: (fila) => <span className="text-body-secondary">{fila.nombreTipo || '-'}</span>,
     },
     {
+      clave: 'stockActual',
+      encabezado: 'Stock actual',
+      render: (fila) => <span className="text-body-secondary">{fila.stockActual}</span>,
+    },
+    {
       clave: 'stock',
       encabezado: 'Stock mínimo',
       render: (fila) => (fila.clase === 'Material' ? fila.stockMinimo : '-'),
@@ -73,6 +78,14 @@ export default function PantallaInventario() {
       alinearDerecha: true,
       render: (fila) => (
         <CButtonGroup size="sm">
+          <BotonEnlace
+            href={`/inventario/${encodeURIComponent(fila.codigo)}`}
+            variante="ghost"
+            className="btn-icono"
+            title="Ver la ficha y el historial de movimientos"
+          >
+            <CIcon icon={cilDescription} />
+          </BotonEnlace>
           <BotonEnlace
             href={`/inventario/${encodeURIComponent(fila.codigo)}/editar`}
             variante="ghost"
