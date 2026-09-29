@@ -12,7 +12,7 @@
 import { useEffect, useState } from 'react';
 import { CButton, CButtonGroup, CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilPencil, cilTrash } from '@coreui/icons';
+import { cilPencil, cilTrash, cilCloudUpload, cilCloudDownload } from '@coreui/icons';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
@@ -23,6 +23,15 @@ import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarEspacios } from '@/servicios/espacios.js';
 import { listarTiposActivos } from '@/servicios/tiposActivos.js';
 import { listarActivos, darDeBajaActivo } from '@/servicios/activos.js';
+import {
+  CDropdown,
+  CDropdownToggle,
+  CDropdownMenu,
+  CDropdownItem
+} from '@coreui/react';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+
 
 const ESTADOS = ['Operativo', 'En mantenimiento', 'Fuera de servicio', 'Retirado'];
 
@@ -107,6 +116,34 @@ export default function PantallaActivos() {
     }
   }
 
+  
+
+  const exportarActivos = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Activos');
+    
+    worksheet.columns = [
+      { header: 'Código', key: 'codigo', width: 20 },
+      { header: 'Tipo', key: 'tipo', width: 30 },
+      { header: 'Edificio', key: 'edificio', width: 20 },
+      { header: 'Espacio', key: 'espacio', width: 20 },
+      { header: 'Estado', key: 'estado', width: 20 }
+    ];
+
+    activos.forEach(a => {
+      worksheet.addRow({
+        codigo: a.codigo,
+        tipo: a.nombreTipo,
+        edificio: a.nombreEdificio,
+        espacio: a.nombreEspacio,
+        estado: a.estado
+      });
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), 'listado activos.xlsx');
+  };
+
   const hayFiltros = Boolean(filtroEspacio || filtroTipo || filtroEstado);
 
   const columnas = [
@@ -168,11 +205,30 @@ export default function PantallaActivos() {
     },
   ];
 
+  const dropdownOpciones = (
+    <CDropdown>
+      <CDropdownToggle color="secondary" variant="outline">
+        Opciones
+      </CDropdownToggle>
+      <CDropdownMenu>
+        <CDropdownItem href="/activos/importar">
+          <CIcon icon={cilCloudUpload} className="me-2" />
+          Importar
+        </CDropdownItem>
+        <CDropdownItem as="button" onClick={exportarActivos}>
+          <CIcon icon={cilCloudDownload} className="me-2" />
+          Exportar
+        </CDropdownItem>
+      </CDropdownMenu>
+    </CDropdown>
+  );
+
   return (
     <>
       <EncabezadoPagina
         titulo="Activos"
         accion={{ direccion: '/activos/agregar' }}
+        accionesExtra={dropdownOpciones}
       />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
@@ -237,6 +293,8 @@ export default function PantallaActivos() {
           se conserva su historial de intervenciones.
         </p>
       </DialogoEliminar>
+
+      
     </>
   );
 }
