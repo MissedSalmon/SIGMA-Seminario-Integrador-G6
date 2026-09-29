@@ -11,6 +11,7 @@ const router = Router();
 router.get('/estados', ordenes.listarEstados);
 router.get('/prioridades', ordenes.listarPrioridades);
 router.get('/tipos-falla', ordenes.listarTiposFalla);
+router.post('/tipos-falla', ordenes.crearTipoFalla);
 
 router.get('/', ordenes.listar);
 router.get('/:id', ordenes.obtener);

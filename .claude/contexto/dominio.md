@@ -106,6 +106,8 @@ Una OT viene **o de un ticket, o de un plan preventivo**. Nunca de los dos.
 > - Cada tarea puede tener cero o una falla. Al registrarla se exige tipo y descripción.
 > - La falla se relaciona con la tarea de la OT y con el activo afectado. Sin diagnóstico,
 >   la tarea queda sin fila de falla.
+> - Desde «Otra» se pueden agregar tipos al catálogo. Se guardan con inicial mayúscula,
+>   se rechazan duplicados sin distinguir mayúsculas y quedan disponibles para otras tareas.
 
 ---
 

@@ -54,6 +54,7 @@ import {
   actualizarOrden,
   eliminarTarea,
   listarTiposFalla,
+  crearTipoFalla,
   registrarFalla,
 } from '@/servicios/ordenesTrabajo.js';
 import { formatearFechaHora } from '@/utils/fechas.js';
@@ -104,10 +105,13 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
 
   const [tareaDiagnostico, setTareaDiagnostico] = useState(null);
   const [tipoFalla, setTipoFalla] = useState('');
+  const [nuevoTipoFalla, setNuevoTipoFalla] = useState('');
   const [descripcionFalla, setDescripcionFalla] = useState('');
   const [errorFalla, setErrorFalla] = useState('');
+  const [errorNuevoTipoFalla, setErrorNuevoTipoFalla] = useState('');
   const [revisadoFalla, setRevisadoFalla] = useState(false);
   const [guardandoFalla, setGuardandoFalla] = useState(false);
+  const [agregandoTipoFalla, setAgregandoTipoFalla] = useState(false);
 
   useEffect(() => {
     obtenerOrden(id)
@@ -169,9 +173,37 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
   function abrirDiagnostico(tarea) {
     setTareaDiagnostico(tarea);
     setTipoFalla(tarea.falla?.tipo ?? '');
+    setNuevoTipoFalla('');
     setDescripcionFalla(tarea.falla?.descripcion ?? '');
     setErrorFalla('');
+    setErrorNuevoTipoFalla('');
     setRevisadoFalla(false);
+  }
+
+  async function agregarTipoDeFalla() {
+    setRevisadoFalla(true);
+    if (!nuevoTipoFalla.trim()) {
+      setErrorNuevoTipoFalla('Escribí el nombre del tipo de falla.');
+      return;
+    }
+
+    setAgregandoTipoFalla(true);
+    setErrorNuevoTipoFalla('');
+
+    try {
+      const creado = await crearTipoFalla(nuevoTipoFalla);
+      setTiposFalla((anteriores) =>
+        [...anteriores, creado].sort((a, b) => a.localeCompare(b, 'es')),
+      );
+      setTipoFalla(creado);
+      setNuevoTipoFalla('');
+      setRevisadoFalla(false);
+      mostrarToast({ tipo: 'exito', mensaje: `Se agregó el tipo de falla "${creado}".` });
+    } catch (fallo) {
+      setErrorNuevoTipoFalla(fallo.message);
+    } finally {
+      setAgregandoTipoFalla(false);
+    }
   }
 
   async function guardarDiagnostico() {
@@ -473,7 +505,10 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
                     etiqueta="Tipo de falla"
                     tipo="lista"
                     valor={tipoFalla}
-                    alCambiar={setTipoFalla}
+                    alCambiar={(valor) => {
+                      setTipoFalla(valor);
+                      setErrorFalla('');
+                    }}
                     opciones={tiposFalla.map((tipo) => ({ valor: tipo, texto: tipo }))}
                     placeholder="Elegir tipo"
                     obligatorio
@@ -483,6 +518,37 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
                     ancho={18}
                   />
                 </div>
+                {tipoFalla === 'Otra' && (
+                  <div className="sigma-campos align-items-end mb-3">
+                    <Campo
+                      id="nuevoTipoFalla"
+                      etiqueta="Nuevo tipo de falla"
+                      valor={nuevoTipoFalla}
+                      alCambiar={(valor) => {
+                        setNuevoTipoFalla(valor);
+                        setErrorNuevoTipoFalla('');
+                      }}
+                      maxLength={100}
+                      revisado={revisadoFalla || Boolean(errorNuevoTipoFalla)}
+                      error={errorNuevoTipoFalla}
+                      ancho={24}
+                    />
+                    <div className="sigma-campo">
+                      <CFormLabel className="invisible" aria-hidden="true">
+                        Agregar
+                      </CFormLabel>
+                      <CButton
+                        type="button"
+                        color="secondary"
+                        variant="outline"
+                        onClick={agregarTipoDeFalla}
+                        disabled={agregandoTipoFalla}
+                      >
+                        {agregandoTipoFalla ? 'Agregando...' : 'Agregar'}
+                      </CButton>
+                    </div>
+                  </div>
+                )}
                 <Campo
                   id="descripcionFalla"
                   etiqueta="Descripción"
