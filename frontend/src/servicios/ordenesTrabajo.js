@@ -45,6 +45,11 @@ export async function listarPrioridades() {
   return data.datos;
 }
 
+export async function listarTiposFalla() {
+  const { data } = await api.get('/ordenes-trabajo/tipos-falla');
+  return data.datos;
+}
+
 export async function obtenerOrden(id) {
   const { data } = await api.get(`/ordenes-trabajo/${id}`);
   return data.datos;
@@ -86,6 +91,11 @@ export async function agregarTarea(idOrden, tarea) {
 
 export async function actualizarTarea(idOrden, idTarea, tarea) {
   const { data } = await api.put(`/ordenes-trabajo/${idOrden}/tareas/${idTarea}`, tarea);
+  return data.datos;
+}
+
+export async function registrarFalla(idOrden, idTarea, falla) {
+  const { data } = await api.put(`/ordenes-trabajo/${idOrden}/tareas/${idTarea}/falla`, falla);
   return data.datos;
 }
 

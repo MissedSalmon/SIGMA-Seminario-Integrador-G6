@@ -37,7 +37,7 @@ router.use('/tipos-espacio', rutasTiposEspacio);
 import rutasActivos from './activos.rutas.js';
 router.use('/activos', rutasActivos);
 
-// Gestion de inventario
+// Gestion de inventario: catalogo y stock de materiales y herramientas (HU-15 y HU-16)
 router.use('/inventario', rutasInventario);
 
 // Plantillas de Tareas
@@ -59,6 +59,10 @@ router.use('/tickets', rutasTickets);
 // Ordenes de trabajo y sus tareas (HU-14)
 import rutasOrdenesTrabajo from './ordenesTrabajo.rutas.js';
 router.use('/ordenes-trabajo', rutasOrdenesTrabajo);
+
+// Ingreso de materiales y herramientas por remito (HU-16)
+import rutasRemitos from './remitos.rutas.js';
+router.use('/remitos', rutasRemitos);
 
 // Prestadores de servicio: solo lectura, para asignarlos a una tarea (HU-14).
 // El ABM es la HU-33.

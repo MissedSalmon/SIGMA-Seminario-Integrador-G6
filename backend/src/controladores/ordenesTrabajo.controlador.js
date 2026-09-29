@@ -2,7 +2,7 @@
  * Controlador de ordenes de trabajo (HU-14: crear la OT a partir de un ticket).
  */
 import * as ordenesServicio from '../servicios/ordenesTrabajo.servicio.js';
-import { ESTADOS, PRIORIDADES } from '../servicios/ordenesTrabajo.servicio.js';
+import { ESTADOS, PRIORIDADES, TIPOS_FALLA } from '../servicios/ordenesTrabajo.servicio.js';
 import { datoInvalido } from '../utiles/errores.js';
 
 function leerId(req) {
@@ -79,6 +79,10 @@ export async function listarPrioridades(req, res) {
   res.json({ ok: true, datos: PRIORIDADES });
 }
 
+export async function listarTiposFalla(req, res) {
+  res.json({ ok: true, datos: TIPOS_FALLA });
+}
+
 /** GET /api/ordenes-trabajo/5 */
 export async function obtener(req, res) {
   const orden = await ordenesServicio.obtenerPorId(leerId(req));
@@ -126,4 +130,10 @@ export async function eliminarTarea(req, res) {
   const orden = await ordenesServicio.eliminarTarea(leerId(req), idTarea);
 
   res.json({ ok: true, datos: orden, mensaje: `Se eliminó la tarea ${idTarea}.` });
+}
+
+/** PUT /api/ordenes-trabajo/5/tareas/2/falla */
+export async function registrarFalla(req, res) {
+  const orden = await ordenesServicio.registrarFalla(leerId(req), leerNumeroDeTarea(req), req.body ?? {});
+  res.json({ ok: true, datos: orden });
 }

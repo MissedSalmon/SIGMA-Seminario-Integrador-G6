@@ -55,6 +55,12 @@ export default function CampoNumero({
   revisado = false,
   /** Cuantos digitos entran en la caja del medio, sin contar los botones. */
   ancho = 5,
+  /**
+   * La etiqueta no se dibuja, solo queda para los lectores de pantalla. Lo usa
+   * el que va adentro de una tabla, donde el encabezado de la columna ya dice
+   * que es. Es la misma prop que tiene CampoLista.
+   */
+  etiquetaOculta = false,
 }) {
   const texto = String(valor ?? '').trim();
   const hayValor = texto !== '';
@@ -76,11 +82,14 @@ export default function CampoNumero({
         isDisabled={deshabilitado}
         isRequired={obligatorio}
         isInvalid={marca === 'error'}
+        aria-label={etiquetaOculta ? etiqueta : undefined}
         aria-describedby={error ? idMensaje : undefined}
         /* Sin esto le pone separador de miles a partir del 1000. */
         formatOptions={{ useGrouping: false }}
       >
-        <Label className={obligatorio ? 'sigma-obligatorio' : undefined}>{etiqueta}</Label>
+        {!etiquetaOculta && (
+          <Label className={obligatorio ? 'sigma-obligatorio' : undefined}>{etiqueta}</Label>
+        )}
 
         <NumberField.Group style={{ '--sigma-numero-digitos': ancho }}>
           <NumberField.IncrementButton />

@@ -27,11 +27,12 @@ Los tres cubren todo el sistema y no se superponen.
         ↓  (si valida)
 3. Se genera AUTOMÁTICAMENTE la ORDEN DE TRABAJO (OT)
         ↓
-4. El administrador carga las TAREAS: prioridad, falla y responsable
+4. El administrador carga las TAREAS: prioridad y responsable
    de cada una (técnico propio o prestador externo)
         ↓
-5. El técnico EJECUTA su tarea: registra materiales consumidos
-   (baja de stock automática), herramientas y observaciones
+5. El técnico diagnostica la tarea en el lugar y, si corresponde, registra
+   la falla (tipo y descripción); después ejecuta y registra materiales,
+   herramientas y observaciones
         ↓
 6. Al completarse la ÚLTIMA tarea:
    la OT pasa a Finalizada y el ticket se CIERRA automáticamente
@@ -99,6 +100,12 @@ Una OT viene **o de un ticket, o de un plan preventivo**. Nunca de los dos.
 >   La caja deja escribir libremente y sugiere las duraciones más comunes (de 15 min a 8 h);
 >   entiende "30 min", "1h30", "1:30", "2 hs" y un número solo (que son horas). Las cuentas
 >   están en `frontend/src/utils/duracion.js`.
+
+> **Decisión del 26/09/2026 (diagnóstico de fallas):**
+> - La falla se registra al diagnosticar la tarea en el lugar, no al planificar la OT.
+> - Cada tarea puede tener cero o una falla. Al registrarla se exige tipo y descripción.
+> - La falla se relaciona con la tarea de la OT y con el activo afectado. Sin diagnóstico,
+>   la tarea queda sin fila de falla.
 
 ---
 

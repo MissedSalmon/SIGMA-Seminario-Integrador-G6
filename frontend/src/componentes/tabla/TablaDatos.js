@@ -21,6 +21,8 @@
  *     textoVacio="Todavia no hay edificios cargados."
  *   />
  *
+ * `claseFila` (opcional): funcion que devuelve una clase CSS para resaltar una fila.
+ *
  * Los filtros se pasan como datos, no como JSX. Los arma la tabla para que en
  * todas las pantallas se vean y se ubiquen igual: primero el buscador y
  * despues "Filtrar por:" con los desplegables, todo en la misma linea.
@@ -72,6 +74,7 @@ export default function TablaDatos({
   filas,
   columnas,
   claveFila,
+  claseFila,
   buscarPor = [],
   placeholderBusqueda = 'Buscar',
   filtros = [],
@@ -210,7 +213,7 @@ export default function TablaDatos({
                 <EsqueletoFilas columnas={columnas} />
               ) : (
                 filasPagina.map((fila) => (
-                  <CTableRow key={claveFila(fila)}>
+                  <CTableRow key={claveFila(fila)} className={claseFila?.(fila)}>
                     {columnas.map((columna) => (
                       <CTableDataCell key={columna.clave} className={columna.alinearDerecha ? 'text-end' : undefined}>
                         {columna.render(fila)}

@@ -19,17 +19,20 @@ import { cilPlus } from '@coreui/icons';
 
 import BotonEnlace from './BotonEnlace.js';
 
-export default function EncabezadoPagina({ titulo, accion }) {
+export default function EncabezadoPagina({ titulo, accion, accionesExtra }) {
   return (
     <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
       <h1 className="sigma-titulo">{titulo}</h1>
 
-      {accion && (
-        <BotonEnlace href={accion.direccion}>
-          <CIcon icon={cilPlus} className="me-2" />
-          {accion.texto ?? 'Agregar'}
-        </BotonEnlace>
-      )}
+      <div className="d-flex gap-2">
+        {accionesExtra && accionesExtra}
+        {accion && (
+          <BotonEnlace href={accion.direccion}>
+            <CIcon icon={cilPlus} className="me-2" />
+            {accion.texto ?? 'Agregar'}
+          </BotonEnlace>
+        )}
+      </div>
     </div>
   );
 }

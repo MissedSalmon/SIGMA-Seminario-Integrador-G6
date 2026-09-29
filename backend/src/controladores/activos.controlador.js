@@ -92,3 +92,23 @@ export async function eliminar(req, res) {
     mensaje: `Se dio de baja el activo "${activo.codigo}". Queda como Retirado.`,
   });
 }
+
+/** POST /api/activos/importar/validar */
+export async function validarImportacion(req, res) {
+  const filas = req.body;
+  if (!Array.isArray(filas)) {
+    throw datoInvalido('El cuerpo de la petición debe ser un arreglo de filas.');
+  }
+  const resultado = await activosServicio.validarImportacion(filas);
+  res.json({ ok: true, datos: resultado });
+}
+
+/** POST /api/activos/importar/confirmar */
+export async function confirmarImportacion(req, res) {
+  const filas = req.body;
+  if (!Array.isArray(filas)) {
+    throw datoInvalido('El cuerpo de la petición debe ser un arreglo de filas.');
+  }
+  const resultado = await activosServicio.confirmarImportacion(filas);
+  res.json({ ok: true, datos: resultado });
+}

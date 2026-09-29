@@ -10,6 +10,9 @@ const router = Router();
 // /estados va ANTES que /:codigo, si no Express lo toma como un codigo.
 router.get('/estados', activos.listarEstados);
 
+router.post('/importar/validar', activos.validarImportacion);
+router.post('/importar/confirmar', activos.confirmarImportacion);
+
 router.get('/', activos.listar);
 router.get('/:codigo', activos.obtener);
 router.post('/', activos.crear);

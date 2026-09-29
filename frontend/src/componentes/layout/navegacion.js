@@ -32,6 +32,7 @@ import {
   cilTask,
   cilListRich,
   cilUser,
+  cilCog,
   cilClipboard,
 } from '@coreui/icons';
 
@@ -145,10 +146,26 @@ export const navegacion = [
         icono: cilTags,
       },
       {
+        // Materiales y herramientas se manejan distinto (una lleva stock, la
+        // otra se presta y se devuelve), asi que van en pantallas separadas.
         tipo: 'item',
-        texto: 'Materiales y herramientas',
-        direccion: '/inventario',
+        texto: 'Materiales',
+        direccion: '/inventario/materiales',
         icono: cilList,
+      },
+      {
+        tipo: 'item',
+        texto: 'Herramientas',
+        direccion: '/inventario/herramientas',
+        icono: cilCog,
+      },
+      {
+        // Va al final: para ingresar algo por remito, antes tiene que estar en
+        // el catalogo.
+        tipo: 'item',
+        texto: 'Ingresos por remito',
+        direccion: '/inventario/remitos',
+        icono: cilClipboard,
       },
     ],
   },

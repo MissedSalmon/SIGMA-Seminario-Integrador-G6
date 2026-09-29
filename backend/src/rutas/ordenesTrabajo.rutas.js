@@ -10,6 +10,7 @@ const router = Router();
 // Estas dos van ANTES que /:id, si no Express las toma como un id.
 router.get('/estados', ordenes.listarEstados);
 router.get('/prioridades', ordenes.listarPrioridades);
+router.get('/tipos-falla', ordenes.listarTiposFalla);
 
 router.get('/', ordenes.listar);
 router.get('/:id', ordenes.obtener);
@@ -19,6 +20,7 @@ router.put('/:id', ordenes.actualizar);
 // Las tareas de la OT: son parte de la OT, no un modulo aparte.
 router.post('/:id/tareas', ordenes.agregarTarea);
 router.put('/:id/tareas/:idTarea', ordenes.actualizarTarea);
+router.put('/:id/tareas/:idTarea/falla', ordenes.registrarFalla);
 router.delete('/:id/tareas/:idTarea', ordenes.eliminarTarea);
 
 export default router;

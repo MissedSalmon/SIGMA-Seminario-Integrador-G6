@@ -12,6 +12,8 @@ router.delete('/tipos/:id', inventario.eliminarTipo);
 router.get('/', inventario.listarItems);
 router.post('/', inventario.crearItem);
 router.get('/:codigo', inventario.obtenerItem);
+// El historial de ingresos y consumos del item (HU-16).
+router.get('/:codigo/movimientos', inventario.listarMovimientos);
 router.put('/:codigo', inventario.actualizarItem);
 router.delete('/:codigo', inventario.eliminarItem);
 

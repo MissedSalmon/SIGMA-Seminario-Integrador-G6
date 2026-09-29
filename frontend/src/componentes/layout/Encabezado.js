@@ -26,6 +26,9 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { Breadcrumbs, RouterProvider } from '@heroui/react';
 import { CContainer, CHeader } from '@coreui/react';
+import CIcon from '@coreui/icons-react';
+import { cilMenu } from '@coreui/icons';
+import { useLayout } from './ContextoLayout.js';
 
 /**
  * Como se muestra cada pantalla en las migas.
@@ -48,8 +51,10 @@ const NOMBRES = {
   '/areas': 'Áreas',
   '/activos': 'Activos',
   '/tipos-activos': 'Tipos de activos',
-  '/inventario': 'Inventario',
   '/inventario/tipos': 'Tipos de materiales y herramientas',
+  '/inventario/remitos': 'Ingresos por remito',
+  '/inventario/materiales': 'Materiales',
+  '/inventario/herramientas': 'Herramientas',
   '/tecnicos': 'Técnicos',
   '/especialidades': 'Especialidades',
   '/autorizados': 'Usuarios autorizados',
@@ -62,12 +67,23 @@ const NOMBRES_COMUNES = {
 };
 
 /**
+ * Los modulos cuyo registro se identifica con un codigo y no con un numero.
+ *
+ * Hace falta para la ficha de un item del deposito (/inventario/CA-111): el
+ * tramo "CA-111" es un identificador, pero no es un numero ni viene seguido de
+ * "editar", asi que las dos reglas de abajo no lo agarran y la miga terminaria
+ * mostrando el codigo.
+ */
+const MODULOS_CON_CODIGO = ['/activos', '/inventario', '/tecnicos'];
+
+/**
  * Convierte "/edificios/3/editar" en los tramos de la ruta de migas.
  *
  * Los identificadores no se muestran, porque no son una pantalla a la que se
  * pueda entrar. Un identificador es el tramo que va justo antes de "editar":
  * puede ser un numero (/edificios/3/editar) o un codigo, como el de inventario
- * de un activo (/activos/AC-014/editar).
+ * de un activo (/activos/AC-014/editar). Tambien lo es el tramo que cuelga
+ * directo de un modulo de MODULOS_CON_CODIGO (/inventario/CA-111).
  */
 function armarMigas(direccion) {
   const tramos = direccion.split('/').filter(Boolean);
@@ -75,9 +91,31 @@ function armarMigas(direccion) {
   let acumulada = '';
 
   tramos.forEach((tramo, indice) => {
+    const padre = acumulada;
     acumulada += `/${tramo}`;
 
     if (/^\d+$/.test(tramo) || tramos[indice + 1] === 'editar') return;
+
+    // "Inventario" es el grupo del menu, no una pantalla: no tiene una
+    // pagina propia (/inventario no resuelve a nada), asi que se muestra
+    // como una miga sin enlace y nunca como la pantalla en si misma.
+    if (acumulada === '/inventario') {
+      migas.push({ texto: 'Inventario', direccion: null, ultima: false });
+      return;
+    }
+
+    /*
+     * Un codigo colgado de un modulo es un identificador, salvo que ese tramo
+     * sea una pantalla: una con nombre propio (/inventario/tipos,
+     * /inventario/remitos) o una de las comunes (/activos/agregar).
+     */
+    if (
+      MODULOS_CON_CODIGO.includes(padre) &&
+      !NOMBRES[acumulada] &&
+      !NOMBRES_COMUNES[tramo]
+    ) {
+      return;
+    }
 
     /*
      * Las tareas de una OT no tienen listado propio: viven en el detalle de la
@@ -104,13 +142,21 @@ function armarMigas(direccion) {
 }
 
 export default function Encabezado() {
+  const { barraVisible, setBarraVisible } = useLayout();
   const direccionActual = usePathname();
   const router = useRouter();
   const migas = armarMigas(direccionActual);
 
   return (
     <CHeader position="sticky" className="mb-4 p-0">
-      <CContainer className="border-bottom px-4 py-3" fluid>
+      <CContainer className="border-bottom px-4 py-3 d-flex align-items-center" fluid>
+        <button
+          className="btn btn-link text-body p-0 d-md-none me-3"
+          onClick={() => setBarraVisible(!barraVisible)}
+          aria-label="Alternar menú"
+        >
+          <CIcon icon={cilMenu} size="lg" />
+        </button>
         <RouterProvider navigate={router.push}>
           <Breadcrumbs className="sigma-migas">
             {/* En la pantalla de inicio, "Inicio" es la unica miga y es la actual. */}
@@ -118,8 +164,8 @@ export default function Encabezado() {
 
             {migas.map((miga) => (
               <Breadcrumbs.Item
-                key={miga.direccion}
-                href={miga.ultima ? undefined : miga.direccion}
+                key={miga.direccion ?? miga.texto}
+                href={miga.ultima || !miga.direccion ? undefined : miga.direccion}
               >
                 {miga.texto}
               </Breadcrumbs.Item>
