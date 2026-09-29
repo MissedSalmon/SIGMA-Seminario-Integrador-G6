@@ -20,6 +20,12 @@ export async function actualizarItem(codigo, item) {
   return data.datos;
 }
 
+/** El historial de ingresos y consumos del item, del mas nuevo al mas viejo (HU-16). */
+export async function listarMovimientos(codigo) {
+  const { data } = await api.get(`/inventario/${encodeURIComponent(codigo)}/movimientos`);
+  return data.datos;
+}
+
 export async function eliminarItem(codigo) {
   const { data } = await api.delete(`/inventario/${encodeURIComponent(codigo)}`);
   return data.datos;

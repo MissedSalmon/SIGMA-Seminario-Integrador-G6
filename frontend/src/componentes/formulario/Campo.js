@@ -123,6 +123,12 @@ export default function Campo({
   error = '',
   revisado = false,
   ancho = ANCHO_POR_DEFECTO,
+  /**
+   * La etiqueta no se dibuja, solo queda para los lectores de pantalla. Es para
+   * los campos que van adentro de una tabla, donde el encabezado de la columna
+   * ya dice que es. Por ahora lo entienden la lista y el numero.
+   */
+  etiquetaOculta = false,
   sugerencias,
   maxLength,
   min,
@@ -222,6 +228,7 @@ export default function Campo({
         error={error}
         revisado={revisado}
         ancho={ancho}
+        etiquetaOculta={etiquetaOculta}
       />
     );
   }
@@ -252,6 +259,7 @@ export default function Campo({
         error={error}
         revisado={revisado}
         ancho={ancho}
+        etiquetaOculta={etiquetaOculta}
       />
     );
   }
