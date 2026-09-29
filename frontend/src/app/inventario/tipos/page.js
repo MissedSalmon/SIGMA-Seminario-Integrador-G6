@@ -54,7 +54,7 @@ export default function PantallaTiposInventario() {
       encabezado: 'Nombre',
       render: (tipo) => <span className="fw-semibold">{tipo.nombre}</span>,
     },
-    { clave: 'clase', encabezado: 'Clase', render: (tipo) => tipo.clase },
+    { clave: 'clase', encabezado: 'Tipo', render: (tipo) => tipo.clase },
     {
       clave: 'descripcion',
       encabezado: 'Descripción',
@@ -104,10 +104,10 @@ export default function PantallaTiposInventario() {
             claveFila={(tipo) => tipo.idTipo}
             columnas={columnas}
             buscarPor={['nombre', 'descripcion', 'clase']}
-            placeholderBusqueda="Buscar por nombre o clase"
+            placeholderBusqueda="Buscar por nombre o tipo"
             filtros={[
               {
-                etiqueta: 'Clase',
+                etiqueta: 'Tipo',
                 valor: clase,
                 alCambiar: setClase,
                 opciones: [

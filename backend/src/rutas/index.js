@@ -37,7 +37,7 @@ router.use('/tipos-espacio', rutasTiposEspacio);
 import rutasActivos from './activos.rutas.js';
 router.use('/activos', rutasActivos);
 
-// Gestion de inventario
+// Gestion de inventario: catalogo y stock de materiales y herramientas (HU-15 y HU-16)
 router.use('/inventario', rutasInventario);
 
 // Plantillas de Tareas

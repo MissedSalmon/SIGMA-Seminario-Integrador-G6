@@ -85,7 +85,7 @@ export default function FormularioTipo({ tipo = null, onGuardar }) {
 
             <Campo
               id="clase"
-              etiqueta="Clase"
+              etiqueta="Tipo"
               tipo="lista"
               valor={clase}
               alCambiar={setClase}

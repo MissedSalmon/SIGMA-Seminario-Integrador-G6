@@ -8,7 +8,7 @@ import { Cargando } from '@/componentes/EstadoTabla.js';
 import FormularioMaterialHerramienta from '@/componentes/inventario/FormularioMaterialHerramienta.js';
 import { actualizarItem, obtenerItem } from '@/servicios/inventario.js';
 
-export default function PantallaEditarMaterialHerramienta({ params }) {
+export default function PantallaEditarMaterial({ params }) {
   const { codigo } = use(params);
   const codigoBuscado = decodeURIComponent(codigo);
   const [articulo, setArticulo] = useState(null);
@@ -22,17 +22,16 @@ export default function PantallaEditarMaterialHerramienta({ params }) {
       .finally(() => setCargando(false));
   }, [codigoBuscado]);
 
-  const titulo = articulo?.clase === 'Herramienta' ? 'Editar herramienta' : 'Editar material';
-
   return (
     <>
-      <EncabezadoPagina titulo={titulo} />
+      <EncabezadoPagina titulo="Editar material" />
       <Aviso mensaje={error} />
       {cargando ? (
         <Cargando texto="Cargando los datos..." />
       ) : (
         articulo && (
           <FormularioMaterialHerramienta
+            clase="Material"
             articulo={articulo}
             onGuardar={(datos) => actualizarItem(codigoBuscado, datos)}
           />

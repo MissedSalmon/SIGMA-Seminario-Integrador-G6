@@ -48,9 +48,10 @@ const NOMBRES = {
   '/areas': 'Áreas',
   '/activos': 'Activos',
   '/tipos-activos': 'Tipos de activos',
-  '/inventario': 'Inventario',
   '/inventario/tipos': 'Tipos de materiales y herramientas',
   '/inventario/remitos': 'Ingresos por remito',
+  '/inventario/materiales': 'Materiales',
+  '/inventario/herramientas': 'Herramientas',
   '/tecnicos': 'Técnicos',
   '/especialidades': 'Especialidades',
   '/autorizados': 'Usuarios autorizados',
@@ -91,6 +92,14 @@ function armarMigas(direccion) {
     acumulada += `/${tramo}`;
 
     if (/^\d+$/.test(tramo) || tramos[indice + 1] === 'editar') return;
+
+    // "Inventario" es el grupo del menu, no una pantalla: no tiene una
+    // pagina propia (/inventario no resuelve a nada), asi que se muestra
+    // como una miga sin enlace y nunca como la pantalla en si misma.
+    if (acumulada === '/inventario') {
+      migas.push({ texto: 'Inventario', direccion: null, ultima: false });
+      return;
+    }
 
     /*
      * Un codigo colgado de un modulo es un identificador, salvo que ese tramo
@@ -144,8 +153,8 @@ export default function Encabezado() {
 
             {migas.map((miga) => (
               <Breadcrumbs.Item
-                key={miga.direccion}
-                href={miga.ultima ? undefined : miga.direccion}
+                key={miga.direccion ?? miga.texto}
+                href={miga.ultima || !miga.direccion ? undefined : miga.direccion}
               >
                 {miga.texto}
               </Breadcrumbs.Item>
