@@ -31,8 +31,51 @@ export const ESTADO_TAREA_INICIAL = 'Pendiente';
 export const PRIORIDADES = ['Alta', 'Media', 'Baja'];
 export const PRIORIDAD_POR_DEFECTO = 'Media';
 
-/** Tipos de falla que puede registrar el técnico al diagnosticar la tarea. */
-export const TIPOS_FALLA = ['Eléctrica', 'Mecánica', 'Estructural', 'Sanitaria', 'Otra'];
+/** Normaliza un tipo de falla a una mayúscula inicial y el resto en minúsculas. */
+export function normalizarNombreTipoFalla(texto) {
+  if (typeof texto !== 'string') return null;
+
+  const limpio = texto.trim().replace(/\s+/g, ' ').normalize('NFC');
+  if (!limpio) return null;
+
+  const [primeraLetra, ...resto] = limpio;
+  return primeraLetra.toLocaleUpperCase('es') + resto.join('').toLocaleLowerCase('es');
+}
+
+function claveTipoFalla(texto) {
+  return texto.toLocaleLowerCase('es');
+}
+
+export async function listarTiposFalla() {
+  const { data, error } = await supabase
+    .from('tipo_falla')
+    .select('tipo_falla_nom')
+    .order('tipo_falla_nom');
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((fila) => fila.tipo_falla_nom);
+}
+
+export async function crearTipoFalla(texto) {
+  const nombre = normalizarNombreTipoFalla(texto);
+  if (!nombre) throw datoInvalido('Escribí el nombre del tipo de falla.');
+  if (nombre.length > 100) throw datoInvalido('El tipo de falla no puede superar los 100 caracteres.');
+
+  const existentes = await listarTiposFalla();
+  const existente = existentes.find((tipo) => claveTipoFalla(tipo) === claveTipoFalla(nombre));
+  if (existente) throw conflicto(`El tipo de falla "${existente}" ya está creado.`);
+
+  const { data, error } = await supabase
+    .from('tipo_falla')
+    .insert({ tipo_falla_nom: nombre })
+    .select('tipo_falla_nom')
+    .single();
+
+  if (error?.code === '23505') throw conflicto(`El tipo de falla "${nombre}" ya está creado.`);
+  if (error) throw new Error(error.message);
+
+  return data.tipo_falla_nom;
+}
 
 /**
  * La base guarda los valores por defecto en mayuscula ('PENDIENTE', 'MEDIA'),
@@ -860,13 +903,15 @@ export async function eliminarTarea(idOt, idTarea) {
 
 /** Registra o actualiza el diagnóstico único de una tarea. */
 export async function registrarFalla(idOt, idTarea, datos) {
-  const tipo = limpiar(datos.tipo);
+  const tipoSolicitado = normalizarNombreTipoFalla(datos.tipo);
   const descripcion = limpiar(datos.descripcion);
 
-  if (!tipo || !TIPOS_FALLA.includes(tipo)) {
-    throw datoInvalido(`Elegí un tipo de falla válido: ${TIPOS_FALLA.join(', ')}.`);
-  }
+  if (!tipoSolicitado) throw datoInvalido('Elegí un tipo de falla válido.');
   if (!descripcion) throw datoInvalido('La descripción de la falla es obligatoria.');
+
+  const tipos = await listarTiposFalla();
+  const tipo = tipos.find((uno) => claveTipoFalla(uno) === claveTipoFalla(tipoSolicitado));
+  if (!tipo) throw datoInvalido('Elegí un tipo de falla existente.');
 
   const orden = await ordenPlanificable(idOt, true);
   const codigoActivo = orden.ticket?.activo_codigo ?? orden.mantenimiento_preventivo?.activo_codigo;

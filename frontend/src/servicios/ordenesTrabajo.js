@@ -50,6 +50,11 @@ export async function listarTiposFalla() {
   return data.datos;
 }
 
+export async function crearTipoFalla(nombre) {
+  const { data } = await api.post('/ordenes-trabajo/tipos-falla', { nombre });
+  return data.datos;
+}
+
 export async function obtenerOrden(id) {
   const { data } = await api.get(`/ordenes-trabajo/${id}`);
   return data.datos;
