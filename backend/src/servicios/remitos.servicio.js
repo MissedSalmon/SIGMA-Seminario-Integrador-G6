@@ -47,27 +47,55 @@ const COLUMNAS = `
   remito_creado_en,
   remito_item (
     inventarioitemcod,
-    remito_item_cant,
-    inventarioitem (
-      inventarioitemnom,
-      inventarioitemclase,
-      inventarioitemstockactual
-    )
+    remito_item_cant
   )
 `;
 
-function aRenglon(fila) {
+/**
+ * Los datos de cada codigo, sea material o herramienta. El catalogo vive en dos
+ * tablas y el codigo es unico entre las dos, asi que no hay una clave foranea
+ * que las una: se buscan por separado. Devuelve un Map
+ * codigo -> { nombre, clase, stockActual }. Las herramientas no llevan stock.
+ */
+async function detallesDeItems(codigos) {
+  const detalles = new Map();
+  if (codigos.length === 0) return detalles;
+
+  const [materiales, herramientas] = await Promise.all([
+    supabase.from('material').select('mat_cod, mat_nom, mat_stock_actual').in('mat_cod', codigos),
+    supabase.from('herramienta').select('herr_cod, herr_nom').in('herr_cod', codigos),
+  ]);
+
+  if (materiales.error) throw new Error(materiales.error.message);
+  if (herramientas.error) throw new Error(herramientas.error.message);
+
+  for (const fila of materiales.data) {
+    detalles.set(fila.mat_cod, {
+      nombre: fila.mat_nom,
+      clase: 'Material',
+      stockActual: Number(fila.mat_stock_actual ?? 0),
+    });
+  }
+  for (const fila of herramientas.data) {
+    detalles.set(fila.herr_cod, { nombre: fila.herr_nom, clase: 'Herramienta', stockActual: null });
+  }
+
+  return detalles;
+}
+
+function aRenglon(fila, detalles) {
+  const detalle = detalles.get(fila.inventarioitemcod);
   return {
     codigo: fila.inventarioitemcod,
-    nombre: fila.inventarioitem?.inventarioitemnom ?? '',
-    clase: fila.inventarioitem?.inventarioitemclase ?? '',
-    stockActual: fila.inventarioitem?.inventarioitemstockactual ?? null,
+    nombre: detalle?.nombre ?? '',
+    clase: detalle?.clase ?? '',
+    stockActual: detalle?.stockActual ?? null,
     cantidad: fila.remito_item_cant,
   };
 }
 
-function aRemito(fila) {
-  const renglones = (fila.remito_item ?? []).map(aRenglon);
+function aRemito(fila, detalles) {
+  const renglones = (fila.remito_item ?? []).map((renglon) => aRenglon(renglon, detalles));
 
   return {
     id: fila.remito_id,
@@ -132,14 +160,7 @@ function leerItems(valor) {
 async function verificarItems(items) {
   const codigos = items.map((renglon) => renglon.codigo);
 
-  const { data, error } = await supabase
-    .from('inventarioitem')
-    .select('inventarioitemcod')
-    .in('inventarioitemcod', codigos);
-
-  if (error) throw new Error(error.message);
-
-  const enCatalogo = new Set(data.map((fila) => fila.inventarioitemcod));
+  const enCatalogo = await detallesDeItems(codigos);
   const faltan = codigos.filter((codigo) => !enCatalogo.has(codigo));
 
   if (faltan.length > 0) {
@@ -169,7 +190,11 @@ export async function obtenerTodos(filtros = {}) {
   const { data, error } = await consulta;
   if (error) throw errorDeBase(error, 'del remito');
 
-  return data.map(aRemito);
+  const detalles = await detallesDeItems([
+    ...new Set(data.flatMap((fila) => (fila.remito_item ?? []).map((renglon) => renglon.inventarioitemcod))),
+  ]);
+
+  return data.map((fila) => aRemito(fila, detalles));
 }
 
 export async function obtenerPorId(id) {
@@ -183,7 +208,9 @@ export async function obtenerPorId(id) {
   if (error) throw errorDeBase(error, 'del remito');
   if (!data) throw noEncontrado(`No existe el remito ${id}.`);
 
-  return aRemito(data);
+  const detalles = await detallesDeItems((data.remito_item ?? []).map((renglon) => renglon.inventarioitemcod));
+
+  return aRemito(data, detalles);
 }
 
 /**

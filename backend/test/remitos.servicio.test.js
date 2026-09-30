@@ -41,14 +41,18 @@ function remitoValido(cambios = {}) {
  * cadena from('inventarioitem').select(...).in(...).
  */
 function catalogoCon(codigos) {
-  const cadena = {
-    select: jest.fn(() => cadena),
+  const materiales = {
+    select: jest.fn(() => materiales),
     in: jest.fn(() =>
-      Promise.resolve({ data: codigos.map((codigo) => ({ inventarioitemcod: codigo })), error: null })
+      Promise.resolve({ data: codigos.map((codigo) => ({ mat_cod: codigo, mat_nom: codigo })), error: null })
     ),
   };
-  supabase.from.mockReturnValue(cadena);
-  return cadena;
+  const herramientas = {
+    select: jest.fn(() => herramientas),
+    in: jest.fn(() => Promise.resolve({ data: [], error: null })),
+  };
+  supabase.from.mockImplementation((tabla) => (tabla === 'herramienta' ? herramientas : materiales));
+  return materiales;
 }
 
 afterEach(() => {
@@ -160,20 +164,10 @@ describe('crear: lo que se le manda a la base', () => {
             {
               inventarioitemcod: 'CA-111',
               remito_item_cant: 10,
-              inventarioitem: {
-                inventarioitemnom: 'Cable 2.5',
-                inventarioitemclase: 'Material',
-                inventarioitemstockactual: 10,
-              },
             },
             {
               inventarioitemcod: 'TO-201',
               remito_item_cant: 50,
-              inventarioitem: {
-                inventarioitemnom: 'Tornillo 8mm',
-                inventarioitemclase: 'Material',
-                inventarioitemstockactual: 50,
-              },
             },
           ],
         },
@@ -181,8 +175,11 @@ describe('crear: lo que se le manda a la base', () => {
       }),
     };
 
-    const catalogo = supabase.from();
-    supabase.from.mockImplementation((tabla) => (tabla === 'remito' ? lectura : catalogo));
+    const catalogo = supabase.from('material');
+    const herramientas = supabase.from('herramienta');
+    supabase.from.mockImplementation((tabla) =>
+      tabla === 'remito' ? lectura : tabla === 'herramienta' ? herramientas : catalogo
+    );
 
     const remito = await crear(
       remitoValido({
