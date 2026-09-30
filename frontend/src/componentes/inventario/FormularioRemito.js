@@ -66,7 +66,9 @@ export default function FormularioRemito({ onGuardar }) {
   const [fechaRecepcion, setFechaRecepcion] = useState(hoyTexto());
   const [observaciones, setObservaciones] = useState('');
 
-  const [renglones, setRenglones] = useState([renglonVacio()]);
+  // El primer renglon lleva la clave 0 fija: si saliera del contador, el
+  // servidor y el navegador le darian numeros distintos y React avisaria.
+  const [renglones, setRenglones] = useState(() => [{ clave: 0, codigo: '', cantidad: '' }]);
 
   const [catalogo, setCatalogo] = useState([]);
   const [cargandoCatalogo, setCargandoCatalogo] = useState(true);
@@ -234,10 +236,10 @@ export default function FormularioRemito({ onGuardar }) {
             color="warning"
             mensaje="Todavía no hay materiales ni herramientas en el catálogo del depósito. El remito no los da de alta: primero hay que cargarlos."
           />
-          <BotonEnlace href="/inventario/agregar">
-            <CIcon icon={cilPlus} className="me-2" />
-            Agregar
-          </BotonEnlace>
+          <p className="mb-0">
+            Cargalos primero como <Link href="/inventario/materiales/agregar">Material</Link> o{' '}
+            <Link href="/inventario/herramientas/agregar">Herramienta</Link>.
+          </p>
         </CCardBody>
       </CCard>
     );

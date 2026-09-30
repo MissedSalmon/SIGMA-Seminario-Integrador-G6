@@ -69,12 +69,17 @@ const NOMBRES_COMUNES = {
 /**
  * Los modulos cuyo registro se identifica con un codigo y no con un numero.
  *
- * Hace falta para la ficha de un item del deposito (/inventario/CA-111): el
- * tramo "CA-111" es un identificador, pero no es un numero ni viene seguido de
- * "editar", asi que las dos reglas de abajo no lo agarran y la miga terminaria
- * mostrando el codigo.
+ * Hace falta para la ficha de un material o una herramienta
+ * (/inventario/materiales/MAT-006): el tramo "MAT-006" es un identificador,
+ * pero no es un numero ni viene seguido de "editar", asi que las dos reglas de
+ * abajo no lo agarran y la miga terminaria mostrando el codigo.
  */
-const MODULOS_CON_CODIGO = ['/activos', '/inventario', '/tecnicos'];
+const MODULOS_CON_CODIGO = [
+  '/activos',
+  '/inventario/materiales',
+  '/inventario/herramientas',
+  '/tecnicos',
+];
 
 /**
  * Convierte "/edificios/3/editar" en los tramos de la ruta de migas.
@@ -83,7 +88,7 @@ const MODULOS_CON_CODIGO = ['/activos', '/inventario', '/tecnicos'];
  * pueda entrar. Un identificador es el tramo que va justo antes de "editar":
  * puede ser un numero (/edificios/3/editar) o un codigo, como el de inventario
  * de un activo (/activos/AC-014/editar). Tambien lo es el tramo que cuelga
- * directo de un modulo de MODULOS_CON_CODIGO (/inventario/CA-111).
+ * directo de un modulo de MODULOS_CON_CODIGO (/inventario/materiales/MAT-006).
  */
 function armarMigas(direccion) {
   const tramos = direccion.split('/').filter(Boolean);
@@ -106,8 +111,8 @@ function armarMigas(direccion) {
 
     /*
      * Un codigo colgado de un modulo es un identificador, salvo que ese tramo
-     * sea una pantalla: una con nombre propio (/inventario/tipos,
-     * /inventario/remitos) o una de las comunes (/activos/agregar).
+     * sea una pantalla: una con nombre propio o una de las comunes
+     * (/activos/agregar).
      */
     if (
       MODULOS_CON_CODIGO.includes(padre) &&

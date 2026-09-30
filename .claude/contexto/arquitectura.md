@@ -227,12 +227,12 @@ cambiarla en el otro. Las restricciones en la base quedan para después.
 ### Las cantidades se cargan con + y - (24/09/2026)
 
 Un campo de **cantidad** se pide con `<Campo tipo="numero">` y lo dibuja el `NumberField` de
-HeroUI: **+ a la izquierda, el número en el medio, - a la derecha**. Así se puede cargar sin
+HeroUI: **- a la izquierda, el número en el medio, + a la derecha**. Así se puede cargar sin
 teclear. Hoy lo usa el "Stock mínimo" del inventario.
 
-⬜ **El orden de los botones es el que se pidió.** Lo más habitual es el revés
-(`- número +`); si se quiere cambiar, alcanza con dar vuelta las dos líneas del componente,
-porque el lugar lo decide el orden en que están escritas y no el CSS.
+**El orden de los botones se dio vuelta el 30/09/2026.** Hasta ese día era `+ número -`; se
+cambió al orden habitual (`- número +`). El lugar lo decide el orden en que están escritos los
+botones en el componente, y el borde que los separa del número está en `globals.css`.
 
 **Los botones respetan el `min` y el `max`** del campo: con `min="0"`, al llegar a 0 el
 botón `-` se apaga solo. Igual se puede escribir a mano.

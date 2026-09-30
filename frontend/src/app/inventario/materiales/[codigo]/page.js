@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * /inventario/CA-111 - la ficha de un material o de una herramienta (HU-16).
+ * /inventario/materiales/CA-111 - la ficha de un material (HU-16).
  *
  * Sus datos y, debajo, el historial de movimientos: como llego el stock al
  * numero que se ve hoy. Cada renglon es un Ingreso (viene de un remito) o un
@@ -208,14 +208,14 @@ export default function PantallaFichaItem({ params }) {
       )}
 
       <div className="d-flex flex-wrap gap-2 mt-2">
-        <BotonEnlace href="/inventario" color="secondary" variante="outline">
+        <BotonEnlace href="/inventario/materiales" color="secondary" variante="outline">
           <CIcon icon={cilArrowLeft} className="me-2" />
           Volver al listado
         </BotonEnlace>
 
         {item && (
           <BotonEnlace
-            href={`/inventario/${encodeURIComponent(item.codigo)}/editar`}
+            href={`/inventario/materiales/${encodeURIComponent(item.codigo)}/editar`}
             color="secondary"
             variante="outline"
           >

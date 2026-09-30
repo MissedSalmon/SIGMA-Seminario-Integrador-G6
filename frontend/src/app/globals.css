@@ -987,11 +987,12 @@ body {
   cursor: pointer;
 }
 
-.sigma-numero .number-field__increment-button {
+/* El - va a la izquierda del numero y el + a la derecha. */
+.sigma-numero .number-field__decrement-button {
   border-right: 1px solid var(--sigma-borde);
 }
 
-.sigma-numero .number-field__decrement-button {
+.sigma-numero .number-field__increment-button {
   border-left: 1px solid var(--sigma-borde);
 }
 

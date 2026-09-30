@@ -110,14 +110,11 @@ export default function PantallaRemitos() {
       render: (remito) => (
         <BotonEnlace
           href={`/inventario/remitos/${remito.id}`}
-          color="secondary"
-          variante="outline"
-          tamano="sm"
-          className="text-nowrap"
+          variante="ghost"
+          className="btn-icono"
           title="Ver el detalle del remito"
         >
-          <CIcon icon={cilDescription} size="sm" className="me-1" />
-          Ver detalle
+          <CIcon icon={cilDescription} />
         </BotonEnlace>
       ),
     },
