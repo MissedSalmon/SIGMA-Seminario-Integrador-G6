@@ -53,7 +53,13 @@ export async function listarTiposFalla() {
     .order('tipo_falla_nom');
 
   if (error) throw new Error(error.message);
-  return (data ?? []).map((fila) => fila.tipo_falla_nom);
+  const tipos = (data ?? []).map((fila) => fila.tipo_falla_nom);
+  const otros = tipos.filter((tipo) => tipo.toLocaleLowerCase('es') === 'otra');
+
+  return tipos
+    .filter((tipo) => tipo.toLocaleLowerCase('es') !== 'otra')
+    .sort((a, b) => a.localeCompare(b, 'es'))
+    .concat(otros);
 }
 
 export async function crearTipoFalla(texto) {

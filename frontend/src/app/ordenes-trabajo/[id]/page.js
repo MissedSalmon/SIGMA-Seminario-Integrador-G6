@@ -85,6 +85,15 @@ function soloFechaLegible(iso) {
   return dia && mes && anio ? `${dia}/${mes}/${anio}` : null;
 }
 
+function ordenarTiposFalla(tipos) {
+  return [...tipos].sort((a, b) => {
+    const aEsOtra = a.toLocaleLowerCase('es') === 'otra';
+    const bEsOtra = b.toLocaleLowerCase('es') === 'otra';
+    if (aEsOtra !== bEsOtra) return aEsOtra ? 1 : -1;
+    return a.localeCompare(b, 'es');
+  });
+}
+
 export default function PantallaDetalleOrdenTrabajo({ params }) {
   const { id } = use(params);
   const { mostrarToast } = useToast();
@@ -122,7 +131,7 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
 
   useEffect(() => {
     listarTiposFalla()
-      .then(setTiposFalla)
+      .then((tipos) => setTiposFalla(ordenarTiposFalla(tipos)))
       .catch((fallo) => setError(fallo.message));
   }, []);
 
@@ -192,9 +201,7 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
 
     try {
       const creado = await crearTipoFalla(nuevoTipoFalla);
-      setTiposFalla((anteriores) =>
-        [...anteriores, creado].sort((a, b) => a.localeCompare(b, 'es')),
-      );
+      setTiposFalla((anteriores) => ordenarTiposFalla([...anteriores, creado]));
       setTipoFalla(creado);
       setNuevoTipoFalla('');
       setRevisadoFalla(false);
