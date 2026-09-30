@@ -208,14 +208,14 @@ export default function PantallaFichaItem({ params }) {
       )}
 
       <div className="d-flex flex-wrap gap-2 mt-2">
-        <BotonEnlace href="/inventario" color="secondary" variante="outline">
+        <BotonEnlace href="/inventario/herramientas" color="secondary" variante="outline">
           <CIcon icon={cilArrowLeft} className="me-2" />
           Volver al listado
         </BotonEnlace>
 
         {item && (
           <BotonEnlace
-            href={`/inventario/${encodeURIComponent(item.codigo)}/editar`}
+            href={`/inventario/herramientas/${encodeURIComponent(item.codigo)}/editar`}
             color="secondary"
             variante="outline"
           >
