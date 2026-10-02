@@ -543,3 +543,34 @@ El sistema SIGMA utiliza un modelo híbrido para el borrado de registros, diseñ
 - **Entidades Débiles/Relacionales (Baja Física en Cascada):** Solo se usa `ON DELETE CASCADE` donde corresponde semánticamente (ej: al borrar un Edificio vacío, se borran sus Espacios; al borrar un Técnico sin tareas, se borran sus especialidades asociadas).
 
 *(Nota: En futuras iteraciones, evaluar la transición a baja lógica para los `Técnicos` y `Prestadores` si la retención de historial de las tareas de personal que se desvincula se vuelve un cuello de botella para la base de datos).*
+
+---
+
+## Despliegue en Vercel (preparado el 02/10/2026)
+
+Se crean **dos proyectos de Vercel** a partir del mismo repositorio, uno por parte:
+
+| Proyecto | Root Directory | Framework | Archivo clave |
+|---|---|---|---|
+| `sigma-frontend` | `frontend` | Next.js | `frontend/vercel.json` |
+| `sigma-backend` | `backend` | Other | `backend/api/index.js` + `backend/vercel.json` |
+
+En los dos: **Node 22** y dejar marcado "Include files outside the Root Directory"
+(el repo usa npm workspaces y el `package-lock.json` está en la raíz).
+
+**Variables de entorno** (se cargan en Vercel > Settings > Environment Variables, nunca en Git):
+
+- Backend: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `CORS_ORIGIN` (la dirección del frontend, ej. `https://sigma-frontend.vercel.app`).
+- Frontend: `NEXT_PUBLIC_API_URL` (la dirección del backend + `/api`), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+
+Orden: primero el backend (para conocer su dirección), después el frontend, y al final
+volver al backend a cargar `CORS_ORIGIN` y redesplegar.
+
+En Vercel la API corre como función: no hay servidor escuchando.
+
+- **Archivos en disco:** revisado el 02/10/2026, el backend no escribe archivos en disco
+  (no hay `fs`, `multer` ni subidas). Si en algún momento se suben fotos, van a Supabase Storage.
+- **Tarea programada de las OT preventivas:** todavía **no existe en el código** (no hay lógica
+  que genere OT desde `mantenimiento_preventivo`), así que no hay nada que migrar. Cuando se
+  haga esa HU, tiene que ser un *Cron Job* de Vercel que llame a una ruta de la API, y no un
+  `setInterval` ni `node-cron`, que en Vercel no corren.

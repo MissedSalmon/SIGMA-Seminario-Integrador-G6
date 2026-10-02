@@ -1,0 +1,4 @@
+.env
+.env.local
+backend/scratch.js
+backend/scratch2.js
