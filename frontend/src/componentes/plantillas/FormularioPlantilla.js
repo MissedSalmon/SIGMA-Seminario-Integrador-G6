@@ -13,10 +13,10 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CButton, CCard, CCardBody } from '@coreui/react';
+import { CCard, CCardBody } from '@coreui/react';
 
 import Aviso from '@/componentes/Aviso.js';
-import BotonEnlace from '@/componentes/BotonEnlace.js';
+import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Campo from '@/componentes/formulario/Campo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarTiposActivos } from '@/servicios/tiposActivos.js';
@@ -126,14 +126,7 @@ export default function FormularioPlantilla({ plantilla = null, onGuardar }) {
             </p>
           )}
 
-          <div className="d-flex gap-2 mt-4">
-            <CButton type="submit" color="primary" disabled={guardando}>
-              {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Agregar'}
-            </CButton>
-            <BotonEnlace href="/plantillas-tareas" color="secondary" variante="outline">
-              Cancelar
-            </BotonEnlace>
-          </div>
+          <BotonesAccion procesando={guardando} hrefCancelar="/plantillas-tareas" className="mt-4" />
         </form>
       </CCardBody>
     </CCard>

@@ -24,10 +24,10 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CButton, CCard, CCardBody } from '@coreui/react';
+import { CCard, CCardBody } from '@coreui/react';
 
 import Aviso from '@/componentes/Aviso.js';
-import BotonEnlace from '@/componentes/BotonEnlace.js';
+import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Campo from '@/componentes/formulario/Campo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarTiposInventario } from '@/servicios/inventario.js';
@@ -268,14 +268,7 @@ export default function FormularioMaterialHerramienta({ clase, articulo = null, 
             </p>
           )}
 
-          <div className="d-flex gap-2 mt-4">
-            <CButton type="submit" color="primary" disabled={guardando}>
-              {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Agregar'}
-            </CButton>
-            <BotonEnlace href={volverA} color="secondary" variante="outline">
-              Cancelar
-            </BotonEnlace>
-          </div>
+          <BotonesAccion procesando={guardando} hrefCancelar={volverA} className="mt-4" />
         </form>
       </CCardBody>
     </CCard>

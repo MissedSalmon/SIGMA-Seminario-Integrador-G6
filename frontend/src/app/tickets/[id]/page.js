@@ -19,6 +19,7 @@ import { cilArrowLeft, cilExternalLink, cilCheckAlt, cilX, cilPlus, cilDescripti
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
+import BotonesAccion from '@/componentes/BotonesAccion.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
 import CampoLista from '@/componentes/formulario/CampoLista.js';
 import EtiquetaEstadoTicket from '@/componentes/tickets/EtiquetaEstadoTicket.js';
@@ -243,13 +244,13 @@ export default function PantallaDetalleTicket({ params }) {
                     <span className="fw-semibold">Datos generales</span>
                     {ticket.estado === 'Creado' && (
                       <div className="d-flex gap-2">
-                        <CButton color="danger" variant="outline" size="sm" onClick={abrirModalRechazo} disabled={procesando}>
-                          <CIcon icon={cilX} className="me-1" />
-                          Rechazar
-                        </CButton>
                         <CButton color="success" className="text-white" size="sm" onClick={abrirModalValidar} disabled={procesando}>
                           <CIcon icon={cilCheckAlt} className="me-1" />
                           {procesando ? 'Procesando...' : 'Validar'}
+                        </CButton>
+                        <CButton color="danger" variant="outline" size="sm" onClick={abrirModalRechazo} disabled={procesando}>
+                          <CIcon icon={cilX} className="me-1" />
+                          Rechazar
                         </CButton>
                       </div>
                     )}
@@ -459,17 +460,13 @@ export default function PantallaDetalleTicket({ params }) {
                 </div>
               </CModalBody>
               <CModalFooter>
-                <CButton
-                  color="secondary"
-                  variant="outline"
-                  onClick={() => setModalValidarVisible(false)}
-                  disabled={procesando}
-                >
-                  Cancelar
-                </CButton>
-                <CButton color="success" className="text-white" onClick={handleValidar} disabled={procesando}>
-                  {procesando ? 'Validando...' : 'Validar ticket'}
-                </CButton>
+                <BotonesAccion
+                  texto="Validar"
+                  textoProcesando="Validando..."
+                  procesando={procesando}
+                  alAceptar={handleValidar}
+                  alCancelar={() => setModalValidarVisible(false)}
+                />
               </CModalFooter>
             </CModal>
 
@@ -491,12 +488,14 @@ export default function PantallaDetalleTicket({ params }) {
                 </div>
               </CModalBody>
               <CModalFooter>
-                <CButton color="secondary" variant="outline" onClick={() => setModalRechazoVisible(false)} disabled={procesando}>
-                  Cancelar
-                </CButton>
-                <CButton color="danger" onClick={handleRechazar} disabled={procesando}>
-                  {procesando ? 'Rechazando...' : 'Confirmar Rechazo'}
-                </CButton>
+                <BotonesAccion
+                  texto="Rechazar"
+                  textoProcesando="Rechazando..."
+                  color="danger"
+                  procesando={procesando}
+                  alAceptar={handleRechazar}
+                  alCancelar={() => setModalRechazoVisible(false)}
+                />
               </CModalFooter>
             </CModal>
           </>

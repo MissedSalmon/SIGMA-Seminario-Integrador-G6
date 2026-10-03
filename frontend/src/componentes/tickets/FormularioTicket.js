@@ -28,7 +28,7 @@ import CIcon from '@coreui/icons-react';
 import { cilExternalLink, cilImagePlus, cilTrash, cilWarning } from '@coreui/icons';
 
 import Aviso from '@/componentes/Aviso.js';
-import BotonEnlace from '@/componentes/BotonEnlace.js';
+import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Campo from '@/componentes/formulario/Campo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarActivos } from '@/servicios/activos.js';
@@ -404,14 +404,7 @@ export default function FormularioTicket({ onGuardar }) {
             </p>
           )}
 
-          <div className="d-flex gap-2 mt-4">
-            <CButton type="submit" color="primary" disabled={guardando}>
-              {guardando ? 'Guardando...' : 'Registrar'}
-            </CButton>
-            <BotonEnlace href="/" color="secondary" variante="outline">
-              Cancelar
-            </BotonEnlace>
-          </div>
+          <BotonesAccion procesando={guardando} hrefCancelar="/" className="mt-4" />
         </form>
       </CCardBody>
     </CCard>

@@ -43,6 +43,7 @@ import { cilArrowLeft, cilDescription, cilPencil, cilPlus, cilTrash } from '@cor
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
+import BotonesAccion from '@/componentes/BotonesAccion.js';
 import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
 import Campo from '@/componentes/formulario/Campo.js';
@@ -569,17 +570,11 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
                 />
               </CModalBody>
               <CModalFooter>
-                <CButton
-                  color="secondary"
-                  variant="outline"
-                  onClick={() => setTareaDiagnostico(null)}
-                  disabled={guardandoFalla}
-                >
-                  Cancelar
-                </CButton>
-                <CButton color="primary" onClick={guardarDiagnostico} disabled={guardandoFalla}>
-                  {guardandoFalla ? 'Guardando...' : 'Guardar diagnóstico'}
-                </CButton>
+                <BotonesAccion
+                  procesando={guardandoFalla}
+                  alAceptar={guardarDiagnostico}
+                  alCancelar={() => setTareaDiagnostico(null)}
+                />
               </CModalFooter>
             </CModal>
 
@@ -600,17 +595,11 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
                 />
               </CModalBody>
               <CModalFooter>
-                <CButton
-                  color="secondary"
-                  variant="outline"
-                  onClick={() => setModalDescripcion(false)}
-                  disabled={guardando}
-                >
-                  Cancelar
-                </CButton>
-                <CButton color="primary" onClick={guardarDescripcion} disabled={guardando}>
-                  {guardando ? 'Guardando...' : 'Guardar'}
-                </CButton>
+                <BotonesAccion
+                  procesando={guardando}
+                  alAceptar={guardarDescripcion}
+                  alCancelar={() => setModalDescripcion(false)}
+                />
               </CModalFooter>
             </CModal>
           </>

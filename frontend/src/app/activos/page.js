@@ -280,6 +280,8 @@ export default function PantallaActivos() {
       <DialogoEliminar
         visible={Boolean(aDarDeBaja)}
         titulo="Confirmar la baja"
+        texto="Dar de baja"
+        textoProcesando="Dando de baja..."
         eliminando={dandoDeBaja}
         onConfirmar={confirmarBaja}
         onCancelar={() => setADarDeBaja(null)}
