@@ -502,7 +502,7 @@ export default function PantallaDetalleTicket({ params }) {
         )
       )}
 
-      <div className="mt-2">
+      <div className="mt-2 mb-4">
         <BotonEnlace href="/tickets" color="secondary" variante="outline">
           <CIcon icon={cilArrowLeft} className="me-2" />
           Volver al listado

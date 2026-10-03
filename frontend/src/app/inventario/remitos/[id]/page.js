@@ -157,7 +157,7 @@ export default function PantallaDetalleRemito({ params }) {
         )
       )}
 
-      <div className="mt-2">
+      <div className="mt-2 mb-4">
         <BotonEnlace href="/inventario/remitos" color="secondary" variante="outline">
           <CIcon icon={cilArrowLeft} className="me-2" />
           Volver al listado

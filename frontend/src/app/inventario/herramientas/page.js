@@ -8,6 +8,12 @@
  *
  * Muestra el estado de cada herramienta (Disponible, En uso o Fuera de
  * servicio) y, si esta en uso, el tecnico que la tiene.
+ *
+ * Devolucion del Sprint 3:
+ *   - Asignar la herramienta a un tecnico y registrar la devolucion se hace
+ *     desde su ficha; aca solo se ve quien la tiene.
+ *   - Una herramienta no se borra: el tacho la "da de baja" y pasa a Fuera de
+ *     servicio. Mientras la tenga un tecnico no se puede: primero se devuelve.
  */
 import { useEffect, useState } from 'react';
 import { CButton, CButtonGroup, CCard, CCardBody } from '@coreui/react';
@@ -47,7 +53,7 @@ export default function PantallaHerramientas() {
     setEliminando(true);
     try {
       await eliminarItem(aEliminar.codigo);
-      mostrarToast({ tipo: 'exito', mensaje: `Se eliminó "${aEliminar.nombre}".` });
+      mostrarToast({ tipo: 'exito', mensaje: `"${aEliminar.nombre}" quedó fuera de servicio.` });
       setAEliminar(null);
       setRecarga((numero) => numero + 1);
     } catch (fallo) {
@@ -56,6 +62,18 @@ export default function PantallaHerramientas() {
     } finally {
       setEliminando(false);
     }
+  }
+
+  /*
+   * Una herramienta asignada no se puede dar de baja: se avisa enseguida, sin
+   * abrir la confirmacion. La API tambien lo controla.
+   */
+  function pedirBaja(fila) {
+    if (fila.legajoTecnico) {
+      setError(`"${fila.nombre}" está asignada a ${fila.tecnico}. Primero hay que registrar la devolución.`);
+      return;
+    }
+    setAEliminar(fila);
   }
 
   const filasVisibles = herramientas
@@ -107,15 +125,18 @@ export default function PantallaHerramientas() {
           >
             <CIcon icon={cilPencil} />
           </BotonEnlace>
-          <CButton
-            variant="ghost"
-            color="danger"
-            className="btn-icono"
-            onClick={() => setAEliminar(fila)}
-            title="Eliminar"
-          >
-            <CIcon icon={cilTrash} />
-          </CButton>
+          {/* Una herramienta fuera de servicio ya no se da de baja. */}
+          {fila.estado !== 'Fuera de servicio' && (
+            <CButton
+              variant="ghost"
+              color="danger"
+              className="btn-icono"
+              onClick={() => pedirBaja(fila)}
+              title="Dar de baja"
+            >
+              <CIcon icon={cilTrash} />
+            </CButton>
+          )}
         </CButtonGroup>
       ),
     },
@@ -178,15 +199,17 @@ export default function PantallaHerramientas() {
 
       <DialogoEliminar
         visible={Boolean(aEliminar)}
+        texto="Dar de baja"
+        textoProcesando="Dando de baja..."
         eliminando={eliminando}
         onConfirmar={confirmarBaja}
         onCancelar={() => setAEliminar(null)}
       >
         <p className="mb-0">
-          Se va a eliminar <strong>{aEliminar?.nombre}</strong>.
+          Se va a dar de baja <strong>{aEliminar?.nombre}</strong>.
         </p>
         <p className="text-body-secondary mt-2 mb-0">
-          Solo se puede eliminar si no tiene ingresos ni consumos registrados.
+          Pasa a estado <strong>Fuera de servicio</strong> y ya no se puede asignar.
         </p>
       </DialogoEliminar>
     </>

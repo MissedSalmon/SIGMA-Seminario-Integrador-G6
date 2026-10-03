@@ -1495,3 +1495,35 @@ body {
   font-size: 0.825rem;
   font-weight: 700;
 }
+
+/*
+  Material por debajo del stock minimo (src/app/inventario/materiales/page.js).
+  La fila se tiñe apenas de rojo y el stock actual va en rojo. Abajo de la
+  tabla va la referencia que explica que significa el rojo: un color sin su
+  explicacion no se usa (regla 6 de UI del CLAUDE.md).
+*/
+.sigma-fila-bajo-minimo > td {
+  --cui-table-bg-type: color-mix(in srgb, var(--cui-danger, #e55353) 7%, transparent);
+}
+
+.sigma-stock-bajo {
+  color: var(--cui-danger, #e55353);
+  font-weight: 600;
+}
+
+.sigma-referencia {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  color: var(--sigma-texto-secundario);
+  font-size: 0.875rem;
+}
+
+.sigma-referencia-muestra {
+  width: 1.1rem;
+  height: 0.8rem;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--cui-danger, #e55353) 7%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cui-danger, #e55353) 45%, transparent);
+}

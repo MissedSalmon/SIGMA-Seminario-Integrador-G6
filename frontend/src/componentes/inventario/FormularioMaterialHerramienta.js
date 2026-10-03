@@ -9,14 +9,15 @@
  * alta materiales, /inventario/herramientas solo herramientas. Por eso el
  * formulario no la pregunta, y de la clase dependen dos campos:
  *
- *   - un MATERIAL se consume, asi que lleva stock minimo y, si vence, fecha de
- *     vencimiento;
- *   - una HERRAMIENTA se presta y se devuelve, asi que no lleva ninguno de los
- *     dos.
+ *   - un MATERIAL se consume, asi que lleva stock minimo;
+ *   - una HERRAMIENTA se presta y se devuelve, asi que no lo lleva.
+ *
+ * Los materiales no llevan fecha de vencimiento (devolucion del Sprint 3).
  *
  * Lo que el formulario NO pide: el estado. Lo pone el sistema (todo lo que
- * entra al deposito entra disponible) y despues lo mueven los prestamos, no
- * esta pantalla. En la edicion se muestra, para verlo, pero no se toca.
+ * entra al deposito entra disponible) y despues lo mueven la asignacion a un
+ * tecnico y la baja, no esta pantalla. En la edicion se muestra, para verlo,
+ * pero no se toca.
  *
  * Los campos usan <Campo>, asi que las cajas miden lo que mide su contenido y
  * la validacion marca cada campo en chico, sin pintar toda la caja de verde o
@@ -31,7 +32,6 @@ import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Campo from '@/componentes/formulario/Campo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarTiposInventario } from '@/servicios/inventario.js';
-import { hoyTexto } from '@/utils/fechas.js';
 
 /** "Se agrego el material" / "Se agrego la herramienta". */
 function elArticulo(clase) {
@@ -55,9 +55,6 @@ export default function FormularioMaterialHerramienta({ clase, articulo = null, 
   const [descripcion, setDescripcion] = useState(articulo?.descripcion ?? '');
   const [idTipo, setIdTipo] = useState(articulo?.idTipo ?? '');
   const [stockMinimo, setStockMinimo] = useState(articulo?.stockMinimo ?? '');
-  const [fechaVencimiento, setFechaVencimiento] = useState(
-    articulo?.fechaVencimiento?.slice(0, 10) ?? ''
-  );
 
   const [tipos, setTipos] = useState([]);
   const [cargandoTipos, setCargandoTipos] = useState(true);
@@ -78,21 +75,6 @@ export default function FormularioMaterialHerramienta({ clase, articulo = null, 
    * Los errores se recalculan en cada tecla, pero no se muestran hasta apretar
    * Guardar. De ahi en mas se actualizan solos mientras se corrige.
    */
-  const hoy = hoyTexto();
-  const vencimientoOriginal = articulo?.fechaVencimiento?.slice(0, 10) ?? '';
-
-  /*
-   * Un material que se carga hoy no puede venir ya vencido: la fecha mas
-   * temprana que se puede elegir es hoy (decision del 23/09/2026).
-   *
-   * La excepcion es editar algo que YA estaba vencido en el deposito: ahi el
-   * minimo es su propia fecha, porque si no no se podria guardar ningun otro
-   * cambio de ese material. Es el mismo criterio que usan las fechas de una
-   * tarea de la OT (ver FormularioTareaOT.js).
-   */
-  const minimoVencimiento =
-    vencimientoOriginal && vencimientoOriginal < hoy ? vencimientoOriginal : hoy;
-
   const errores = useMemo(() => {
     const encontrados = {};
 
@@ -103,17 +85,8 @@ export default function FormularioMaterialHerramienta({ clase, articulo = null, 
       encontrados.stockMinimo = 'Indicá desde qué cantidad hay que reponer.';
     }
 
-    /*
-     * El almanaque ya apaga los dias de antes, pero el formulario es noValidate
-     * y la fecha se puede escribir a mano en los casilleros: el que corta de
-     * verdad es este control.
-     */
-    if (esMaterial && fechaVencimiento && fechaVencimiento < minimoVencimiento) {
-      encontrados.fechaVencimiento = 'La fecha de vencimiento no puede ser anterior a hoy.';
-    }
-
     return encontrados;
-  }, [codigo, nombre, idTipo, esMaterial, stockMinimo, fechaVencimiento, minimoVencimiento]);
+  }, [codigo, nombre, idTipo, esMaterial, stockMinimo]);
 
   const hayErrores = Object.keys(errores).length > 0;
 
@@ -132,7 +105,6 @@ export default function FormularioMaterialHerramienta({ clase, articulo = null, 
         clase,
         idTipo: Number(idTipo),
         stockMinimo: esMaterial ? Number(stockMinimo) : null,
-        fechaVencimiento: esMaterial ? fechaVencimiento || null : null,
       });
 
       mostrarToast({
@@ -228,7 +200,7 @@ export default function FormularioMaterialHerramienta({ clase, articulo = null, 
             />
           </div>
 
-          {/* Solo un material se consume y se vence: una herramienta, no. */}
+          {/* Solo un material se consume: una herramienta, no. */}
           {esMaterial && (
             <>
               <h2 className="sigma-seccion-titulo">Control de existencias</h2>
@@ -246,17 +218,6 @@ export default function FormularioMaterialHerramienta({ clase, articulo = null, 
                   ancho={6}
                   revisado={revisado}
                   error={errores.stockMinimo}
-                />
-
-                <Campo
-                  id="fechaVencimiento"
-                  etiqueta="Vence el"
-                  tipoHtml="date"
-                  valor={fechaVencimiento}
-                  alCambiar={setFechaVencimiento}
-                  min={minimoVencimiento}
-                  revisado={revisado}
-                  error={errores.fechaVencimiento}
                 />
               </div>
             </>

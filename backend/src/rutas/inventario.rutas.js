@@ -15,6 +15,12 @@ router.get('/:codigo', inventario.obtenerItem);
 // El historial de ingresos y consumos del item (HU-16).
 router.get('/:codigo/movimientos', inventario.listarMovimientos);
 router.put('/:codigo', inventario.actualizarItem);
+// Asignar una herramienta a un tecnico, registrar que la devolvio y ver quien la tuvo.
+router.get('/:codigo/asignaciones', inventario.listarAsignaciones);
+router.post('/:codigo/asignacion', inventario.asignarHerramienta);
+router.delete('/:codigo/asignacion', inventario.devolverHerramienta);
+// Volver a poner en servicio una herramienta dada de baja.
+router.post('/:codigo/en-servicio', inventario.ponerEnServicio);
 router.delete('/:codigo', inventario.eliminarItem);
 
 export default router;
