@@ -1,15 +1,17 @@
-import {
-  crearTipoFalla,
-  normalizarNombreTipoFalla,
-  registrarFalla,
-} from '../src/servicios/ordenesTrabajo.servicio.js';
-import { supabase } from '../src/config/supabase.js';
+import { jest } from '@jest/globals';
 
-jest.mock('../src/config/supabase.js', () => ({
+jest.unstable_mockModule('../src/config/supabase.js', () => ({
   supabase: {
     from: jest.fn(),
   },
 }));
+
+const { supabase } = await import('../src/config/supabase.js');
+const {
+  crearTipoFalla,
+  normalizarNombreTipoFalla,
+  registrarFalla,
+} = await import('../src/servicios/ordenesTrabajo.servicio.js');
 
 afterEach(() => {
   jest.clearAllMocks();

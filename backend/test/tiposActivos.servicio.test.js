@@ -1,11 +1,13 @@
-import { obtenerTodos, crear, eliminar } from '../src/servicios/tiposActivos.servicio.js';
-import { supabase } from '../src/config/supabase.js';
+import { jest } from '@jest/globals';
 
-jest.mock('../src/config/supabase.js', () => ({
+jest.unstable_mockModule('../src/config/supabase.js', () => ({
   supabase: {
     from: jest.fn()
   }
 }));
+
+const { supabase } = await import('../src/config/supabase.js');
+const { obtenerTodos, crear, eliminar } = await import('../src/servicios/tiposActivos.servicio.js');
 
 describe('Tipos Activos Servicio', () => {
   afterEach(() => {
@@ -13,13 +15,13 @@ describe('Tipos Activos Servicio', () => {
   });
 
   test('obtenerTodos debe retornar lista mapeada', async () => {
-    const mockData = [{ tipoactivoid: 1, tipoactivonom: 'A', tipoactivodesc: 'Desc A', activo: [{ count: 5 }] }];
+    const mockData = [{ tipo_activo_id: 1, tipo_activo_nom: 'A', activo: [{ count: 5 }] }];
     const selectMock = jest.fn().mockReturnValue({ order: jest.fn().mockResolvedValue({ data: mockData, error: null }) });
     supabase.from.mockReturnValue({ select: selectMock });
 
     const resultado = await obtenerTodos();
     expect(resultado).toEqual([
-      { idTipoActivo: 1, nombre: 'A', descripcion: 'Desc A', cantidadActivos: 5 }
+      { idTipoActivo: 1, nombre: 'A', cantidadActivos: 5 }
     ]);
   });
 
