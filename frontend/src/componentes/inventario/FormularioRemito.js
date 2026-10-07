@@ -45,6 +45,7 @@ import { cilPlus, cilTrash } from '@coreui/icons';
 
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
+import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Campo from '@/componentes/formulario/Campo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarItems } from '@/servicios/inventario.js';
@@ -66,7 +67,9 @@ export default function FormularioRemito({ onGuardar }) {
   const [fechaRecepcion, setFechaRecepcion] = useState(hoyTexto());
   const [observaciones, setObservaciones] = useState('');
 
-  const [renglones, setRenglones] = useState([renglonVacio()]);
+  // El primer renglon lleva la clave 0 fija: si saliera del contador, el
+  // servidor y el navegador le darian numeros distintos y React avisaria.
+  const [renglones, setRenglones] = useState(() => [{ clave: 0, codigo: '', cantidad: '' }]);
 
   const [catalogo, setCatalogo] = useState([]);
   const [cargandoCatalogo, setCargandoCatalogo] = useState(true);
@@ -90,7 +93,7 @@ export default function FormularioRemito({ onGuardar }) {
 
   /*
    * Los errores se recalculan en cada tecla, pero no se muestran hasta apretar
-   * Confirmar. De ahi en mas se actualizan solos mientras se corrige.
+   * Guardar. De ahi en mas se actualizan solos mientras se corrige.
    */
   const errores = useMemo(() => {
     const encontrados = {};
@@ -234,10 +237,10 @@ export default function FormularioRemito({ onGuardar }) {
             color="warning"
             mensaje="Todavía no hay materiales ni herramientas en el catálogo del depósito. El remito no los da de alta: primero hay que cargarlos."
           />
-          <BotonEnlace href="/inventario/agregar">
-            <CIcon icon={cilPlus} className="me-2" />
-            Agregar
-          </BotonEnlace>
+          <p className="mb-0">
+            Cargalos primero como <Link href="/inventario/materiales/agregar">Material</Link> o{' '}
+            <Link href="/inventario/herramientas/agregar">Herramienta</Link>.
+          </p>
         </CCardBody>
       </CCard>
     );
@@ -414,14 +417,7 @@ export default function FormularioRemito({ onGuardar }) {
             </p>
           )}
 
-          <div className="d-flex gap-2 mt-4">
-            <CButton type="submit" color="primary" disabled={guardando}>
-              Confirmar
-            </CButton>
-            <BotonEnlace href="/inventario/remitos" color="secondary" variante="outline">
-              Cancelar
-            </BotonEnlace>
-          </div>
+          <BotonesAccion procesando={guardando} hrefCancelar="/inventario/remitos" className="mt-4" />
         </form>
       </CCardBody>
 
@@ -474,23 +470,17 @@ export default function FormularioRemito({ onGuardar }) {
           </div>
 
           <p className="text-body-secondary mt-3 mb-0">
-            Al confirmar, el stock sube y el movimiento queda registrado. El remito no se
+            Al guardar, el stock sube y el movimiento queda registrado. El remito no se
             puede modificar después.
           </p>
         </CModalBody>
 
         <CModalFooter>
-          <CButton
-            color="secondary"
-            variant="outline"
-            onClick={() => setConfirmando(false)}
-            disabled={guardando}
-          >
-            Volver a revisar
-          </CButton>
-          <CButton color="primary" onClick={confirmar} disabled={guardando}>
-            {guardando ? 'Registrando...' : 'Confirmar el ingreso'}
-          </CButton>
+          <BotonesAccion
+            procesando={guardando}
+            alAceptar={confirmar}
+            alCancelar={() => setConfirmando(false)}
+          />
         </CModalFooter>
       </CModal>
     </CCard>

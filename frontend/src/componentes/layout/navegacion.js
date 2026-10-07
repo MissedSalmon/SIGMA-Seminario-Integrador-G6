@@ -34,6 +34,7 @@ import {
   cilUser,
   cilCog,
   cilClipboard,
+  cilBriefcase,
 } from '@coreui/icons';
 
 export const navegacion = [
@@ -184,6 +185,21 @@ export const navegacion = [
     texto: 'Técnicos',
     direccion: '/tecnicos',
     icono: cilPeople,
+  },
+  {
+    // Por ahora sólo tiene los tipos (HU-24). El listado de prestadores es la
+    // HU-33 y va debajo, porque para cargar un prestador hay que elegir su tipo.
+    tipo: 'grupo',
+    texto: 'Prestadores de servicio',
+    icono: cilBriefcase,
+    items: [
+      {
+        tipo: 'item',
+        texto: 'Tipos de prestador',
+        direccion: '/prestadores/tipos',
+        icono: cilTags,
+      },
+    ],
   },
   {
     // Va despues de las areas (mas arriba, en estructura edilicia): a un usuario

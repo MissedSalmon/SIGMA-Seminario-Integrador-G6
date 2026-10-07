@@ -165,14 +165,11 @@ export default function PantallaOrdenesTrabajo() {
       render: (orden) => (
         <BotonEnlace
           href={`/ordenes-trabajo/${orden.id}`}
-          color="secondary"
-          variante="outline"
-          tamano="sm"
-          className="text-nowrap"
+          variante="ghost"
+          className="btn-icono"
           title="Ver la orden de trabajo y sus tareas"
         >
-          <CIcon icon={cilDescription} size="sm" className="me-1" />
-          Ver detalle
+          <CIcon icon={cilDescription} />
         </BotonEnlace>
       ),
     },

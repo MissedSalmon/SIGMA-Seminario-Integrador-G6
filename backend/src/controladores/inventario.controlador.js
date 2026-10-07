@@ -24,3 +24,7 @@ export async function crearItem(req, res) { res.status(201).json({ ok: true, dat
 export async function actualizarItem(req, res) { res.json({ ok: true, datos: await servicio.actualizarItem(leerCodigo(req), req.body) }); }
 export async function listarMovimientos(req, res) { res.json({ ok: true, datos: await servicio.obtenerMovimientos(leerCodigo(req)) }); }
 export async function eliminarItem(req, res) { res.json({ ok: true, datos: await servicio.eliminarItem(leerCodigo(req)) }); }
+export async function asignarHerramienta(req, res) { res.json({ ok: true, datos: await servicio.asignarHerramienta(leerCodigo(req), req.body) }); }
+export async function devolverHerramienta(req, res) { res.json({ ok: true, datos: await servicio.devolverHerramienta(leerCodigo(req)) }); }
+export async function listarAsignaciones(req, res) { res.json({ ok: true, datos: await servicio.obtenerAsignaciones(leerCodigo(req)) }); }
+export async function ponerEnServicio(req, res) { res.json({ ok: true, datos: await servicio.ponerEnServicio(leerCodigo(req)) }); }

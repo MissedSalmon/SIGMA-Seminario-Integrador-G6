@@ -60,7 +60,7 @@ Una OT viene **o de un ticket, o de un plan preventivo**. Nunca de los dos.
 | **Orden de trabajo** | Creada → Asignada → En ejecución → Finalizada · (o Cancelada) |
 | **Tarea de OT** | Pendiente → En ejecución → Completada |
 | **Activo** | Operativo → En mantenimiento → Fuera de servicio → Retirado |
-| **Herramienta** | Disponible → En uso → En reparación |
+| **Herramienta** | Disponible ⇄ En uso · Fuera de servicio |
 
 > **Decisiones del 13/09/2026 (HU-10, consulta de tickets):**
 > - Los estados del ticket viven en `backend/src/servicios/tickets.servicio.js` (`ESTADOS`) y
@@ -108,6 +108,32 @@ Una OT viene **o de un ticket, o de un plan preventivo**. Nunca de los dos.
 >   la tarea queda sin fila de falla.
 > - Desde «Otra» se pueden agregar tipos al catálogo. Se guardan con inicial mayúscula,
 >   se rechazan duplicados sin distinguir mayúsculas y quedan disponibles para otras tareas.
+
+> **Decisiones del 03/10/2026 (devolución del Sprint 3, HU-13 y HU-16):**
+> - **Los materiales no llevan fecha de vencimiento.** Se sacó del formulario, de la ficha y
+>   de la base (columna `material.mat_fecha_venc`).
+> - **El estado del stock no se escribe.** El listado de materiales muestra sólo el stock
+>   mínimo y el actual. Si el actual está por debajo del mínimo, la fila se tiñe de rojo suave
+>   y abajo de la tabla una referencia explica qué significa ese rojo.
+> - **Una herramienta se asigna a un solo técnico a la vez.** La asignación es un préstamo en
+>   `tecnico_utiliza_herramienta`: mientras no tenga fecha de devolución, la herramienta está
+>   "En uso" por ese técnico. La base no deja abrir dos préstamos de la misma herramienta.
+>   Para pasársela a otro técnico, primero se registra la devolución. Se asigna y se
+>   devuelve desde la ficha de la herramienta; el listado sólo muestra quién la tiene.
+> - **Quién tuvo cada herramienta se ve en su ficha**, en un "Historial de asignaciones"
+>   aparte del de ingresos: una asignación o una devolución no cambian ningún número del
+>   depósito, así que no se mezclan con los movimientos de stock. Si más adelante se hace
+>   una ficha del técnico, puede leer los mismos datos (`GET /api/inventario/:codigo/asignaciones`).
+> - **Una herramienta no se borra: se da de baja y pasa a "Fuera de servicio".** No se puede
+>   dar de baja mientras la tenga un técnico: primero se registra la devolución, así queda
+>   sin nadie asignado. Una herramienta fuera de servicio no se puede asignar.
+> - **El estado de una herramienta se cambia desde su ficha.** Si está disponible, el botón
+>   "Poner fuera de servicio" la pasa a Fuera de servicio (lo mismo que el tacho del listado).
+>   Si está fuera de servicio, "Poner en servicio" la vuelve a dejar Disponible (por ejemplo,
+>   después de repararla). Los dos piden confirmación. Si la tiene un técnico, no aparece
+>   ninguno: primero se registra la devolución.
+> - Un técnico que tiene o tuvo herramientas asignadas no se puede eliminar, para no perder
+>   ese historial.
 
 ---
 

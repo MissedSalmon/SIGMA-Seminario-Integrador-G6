@@ -4,12 +4,12 @@
  * El campo para una cantidad, armado con el NumberField de HeroUI.
  *
  * Trae los dos botones para subir y bajar de a uno, asi que se puede cargar sin
- * teclear: + a la izquierda, el numero en el medio, - a la derecha.
+ * teclear: - a la izquierda, el numero en el medio, + a la derecha.
  *
- * ⬜ El orden de los botones es el que se pidio (+ numero -). Lo mas habitual es
- *    el revez (- numero +); si algun dia se quiere cambiar, alcanza con dar
- *    vuelta las dos lineas de abajo, porque el lugar lo decide el orden en que
- *    estan escritas y no el CSS.
+ * El orden (- numero +) es el habitual. Hasta el 30/09/2026 estaba al reves
+ * (+ numero -); se cambio a pedido del grupo. El lugar lo decide el orden en
+ * que estan escritos los botones abajo, y el borde que los separa del numero
+ * esta en globals.css.
  *
  * Es para CANTIDADES, no para numeros que son un nombre. Un legajo tambien se
  * escribe con digitos, pero a nadie le sirve subirlo de a uno: ese sigue siendo
@@ -92,9 +92,9 @@ export default function CampoNumero({
         )}
 
         <NumberField.Group style={{ '--sigma-numero-digitos': ancho }}>
-          <NumberField.IncrementButton />
-          <Input id={id} />
           <NumberField.DecrementButton />
+          <Input id={id} />
+          <NumberField.IncrementButton />
         </NumberField.Group>
       </NumberField>
 

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * /inventario/CA-111 - la ficha de un material o de una herramienta (HU-16).
+ * /inventario/materiales/CA-111 - la ficha de un material (HU-16).
  *
  * Sus datos y, debajo, el historial de movimientos: como llego el stock al
  * numero que se ve hoy. Cada renglon es un Ingreso (viene de un remito) o un
@@ -67,13 +67,26 @@ export default function PantallaFichaItem({ params }) {
       .finally(() => setCargando(false));
   }, [codigoItem]);
 
-  const esMaterial = item?.clase === 'Material';
-
   return (
     <>
+      {/* Las acciones de la ficha van arriba a la derecha, como en el resto de las pantallas. */}
       <EncabezadoPagina
         titulo={item ? item.nombre : 'Ficha del ítem'}
         descripcion={item ? `${item.codigo} — ${item.clase}` : undefined}
+        accionesExtra={
+          item && (
+            <>
+              <BotonEnlace
+                href={`/inventario/materiales/${encodeURIComponent(item.codigo)}/editar`}
+                color="secondary"
+                variante="outline"
+              >
+                <CIcon icon={cilPencil} className="me-2" />
+                Editar
+              </BotonEnlace>
+            </>
+          )
+        }
       />
 
       <Aviso mensaje={error} />
@@ -101,29 +114,18 @@ export default function PantallaFichaItem({ params }) {
                     </Dato>
                   </CCol>
                   <CCol sm={6} lg={3}>
-                    <Dato etiqueta="Estado">{item.estado}</Dato>
+                    <Dato etiqueta="Stock mínimo">{item.stockMinimo}</Dato>
                   </CCol>
-
                   <CCol sm={6} lg={3}>
                     <Dato etiqueta="Stock actual">
-                      <span className="fw-semibold">{item.stockActual}</span>
-                    </Dato>
-                  </CCol>
-                  <CCol sm={6} lg={3}>
-                    <Dato etiqueta="Stock mínimo">
-                      {esMaterial ? (
-                        item.stockMinimo
+                      {/* El rojo se explica al lado: está por debajo del mínimo. */}
+                      {item.bajoMinimo ? (
+                        <>
+                          <span className="sigma-stock-bajo">{item.stockActual}</span>
+                          <span className="text-body-secondary small"> — por debajo del mínimo</span>
+                        </>
                       ) : (
-                        <SinDato>Una herramienta no lleva stock mínimo.</SinDato>
-                      )}
-                    </Dato>
-                  </CCol>
-                  <CCol sm={6} lg={3}>
-                    <Dato etiqueta="Vencimiento">
-                      {item.fechaVencimiento ? (
-                        soloFechaLegible(item.fechaVencimiento)
-                      ) : (
-                        <SinDato>No vence</SinDato>
+                        <span className="fw-semibold">{item.stockActual}</span>
                       )}
                     </Dato>
                   </CCol>
@@ -207,22 +209,11 @@ export default function PantallaFichaItem({ params }) {
         )
       )}
 
-      <div className="d-flex flex-wrap gap-2 mt-2">
+      <div className="d-flex flex-wrap gap-2 mt-2 mb-4">
         <BotonEnlace href="/inventario/materiales" color="secondary" variante="outline">
           <CIcon icon={cilArrowLeft} className="me-2" />
           Volver al listado
         </BotonEnlace>
-
-        {item && (
-          <BotonEnlace
-            href={`/inventario/materiales/${encodeURIComponent(item.codigo)}/editar`}
-            color="secondary"
-            variante="outline"
-          >
-            <CIcon icon={cilPencil} className="me-2" />
-            Editar
-          </BotonEnlace>
-        )}
       </div>
     </>
   );

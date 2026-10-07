@@ -171,6 +171,20 @@ export async function actualizar(legajo, datos) {
 }
 
 export async function eliminar(legajo) {
+  // Las herramientas que tiene o que tuvo asignadas (sus prestamos) frenan el
+  // borrado: si no, la base lo rechaza con un error que no se entiende.
+  const { data: prestamos, error: errorPrestamos } = await supabase
+    .from('tecnico_utiliza_herramienta')
+    .select('tec_herr_fecha_dev')
+    .eq('tecnico_legajo', legajo);
+  if (errorPrestamos) throw new Error(errorPrestamos.message);
+  if (prestamos.some((prestamo) => !prestamo.tec_herr_fecha_dev)) {
+    throw conflicto('El técnico tiene herramientas asignadas. Primero hay que registrar la devolución.');
+  }
+  if (prestamos.length > 0) {
+    throw conflicto('No se puede eliminar un técnico que tuvo herramientas asignadas: se perdería ese historial.');
+  }
+
   // Limpiamos sus relaciones primero
   await supabase.from('tecnico_especialidad').delete().eq('tecnico_legajo', legajo);
 

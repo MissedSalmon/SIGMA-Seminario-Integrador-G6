@@ -8,6 +8,8 @@ import { cilCloudUpload, cilFile, cilCloudDownload } from '@coreui/icons';
 import ExcelJS from 'exceljs';
 import Papa from 'papaparse';
 import { saveAs } from 'file-saver';
+import BotonEnlace from '@/componentes/BotonEnlace.js';
+import BotonesAccion from '@/componentes/BotonesAccion.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { validarImportacion, confirmarImportacion } from '@/servicios/activos.js';
@@ -206,10 +208,10 @@ export default function PantallaImportarActivos() {
           )}
 
           {!hayFilas && (
-            <div className="d-flex justify-content-end gap-2 mt-4">
-              <CButton color="secondary" variant="ghost" onClick={() => router.push('/activos')} disabled={cargando}>
+            <div className="d-flex gap-2 mt-4">
+              <BotonEnlace href="/activos" color="secondary" variante="outline">
                 Cancelar
-              </CButton>
+              </BotonEnlace>
             </div>
           )}
 
@@ -224,21 +226,20 @@ export default function PantallaImportarActivos() {
                   textoVacio="No hay datos."
                 />
               </div>
-              <div className="d-flex justify-content-between align-items-center mt-3">
-                <p className="mb-0">
-                  <strong>{cantidadValidas}</strong> fila(s) válida(s) de un total de {filasValidadas.length}.
-                </p>
-                <div className="d-flex gap-2">
-                  <CButton color="secondary" variant="ghost" onClick={() => router.push('/activos')} disabled={cargando}>
-                    Cancelar
-                  </CButton>
-                  <CButton color="secondary" variant="outline" onClick={() => inputRef.current?.click()} disabled={cargando}>
-                    {cargando ? 'Procesando...' : 'Cargar otro archivo'}
-                  </CButton>
-                  <CButton color="success" onClick={confirmar} disabled={cargando || cantidadValidas === 0} className="text-white">
-                    {cargando ? 'Importando...' : 'Confirmar Importación'}
-                  </CButton>
-                </div>
+              <p className="mt-3 mb-0">
+                <strong>{cantidadValidas}</strong> fila(s) válida(s) de un total de {filasValidadas.length}.
+              </p>
+              <div className="d-flex flex-wrap gap-2 mt-4">
+                <BotonesAccion
+                  procesando={cargando}
+                  textoProcesando="Procesando..."
+                  deshabilitado={cantidadValidas === 0}
+                  alAceptar={confirmar}
+                  hrefCancelar="/activos"
+                />
+                <CButton color="secondary" variant="outline" onClick={() => inputRef.current?.click()} disabled={cargando}>
+                  Cargar otro archivo
+                </CButton>
                 
                 {/* Hidden input for concatenating files after the first one */}
                 <input
