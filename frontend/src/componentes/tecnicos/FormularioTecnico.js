@@ -10,10 +10,10 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CButton, CCard, CCardBody, CFormCheck, CFormLabel } from '@coreui/react';
+import { CCard, CCardBody, CFormCheck, CFormLabel } from '@coreui/react';
 
 import Aviso from '@/componentes/Aviso.js';
-import BotonEnlace from '@/componentes/BotonEnlace.js';
+import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Campo from '@/componentes/formulario/Campo.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
@@ -239,18 +239,12 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
             </p>
           )}
 
-          <div className="d-flex gap-2 mt-4">
-            <CButton
-              type="submit"
-              color="primary"
-              disabled={guardando || especialidades.length === 0}
-            >
-              {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Agregar'}
-            </CButton>
-            <BotonEnlace href="/tecnicos" color="secondary" variante="outline">
-              Cancelar
-            </BotonEnlace>
-          </div>
+          <BotonesAccion
+            procesando={guardando}
+            deshabilitado={especialidades.length === 0}
+            hrefCancelar="/tecnicos"
+            className="mt-4"
+          />
         </form>
       </CCardBody>
     </CCard>

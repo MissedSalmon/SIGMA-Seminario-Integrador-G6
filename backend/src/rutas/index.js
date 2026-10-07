@@ -69,6 +69,10 @@ router.use('/remitos', rutasRemitos);
 import rutasPrestadores from './prestadores.rutas.js';
 router.use('/prestadores', rutasPrestadores);
 
+// Tipos de prestador de servicio (HU-24)
+import rutasTiposPrestador from './tiposPrestador.rutas.js';
+router.use('/tipos-prestador', rutasTiposPrestador);
+
 // Sirve para verificar que la API esta viva. No consulta la base de datos.
 router.get('/salud', (req, res) => {
   res.json({

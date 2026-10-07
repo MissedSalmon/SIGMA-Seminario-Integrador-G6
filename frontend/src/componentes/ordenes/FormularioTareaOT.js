@@ -30,7 +30,7 @@ import CIcon from '@coreui/icons-react';
 import { cilPlus } from '@coreui/icons';
 
 import Aviso from '@/componentes/Aviso.js';
-import BotonEnlace from '@/componentes/BotonEnlace.js';
+import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Campo from '@/componentes/formulario/Campo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarPrioridades } from '@/servicios/ordenesTrabajo.js';
@@ -380,25 +380,11 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
                 <CFormLabel className="invisible" aria-hidden="true">
                   Agregar
                 </CFormLabel>
-                <div className="d-flex gap-2">
-                  <CButton
-                    type="button"
-                    color="primary"
-                    onClick={agregarPlantilla}
-                    disabled={creandoPlantilla}
-                  >
-                    {creandoPlantilla ? 'Agregando...' : 'Agregar'}
-                  </CButton>
-                  <CButton
-                    type="button"
-                    color="secondary"
-                    variant="outline"
-                    onClick={cancelarPlantilla}
-                    disabled={creandoPlantilla}
-                  >
-                    Cancelar
-                  </CButton>
-                </div>
+                <BotonesAccion
+                  procesando={creandoPlantilla}
+                  alAceptar={agregarPlantilla}
+                  alCancelar={cancelarPlantilla}
+                />
               </div>
             </div>
           )}
@@ -528,14 +514,7 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
             </p>
           )}
 
-          <div className="d-flex gap-2 mt-4">
-            <CButton type="submit" color="primary" disabled={guardando}>
-              {guardando ? 'Guardando...' : tarea ? 'Guardar cambios' : 'Agregar'}
-            </CButton>
-            <BotonEnlace href={volverA} color="secondary" variante="outline">
-              Cancelar
-            </BotonEnlace>
-          </div>
+          <BotonesAccion procesando={guardando} hrefCancelar={volverA} className="mt-4" />
         </form>
       </CCardBody>
     </CCard>

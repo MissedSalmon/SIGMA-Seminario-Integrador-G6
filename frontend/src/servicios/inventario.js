@@ -26,6 +26,34 @@ export async function listarMovimientos(codigo) {
   return data.datos;
 }
 
+/** Le asigna la herramienta a un técnico. Si ya la tiene otro, la API lo rechaza. */
+export async function asignarHerramienta(codigo, legajo) {
+  const { data } = await api.post(`/inventario/${encodeURIComponent(codigo)}/asignacion`, { legajo });
+  return data.datos;
+}
+
+/** Qué técnicos tuvieron la herramienta, de la asignación más nueva a la más vieja. */
+export async function listarAsignaciones(codigo) {
+  const { data } = await api.get(`/inventario/${encodeURIComponent(codigo)}/asignaciones`);
+  return data.datos;
+}
+
+/** Registra que el técnico devolvió la herramienta. */
+export async function devolverHerramienta(codigo) {
+  const { data } = await api.delete(`/inventario/${encodeURIComponent(codigo)}/asignacion`);
+  return data.datos;
+}
+
+/** Vuelve a poner en servicio una herramienta que estaba fuera de servicio. */
+export async function ponerEnServicio(codigo) {
+  const { data } = await api.post(`/inventario/${encodeURIComponent(codigo)}/en-servicio`);
+  return data.datos;
+}
+
+/**
+ * Un material se borra (si no tiene movimientos). Una herramienta no se borra:
+ * pasa a "Fuera de servicio".
+ */
 export async function eliminarItem(codigo) {
   const { data } = await api.delete(`/inventario/${encodeURIComponent(codigo)}`);
   return data.datos;

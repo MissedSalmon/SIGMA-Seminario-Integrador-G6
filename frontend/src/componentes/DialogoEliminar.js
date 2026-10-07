@@ -8,7 +8,6 @@
  * avisa cosas distintas.
  */
 import {
-  CButton,
   CModal,
   CModalBody,
   CModalFooter,
@@ -16,10 +15,15 @@ import {
   CModalTitle,
 } from '@coreui/react';
 
+import BotonesAccion from '@/componentes/BotonesAccion.js';
+
 export default function DialogoEliminar({
   visible,
   titulo = 'Confirmar la baja',
   children,
+  // El verbo del boton. Cambia cuando la baja no borra el registro (un activo "se da de baja").
+  texto = 'Eliminar',
+  textoProcesando = 'Eliminando...',
   eliminando = false,
   onConfirmar,
   onCancelar,
@@ -33,12 +37,14 @@ export default function DialogoEliminar({
       <CModalBody>{children}</CModalBody>
 
       <CModalFooter>
-        <CButton color="secondary" variant="outline" onClick={onCancelar} disabled={eliminando}>
-          Cancelar
-        </CButton>
-        <CButton color="danger" onClick={onConfirmar} disabled={eliminando}>
-          {eliminando ? 'Eliminando...' : 'Eliminar'}
-        </CButton>
+        <BotonesAccion
+          texto={texto}
+          textoProcesando={textoProcesando}
+          color="danger"
+          procesando={eliminando}
+          alAceptar={onConfirmar}
+          alCancelar={onCancelar}
+        />
       </CModalFooter>
     </CModal>
   );

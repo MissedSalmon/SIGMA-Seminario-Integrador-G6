@@ -139,6 +139,7 @@ frontend/src/componentes/
 │   ├── navegacion.js        # ⬅ acá se agrega cada opción del menú
 │   └── ContextoLayout.js    # si la barra lateral está abierta o cerrada
 ├── BotonEnlace.js           # un <Link> con estilo de botón
+├── BotonesAccion.js         # el par "Guardar" + "Cancelar" de formularios y ventanas
 ├── EncabezadoPagina.js      # título + botón de acción
 ├── Aviso.js                 # cartel de error o de éxito
 ├── DialogoEliminar.js       # confirmación antes de una baja
@@ -151,6 +152,51 @@ frontend/src/componentes/
   de Next va en el `CNavLink` de adentro.
 - `CButton`, cuando recibe `href`, ignora el `as` y arma un `<a>` común: cada clic
   recarga toda la aplicación. Para eso está `BotonEnlace`.
+
+### Los botones de guardar y cancelar (03/10/2026)
+
+En la devolución del Sprint 3 nos marcaron dos cosas: cada formulario usaba su propio
+verbo («Agregar», «Guardar cambios», «Registrar», «Confirmar», «Volver a revisar»...) y
+los botones no estaban siempre en el mismo orden. Los formularios ponían la acción
+primero y «Cancelar» después, pero las ventanas y la validación de tickets lo hacían
+al revés.
+
+Quedó así:
+
+- **El botón principal dice «Guardar»**, tanto al agregar como al editar. Mientras
+  trabaja dice «Guardando...».
+- **El otro botón dice «Cancelar».** Nunca «Volver», «Cerrar» ni «Volver a revisar».
+- **La acción principal va siempre primero y «Cancelar» a su derecha.** Vale para los
+  formularios, para las ventanas y para cualquier par de botones de una pantalla.
+- **Sólo cambia el verbo cuando la acción no es guardar datos**, sino algo puntual que
+  hay que nombrar: «Eliminar», «Dar de baja», «Validar», «Rechazar». Igual va primero y
+  con «Cancelar» al lado.
+- El botón que abre un alta sigue diciendo «Agregar» (regla 1 de UI del `CLAUDE.md`).
+  «Agregar» abre el formulario; «Guardar» lo cierra.
+
+Los botones no se arman a mano: se usa **`BotonesAccion`**, que ya trae el orden y los
+textos.
+
+```jsx
+// En un formulario: el botón principal manda el formulario
+<BotonesAccion procesando={guardando} hrefCancelar="/edificios" className="mt-4" />
+
+// En una ventana: el botón principal ejecuta una función
+<CModalFooter>
+  <BotonesAccion
+    texto="Rechazar"
+    textoProcesando="Rechazando..."
+    color="danger"
+    procesando={procesando}
+    alAceptar={rechazar}
+    alCancelar={cerrar}
+  />
+</CModalFooter>
+```
+
+`DialogoEliminar` ya lo usa por dentro, así que las bajas no tienen que hacer nada. Su
+botón dice «Eliminar»; si la baja no borra el registro, se le pasa otro verbo. Por
+ejemplo, el activo no se borra, pasa a Retirado: `texto="Dar de baja"`.
 
 ### Los campos tienen ancho fijo (15/09/2026)
 
@@ -227,12 +273,12 @@ cambiarla en el otro. Las restricciones en la base quedan para después.
 ### Las cantidades se cargan con + y - (24/09/2026)
 
 Un campo de **cantidad** se pide con `<Campo tipo="numero">` y lo dibuja el `NumberField` de
-HeroUI: **+ a la izquierda, el número en el medio, - a la derecha**. Así se puede cargar sin
+HeroUI: **- a la izquierda, el número en el medio, + a la derecha**. Así se puede cargar sin
 teclear. Hoy lo usa el "Stock mínimo" del inventario.
 
-⬜ **El orden de los botones es el que se pidió.** Lo más habitual es el revés
-(`- número +`); si se quiere cambiar, alcanza con dar vuelta las dos líneas del componente,
-porque el lugar lo decide el orden en que están escritas y no el CSS.
+**El orden de los botones se dio vuelta el 30/09/2026.** Hasta ese día era `+ número -`; se
+cambió al orden habitual (`- número +`). El lugar lo decide el orden en que están escritos los
+botones en el componente, y el borde que los separa del número está en `globals.css`.
 
 **Los botones respetan el `min` y el `max`** del campo: con `min="0"`, al llegar a 0 el
 botón `-` se apaga solo. Igual se puede escribir a mano.

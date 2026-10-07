@@ -151,14 +151,11 @@ export default function PantallaTickets() {
       render: (ticket) => (
         <BotonEnlace
           href={`/tickets/${ticket.id}`}
-          color="secondary"
-          variante="outline"
-          tamano="sm"
-          className="text-nowrap"
+          variante="ghost"
+          className="btn-icono"
           title="Ver el detalle del ticket"
         >
-          <CIcon icon={cilDescription} size="sm" className="me-1" />
-          Ver detalle
+          <CIcon icon={cilDescription} />
         </BotonEnlace>
       ),
     },

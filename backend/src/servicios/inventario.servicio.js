@@ -41,9 +41,10 @@ function aMaterial(fila) {
     stockActual,
     stockMinimo,
     bajoMinimo: stockActual < stockMinimo,
-    fechaVencimiento: fila.mat_fecha_venc,
     estado: null,
     tecnico: null,
+    legajoTecnico: null,
+    asignadaDesde: null,
   };
 }
 
@@ -68,21 +69,32 @@ function normalizarEstado(valor) {
 /**
  * Una herramienta esta en uso mientras tenga un prestamo abierto en
  * tecnico_utiliza_herramienta (sin fecha de devolucion), sin importar lo que
- * diga la columna herr_estado.
+ * diga la columna herr_estado. Ese prestamo es la asignacion a un tecnico: la
+ * base no deja que haya dos abiertos de la misma herramienta.
  */
 async function obtenerPrestamosAbiertos(codigo) {
   let consulta = supabase
     .from('tecnico_utiliza_herramienta')
-    .select('herr_cod, tecnico (tecnico_nom_ape)')
+    .select('herr_cod, tecnico_legajo, tec_herr_fecha_prest, tecnico (tecnico_nom_ape)')
     .is('tec_herr_fecha_dev', null);
   if (codigo) consulta = consulta.eq('herr_cod', codigo);
   const { data, error } = await consulta;
   if (error) throw new Error(error.message);
-  return new Map(data.map((prestamo) => [prestamo.herr_cod, prestamo.tecnico?.tecnico_nom_ape ?? null]));
+  return new Map(
+    data.map((prestamo) => [
+      prestamo.herr_cod,
+      {
+        legajo: prestamo.tecnico_legajo,
+        nombre: prestamo.tecnico?.tecnico_nom_ape ?? null,
+        desde: prestamo.tec_herr_fecha_prest,
+      },
+    ])
+  );
 }
 
 function aHerramienta(fila, prestamos = new Map()) {
-  const prestada = prestamos.has(fila.herr_cod);
+  const prestamo = prestamos.get(fila.herr_cod);
+  const prestada = Boolean(prestamo);
   const estadoGuardado = normalizarEstado(fila.herr_estado);
   return {
     codigo: fila.herr_cod,
@@ -94,9 +106,10 @@ function aHerramienta(fila, prestamos = new Map()) {
     stockActual: null,
     stockMinimo: null,
     bajoMinimo: false,
-    fechaVencimiento: null,
     estado: prestada ? 'En uso' : estadoGuardado === 'En uso' ? 'Disponible' : estadoGuardado,
-    tecnico: prestada ? prestamos.get(fila.herr_cod) : null,
+    tecnico: prestamo?.nombre ?? null,
+    legajoTecnico: prestamo?.legajo ?? null,
+    asignadaDesde: prestamo?.desde ?? null,
   };
 }
 
@@ -223,11 +236,11 @@ function leerDatos(datos) {
   if (clase === 'Material' && (!Number.isInteger(stockMinimo) || stockMinimo < 0)) {
     throw datoInvalido('El stock mínimo del material es obligatorio y no puede ser negativo.');
   }
-  if (clase === 'Herramienta' && (hayMinimo || datos.fechaVencimiento)) {
-    throw datoInvalido('Una herramienta no lleva stock mínimo ni fecha de vencimiento.');
+  if (clase === 'Herramienta' && hayMinimo) {
+    throw datoInvalido('Una herramienta no lleva stock mínimo.');
   }
 
-  return { nombre, clase, descripcion, idTipo, stockMinimo, fechaVencimiento: datos.fechaVencimiento || null };
+  return { nombre, clase, descripcion, idTipo, stockMinimo };
 }
 
 export async function crearItem(datos) {
@@ -251,7 +264,6 @@ export async function crearItem(datos) {
         inventariotipoid: item.idTipo,
         mat_stock_actual: 0,
         mat_stock_min: item.stockMinimo,
-        mat_fecha_venc: item.fechaVencimiento,
       })
       .select(COLUMNAS)
       .single();
@@ -282,7 +294,6 @@ export async function actualizarItem(codigo, datos) {
         mat_desc: item.descripcion,
         inventariotipoid: item.idTipo,
         mat_stock_min: item.stockMinimo,
-        mat_fecha_venc: item.fechaVencimiento,
       })
       .eq('mat_cod', codigo)
       .select(COLUMNAS)
@@ -345,20 +356,154 @@ export async function obtenerMovimientos(codigo) {
   }));
 }
 
-/** No se elimina un item que ya tuvo movimientos: compras, consumos o prestamos. */
+/** La herramienta con ese codigo, con su prestamo abierto si lo tiene. */
+async function obtenerHerramienta(codigo) {
+  const fila = await buscarHerramienta(codigo);
+  if (!fila) {
+    if (await buscarMaterial(codigo)) throw datoInvalido('Un material no se asigna a un técnico: se consume.');
+    throw noEncontrado(`No existe la herramienta "${codigo}".`);
+  }
+  return aHerramienta(fila, await obtenerPrestamosAbiertos(codigo));
+}
+
+/**
+ * Le asigna la herramienta a un tecnico: abre un prestamo en
+ * tecnico_utiliza_herramienta. Cada herramienta la tiene un solo tecnico a la
+ * vez, asi que si ya esta asignada primero hay que registrar la devolucion.
+ */
+export async function asignarHerramienta(codigo, datos = {}) {
+  const legajo = texto(String(datos.legajo ?? ''));
+  if (!legajo) throw datoInvalido('Hay que elegir el técnico.');
+
+  const herramienta = await obtenerHerramienta(codigo);
+  if (herramienta.estado === 'Fuera de servicio') {
+    throw conflicto(`"${herramienta.nombre}" está fuera de servicio: no se puede asignar.`);
+  }
+  if (herramienta.legajoTecnico) {
+    throw conflicto(
+      `"${herramienta.nombre}" ya está asignada a ${herramienta.tecnico}. Primero hay que registrar la devolución.`
+    );
+  }
+
+  const { data: tecnico, error: errorTecnico } = await supabase
+    .from('tecnico')
+    .select('tecnico_legajo')
+    .eq('tecnico_legajo', legajo)
+    .maybeSingle();
+  if (errorTecnico) throw new Error(errorTecnico.message);
+  if (!tecnico) throw datoInvalido(`No existe el técnico ${legajo}.`);
+
+  const { error } = await supabase
+    .from('tecnico_utiliza_herramienta')
+    .insert({ tecnico_legajo: legajo, herr_cod: codigo });
+  if (error) {
+    // 23505: otro pedido la asigno al mismo tiempo y el indice unico lo freno.
+    if (error.code === '23505') throw conflicto(`"${herramienta.nombre}" ya está asignada a otro técnico.`);
+    throw new Error(error.message);
+  }
+
+  return obtenerHerramienta(codigo);
+}
+
+/**
+ * El historial de asignaciones de una herramienta, de la mas nueva a la mas
+ * vieja: que tecnico la tuvo, desde cuando y hasta cuando. La que sigue
+ * abierta (sin devolucion) es la asignacion actual.
+ *
+ * Va aparte del historial de movimientos: aquel cuenta como cambio el stock,
+ * y una asignacion o una devolucion no cambian ningun numero.
+ */
+export async function obtenerAsignaciones(codigo) {
+  await obtenerHerramienta(codigo);
+
+  const { data, error } = await supabase
+    .from('tecnico_utiliza_herramienta')
+    .select('tecnico_legajo, tec_herr_fecha_prest, tec_herr_fecha_dev, tecnico (tecnico_nom_ape)')
+    .eq('herr_cod', codigo)
+    .order('tec_herr_fecha_prest', { ascending: false });
+  if (error) throw new Error(error.message);
+
+  return data.map((fila) => ({
+    legajo: fila.tecnico_legajo,
+    tecnico: fila.tecnico?.tecnico_nom_ape ?? null,
+    desde: fila.tec_herr_fecha_prest,
+    hasta: fila.tec_herr_fecha_dev ?? null,
+  }));
+}
+
+/** Registra que el tecnico devolvio la herramienta: cierra su prestamo abierto. */
+export async function devolverHerramienta(codigo) {
+  const herramienta = await obtenerHerramienta(codigo);
+  if (!herramienta.legajoTecnico) {
+    throw conflicto(`"${herramienta.nombre}" no está asignada a ningún técnico.`);
+  }
+
+  const { error } = await supabase
+    .from('tecnico_utiliza_herramienta')
+    .update({ tec_herr_fecha_dev: new Date().toISOString() })
+    .eq('herr_cod', codigo)
+    .is('tec_herr_fecha_dev', null);
+  if (error) throw new Error(error.message);
+
+  return obtenerHerramienta(codigo);
+}
+
+/**
+ * Vuelve a poner en servicio una herramienta que estaba fuera de servicio (por
+ * ejemplo, despues de repararla): queda Disponible para asignarla otra vez.
+ */
+export async function ponerEnServicio(codigo) {
+  const herramienta = await obtenerHerramienta(codigo);
+  if (herramienta.estado !== 'Fuera de servicio') {
+    throw conflicto(`"${herramienta.nombre}" no está fuera de servicio.`);
+  }
+
+  const { error } = await supabase
+    .from('herramienta')
+    .update({ herr_estado: 'Disponible' })
+    .eq('herr_cod', codigo);
+  if (error) throw new Error(error.message);
+
+  return obtenerHerramienta(codigo);
+}
+
+/**
+ * Baja de un item del deposito.
+ *
+ * - Un MATERIAL se borra, pero solo si nunca tuvo movimientos (ingresos por
+ *   remito, compras o consumos en una tarea): si no, se perderia el historial.
+ * - Una HERRAMIENTA no se borra nunca: pasa a "Fuera de servicio" y queda
+ *   registrada. No se puede dar de baja mientras este asignada a un tecnico:
+ *   primero hay que registrar la devolucion, asi no queda asignada a nadie.
+ */
 export async function eliminarItem(codigo) {
   const item = await obtenerItem(codigo);
 
-  const movimientos =
-    item.clase === 'Material'
-      ? (await contar('linea_compra', 'mat_cod', codigo)) + (await contar('tarea_ot_consume_material', 'mat_cod', codigo))
-      : (await contar('linea_compra', 'herr_cod', codigo)) + (await contar('tecnico_utiliza_herramienta', 'herr_cod', codigo));
-  if (movimientos) throw conflicto('No se puede eliminar algo que tiene movimientos registrados.');
+  if (item.clase === 'Herramienta') {
+    if (item.estado === 'Fuera de servicio') {
+      throw conflicto(`"${item.nombre}" ya está fuera de servicio.`);
+    }
+    if (item.legajoTecnico) {
+      throw conflicto(
+        `"${item.nombre}" está asignada a ${item.tecnico}. Primero hay que registrar la devolución.`
+      );
+    }
 
-  const { error } =
-    item.clase === 'Material'
-      ? await supabase.from('material').delete().eq('mat_cod', codigo)
-      : await supabase.from('herramienta').delete().eq('herr_cod', codigo);
+    const { error } = await supabase
+      .from('herramienta')
+      .update({ herr_estado: 'Fuera de servicio' })
+      .eq('herr_cod', codigo);
+    if (error) throw new Error(error.message);
+    return obtenerHerramienta(codigo);
+  }
+
+  const movimientos =
+    (await contar('inventariomovimiento', 'inventarioitemcod', codigo)) +
+    (await contar('linea_compra', 'mat_cod', codigo)) +
+    (await contar('tarea_ot_consume_material', 'mat_cod', codigo));
+  if (movimientos) throw conflicto('No se puede eliminar un material que tiene movimientos registrados.');
+
+  const { error } = await supabase.from('material').delete().eq('mat_cod', codigo);
   if (error) throw new Error(error.message);
   return item;
 }

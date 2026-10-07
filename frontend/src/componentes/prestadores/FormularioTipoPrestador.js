@@ -1,12 +1,12 @@
 'use client';
 
 /**
- * Alta y edicion de un tipo de material o de herramienta (HU-15).
+ * Formulario de alta y de edicion de un tipo de prestador de servicio (HU-24).
  *
- * Un tipo es la categoria con la que se ordena el deposito (cables, pinturas,
- * herramientas electricas). Va pegado a una clase: un tipo de material no
- * sirve para una herramienta, asi que la clase se elige al darlo de alta y
- * despues no se cambia.
+ * Un tipo de prestador es la clase de servicio que da una empresa o un
+ * profesional de afuera (electricidad, plomeria, ascensores). Sirve para que
+ * despues, al cargar un prestador, se elija de una lista en vez de escribirlo
+ * a mano y que cada uno lo escriba distinto.
  */
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -17,16 +17,13 @@ import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Campo from '@/componentes/formulario/Campo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 
-const CLASES = ['Material', 'Herramienta'];
-
-export default function FormularioTipo({ tipo = null, onGuardar }) {
+export default function FormularioTipoPrestador({ tipo = null, onGuardar }) {
   const router = useRouter();
   const { mostrarToast } = useToast();
   const editando = Boolean(tipo);
 
   const [nombre, setNombre] = useState(tipo?.nombre ?? '');
   const [descripcion, setDescripcion] = useState(tipo?.descripcion ?? '');
-  const [clase, setClase] = useState(tipo?.clase ?? 'Material');
 
   const [revisado, setRevisado] = useState(false);
   const [guardando, setGuardando] = useState(false);
@@ -47,15 +44,18 @@ export default function FormularioTipo({ tipo = null, onGuardar }) {
     if (hayErrores) return;
 
     setGuardando(true);
+
     try {
-      await onGuardar({ nombre: nombre.trim(), descripcion: descripcion.trim(), clase });
+      await onGuardar({ nombre: nombre.trim(), descripcion: descripcion.trim() });
+
       mostrarToast({
         tipo: 'exito',
         mensaje: editando
           ? `Se guardaron los cambios de "${nombre}".`
-          : `Se agregó el tipo "${nombre}".`,
+          : `Se agregó el tipo de prestador "${nombre}".`,
       });
-      router.push('/inventario/tipos');
+
+      router.push('/prestadores/tipos');
       router.refresh();
     } catch (fallo) {
       setError(fallo.message);
@@ -75,26 +75,12 @@ export default function FormularioTipo({ tipo = null, onGuardar }) {
               etiqueta="Nombre"
               valor={nombre}
               alCambiar={setNombre}
-              placeholder={clase === 'Herramienta' ? 'Herramientas eléctricas' : 'Cables'}
+              placeholder="Electricidad"
               obligatorio
-              maxLength={150}
-              ancho={20}
+              maxLength={100}
+              ancho={18}
               revisado={revisado}
               error={errores.nombre}
-            />
-
-            <Campo
-              id="clase"
-              etiqueta="Tipo"
-              tipo="lista"
-              valor={clase}
-              alCambiar={setClase}
-              opciones={CLASES.map((texto) => ({ valor: texto, texto }))}
-              placeholder="Elegir clase"
-              obligatorio
-              deshabilitado={editando}
-              ancho={14}
-              revisado={revisado}
             />
 
             <Campo
@@ -103,7 +89,7 @@ export default function FormularioTipo({ tipo = null, onGuardar }) {
               tipo="area"
               valor={descripcion}
               alCambiar={setDescripcion}
-              placeholder="Opcional: qué entra en esta categoría."
+              placeholder="Opcional: qué trabajos hace este tipo de prestador."
               maxLength={300}
               revisado={revisado}
             />
@@ -115,7 +101,7 @@ export default function FormularioTipo({ tipo = null, onGuardar }) {
             </p>
           )}
 
-          <BotonesAccion procesando={guardando} hrefCancelar="/inventario/tipos" className="mt-4" />
+          <BotonesAccion procesando={guardando} hrefCancelar="/prestadores/tipos" className="mt-4" />
         </form>
       </CCardBody>
     </CCard>

@@ -6,8 +6,9 @@
  * (llevan stock, no se prestan), por eso tienen su propia pantalla en vez de
  * compartir el listado.
  *
- * Muestra el stock minimo y actual de cada material (el actual en negrita si
- * esta por debajo del minimo).
+ * Muestra el stock minimo y el actual de cada material, sin un texto de
+ * estado (devolucion del Sprint 3): la fila del que esta por debajo del minimo
+ * se tiñe apenas de rojo, y abajo de la tabla una referencia explica el color.
  */
 import { useEffect, useState } from 'react';
 import { CButton, CButtonGroup, CCard, CCardBody } from '@coreui/react';
@@ -22,18 +23,15 @@ import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { eliminarItem, listarItems } from '@/servicios/inventario.js';
 
-const ESTADOS_STOCK = ['Sin stock', 'Stock mínimo', 'Stock suficiente'];
-
-function estadoStockDe(fila) {
-  if (fila.stockActual === 0) return 'Sin stock';
-  return fila.bajoMinimo ? 'Stock mínimo' : 'Stock suficiente';
-}
+/* El filtro de stock: separa los que hay que reponer de los demas. */
+const BAJO_MINIMO = 'Por debajo del mínimo';
+const SUFICIENTE = 'Suficiente';
 
 export default function PantallaMateriales() {
   const { mostrarToast } = useToast();
   const [materiales, setMateriales] = useState([]);
   const [categoria, setCategoria] = useState('');
-  const [estadoStock, setEstadoStock] = useState('');
+  const [filtroStock, setFiltroStock] = useState('');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [aEliminar, setAEliminar] = useState(null);
@@ -62,12 +60,11 @@ export default function PantallaMateriales() {
     }
   }
 
-  const filas = materiales.map((fila) => ({ ...fila, estadoStock: estadoStockDe(fila) }));
-  const filasVisibles = filas
+  const filasVisibles = materiales
     .filter((fila) => !categoria || fila.nombreTipo === categoria)
-    .filter((fila) => !estadoStock || fila.estadoStock === estadoStock);
+    .filter((fila) => !filtroStock || fila.bajoMinimo === (filtroStock === BAJO_MINIMO));
 
-  const categorias = [...new Set(filas.map((fila) => fila.nombreTipo).filter(Boolean))].sort((a, b) =>
+  const categorias = [...new Set(materiales.map((fila) => fila.nombreTipo).filter(Boolean))].sort((a, b) =>
     a.localeCompare(b, 'es')
   );
 
@@ -87,9 +84,9 @@ export default function PantallaMateriales() {
     {
       clave: 'stockActual',
       encabezado: 'Stock actual',
-      render: (fila) => (fila.bajoMinimo ? <strong>{fila.stockActual}</strong> : fila.stockActual),
+      render: (fila) =>
+        fila.bajoMinimo ? <span className="sigma-stock-bajo">{fila.stockActual}</span> : fila.stockActual,
     },
-    { clave: 'estadoStock', encabezado: 'Estado', render: (fila) => fila.estadoStock },
     {
       clave: 'acciones',
       encabezado: 'Acciones',
@@ -137,6 +134,7 @@ export default function PantallaMateriales() {
           <TablaDatos
             filas={filasVisibles}
             claveFila={(fila) => fila.codigo}
+            claseFila={(fila) => (fila.bajoMinimo ? 'sigma-fila-bajo-minimo' : undefined)}
             columnas={columnas}
             buscarPor={['codigo', 'nombre', 'descripcion', 'nombreTipo']}
             placeholderBusqueda="Buscar por código, nombre o categoría"
@@ -153,19 +151,26 @@ export default function PantallaMateriales() {
                   ]
                 : []),
               {
-                etiqueta: 'Estado',
-                valor: estadoStock,
-                alCambiar: setEstadoStock,
-                opciones: ESTADOS_STOCK.map((texto) => ({ valor: texto, texto })),
+                etiqueta: 'Stock',
+                valor: filtroStock,
+                alCambiar: setFiltroStock,
+                opciones: [BAJO_MINIMO, SUFICIENTE].map((texto) => ({ valor: texto, texto })),
               },
             ]}
             alLimpiar={() => {
               setCategoria('');
-              setEstadoStock('');
+              setFiltroStock('');
             }}
             cargando={cargando}
             textoVacio="Todavia no hay materiales cargados."
           />
+
+          {materiales.some((fila) => fila.bajoMinimo) && (
+            <div className="sigma-referencia">
+              <span className="sigma-referencia-muestra" aria-hidden="true" />
+              El stock actual está por debajo del mínimo
+            </div>
+          )}
         </CCardBody>
       </CCard>
 
