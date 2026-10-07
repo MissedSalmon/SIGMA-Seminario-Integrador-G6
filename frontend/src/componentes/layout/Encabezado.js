@@ -57,6 +57,7 @@ const NOMBRES = {
   '/inventario/herramientas': 'Herramientas',
   '/tecnicos': 'Técnicos',
   '/especialidades': 'Especialidades',
+  '/prestadores/tipos': 'Tipos de prestador',
   '/autorizados': 'Usuarios autorizados',
 };
 
@@ -106,6 +107,14 @@ function armarMigas(direccion) {
     // como una miga sin enlace y nunca como la pantalla en si misma.
     if (acumulada === '/inventario') {
       migas.push({ texto: 'Inventario', direccion: null, ultima: false });
+      return;
+    }
+
+    // Lo mismo con "Prestadores de servicio": el listado de prestadores es la
+    // HU-33 y todavia no existe. Cuando se haga, se saca esto y se agrega
+    // '/prestadores' al mapa NOMBRES.
+    if (acumulada === '/prestadores') {
+      migas.push({ texto: 'Prestadores de servicio', direccion: null, ultima: false });
       return;
     }
 
