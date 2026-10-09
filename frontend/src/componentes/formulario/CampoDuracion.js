@@ -53,6 +53,18 @@ function deHoraDelReloj(hora) {
   return `${String(hora.hour).padStart(2, '0')}:${String(hora.minute).padStart(2, '0')}`;
 }
 
+/**
+ * La unidad que se lee al final de la caja: "00:22" no dice si son horas o
+ * minutos. Menos de una hora, "minutos"; si no, "hora" u "horas".
+ */
+function unidadDeLaDuracion(texto) {
+  const hora = aHoraDelReloj(texto);
+  if (!hora) return '';
+  if (hora.hour === 0) return 'minutos';
+
+  return hora.hour === 1 && hora.minute === 0 ? 'hora' : 'horas';
+}
+
 export default function CampoDuracion({
   id,
   etiqueta,
@@ -69,6 +81,7 @@ export default function CampoDuracion({
 
   const clases = ['sigma-duracion', marca && `sigma-duracion--${marca}`].filter(Boolean).join(' ');
   const idMensaje = `${id}-mensaje`;
+  const unidad = unidadDeLaDuracion(valor);
 
   return (
     <I18nProvider locale="es-AR">
@@ -106,12 +119,15 @@ export default function CampoDuracion({
               )}
             </TimeField.Input>
 
-            {marca && (
+            {(unidad || marca) && (
               <TimeField.Suffix>
-                <span className="sigma-duracion-marca" aria-hidden="true">
-                  {/* El tamano lo pone globals.css, no el `size` de CoreUI. */}
-                  <CIcon icon={marca === 'ok' ? cilCheckAlt : cilX} />
-                </span>
+                {unidad && <span className="sigma-duracion-unidad">{unidad}</span>}
+                {marca && (
+                  <span className="sigma-duracion-marca" aria-hidden="true">
+                    {/* El tamano lo pone globals.css, no el `size` de CoreUI. */}
+                    <CIcon icon={marca === 'ok' ? cilCheckAlt : cilX} />
+                  </span>
+                )}
               </TimeField.Suffix>
             )}
           </TimeField.Group>
