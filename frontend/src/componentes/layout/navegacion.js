@@ -29,7 +29,6 @@ import {
   cilDevices,
   cilPeople,
   cilStorage,
-  cilTask,
   cilListRich,
   cilUser,
   cilCog,
@@ -49,12 +48,7 @@ export const navegacion = [
     texto: 'Mantenimiento',
   },
   {
-    tipo: 'item',
-    texto: 'Registrar ticket',
-    direccion: '/tickets/agregar',
-    icono: cilTask,
-  },
-  {
+    // El alta de un ticket se hace desde el boton "Agregar" del listado.
     tipo: 'item',
     texto: 'Tickets',
     direccion: '/tickets',
