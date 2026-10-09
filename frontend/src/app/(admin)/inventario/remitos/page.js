@@ -3,7 +3,8 @@
 /**
  * /inventario/remitos - los ingresos al deposito (HU-16).
  *
- * Cada fila es un remito: de quien vino, cuando se recibio y cuanto trajo.
+ * Cada fila es un ingreso: con que comprobante (remito o factura), de quien
+ * vino, cuando se recibio y cuanto trajo.
  * De la mas reciente a la mas antigua, que es el orden en que se consultan.
  *
  * No hay editar ni eliminar: un remito confirmado ya movio el stock, y
@@ -18,17 +19,25 @@ import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
-import { listarRemitos } from '@/servicios/remitos.js';
+import { listarRemitos, listarTiposComprobante } from '@/servicios/remitos.js';
 import { soloFechaLegible } from '@/utils/fechas.js';
 
 export default function PantallaRemitos() {
   const [remitos, setRemitos] = useState([]);
 
+  const [tiposComprobante, setTiposComprobante] = useState(['Remito', 'Factura']);
+  const [filtroComprobante, setFiltroComprobante] = useState('');
   const [filtroDesde, setFiltroDesde] = useState('');
   const [filtroHasta, setFiltroHasta] = useState('');
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    listarTiposComprobante()
+      .then(setTiposComprobante)
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     let vigente = true;
@@ -59,11 +68,17 @@ export default function PantallaRemitos() {
   }, [filtroDesde, filtroHasta]);
 
   function limpiarFiltros() {
+    setFiltroComprobante('');
     setFiltroDesde('');
     setFiltroHasta('');
   }
 
-  const hayFiltros = Boolean(filtroDesde || filtroHasta);
+  const hayFiltros = Boolean(filtroComprobante || filtroDesde || filtroHasta);
+
+  // El comprobante se filtra acá: la lista ya está en la mano y es chica.
+  const filas = filtroComprobante
+    ? remitos.filter((remito) => remito.tipoComprobante === filtroComprobante)
+    : remitos;
 
   const columnas = [
     {
@@ -79,13 +94,18 @@ export default function PantallaRemitos() {
       ),
     },
     {
+      clave: 'tipoComprobante',
+      encabezado: 'Comprobante',
+      render: (remito) => <span className="text-body-secondary">{remito.tipoComprobante}</span>,
+    },
+    {
       clave: 'proveedor',
       encabezado: 'Proveedor',
       render: (remito) => <span className="text-body-secondary">{remito.proveedor}</span>,
     },
     {
       clave: 'numero',
-      encabezado: 'N.º de remito',
+      encabezado: 'N.º de comprobante',
       render: (remito) =>
         remito.numero ? (
           <span className="text-body-secondary">{remito.numero}</span>
@@ -112,7 +132,7 @@ export default function PantallaRemitos() {
           href={`/inventario/remitos/${remito.id}`}
           variante="ghost"
           className="btn-icono"
-          title="Ver el detalle del remito"
+          title="Ver el detalle del ingreso"
         >
           <CIcon icon={cilDescription} />
         </BotonEnlace>
@@ -123,7 +143,7 @@ export default function PantallaRemitos() {
   return (
     <>
       <EncabezadoPagina
-        titulo="Ingresos por remito"
+        titulo="Ingresos"
         descripcion="Lo que fue entrando al depósito, del ingreso más reciente al más antiguo."
         accion={{ direccion: '/inventario/remitos/agregar' }}
       />
@@ -133,12 +153,18 @@ export default function PantallaRemitos() {
       <CCard>
         <CCardBody>
           <TablaDatos
-            filas={remitos}
+            filas={filas}
             claveFila={(remito) => remito.id}
             columnas={columnas}
             buscarPor={['proveedor', 'numero']}
             placeholderBusqueda="Buscar por proveedor o número"
             filtros={[
+              {
+                etiqueta: 'Comprobante',
+                valor: filtroComprobante,
+                alCambiar: setFiltroComprobante,
+                opciones: tiposComprobante.map((tipo) => ({ valor: tipo, texto: tipo })),
+              },
               { etiqueta: 'Desde', tipo: 'fecha', valor: filtroDesde, alCambiar: setFiltroDesde },
               { etiqueta: 'Hasta', tipo: 'fecha', valor: filtroHasta, alCambiar: setFiltroHasta },
             ]}
@@ -146,8 +172,8 @@ export default function PantallaRemitos() {
             cargando={cargando}
             textoVacio={
               hayFiltros
-                ? 'No hay remitos recibidos en esas fechas.'
-                : 'Todavía no se registró ningún ingreso por remito.'
+                ? 'No hay ingresos que cumplan con esos filtros.'
+                : 'Todavía no se registró ningún ingreso.'
             }
           />
         </CCardBody>

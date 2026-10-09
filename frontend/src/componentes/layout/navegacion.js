@@ -158,7 +158,7 @@ export const navegacion = [
         // Va al final: para ingresar algo por remito, antes tiene que estar en
         // el catalogo.
         tipo: 'item',
-        texto: 'Ingresos por remito',
+        texto: 'Ingresos',
         direccion: '/inventario/remitos',
         icono: cilClipboard,
       },

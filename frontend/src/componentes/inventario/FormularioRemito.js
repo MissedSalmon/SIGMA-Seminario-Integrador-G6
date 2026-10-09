@@ -1,11 +1,12 @@
 'use client';
 
 /**
- * Alta de un remito de ingreso al deposito (HU-16).
+ * Alta de un ingreso al deposito (HU-16).
  *
- * El remito es el comprobante con el que llega la mercaderia. Tiene dos
- * partes: de donde vino (proveedor, numero de remito y fecha de recepcion) y
- * que trajo (un renglon por item, con su cantidad).
+ * La mercaderia llega con un comprobante, que puede ser un remito o una
+ * factura (09/10/2026). Tiene dos partes: de donde vino (comprobante,
+ * proveedor, numero y fecha de recepcion) y que trajo (un renglon por item,
+ * con su cantidad).
  *
  * EL REMITO NO DA DE ALTA ITEMS. La lista de cada renglon ofrece unicamente lo
  * que ya esta en el catalogo del deposito (HU-13), y el <CampoLista> no deja
@@ -49,9 +50,10 @@ import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Campo from '@/componentes/formulario/Campo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarItems } from '@/servicios/inventario.js';
+import { listarTiposComprobante } from '@/servicios/remitos.js';
 import { hoyTexto } from '@/utils/fechas.js';
 
-/** El largo del numero de remito: "0001-00012345" son 13 caracteres. */
+/** El largo del numero de comprobante: "0001-00012345" son 13 caracteres. */
 const LARGO_NUMERO = 13;
 
 /** Un renglon vacio, con su numero para que React no confunda las filas. */
@@ -65,6 +67,8 @@ export default function FormularioRemito({ onGuardar }) {
   const router = useRouter();
   const { mostrarToast } = useToast();
 
+  const [tipoComprobante, setTipoComprobante] = useState('');
+  const [tiposComprobante, setTiposComprobante] = useState(['Remito', 'Factura']);
   const [proveedor, setProveedor] = useState('');
   const [numero, setNumero] = useState('');
   const [fechaRecepcion, setFechaRecepcion] = useState(hoyTexto());
@@ -81,6 +85,12 @@ export default function FormularioRemito({ onGuardar }) {
   const [confirmando, setConfirmando] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    listarTiposComprobante()
+      .then(setTiposComprobante)
+      .catch(() => {});
+  }, []);
 
   // El catalogo se trae una sola vez: es lo que se puede ingresar.
   useEffect(() => {
@@ -101,6 +111,10 @@ export default function FormularioRemito({ onGuardar }) {
   const errores = useMemo(() => {
     const encontrados = {};
 
+    if (!tipoComprobante) {
+      encontrados.tipoComprobante = 'Elegí el comprobante.';
+    }
+
     if (!proveedor.trim()) {
       encontrados.proveedor = 'Indicá quién entregó la mercadería.';
     }
@@ -108,7 +122,7 @@ export default function FormularioRemito({ onGuardar }) {
     // Como el del papel: "0001-00012345", sólo números y guion, hasta 13.
     const numeroLimpio = numero.trim();
     if (!numeroLimpio) {
-      encontrados.numero = 'Indicá el número de remito.';
+      encontrados.numero = 'Indicá el número de comprobante.';
     } else if (!/^[0-9-]+$/.test(numeroLimpio)) {
       encontrados.numero = 'Sólo números y guion.';
     } else if (numeroLimpio.length > LARGO_NUMERO) {
@@ -149,11 +163,11 @@ export default function FormularioRemito({ onGuardar }) {
     });
 
     if (!hayAlgunItem) {
-      encontrados.items = 'El remito tiene que tener al menos un ítem.';
+      encontrados.items = 'Tiene que tener al menos un ítem.';
     }
 
     return encontrados;
-  }, [proveedor, numero, fechaRecepcion, hoy, renglones]);
+  }, [tipoComprobante, proveedor, numero, fechaRecepcion, hoy, renglones]);
 
   const hayErrores = Object.keys(errores).length > 0;
 
@@ -214,6 +228,7 @@ export default function FormularioRemito({ onGuardar }) {
 
     try {
       const remito = await onGuardar({
+        tipoComprobante,
         proveedor: proveedor.trim(),
         numero: numero.trim(),
         fechaRecepcion,
@@ -223,7 +238,7 @@ export default function FormularioRemito({ onGuardar }) {
 
       mostrarToast({
         tipo: 'exito',
-        mensaje: `Se registró el remito y se actualizó el stock de ${cargados.length} ${
+        mensaje: `Se registró ${tipoComprobante === 'Factura' ? 'la factura' : 'el remito'} y se actualizó el stock de ${cargados.length} ${
           cargados.length === 1 ? 'ítem' : 'ítems'
         }.`,
       });
@@ -237,7 +252,7 @@ export default function FormularioRemito({ onGuardar }) {
     }
   }
 
-  // El catalogo entero: es lo unico que se puede ingresar por remito.
+  // El catalogo entero: es lo unico que se puede ingresar.
   const opcionesItems = catalogo.map((item) => ({
     valor: item.codigo,
     texto: `${item.codigo} — ${item.nombre}`,
@@ -249,7 +264,7 @@ export default function FormularioRemito({ onGuardar }) {
         <CCardBody>
           <Aviso
             color="warning"
-            mensaje="Todavía no hay materiales ni herramientas en el catálogo del depósito. El remito no los da de alta: primero hay que cargarlos."
+            mensaje="Todavía no hay materiales ni herramientas en el catálogo del depósito. El ingreso no los da de alta: primero hay que cargarlos."
           />
           <p className="mb-0">
             Cargalos primero como <Link href="/inventario/materiales/agregar">Material</Link> o{' '}
@@ -270,6 +285,20 @@ export default function FormularioRemito({ onGuardar }) {
 
           <div className="sigma-campos mb-4">
             <Campo
+              id="tipoComprobante"
+              etiqueta="Tipo de comprobante"
+              tipo="lista"
+              valor={tipoComprobante}
+              alCambiar={setTipoComprobante}
+              opciones={tiposComprobante.map((tipo) => ({ valor: tipo, texto: tipo }))}
+              placeholder="Elegir"
+              obligatorio
+              ancho={10}
+              revisado={revisado}
+              error={errores.tipoComprobante}
+            />
+
+            <Campo
               id="proveedor"
               etiqueta="Proveedor"
               valor={proveedor}
@@ -284,7 +313,7 @@ export default function FormularioRemito({ onGuardar }) {
 
             <Campo
               id="numero"
-              etiqueta="Número de remito"
+              etiqueta="Número de comprobante"
               valor={numero}
               alCambiar={setNumero}
               placeholder="0001-00012345"
@@ -450,7 +479,7 @@ export default function FormularioRemito({ onGuardar }) {
 
         <CModalBody>
           <p>
-            Remito de <strong>{proveedor.trim()}</strong>
+            {tipoComprobante || 'Comprobante'} de <strong>{proveedor.trim()}</strong>
             {numero.trim() && <> (N.º {numero.trim()})</>}, recibido el{' '}
             <strong>{fechaRecepcion.split('-').reverse().join('/')}</strong>.
           </p>
@@ -488,7 +517,7 @@ export default function FormularioRemito({ onGuardar }) {
           </div>
 
           <p className="text-body-secondary mt-3 mb-0">
-            Al guardar, el stock sube y el movimiento queda registrado. El remito no se
+            Al guardar, el stock sube y el movimiento queda registrado. El comprobante no se
             puede modificar después.
           </p>
         </CModalBody>

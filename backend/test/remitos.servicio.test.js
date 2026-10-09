@@ -29,6 +29,7 @@ function hoy() {
 /** Un remito bien cargado, para cambiarle de a una cosa en cada prueba. */
 function remitoValido(cambios = {}) {
   return {
+    tipoComprobante: 'Remito',
     proveedor: 'Electricidad del Norte S.A.',
     numero: '0001-00012345',
     fechaRecepcion: hoy(),
@@ -68,15 +69,25 @@ describe('crear: lo que se revisa antes de tocar la base', () => {
     expect(supabase.rpc).not.toHaveBeenCalled();
   });
 
+  test('rechaza un ingreso sin comprobante o con uno que no existe', async () => {
+    await expect(crear(remitoValido({ tipoComprobante: '' }))).rejects.toThrow(
+      'Hay que elegir el comprobante: remito o factura.'
+    );
+    await expect(crear(remitoValido({ tipoComprobante: 'Ticket' }))).rejects.toThrow(
+      '"Ticket" no es un comprobante válido.'
+    );
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
+
   test('rechaza un remito sin número', async () => {
     await expect(crear(remitoValido({ numero: '  ' }))).rejects.toThrow(
-      'Hay que indicar el número de remito.'
+      'Hay que indicar el número de comprobante.'
     );
     expect(supabase.rpc).not.toHaveBeenCalled();
   });
 
   test('rechaza un número de remito con letras o de más de 13 caracteres', async () => {
-    const mensaje = 'El número de remito lleva sólo números y guion, hasta 13 caracteres.';
+    const mensaje = 'El número de comprobante lleva sólo números y guion, hasta 13 caracteres.';
 
     await expect(crear(remitoValido({ numero: 'A-123' }))).rejects.toThrow(mensaje);
     await expect(crear(remitoValido({ numero: '00001-00012345' }))).rejects.toThrow(mensaje);
@@ -85,7 +96,7 @@ describe('crear: lo que se revisa antes de tocar la base', () => {
 
   test('rechaza un remito sin fecha de recepción', async () => {
     await expect(crear(remitoValido({ fechaRecepcion: null }))).rejects.toThrow(
-      'Hay que indicar la fecha de recepción del remito.'
+      'Hay que indicar la fecha de recepción.'
     );
   });
 
@@ -97,7 +108,7 @@ describe('crear: lo que se revisa antes de tocar la base', () => {
 
   test('rechaza un remito sin ítems', async () => {
     await expect(crear(remitoValido({ items: [] }))).rejects.toThrow(
-      'El remito tiene que tener al menos un ítem.'
+      'El ingreso tiene que tener al menos un ítem.'
     );
   });
 
@@ -217,6 +228,7 @@ describe('crear: lo que se le manda a la base', () => {
       p_num: '0001-00012345',
       p_obs: null,
       p_usuario: null,
+      p_tipo_comprobante: 'Remito',
     });
 
     // Los dos numeros que muestra el listado sin abrir el remito.
