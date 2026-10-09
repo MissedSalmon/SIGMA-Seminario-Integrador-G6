@@ -17,6 +17,14 @@
  *    falta cargar algo más largo, habría que cambiar el campo, no esta cuenta.
  */
 
+/**
+ * Lo que manda el campo cuando quedó a medias: con las horas y sin los minutos,
+ * o al revés. No es una duración, pero tampoco es "nada": si se tomara como
+ * vacío, la tarea se guardaría sin duración y nadie se daría cuenta. Así el
+ * formulario lo ve y avisa (09/10/2026).
+ */
+export const DURACION_INCOMPLETA = 'incompleta';
+
 /** Los minutos que tiene una hora, para no repetir el 60 en cada cuenta. */
 const MINUTOS_POR_HORA = 60;
 
