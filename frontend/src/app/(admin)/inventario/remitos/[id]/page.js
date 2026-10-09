@@ -136,7 +136,7 @@ export default function PantallaDetalleRemito({ params }) {
                             <span className="text-body-secondary">{renglon.cantidad}</span>
                           </CTableDataCell>
                           <CTableDataCell>
-                            <span className="text-body-secondary">{renglon.stockActual}</span>
+                            <span className="text-body-secondary">{renglon.stockActual ?? '-'}</span>
                           </CTableDataCell>
                         </CTableRow>
                       ))}

@@ -188,9 +188,10 @@ export default function FormularioRemito({ onGuardar }) {
             clave: renglon.clave,
             codigo: renglon.codigo,
             nombre: item?.nombre ?? renglon.codigo,
-            stockActual: item?.stockActual ?? 0,
+            // Las herramientas no llevan stock: les queda en null.
+            stockActual: item?.stockActual ?? null,
             cantidad,
-            stockNuevo: (item?.stockActual ?? 0) + cantidad,
+            stockNuevo: item?.stockActual == null ? null : item.stockActual + cantidad,
           };
         }),
     [renglones, catalogo]
@@ -349,7 +350,7 @@ export default function FormularioRemito({ onGuardar }) {
 
                       <CTableDataCell>
                         <span className="text-body-secondary">
-                          {item ? item.stockActual : '-'}
+                          {item?.stockActual ?? '-'}
                         </span>
                       </CTableDataCell>
 
@@ -476,7 +477,13 @@ export default function FormularioRemito({ onGuardar }) {
                     </CTableDataCell>
                     <CTableDataCell>+{renglon.cantidad}</CTableDataCell>
                     <CTableDataCell className="text-body-secondary">
-                      {renglon.stockActual} → <strong>{renglon.stockNuevo}</strong>
+                      {renglon.stockActual === null ? (
+                        '-'
+                      ) : (
+                        <>
+                          {renglon.stockActual} → <strong>{renglon.stockNuevo}</strong>
+                        </>
+                      )}
                     </CTableDataCell>
                   </CTableRow>
                 ))}
