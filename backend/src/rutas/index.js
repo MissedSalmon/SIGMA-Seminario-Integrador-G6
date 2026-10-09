@@ -21,6 +21,10 @@ import rutasInventario from './inventario.rutas.js';
 
 const router = Router();
 
+// Autenticación y Sesiones (HU-30)
+import rutasAuth from './auth.rutas.js';
+router.use('/auth', rutasAuth);
+
 // Estructura edilicia (Sprint 1)
 router.use('/edificios', rutasEdificios);
 router.use('/espacios', rutasEspacios);

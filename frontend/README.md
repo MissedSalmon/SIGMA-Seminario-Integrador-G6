@@ -80,8 +80,8 @@ Hay dos caminos y no se mezclan:
 
 | Para qué | Qué se usa |
 |---|---|
-| Tickets, OT, activos, inventario, indicadores | `src/servicios/api.js` → llama al **backend**, donde están las reglas de negocio. |
-| Login y subida de fotos | `src/lib/supabase.js` → habla **directo con Supabase**. |
+| Todo (Tickets, OT, activos, inventario, auth, login) | `src/servicios/api.js` → llama al **backend**, donde están las reglas de negocio y se maneja el JWT. |
+| Subida de fotos (opcional) | `src/utils/supabase/` → interactúa con el storage de Supabase (sin privilegios administrativos). |
 
 Ejemplo de un servicio nuevo (`src/servicios/tickets.js`):
 

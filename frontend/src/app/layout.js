@@ -1,9 +1,6 @@
 /**
  * Layout raiz de la aplicacion.
  *
- * Todas las pantallas quedan dentro del panel de administracion (barra
- * lateral + encabezado + pie), asi que el armazon se aplica una sola vez aca.
- *
  * El orden de los estilos importa: primero CoreUI, despues heroui.css (que
  * solo viste el campo de fecha) y al final globals.css, que es donde
  * ajustamos los colores de SIGMA sobre la plantilla.
@@ -13,8 +10,6 @@ import { Inter } from 'next/font/google';
 import '@coreui/coreui/dist/css/coreui.min.css';
 import './heroui.css';
 import './globals.css';
-
-import LayoutAdmin from '@/componentes/layout/LayoutAdmin.js';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -30,7 +25,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="es" className={inter.variable}>
       <body>
-        <LayoutAdmin>{children}</LayoutAdmin>
+        {children}
       </body>
     </html>
   );

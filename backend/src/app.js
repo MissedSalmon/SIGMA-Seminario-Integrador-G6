@@ -15,6 +15,8 @@ import { manejadorErrores } from './middlewares/manejadorErrores.js';
 
 const app = express();
 
+import cookieParser from 'cookie-parser';
+
 // Permite que el frontend (otro dominio) llame a esta API.
 app.use(
   cors({
@@ -23,9 +25,10 @@ app.use(
   })
 );
 
-// Interpreta el cuerpo de los pedidos que vienen en formato JSON.
+// Interpreta el cuerpo de los pedidos que vienen en formato JSON y parsea cookies.
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Todas las rutas de la API cuelgan de /api.
 app.use('/api', rutas);

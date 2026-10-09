@@ -217,4 +217,5 @@ Agrupadas por tema, para tener el mapa general:
 | **Tipo de activo** | Categoría de activos: aires acondicionados, mobiliario, luminarias. |
 | **Tipo de trabajo** | Clasificación del trabajo técnico: eléctrica, refrigeración, sanitaria, civil. La usan tanto los técnicos como los prestadores externos. |
 | **Trazabilidad** | Poder seguir el historial completo de un ticket, una OT o un activo. |
+| **Usuario** | Entidad técnica (HU-30) que almacena credenciales (identificador, passwordHash), rol y controla el estado del primer inicio de sesión para centralizar el acceso al sistema sin usar Supabase Auth directamente en el frontend. |
 | **Usuario autorizado** | Responsable de un área, habilitado para cargar tickets y consultar su estado. |

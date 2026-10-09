@@ -20,23 +20,23 @@
  */
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   CSidebar,
   CSidebarBrand,
   CSidebarFooter,
   CSidebarHeader,
-  CSidebarToggler,
   CNavGroup,
   CNavItem,
   CNavLink,
   CNavTitle,
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilMenu } from '@coreui/icons';
+import { cilMenu, cilAccountLogout } from '@coreui/icons';
 
 import { navegacion } from './navegacion.js';
 import { useLayout } from './ContextoLayout.js';
+import { logout } from '@/servicios/auth.js';
 
 /** Todas las direcciones del menu, incluidas las de adentro de los grupos. */
 function juntarDirecciones(opciones) {
@@ -72,9 +72,19 @@ function buscarActiva(direccionActual, direcciones) {
 }
 
 export default function BarraLateral() {
+  const router = useRouter();
   const { barraVisible, setBarraVisible } = useLayout();
   const direccionActual = usePathname() ?? '/';
   const direccionActiva = buscarActiva(direccionActual, juntarDirecciones(navegacion));
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push('/login');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
+  };
 
   /*
    * Solo se puede tener un desplegable abierto a la vez: al abrir uno, el que
@@ -170,8 +180,17 @@ export default function BarraLateral() {
         })}
       </ul>
 
-      <CSidebarFooter className="border-top d-none d-lg-flex">
-        <CSidebarToggler />
+      <CSidebarFooter className="border-top d-flex align-items-center px-3 py-2">
+        <button
+          type="button"
+          className="btn btn-link text-white-50 text-decoration-none d-flex align-items-center gap-2 p-1 border-0"
+          onClick={handleLogout}
+          title="Cerrar sesión"
+          style={{ cursor: 'pointer' }}
+        >
+          <CIcon icon={cilAccountLogout} />
+          <span style={{ fontSize: '0.88rem', fontWeight: 500 }}>Cerrar sesión</span>
+        </button>
       </CSidebarFooter>
     </CSidebar>
   );

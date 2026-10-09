@@ -356,6 +356,25 @@ Control de préstamos y devolución de herramientas asignadas a los técnicos.
 
 ---
 
+### 8. Autenticación y Control de Acceso
+
+#### `Usuario`
+Entidad que almacena las credenciales y el estado de acceso para todos los roles del sistema (Administrador, Técnico, Autorizado) introducida en la HU-30.
+| Clave | Campo | Tipo / Descripción |
+| :--- | :--- | :--- |
+| **PK** | `usuarioId` | Identificador único del usuario (UUID) |
+| **UK** | `identificador` | Legajo ingresado en el login |
+| | `passwordHash` | Hash seguro de la contraseña |
+| | `rol` | Rol del usuario (`administrador`, `tecnico`, `autorizado`) |
+| | `requirePasswordChange` | Bandera booleana para forzar cambio de clave en el primer inicio de sesión |
+| **FK** | `adminLegajo` | Referencia a `Administrador` (Opcional según regla XOR) |
+| **FK** | `tecnicoLegajo` | Referencia a `Tecnico` (Opcional según regla XOR) |
+| **FK** | `autorizadoLegajo`| Referencia a `Autorizado` (Opcional según regla XOR) |
+
+> **Nota (HU-30 y Refactorización):** La tabla implementa integridad referencial estricta mediante un **Arco Exclusivo (XOR)**. El usuario DEBE estar vinculado a una, y solo una, de las tres tablas de personas. Si se elimina la persona física, su cuenta de usuario se elimina en cascada. El login se unificó para utilizar únicamente el `legajo` en todos los roles.
+
+---
+
 ## Restricciones y Exclusiones (XOR)
 
 El modelo contiene dos exclusiones lógicas explícitas:
@@ -368,6 +387,9 @@ El modelo contiene dos exclusiones lógicas explícitas:
 
 3. **Asignación de Responsables de Tarea (`TareasOT`):**
    - Una tarea puede ser ejecutada por **varios técnicos internos** (a través de `Tecnico_asignado_TareaOT`), **o bien por un Prestador de Servicio externo** (`prestadorServId` en `TareasOT`, el cual puede ser `NULL` si la realizan técnicos).
+
+4. **Vínculo del Perfil de Usuario (`Usuario`):**
+   - La tabla `Usuario` debe estar vinculada obligatoriamente a una persona física. Es decir, debe referenciar a un **Administrador** (`adminLegajo`) **XOR** un **Técnico** (`tecnicoLegajo`) **XOR** un **Autorizado** (`autorizadoLegajo`).
 
 ---
 

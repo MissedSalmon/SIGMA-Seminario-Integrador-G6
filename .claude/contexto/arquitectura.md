@@ -509,21 +509,25 @@ Cuando esté la base hay que deshacer las tres cosas:
 
 ---
 
-## Las dos conexiones a Supabase
+## La conexión a Supabase y la Autenticación
 
-Es lo más importante de entender y lo más fácil de equivocar:
+El sistema tiene una arquitectura clara respecto a dónde se realizan las validaciones y cómo se accede a los datos:
 
 | Archivo | Clave | Dónde corre | Para qué |
 |---|---|---|---|
-| `backend/src/config/supabase.js` | `SERVICE_ROLE_KEY` | Servidor | Todo el negocio. Saltea las reglas de seguridad. |
-| `frontend/src/lib/supabase.js` | `ANON_KEY` | Navegador | Sólo login y subida de fotos. |
+| `backend/src/config/supabase.js` | `SERVICE_ROLE_KEY` | Servidor | Todo el negocio y consultas a la base de datos. Saltea reglas de seguridad locales de Supabase. |
+| `frontend/src/utils/supabase/` | `ANON_KEY` | Navegador | Sólo para subida y lectura de fotos o archivos públicos si se requiere, pero **nunca para Login**. |
 
 > ⚠️ **La `SERVICE_ROLE_KEY` nunca va al frontend.** Si se filtra, cualquiera puede leer y
 > modificar toda la base. Va únicamente en `backend/.env`, que no se sube al repositorio.
 > En Next.js, toda variable que empiece con `NEXT_PUBLIC_` queda visible en el navegador.
 
-Para todo lo demás el frontend **no habla directo con Supabase**: llama al backend a través
-de `frontend/src/servicios/api.js`, porque ahí viven las reglas de negocio.
+**Autenticación y Sesiones (HU-30):**
+El frontend **no habla directo con Supabase Auth** para el inicio de sesión. La autenticación se maneja exclusivamente a través del backend enviando credenciales (legajo o usuario) y contraseña. El backend valida contra la tabla `usuario` y emite un **token JWT** almacenado en cookie HttpOnly. El estado de la sesión, los permisos y el control de primer inicio de sesión se gestionan mediante este token y un middleware en Next.js. El frontend interactúa con el sistema siempre a través de `frontend/src/servicios/api.js`.
+
+- **Pantalla de Login (`/login`):** Centrada, minimalista, con la identidad visual institucional de SIGMA (`--sigma-teal`, `--sigma-fondo`, `--sigma-superficie`, `--sigma-borde`, tipografía Inter).
+- **Cierre de Sesión:** Accesible tanto desde la **barra lateral principal** (en `CSidebarFooter`) como desde el menú de usuario del **encabezado** (`CDropdown`) y desde la pantalla de **Mi Perfil** (`/perfil`), estandarizado con el ícono `cilAccountLogout` y botones propios de CoreUI/SIGMA.
+- **Pruebas unitarias de autenticación:** Ubicadas en `backend/test/auth.servicio.test.js` con cobertura para validación de credenciales (casos exitosos, contraseñas erróneas, usuarios inactivos o inexistentes), obtención de perfil por rol y cambio de contraseña.
 
 ---
 
