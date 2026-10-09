@@ -308,18 +308,27 @@ export default function FormularioRemito({ onGuardar }) {
             />
           </div>
 
-          <h2 className="sigma-seccion-titulo">¿Qué trajo?</h2>
+          {/* El "Agregar" va en la misma línea que el título, como en las tareas de la OT. */}
+          <div className="sigma-seccion-titulo d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <h2 className="mb-0" style={{ fontSize: 'inherit', fontWeight: 'inherit' }}>
+              ¿Qué trajo?
+            </h2>
+            <CButton type="button" color="primary" size="sm" onClick={agregarRenglon}>
+              <CIcon icon={cilPlus} size="sm" className="me-1" />
+              Agregar
+            </CButton>
+          </div>
 
           {/*
             La tabla de renglones scrollea sola si no entra a lo ancho: el resto
             de la pantalla no se desacomoda en un celular.
           */}
-          <div className="table-responsive mb-2">
+          <div className="table-responsive mb-4">
             <CTable align="middle" className="mb-0">
               <CTableHead>
                 <CTableRow>
                   <CTableHeaderCell>Ítem del catálogo</CTableHeaderCell>
-                  <CTableHeaderCell>Stock actual</CTableHeaderCell>
+                  <CTableHeaderCell className="text-center">Stock actual</CTableHeaderCell>
                   <CTableHeaderCell>Cantidad que ingresa</CTableHeaderCell>
                   <CTableHeaderCell className="text-end">Quitar</CTableHeaderCell>
                 </CTableRow>
@@ -348,7 +357,7 @@ export default function FormularioRemito({ onGuardar }) {
                         />
                       </CTableDataCell>
 
-                      <CTableDataCell>
+                      <CTableDataCell className="text-center">
                         <span className="text-body-secondary">
                           {item?.stockActual ?? '-'}
                         </span>
@@ -391,19 +400,6 @@ export default function FormularioRemito({ onGuardar }) {
           {revisado && errores.items && (
             <p className="sigma-campo-mensaje sigma-campo-mensaje--error">{errores.items}</p>
           )}
-
-          <div className="d-flex flex-wrap align-items-center gap-3 mb-4">
-            <CButton type="button" color="secondary" variant="outline" size="sm" onClick={agregarRenglon}>
-              <CIcon icon={cilPlus} size="sm" className="me-1" />
-              Agregar
-            </CButton>
-
-            <small className="text-body-secondary">
-              ¿No encontrás el ítem? El remito no da de alta: cargalo primero como{' '}
-              <Link href="/inventario/materiales/agregar">Material</Link> o{' '}
-              <Link href="/inventario/herramientas/agregar">Herramienta</Link>.
-            </small>
-          </div>
 
           <h2 className="sigma-seccion-titulo">Observaciones</h2>
 
