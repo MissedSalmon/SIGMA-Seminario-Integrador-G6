@@ -86,6 +86,9 @@ Una OT viene **o de un ticket, o de un plan preventivo**. Nunca de los dos.
 > - **La prioridad es de la TAREA, no de la OT.** La tabla `tarea_ot` ya tiene
 >   `tarea_prioridad`, y una misma OT puede tener una tarea urgente y otra que puede esperar.
 >   La OT muestra la prioridad más alta de sus tareas; no se guarda.
+>   *Cambio del 09/10/2026:* esa prioridad calculada es ahora la **sugerida**. El
+>   administrador puede poner otra a mano en el detalle de la OT (`orden_trabajo.ot_prioridad`),
+>   y esa manda. Si la borra, la OT vuelve a usar la sugerida.
 > - **El estado de la OT no se carga a mano, se calcula:** sin tareas, o con alguna sin
 >   responsable, queda en "Creada"; cuando todas tienen responsable pasa a "Asignada".
 > - **El ticket acompaña a su OT:** cuando la OT queda "Asignada", el ticket pasa a

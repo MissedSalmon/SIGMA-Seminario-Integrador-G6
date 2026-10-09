@@ -17,6 +17,11 @@ import { datoInvalido, noEncontrado, conflicto } from '../utiles/errores.js';
  * `tarea_ot` ya tiene `tarea_prioridad` y una misma OT puede tener una tarea
  * urgente y otra que puede esperar. La OT muestra la prioridad mas alta de sus
  * tareas (`prioridad`), que se calcula aca y no se guarda.
+ *
+ * DECISION (09/10/2026): esa prioridad calculada pasa a ser una SUGERENCIA
+ * (`prioridadSugerida`). El administrador puede poner otra a mano, que se
+ * guarda en `ot_prioridad` y manda sobre la sugerida. Si la borra, la OT
+ * vuelve a usar la sugerida.
  */
 
 /** Los estados de una OT (ver .claude/contexto/dominio.md). */
@@ -170,6 +175,7 @@ const COLUMNAS = `
   ot_fecha_cierre,
   ot_estado,
   ot_desc,
+  ot_prioridad,
   mantenimiento_preventivo (
     mant_prev_id,
     activo_codigo,
@@ -339,6 +345,10 @@ function aOrden(fila, asignaciones = []) {
       (una, otra) => lugarDe(una.prioridad) - lugarDe(otra.prioridad) || una.idTarea - otra.idTarea
     );
 
+  // La que puso el administrador manda; si no puso ninguna, vale la sugerida.
+  const prioridadSugerida = prioridadMasAlta(tareas.map((tarea) => tarea.prioridad));
+  const prioridadManual = fila.ot_prioridad ? normalizarPrioridad(fila.ot_prioridad) : null;
+
   return {
     id: fila.ot_id,
     estado: normalizarEstado(fila.ot_estado),
@@ -374,7 +384,9 @@ function aOrden(fila, asignaciones = []) {
     tareas,
     cantidadTareas: tareas.length,
     tareasSinResponsable: tareas.filter((tarea) => !tarea.responsable).length,
-    prioridad: prioridadMasAlta(tareas.map((tarea) => tarea.prioridad)),
+    prioridad: prioridadManual ?? prioridadSugerida,
+    prioridadSugerida,
+    prioridadManual,
   };
 }
 
@@ -512,14 +524,36 @@ export async function crearDesdeTicket(idTicket, datos = {}) {
   return obtenerPorId(data.ot_id);
 }
 
-/** Cambia la descripcion de la OT: es lo unico suyo que se edita a mano. */
+/**
+ * Cambia lo que de la OT se edita a mano: la descripcion y la prioridad.
+ * Se manda solo lo que se cambia; lo que no viene, queda como estaba.
+ *
+ * La prioridad en null (o "") la borra, y la OT vuelve a la sugerida.
+ */
 export async function actualizar(id, datos) {
-  const descripcion = limpiar(datos.descripcion);
-  if (!descripcion) throw datoInvalido('La descripción de la orden de trabajo es obligatoria.');
+  const cambios = {};
+
+  if (datos.descripcion !== undefined) {
+    const descripcion = limpiar(datos.descripcion);
+    if (!descripcion) throw datoInvalido('La descripción de la orden de trabajo es obligatoria.');
+    cambios.ot_desc = descripcion;
+  }
+
+  if (datos.prioridad !== undefined) {
+    const prioridad = limpiar(datos.prioridad);
+    if (prioridad && !PRIORIDADES.includes(prioridad)) {
+      throw datoInvalido(`"${prioridad}" no es una prioridad válida. Son: ${PRIORIDADES.join(', ')}.`);
+    }
+    cambios.ot_prioridad = prioridad;
+  }
+
+  if (Object.keys(cambios).length === 0) {
+    throw datoInvalido('No llegó ningún dato para cambiar en la orden de trabajo.');
+  }
 
   const { data, error } = await supabase
     .from('orden_trabajo')
-    .update({ ot_desc: descripcion })
+    .update(cambios)
     .eq('ot_id', id)
     .select('ot_id')
     .maybeSingle();
