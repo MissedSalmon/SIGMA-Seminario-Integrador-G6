@@ -220,7 +220,7 @@ export async function obtenerPorId(id) {
  * @param {string} datos.proveedor
  * @param {string} datos.fechaRecepcion  - "2026-09-28"
  * @param {Array}  datos.items           - [{ codigo, cantidad }]
- * @param {string} [datos.numero]
+ * @param {string} datos.numero         - "0001-00012345"
  * @param {string} [datos.observaciones]
  */
 export async function crear(datos) {
@@ -243,6 +243,16 @@ export async function crear(datos) {
     throw datoInvalido('La fecha de recepción no puede ser posterior a hoy.');
   }
 
+  // Obligatorio y como el del papel: "0001-00012345", sólo números y guion, hasta 13.
+  const numero = texto(datos?.numero);
+  if (!numero) {
+    throw datoInvalido('Hay que indicar el número de remito.');
+  }
+
+  if (!/^[0-9-]{1,13}$/.test(numero)) {
+    throw datoInvalido('El número de remito lleva sólo números y guion, hasta 13 caracteres.');
+  }
+
   const items = leerItems(datos?.items);
   await verificarItems(items);
 
@@ -250,7 +260,7 @@ export async function crear(datos) {
     p_proveedor: proveedor,
     p_fecha_recepcion: fechaRecepcion.slice(0, 10),
     p_items: items,
-    p_num: texto(datos?.numero),
+    p_num: numero,
     p_obs: texto(datos?.observaciones),
     // Todavia no hay login: cuando lo haya, aca va el usuario de la sesion.
     p_usuario: null,

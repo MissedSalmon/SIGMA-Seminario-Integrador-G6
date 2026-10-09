@@ -30,6 +30,7 @@ function hoy() {
 function remitoValido(cambios = {}) {
   return {
     proveedor: 'Electricidad del Norte S.A.',
+    numero: '0001-00012345',
     fechaRecepcion: hoy(),
     items: [{ codigo: 'CA-111', cantidad: 10 }],
     ...cambios,
@@ -64,6 +65,21 @@ describe('crear: lo que se revisa antes de tocar la base', () => {
     await expect(crear(remitoValido({ proveedor: '   ' }))).rejects.toThrow(
       'Hay que indicar el proveedor que entregó la mercadería.'
     );
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
+
+  test('rechaza un remito sin número', async () => {
+    await expect(crear(remitoValido({ numero: '  ' }))).rejects.toThrow(
+      'Hay que indicar el número de remito.'
+    );
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
+
+  test('rechaza un número de remito con letras o de más de 13 caracteres', async () => {
+    const mensaje = 'El número de remito lleva sólo números y guion, hasta 13 caracteres.';
+
+    await expect(crear(remitoValido({ numero: 'A-123' }))).rejects.toThrow(mensaje);
+    await expect(crear(remitoValido({ numero: '00001-00012345' }))).rejects.toThrow(mensaje);
     expect(supabase.rpc).not.toHaveBeenCalled();
   });
 

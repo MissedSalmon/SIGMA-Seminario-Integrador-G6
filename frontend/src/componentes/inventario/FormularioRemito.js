@@ -51,6 +51,9 @@ import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarItems } from '@/servicios/inventario.js';
 import { hoyTexto } from '@/utils/fechas.js';
 
+/** El largo del numero de remito: "0001-00012345" son 13 caracteres. */
+const LARGO_NUMERO = 13;
+
 /** Un renglon vacio, con su numero para que React no confunda las filas. */
 let proximoRenglon = 0;
 function renglonVacio() {
@@ -102,6 +105,16 @@ export default function FormularioRemito({ onGuardar }) {
       encontrados.proveedor = 'Indicá quién entregó la mercadería.';
     }
 
+    // Como el del papel: "0001-00012345", sólo números y guion, hasta 13.
+    const numeroLimpio = numero.trim();
+    if (!numeroLimpio) {
+      encontrados.numero = 'Indicá el número de remito.';
+    } else if (!/^[0-9-]+$/.test(numeroLimpio)) {
+      encontrados.numero = 'Sólo números y guion.';
+    } else if (numeroLimpio.length > LARGO_NUMERO) {
+      encontrados.numero = `Hasta ${LARGO_NUMERO} caracteres.`;
+    }
+
     if (!fechaRecepcion) {
       encontrados.fechaRecepcion = 'Indicá cuándo se recibió.';
     } else if (fechaRecepcion > hoy) {
@@ -140,7 +153,7 @@ export default function FormularioRemito({ onGuardar }) {
     }
 
     return encontrados;
-  }, [proveedor, fechaRecepcion, hoy, renglones]);
+  }, [proveedor, numero, fechaRecepcion, hoy, renglones]);
 
   const hayErrores = Object.keys(errores).length > 0;
 
@@ -201,7 +214,7 @@ export default function FormularioRemito({ onGuardar }) {
     try {
       const remito = await onGuardar({
         proveedor: proveedor.trim(),
-        numero: numero.trim() || null,
+        numero: numero.trim(),
         fechaRecepcion,
         observaciones: observaciones.trim() || null,
         items: cargados.map((renglon) => ({ codigo: renglon.codigo, cantidad: renglon.cantidad })),
@@ -274,9 +287,11 @@ export default function FormularioRemito({ onGuardar }) {
               valor={numero}
               alCambiar={setNumero}
               placeholder="0001-00012345"
-              maxLength={50}
+              obligatorio
+              maxLength={LARGO_NUMERO}
               ancho={14}
               revisado={revisado}
+              error={errores.numero}
             />
 
             <Campo
