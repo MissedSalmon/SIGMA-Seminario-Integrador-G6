@@ -22,15 +22,13 @@ Ticket → Validación → Orden de Trabajo (OT) → Tareas → Ejecución → C
 
 ---
 
-## Estado actual (27/08/2026)
+## Estado actual (10/10/2026)
 
 - Ya se entregó la **Primera Carpeta** (17/07/2026). Nota: **76/100 — APROBADO**.
-- Hay una **devolución con correcciones** que todavía no se aplicaron.
-  El punto más pesado: **hay que rehacer el Modelo de Tablas**.
+- **HU-30 (Autenticación y Sesiones) completada (10/10/2026):** Login propio con JWT, middleware `validarSesion` y `soloAdministrador` con JWT real, vista `/tareas` para técnicos, menú lateral filtrado dinámicamente por rol y cambio de contraseña obligatorio en el primer inicio de sesión. Pruebas backend (53/53 passed).
 - **Sprint 0 hecho:** estructura del repositorio armada y funcionando
-  (Next.js 16 + Express 5 + Supabase, monorepo con npm workspaces).
-  Falta sólo la tarea T3 (base de datos), que depende de rehacer el modelo.
-- Según el cronograma, el Sprint 1 terminó el 23/08 y el **Sprint 2 está en curso**.
+  (Next.js 16 + Express 5 + Supabase, monorepo with npm workspaces).
+- La base de datos ya fue integrada con Supabase CLI en `supabase/migrations/`.
 
 ---
 

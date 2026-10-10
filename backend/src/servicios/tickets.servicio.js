@@ -159,13 +159,20 @@ function aTicket(fila) {
  * @param {string} [filtros.codigoActivo]
  * @param {number} [filtros.idArea]
  */
-export async function obtenerTodos(filtros = {}) {
+export async function obtenerTodos(filtros = {}, usuario = null) {
   const columnas = filtros.idArea ? COLUMNAS_CON_AREA : COLUMNAS;
 
   let consulta = supabase
     .from('ticket')
     .select(columnas)
     .order('ticket_fecha_alta', { ascending: false });
+
+  // Si el usuario es un autorizado, solo puede ver los tickets que el mismo creo
+  if (usuario?.rol === 'autorizado') {
+    consulta = consulta.eq('autorizado_legajo', usuario.identificador);
+  } else if (filtros.autorizadoLegajo) {
+    consulta = consulta.eq('autorizado_legajo', filtros.autorizadoLegajo);
+  }
 
   if (filtros.estado) {
     consulta = consulta.in('ticket_estado', valoresEnBase(filtros.estado));
@@ -193,7 +200,7 @@ export async function obtenerTodos(filtros = {}) {
   return data.map(aTicket);
 }
 
-export async function obtenerPorId(id) {
+export async function obtenerPorId(id, usuario = null) {
   const { data, error } = await supabase
     .from('ticket')
     .select(COLUMNAS)
@@ -203,10 +210,17 @@ export async function obtenerPorId(id) {
   if (error) throw new Error(error.message);
   if (!data) throw noEncontrado(`No existe el ticket ${id}.`);
 
-  return aTicket(data);
+  const ticket = aTicket(data);
+
+  // Si es un usuario autorizado, solo puede ver tickets de su propia autoría
+  if (usuario?.rol === 'autorizado' && ticket.registradoPor?.legajo !== usuario.identificador) {
+    throw noEncontrado(`No existe el ticket ${id}.`);
+  }
+
+  return ticket;
 }
 
-export async function crear(datos) {
+export async function crear(datos, usuario = null) {
   const codigoActivo = limpiar(datos.codigoActivo);
   const idEdificio = datos.idEdificio ? Number(datos.idEdificio) : null;
   const espacioNum = limpiar(datos.espacioNum);
@@ -221,20 +235,18 @@ export async function crear(datos) {
     throw datoInvalido('Debe indicar el activo o el espacio afectado.');
   }
 
-  // OJO: La base de datos actual (refactor_modelo_mantenimiento.sql)
-  // exige que activo_codigo y autorizado_legajo NO sean nulos.
-  // Si el frontend envía un "espacio" en lugar de un "activo", fallará
-  // a menos que modifiquemos la BD.
-  // Por ahora, usaremos un autorizado ficticio si no viene, y
-  // lanzaremos error si intentan guardar un ticket de espacio sin modificar la BD.
-
   if (!codigoActivo) {
     throw datoInvalido('El modelo de datos actual exige que todo ticket esté asociado a un activo.');
   }
 
+  // Si el usuario es autorizado, usamos su identificador (legajo). Si es admin, puede usar el del form o '0000'
+  const legajoAutorizado = usuario?.rol === 'autorizado'
+    ? usuario.identificador
+    : (datos.autorizadoLegajo || usuario?.identificador || '0000');
+
   const { data, error } = await supabase.from('ticket').insert({
     activo_codigo: codigoActivo,
-    autorizado_legajo: '0000', // Reemplazar con el usuario logueado en el futuro
+    autorizado_legajo: legajoAutorizado,
     ticket_desc: descripcion,
     ticket_estado: ESTADO_INICIAL,
     ticket_evidencia: evidencia

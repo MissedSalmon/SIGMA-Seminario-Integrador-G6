@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase.js';
+import bcrypt from 'bcryptjs';
 import { datoInvalido, noEncontrado, conflicto } from '../utiles/errores.js';
 import { normalizarTelefono, validarTelefono } from '../utiles/validaciones.js';
 
@@ -144,6 +145,24 @@ export async function crear(datos) {
   if (error) throw new Error(error.message);
 
   await asignarEspecialidades(legajo, limpio.especialidades);
+
+  // Crear usuario asociado en la tabla usuario (HU-30)
+  const passwordHash = await bcrypt.hash(String(legajo), 10);
+  const { error: errorUsuario } = await supabase.from('usuario').insert({
+    identificador: String(legajo),
+    password_hash: passwordHash,
+    rol: 'tecnico',
+    require_password_change: true,
+    activo: true,
+    tecnico_legajo: String(legajo),
+  });
+
+  if (errorUsuario) {
+    // Si falla la inserción del usuario, hacemos rollback
+    await supabase.from('tecnico_especialidad').delete().eq('tecnico_legajo', legajo);
+    await supabase.from('tecnico').delete().eq('tecnico_legajo', legajo);
+    throw new Error(`Error al crear las credenciales de usuario: ${errorUsuario.message}`);
+  }
 
   return obtenerPorId(legajo);
 }

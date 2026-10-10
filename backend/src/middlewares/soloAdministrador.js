@@ -1,17 +1,17 @@
-import { prohibido } from '../utiles/errores.js';
+import { validarSesion, protegerPorRol } from './auth.middleware.js';
 
 /**
- * Middleware simple para permitir solo a administradores.
+ * Middleware que exige sesion JWT activa y rol administrador.
  *
- * Nota: este proyecto aun no tiene un sistema de autenticacion completo, así
- * que por ahora el rol se espera en el header `x-rol` con valor
- * "Administrador". Esto permite aplicar la restriccion en endpoints que
- * modifican datos.
+ * Antes usaba el header `x-rol` como mecanismo ad-hoc; ahora delega en el
+ * sistema de autenticacion real (HU-30) para garantizar que la identidad
+ * viene de un token firmado y no de un header que cualquiera puede inventar.
+ *
+ * Uso en rutas: router.use(soloAdministrador) o router.post('/', soloAdministrador, ctrl.crear)
  */
 export function soloAdministrador(req, res, next) {
-  const rol = req.headers['x-rol'] || req.headers['x-rol'.toLowerCase()];
-  if (rol !== 'Administrador') {
-    throw prohibido('Se requieren permisos de administrador para esta acción.');
-  }
-  next();
+  validarSesion(req, res, (err) => {
+    if (err) return;
+    protegerPorRol(['administrador'])(req, res, next);
+  });
 }
