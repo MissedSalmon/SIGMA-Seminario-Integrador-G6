@@ -526,8 +526,17 @@ El sistema tiene una arquitectura clara respecto a dónde se realizan las valida
 El frontend **no habla directo con Supabase Auth** para el inicio de sesión. La autenticación se maneja exclusivamente a través del backend enviando credenciales (legajo o usuario) y contraseña. El backend valida contra la tabla `usuario` y emite un **token JWT** almacenado en cookie HttpOnly. El estado de la sesión, los permisos y el control de primer inicio de sesión se gestionan mediante este token y un middleware en Next.js. El frontend interactúa con el sistema siempre a través de `frontend/src/servicios/api.js`.
 
 - **Pantalla de Login (`/login`):** Centrada, minimalista, con la identidad visual institucional de SIGMA (`--sigma-teal`, `--sigma-fondo`, `--sigma-superficie`, `--sigma-borde`, tipografía Inter).
+- **Vistas del Frontend y Filtrado por Rol:** 
+  - **Administrador:** Acceso completo al sistema y menú de administración.
+  - **Técnico:** Redirigido a la vista de tareas en `/tareas`.
+  - **Usuario Autorizado:** Redirigido a la vista de tickets en `/tickets`.
+  - El menú lateral (`BarraLateral.js`, `navegacion.js`) utiliza `ContextoSesion.js` para leer el rol directamente desde el JWT de la cookie y desplegar únicamente los ítems permitidos para el rol activo.
+  - La ruta `/tareas` fue agregada al mapa de migas de pan en `Encabezado.js`.
+- **Middlewares Backend (`validarSesion` y `soloAdministrador`):**
+  - Las rutas de tickets en `tickets.rutas.js` aplican `validarSesion` para garantizar token JWT válido.
+  - El middleware `soloAdministrador.js` extrae y valida el rol `administrador` del JWT real descodificado del request, desestimando headers ad-hoc.
 - **Cierre de Sesión:** Accesible tanto desde la **barra lateral principal** (en `CSidebarFooter`) como desde el menú de usuario del **encabezado** (`CDropdown`) y desde la pantalla de **Mi Perfil** (`/perfil`), estandarizado con el ícono `cilAccountLogout` y botones propios de CoreUI/SIGMA.
-- **Pruebas unitarias de autenticación:** Ubicadas en `backend/test/auth.servicio.test.js` con cobertura para validación de credenciales (casos exitosos, contraseñas erróneas, usuarios inactivos o inexistentes), obtención de perfil por rol y cambio de contraseña.
+- **Pruebas unitarias de autenticación:** Ubicadas en `backend/test/auth.servicio.test.js` (y resto de tests de la suite backend: 53 passed) con cobertura para validación de credenciales (casos exitosos, contraseñas erróneas, usuarios inactivos o inexistentes), obtención de perfil por rol y cambio de contraseña.
 
 ---
 

@@ -36,7 +36,15 @@ import { cilMenu, cilAccountLogout } from '@coreui/icons';
 
 import { navegacion } from './navegacion.js';
 import { useLayout } from './ContextoLayout.js';
+import { useSesion } from './ContextoSesion.js';
 import { logout } from '@/servicios/auth.js';
+
+/** Devuelve true si el item debe mostrarse al rol dado. Sin propiedad roles = visible para todos. */
+function visible(opcion, rol) {
+  if (!opcion.roles) return true;
+  if (!rol) return false;
+  return opcion.roles.includes(rol);
+}
 
 /** Todas las direcciones del menu, incluidas las de adentro de los grupos. */
 function juntarDirecciones(opciones) {
@@ -74,8 +82,13 @@ function buscarActiva(direccionActual, direcciones) {
 export default function BarraLateral() {
   const router = useRouter();
   const { barraVisible, setBarraVisible } = useLayout();
+  const { usuario } = useSesion();
+  const rol = usuario?.rol ?? null;
   const direccionActual = usePathname() ?? '/';
-  const direccionActiva = buscarActiva(direccionActual, juntarDirecciones(navegacion));
+
+  // Solo se calculan las direcciones de los items que el usuario puede ver.
+  const opcionesVisibles = navegacion.filter((opcion) => visible(opcion, rol));
+  const direccionActiva = buscarActiva(direccionActual, juntarDirecciones(opcionesVisibles));
 
   const handleLogout = async () => {
     try {
@@ -103,7 +116,7 @@ export default function BarraLateral() {
 
   /** El grupo que contiene la pantalla en la que estamos, si hay alguno. */
   const grupoDeLaPantalla =
-    navegacion.find(
+    opcionesVisibles.find(
       (opcion) =>
         opcion.tipo === 'grupo' &&
         opcion.items.some((item) => item.direccion === direccionActiva)
@@ -138,14 +151,14 @@ export default function BarraLateral() {
       colorScheme="dark"
       position="fixed"
       visible={barraVisible}
-      onVisibleChange={(visible) => setBarraVisible(visible)}
+      onVisibleChange={(v) => setBarraVisible(v)}
     >
       <CSidebarHeader className="border-bottom d-flex align-items-center justify-content-between">
         <CSidebarBrand as={Link} href="/" className="text-decoration-none">
           <span className="sigma-marca">SIGMA</span>
         </CSidebarBrand>
-        <button 
-          className="btn btn-link text-white p-0 d-md-none" 
+        <button
+          className="btn btn-link text-white p-0 d-md-none"
           onClick={() => setBarraVisible(false)}
         >
           <CIcon icon={cilMenu} size="lg" />
@@ -153,7 +166,7 @@ export default function BarraLateral() {
       </CSidebarHeader>
 
       <ul className="sidebar-nav">
-        {navegacion.map((opcion) => {
+        {opcionesVisibles.map((opcion) => {
           if (opcion.tipo === 'titulo') {
             return <CNavTitle key={opcion.texto}>{opcion.texto}</CNavTitle>;
           }
@@ -180,7 +193,13 @@ export default function BarraLateral() {
         })}
       </ul>
 
-      <CSidebarFooter className="border-top d-flex align-items-center px-3 py-2">
+      <CSidebarFooter className="border-top d-flex flex-column px-3 py-2 gap-1">
+        {usuario && (
+          <div className="text-white-50 small" style={{ fontSize: '0.78rem' }}>
+            {usuario.admin_nom_ape || usuario.tecnico_nom_ape || usuario.autorizado_nom_ape || usuario.identificador}
+            <span className="ms-1 badge bg-secondary text-capitalize">{rol}</span>
+          </div>
+        )}
         <button
           type="button"
           className="btn btn-link text-white-50 text-decoration-none d-flex align-items-center gap-2 p-1 border-0"
