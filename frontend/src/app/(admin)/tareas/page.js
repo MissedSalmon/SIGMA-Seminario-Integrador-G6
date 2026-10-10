@@ -16,7 +16,7 @@ import {
   CSpinner,
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilWrench, cilUser } from '@coreui/icons';
+import { cilTask, cilUser } from '@coreui/icons';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import { useSesion } from '@/componentes/layout/ContextoSesion.js';
@@ -63,7 +63,7 @@ export default function PantallaAreaTecnico() {
 
         <CCardBody className="p-4">
           <div className="d-flex align-items-start gap-3 mb-3">
-            <CIcon icon={cilWrench} size="xl" className="text-secondary flex-shrink-0 mt-1" />
+            <CIcon icon={cilTask} size="xl" className="text-secondary flex-shrink-0 mt-1" />
             <div>
               <p className="mb-1 fw-semibold" style={{ color: 'var(--sigma-ink)' }}>
                 Panel de tareas
