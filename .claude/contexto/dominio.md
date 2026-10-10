@@ -54,13 +54,44 @@ Una OT viene **o de un ticket, o de un plan preventivo**. Nunca de los dos.
 
 ## Estados
 
-| Entidad | Estados |
+Los estados y las prioridades son **datos enumerados**: en la base cada uno se guarda como
+un **número** (el de la tabla). La traducción a texto está en un solo lugar:
+`backend/src/utiles/enumerados.js`.
+
+| Entidad | Estados (número en la base) |
 |---|---|
-| **Ticket** | Creado → Validado → Asignado → En ejecución → Finalizado → Cerrado · (o Rechazado) |
-| **Orden de trabajo** | Creada → Asignada → En ejecución → Finalizada · (o Cancelada) |
-| **Tarea de OT** | Pendiente → En ejecución → Completada |
-| **Activo** | Operativo → En mantenimiento → Fuera de servicio → Retirado |
-| **Herramienta** | Disponible ⇄ En uso · Fuera de servicio |
+| **Ticket** | 1 Creado → 2 Validado → 3 Asignado → 4 En ejecución → 5 Finalizado → 6 Cerrado · (o 7 Rechazado) |
+| **Orden de trabajo** | 1 Creada → 2 Asignada → 3 En ejecución → 4 Finalizada · (o 5 Cancelada) |
+| **Tarea de OT** | 1 Creada · 2 Asignada · 3 En ejecución · 4 Pendiente · 5 Finalizada · 6 Cancelada |
+| **Prioridad de la tarea** | 1 Alta · 2 Media · 3 Baja |
+| **Prioridad manual de la OT** | 1 Alta · 2 Media · 3 Baja · (vacía: usa la sugerida) |
+| **Técnico asignado a la tarea** | 1 Pendiente · 2 Asignada · 3 En curso · 4 Finalizada · 5 Cancelada |
+| **Activo** | 1 Operativo → 2 En mantenimiento → 3 Fuera de servicio → 4 Retirado |
+| **Herramienta** | 1 Disponible ⇄ 2 En uso · 3 Fuera de servicio |
+
+> **Decisiones del 07/10/2026 (valores enumerados del diccionario de datos):**
+> - Los estados y la prioridad de la tarea dejan de guardarse como texto y pasan a ser un
+>   número entero (`INT`), como dice el diccionario. Cada columna sólo acepta sus números
+>   (CHECK) y lleva un comentario con lo que significa cada uno. La API sigue mandando el
+>   texto, así que las pantallas no cambiaron.
+> - **Ticket:** se agregó "En ejecución" (4), que el sistema ya usaba y el diccionario no
+>   tenía. Los viejos `ABIERTO` pasaron a 1=Creado.
+> - **Herramienta:** "En uso" ahora también se guarda (antes sólo salía de la asignación).
+>   Al asignarla pasa a 2 y al devolverla vuelve a 1.
+> - **Tarea:** quedan los 6 estados del diccionario y una tarea nueva arranca en "Creada".
+>   Las 19 tareas que había quedaron en 4=Pendiente; "Completada" pasó a llamarse
+>   "Finalizada". Una tarea se puede borrar mientras no empezó (Creada, Asignada o Pendiente).
+> - **Cuando a una tarea se le asigna alguien (un técnico o un prestador), pasa a
+>   "Asignada"**, desde Creada o Pendiente; si se le saca el responsable vuelve a "Creada".
+>   Si ya está en ejecución, finalizada o cancelada, se respeta su estado. La asignación del
+>   técnico (`tec_asig_estado`) también nace "Asignada". En la migración, las 9 tareas que ya
+>   tenían técnico pasaron a "Asignada"; las 10 sin nadie siguen en "Pendiente".
+> - Si se agrega un valor nuevo, va al final de su lista en `enumerados.js` (para no correr los
+>   números ya guardados) y en una migración se amplía el CHECK de la columna.
+> - **10/10/2026:** se pasaron a llamar **datos enumerados** (`enumerados.js`, `ENUM_...`).
+>   La prioridad manual de la OT (`ot_prioridad`) también pasó a número, con los mismos
+>   valores que la de la tarea. La migración quedó como
+>   `20261010120000_datos_enumerados.sql`, para que vaya después de las del 09/10.
 
 > **Decisiones del 13/09/2026 (HU-10, consulta de tickets):**
 > - Los estados del ticket viven en `backend/src/servicios/tickets.servicio.js` (`ESTADOS`) y

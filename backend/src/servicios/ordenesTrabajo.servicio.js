@@ -1,5 +1,13 @@
 import { supabase } from '../config/supabase.js';
 import { datoInvalido, noEncontrado, conflicto } from '../utiles/errores.js';
+import {
+  ENUM_ESTADO_ACTIVO,
+  ENUM_ESTADO_ASIGNACION_TECNICO,
+  ENUM_ESTADO_OT,
+  ENUM_ESTADO_TAREA,
+  ENUM_ESTADO_TICKET,
+  ENUM_PRIORIDAD,
+} from '../utiles/enumerados.js';
 
 /**
  * Ordenes de trabajo (HU-14: crear la OT a partir de un ticket).
@@ -24,16 +32,29 @@ import { datoInvalido, noEncontrado, conflicto } from '../utiles/errores.js';
  * vuelve a usar la sugerida.
  */
 
+/*
+ * Los estados y las prioridades (de la tarea y de la OT) son datos enumerados:
+ * se guardan en la base como numeros y la traduccion esta en
+ * utiles/enumerados.js (diccionario de datos, 07/10/2026). Aca se
+ * trabaja siempre con el texto, y se pasa a numero solo al leer y al escribir.
+ */
+
 /** Los estados de una OT (ver .claude/contexto/dominio.md). */
-export const ESTADOS = ['Creada', 'Asignada', 'En ejecución', 'Finalizada', 'Cancelada'];
+export const ESTADOS = ENUM_ESTADO_OT.textos;
 export const ESTADO_INICIAL = 'Creada';
 
-/** Los estados de una tarea de la OT. */
-export const ESTADOS_TAREA = ['Pendiente', 'En ejecución', 'Completada'];
-export const ESTADO_TAREA_INICIAL = 'Pendiente';
+/** Los estados de una tarea de la OT (los 6 del diccionario). */
+export const ESTADOS_TAREA = ENUM_ESTADO_TAREA.textos;
+export const ESTADO_TAREA_INICIAL = 'Creada';
+
+/**
+ * Una tarea en estos estados todavia no empezo: se puede borrar. Las 19 tareas
+ * que habia antes del cambio quedaron en "Pendiente" (07/10/2026).
+ */
+const ESTADOS_TAREA_SIN_EMPEZAR = ['Creada', 'Asignada', 'Pendiente'];
 
 /** De mas urgente a menos. El orden importa: con el se calcula la de la OT. */
-export const PRIORIDADES = ['Alta', 'Media', 'Baja'];
+export const PRIORIDADES = ENUM_PRIORIDAD.textos;
 export const PRIORIDAD_POR_DEFECTO = 'Media';
 
 /** Normaliza un tipo de falla a una mayúscula inicial y el resto en minúsculas. */
@@ -88,15 +109,6 @@ export async function crearTipoFalla(texto) {
   return data.tipo_falla_nom;
 }
 
-/**
- * La base guarda los valores por defecto en mayuscula ('PENDIENTE', 'MEDIA'),
- * igual que paso con los tickets. Para el sistema son los mismos: al leer se
- * traducen y al filtrar se buscan las dos formas. No se toca la base.
- */
-const ALIAS_ESTADO = { PENDIENTE: 'Creada' };
-const ALIAS_ESTADO_TAREA = { PENDIENTE: 'Pendiente' };
-const ALIAS_PRIORIDAD = { ALTA: 'Alta', MEDIA: 'Media', BAJA: 'Baja' };
-
 /*
  * Los dos estados del TICKET que toca este modulo. Estan escritos aca a mano, y
  * no importados de tickets.servicio.js, para no cruzar los dos archivos: es
@@ -104,12 +116,6 @@ const ALIAS_PRIORIDAD = { ALTA: 'Alta', MEDIA: 'Media', BAJA: 'Baja' };
  */
 const TICKET_VALIDADO = 'Validado';
 const TICKET_ASIGNADO = 'Asignado';
-
-/**
- * El estado viejo de la tabla ticket: los primeros tickets quedaron guardados
- * como 'ABIERTO' y para el sistema son lo mismo que "Creado".
- */
-const TICKET_ALIAS = { ABIERTO: 'Creado' };
 
 /** Una OT en estos estados ya no se planifica: no se le tocan las tareas. */
 const ESTADOS_CERRADOS = ['Finalizada', 'Cancelada'];
@@ -140,22 +146,17 @@ function hoyEnTexto() {
   return `${ahora.getFullYear()}-${mes}-${dia}`;
 }
 
-function normalizarEstado(estado) {
-  return ALIAS_ESTADO[estado] ?? estado ?? ESTADO_INICIAL;
+/** Del numero guardado en la base al texto que maneja el sistema. */
+function normalizarEstado(codigo) {
+  return ENUM_ESTADO_OT.texto(codigo) ?? ESTADO_INICIAL;
 }
 
-function normalizarEstadoTarea(estado) {
-  return ALIAS_ESTADO_TAREA[estado] ?? estado ?? ESTADO_TAREA_INICIAL;
+function normalizarEstadoTarea(codigo) {
+  return ENUM_ESTADO_TAREA.texto(codigo) ?? ESTADO_TAREA_INICIAL;
 }
 
-function normalizarPrioridad(prioridad) {
-  return ALIAS_PRIORIDAD[prioridad] ?? prioridad ?? PRIORIDAD_POR_DEFECTO;
-}
-
-/** Los valores que hay que buscar en la base para un estado dado. */
-function valoresEnBase(estado) {
-  const alias = Object.keys(ALIAS_ESTADO).filter((clave) => ALIAS_ESTADO[clave] === estado);
-  return [estado, ...alias];
+function normalizarPrioridad(codigo) {
+  return ENUM_PRIORIDAD.texto(codigo) ?? PRIORIDAD_POR_DEFECTO;
 }
 
 /**
@@ -362,7 +363,7 @@ function aOrden(fila, asignaciones = []) {
       ? {
           id: ticket.ticket_id,
           descripcion: ticket.ticket_desc,
-          estado: ticket.ticket_estado,
+          estado: ENUM_ESTADO_TICKET.texto(ticket.ticket_estado),
           fechaAlta: ticket.ticket_fecha_alta,
         }
       : null,
@@ -370,7 +371,7 @@ function aOrden(fila, asignaciones = []) {
     activo: activo
       ? {
           codigo: activo.activo_codigo,
-          estado: activo.activo_estado ?? '',
+          estado: ENUM_ESTADO_ACTIVO.texto(activo.activo_estado) ?? '',
           idTipoActivo: activo.tipo_activo_id,
           nombreTipo: activo.tipo_activo?.tipo_activo_nom ?? '',
           nombreEdificio: espacio?.edificio?.edificio_nom ?? '',
@@ -411,7 +412,7 @@ export async function obtenerTodas(filtros = {}) {
     .select(COLUMNAS)
     .order('ot_fecha_alta', { ascending: false });
 
-  if (filtros.estado) consulta = consulta.in('ot_estado', valoresEnBase(filtros.estado));
+  if (filtros.estado) consulta = consulta.eq('ot_estado', ENUM_ESTADO_OT.codigo(filtros.estado));
   if (filtros.desde) consulta = consulta.gte('ot_fecha_alta', filtros.desde);
   if (filtros.hasta) consulta = consulta.lte('ot_fecha_alta', filtros.hasta);
 
@@ -485,7 +486,7 @@ export async function crearDesdeTicket(idTicket, datos = {}) {
    * OT ya existe: si no existe, es que algo quedo mal y se arregla a mano, no
    * generando una OT nueva.
    */
-  const estadoDelTicket = TICKET_ALIAS[ticket.ticket_estado] ?? ticket.ticket_estado;
+  const estadoDelTicket = ENUM_ESTADO_TICKET.texto(ticket.ticket_estado);
 
   if (estadoDelTicket !== TICKET_VALIDADO) {
     throw datoInvalido(
@@ -514,7 +515,7 @@ export async function crearDesdeTicket(idTicket, datos = {}) {
     .insert({
       ticket_id: idTicket,
       ot_desc: descripcion,
-      ot_estado: ESTADO_INICIAL,
+      ot_estado: ENUM_ESTADO_OT.codigo(ESTADO_INICIAL),
     })
     .select('ot_id')
     .single();
@@ -544,7 +545,8 @@ export async function actualizar(id, datos) {
     if (prioridad && !PRIORIDADES.includes(prioridad)) {
       throw datoInvalido(`"${prioridad}" no es una prioridad válida. Son: ${PRIORIDADES.join(', ')}.`);
     }
-    cambios.ot_prioridad = prioridad;
+    // Vacia queda en null: la OT vuelve a usar la sugerida.
+    cambios.ot_prioridad = prioridad ? ENUM_PRIORIDAD.codigo(prioridad) : null;
   }
 
   if (Object.keys(cambios).length === 0) {
@@ -739,10 +741,12 @@ async function asignarTecnico(idOt, idTarea, legajoTecnico) {
 
   if (!legajoTecnico) return;
 
+  // La asignacion del tecnico nace "Asignada", igual que la tarea.
   const { error } = await supabase.from('tecnico_asignado_tarea_ot').insert({
     ot_id: idOt,
     tarea_id: idTarea,
     tecnico_legajo: legajoTecnico,
+    tec_asig_estado: ENUM_ESTADO_ASIGNACION_TECNICO.codigo('Asignada'),
   });
 
   if (error) throw new Error(error.message);
@@ -793,7 +797,7 @@ async function recalcularEstado(idOt) {
 
   const { error } = await supabase
     .from('orden_trabajo')
-    .update({ ot_estado: estadoNuevo })
+    .update({ ot_estado: ENUM_ESTADO_OT.codigo(estadoNuevo) })
     .eq('ot_id', idOt);
 
   if (error) throw new Error(error.message);
@@ -817,11 +821,28 @@ async function acompanarEstadoDelTicket(idTicket, estadoDeLaOrden) {
 
   const { error } = await supabase
     .from('ticket')
-    .update({ ticket_estado: esperado })
+    .update({ ticket_estado: ENUM_ESTADO_TICKET.codigo(esperado) })
     .eq('ticket_id', idTicket)
-    .eq('ticket_estado', desde);
+    .eq('ticket_estado', ENUM_ESTADO_TICKET.codigo(desde));
 
   if (error) throw new Error(error.message);
+}
+
+/**
+ * El estado de una tarea segun tenga responsable o no (decision del
+ * 07/10/2026): cuando se le asigna un tecnico o un prestador pasa a
+ * "Asignada", y si se le saca el responsable vuelve a "Creada".
+ *
+ * Pasa a "Asignada" desde Creada o Pendiente, que son las que todavia no
+ * empezaron. Si ya esta en ejecucion, finalizada o cancelada se respeta su
+ * estado: cambiarle el responsable no la hace volver atras.
+ */
+function estadoSegunResponsable(tarea, estadoActual = ESTADO_TAREA_INICIAL) {
+  const tieneResponsable = Boolean(tarea.legajoTecnico || tarea.idPrestador);
+
+  if (tieneResponsable && ['Creada', 'Pendiente', 'Asignada'].includes(estadoActual)) return 'Asignada';
+  if (!tieneResponsable && estadoActual === 'Asignada') return 'Creada';
+  return estadoActual;
 }
 
 /** Agrega una tarea a la OT. */
@@ -835,8 +856,8 @@ export async function agregarTarea(idOt, datos) {
     ot_id: idOt,
     tarea_id: idTarea,
     tarea_desc: tarea.descripcion,
-    tarea_estado: ESTADO_TAREA_INICIAL,
-    tarea_prioridad: tarea.prioridad,
+    tarea_estado: ENUM_ESTADO_TAREA.codigo(estadoSegunResponsable(tarea)),
+    tarea_prioridad: ENUM_PRIORIDAD.codigo(tarea.prioridad),
     tarea_plan_id: tarea.idPlantilla,
     prestador_serv_id: tarea.idPrestador,
     tarea_hom: tarea.horasEstimadas,
@@ -866,8 +887,8 @@ export async function actualizarTarea(idOt, idTarea, datos) {
   if (errorExistente) throw new Error(errorExistente.message);
   if (!existente) throw noEncontrado(`La orden de trabajo ${idOt} no tiene la tarea ${idTarea}.`);
 
-  if (normalizarEstadoTarea(existente.tarea_estado) === 'Completada') {
-    throw conflicto(`La tarea ${idTarea} ya está completada: no se puede modificar.`);
+  if (normalizarEstadoTarea(existente.tarea_estado) === 'Finalizada') {
+    throw conflicto(`La tarea ${idTarea} ya está finalizada: no se puede modificar.`);
   }
 
   const tarea = await validarTarea(datos, {
@@ -875,11 +896,14 @@ export async function actualizarTarea(idOt, idTarea, datos) {
     fin: existente.tarea_fecha_fin,
   });
 
+  const estado = estadoSegunResponsable(tarea, normalizarEstadoTarea(existente.tarea_estado));
+
   const { error } = await supabase
     .from('tarea_ot')
     .update({
       tarea_desc: tarea.descripcion,
-      tarea_prioridad: tarea.prioridad,
+      tarea_estado: ENUM_ESTADO_TAREA.codigo(estado),
+      tarea_prioridad: ENUM_PRIORIDAD.codigo(tarea.prioridad),
       tarea_plan_id: tarea.idPlantilla,
       prestador_serv_id: tarea.idPrestador,
       tarea_hom: tarea.horasEstimadas,
@@ -917,7 +941,7 @@ export async function eliminarTarea(idOt, idTarea) {
   if (errorExistente) throw new Error(errorExistente.message);
   if (!existente) throw noEncontrado(`La orden de trabajo ${idOt} no tiene la tarea ${idTarea}.`);
 
-  if (normalizarEstadoTarea(existente.tarea_estado) !== ESTADO_TAREA_INICIAL) {
+  if (!ESTADOS_TAREA_SIN_EMPEZAR.includes(normalizarEstadoTarea(existente.tarea_estado))) {
     throw conflicto(
       `La tarea ${idTarea} ya está ${normalizarEstadoTarea(existente.tarea_estado).toLowerCase()}: no se puede eliminar.`
     );

@@ -573,6 +573,31 @@ Siempre el mismo, para que el frontend no tenga que adivinar:
 { "ok": false, "mensaje": "El ticket no existe." }
 ```
 
+### Los datos enumerados se guardan como números (07/10/2026)
+
+Un **dato enumerado** es una columna que sólo puede tomar unos pocos valores fijos. En la
+base, los estados (activo, ticket, OT, tarea, técnico asignado, herramienta) y las
+prioridades (de la tarea y la manual de la OT) son un **número entero**, como pide el
+diccionario de datos: ocupan menos que el texto y la base no deja guardar uno que no existe
+(CHECK). La migración es `supabase/migrations/20261010120000_datos_enumerados.sql`.
+
+La traducción entre número y texto está en **un solo archivo**:
+`backend/src/utiles/enumerados.js`. Cada enumerado se llama `ENUM_...`. Los servicios
+trabajan siempre con el texto y lo pasan a número sólo para leer y escribir en la base. La
+API sigue mandando el texto, así que el frontend no se entera.
+
+```js
+import { ENUM_ESTADO_TICKET } from '../utiles/enumerados.js';
+
+ENUM_ESTADO_TICKET.codigo('Validado');   // 2  -> para guardar o filtrar
+ENUM_ESTADO_TICKET.texto(fila.ticket_estado);   // 'Validado'  -> para mostrar
+```
+
+**Nunca escribir un estado a mano en la base** (`ticket_estado: 'Validado'`): la columna es
+numérica y lo rechaza. Siempre pasar por el enumerado. Las pruebas de
+`backend/test/enumerados.test.js` fijan el número de cada valor: si fallan, alguien cambió
+el orden de una lista.
+
 ---
 
 ## Cómo se prueba

@@ -25,7 +25,7 @@ function filaActivo(cambios = {}) {
     activo_fecha_alta: '2026-08-30',
     activo_fecha_baja: null,
     activo_fecha_ult_maint: null,
-    activo_estado: 'Operativo',
+    activo_estado: 1, // Operativo (ver src/utiles/enumerados.js)
     tipo_activo: { tipo_activo_nom: 'Aires acondicionados' },
     espacio: { espacio_num: '1', edificio: { edificio_nom: 'Edificio A' } },
     ...cambios,
@@ -82,7 +82,7 @@ describe('crear', () => {
 describe('actualizar', () => {
   test('no deja modificar un activo retirado', async () => {
     supabase.from.mockReturnValue(
-      consultaQueDevuelve(filaActivo({ activo_estado: 'Retirado' }))
+      consultaQueDevuelve(filaActivo({ activo_estado: 4 }))
     );
 
     await expect(
@@ -106,7 +106,7 @@ describe('actualizar', () => {
 describe('darDeBaja', () => {
   test('pasa el activo a Retirado en vez de borrarlo', async () => {
     const cadenaUpdate = consultaQueDevuelve(
-      filaActivo({ activo_estado: 'Retirado' })
+      filaActivo({ activo_estado: 4 })
     );
 
     // Primera llamada: obtenerPorId (select...maybeSingle)
@@ -119,7 +119,7 @@ describe('darDeBaja', () => {
 
     expect(cadenaUpdate.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        activo_estado: 'Retirado',
+        activo_estado: 4, // Retirado
         activo_fecha_baja: expect.any(String),
       })
     );
@@ -129,7 +129,7 @@ describe('darDeBaja', () => {
 
   test('avisa si el activo ya estaba retirado', async () => {
     supabase.from.mockReturnValue(
-      consultaQueDevuelve(filaActivo({ activo_estado: 'Retirado' }))
+      consultaQueDevuelve(filaActivo({ activo_estado: 4 }))
     );
 
     await expect(darDeBaja('AC-014')).rejects.toThrow('ya estaba retirado');
