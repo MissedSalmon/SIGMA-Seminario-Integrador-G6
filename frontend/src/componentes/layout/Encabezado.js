@@ -54,7 +54,7 @@ import { logout } from '@/servicios/auth.js';
  */
 const NOMBRES = {
   '/tickets': 'Tickets',
-  '/tareas': 'Mis tareas',
+  '/tareas': 'Tareas asignadas',
   '/ordenes-trabajo': 'Órdenes de trabajo',
   '/plantillas-tareas': 'Plantillas de tareas',
   '/edificios': 'Edificios',

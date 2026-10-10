@@ -169,6 +169,25 @@ un **número** (el de la tabla). La traducción a texto está en un solo lugar:
 > - Un técnico que tiene o tuvo herramientas asignadas no se puede eliminar, para no perder
 >   ese historial.
 
+> **Decisiones del 10/10/2026 (HU-21, consultar mis tareas):**
+> - **El técnico ve sólo sus tareas.** La API (`GET /api/tareas/mias`) toma el legajo de la
+>   sesión, nunca de la dirección, así que no hay forma de pedir las de otro. Una tarea ajena
+>   abierta por dirección responde "No tenés asignada la tarea…", igual que si no existiera.
+> - **Una asignación cancelada ya no es del técnico** (`tec_asig_estado` = 5): no se muestra.
+> - **"Pendiente", para el aviso, es toda tarea que todavía no terminó:** la que no está
+>   Finalizada ni Cancelada. El aviso cuenta todas, sin mirar los filtros, porque dice cuánto
+>   trabajo le queda.
+> - **El aviso de pendientes se puede cerrar.** Una vez cerrado no vuelve mientras dure la
+>   pestaña del navegador (aunque se entre a una tarea y se vuelva), salvo que cambie la
+>   cantidad de pendientes: ahí hay algo nuevo que avisar y aparece otra vez.
+> - **La fecha que se filtra es la prevista de inicio** (`tarea_fecha_ini`, la que carga el
+>   administrador al planificar la OT). Una tarea sin fecha prevista no aparece cuando se
+>   filtra por fecha.
+> - **Orden por defecto:** prioridad (Alta, Media, Baja) y, dentro de la misma prioridad, la
+>   fecha prevista más cercana. Las que no tienen fecha van al final de su prioridad.
+> - **El detalle de la tarea es una pantalla** (`/tareas/[OT]/[tarea]`), sólo de lectura. La OT y
+>   el activo no llevan enlace: sus pantallas son del administrador.
+
 ---
 
 ## Automatismos

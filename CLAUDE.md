@@ -107,6 +107,9 @@ en los **issues de GitHub**, y el modelo de datos en `supabase/migrations/`.
 - **HU-14 (crear la OT) está hecha (21/09/2026):** la OT se genera sola al validar el
   ticket y se planifica en `/ordenes-trabajo`, cargándole las tareas con su prioridad y su
   responsable. Los **prestadores de servicio** son sólo lectura hasta que se haga la HU-33.
+- **HU-21 (mis tareas) está hecha (10/10/2026):** el técnico ve en `/tareas` sólo las tareas
+  que le asignaron, ordenadas por prioridad y fecha prevista, con filtros y un aviso de
+  cuántas le quedan pendientes. Cada una abre su detalle con el activo, dónde está y la OT.
 - **El proyecto en Supabase** y la conexión con **Vercel** en producción.
 
 *(Nota: La base de datos ya fue refactorizada e integrada con Supabase CLI en la carpeta `supabase/migrations/`)*

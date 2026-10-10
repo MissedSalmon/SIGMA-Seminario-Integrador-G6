@@ -54,7 +54,7 @@ export const navegacion = [
   // ─── TÉCNICO ───────────────────────────────────────────────────────────────
   {
     tipo: 'titulo',
-    texto: 'Mis tareas',
+    texto: 'Mantenimiento',
     roles: ['tecnico'],
   },
   {

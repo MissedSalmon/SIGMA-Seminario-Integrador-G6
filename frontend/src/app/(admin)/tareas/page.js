@@ -1,89 +1,260 @@
 'use client';
 
 /**
- * /tareas — Panel del técnico (HU-30).
+ * /tareas - Tareas asignadas: las del técnico de la sesión (HU-21).
  *
- * Muestra las tareas asignadas al técnico que tiene la sesión activa.
- * Por ahora es un panel informativo con el estado de las OTs que le
- * corresponden. Cuando se implemente el módulo de tareas del técnico
- * (HU futura), esta pantalla se completará con la lista real.
+ * - El técnico ve sólo las suyas: la API las busca por el legajo de la sesión.
+ * - La lista ya viene ordenada por prioridad y fecha prevista, para que no
+ *   tenga que decidir por dónde empezar.
+ * - Arriba, un aviso con cuántas le quedan pendientes. Ese número no cambia con
+ *   los filtros: dice todo el trabajo que le queda.
+ * - Cada fila lleva al detalle de la tarea (activo, ubicación y OT).
  */
 import { useEffect, useState } from 'react';
-import {
-  CCard,
-  CCardBody,
-  CCardHeader,
-  CSpinner,
-} from '@coreui/react';
+import { CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilTask, cilUser } from '@coreui/icons';
+import { cilDescription } from '@coreui/icons';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
-import { useSesion } from '@/componentes/layout/ContextoSesion.js';
+import BotonEnlace from '@/componentes/BotonEnlace.js';
+import Aviso from '@/componentes/Aviso.js';
+import TablaDatos from '@/componentes/tabla/TablaDatos.js';
+import EtiquetaPrioridad from '@/componentes/ordenes/EtiquetaPrioridad.js';
+import { listarMisTareas, listarPrioridadesDeTarea } from '@/servicios/tareas.js';
+import { soloFechaLegible } from '@/utils/fechas.js';
 
-export default function PantallaAreaTecnico() {
-  const { usuario, cargando } = useSesion();
+/** "Tenés 3 tareas pendientes." en singular o plural. */
+function textoPendientes(cantidad) {
+  if (cantidad === 0) return 'No tenés tareas pendientes.';
+  if (cantidad === 1) return 'Tenés 1 tarea pendiente.';
+  return `Tenés ${cantidad} tareas pendientes.`;
+}
 
-  const nombre =
-    usuario?.tecnico_nom_ape ||
-    usuario?.identificador ||
-    'Técnico';
+/*
+ * El aviso de pendientes se puede cerrar (10/10/2026). Se recuerda con qué
+ * cantidad se cerró, sólo en esta pestaña del navegador (sessionStorage): no
+ * vuelve al entrar a una tarea y regresar, pero sí cuando la cantidad cambia,
+ * porque ahí hay algo nuevo que avisar. Si el navegador no deja guardar, el
+ * aviso se cierra igual hasta que se recarga la pantalla.
+ */
+const CLAVE_AVISO_CERRADO = 'sigma.tareas.avisoPendientesCerrado';
 
-  if (cargando) {
-    return (
-      <div>
-        <EncabezadoPagina titulo="Mis tareas" />
-        <div className="d-flex align-items-center gap-2 text-secondary p-4">
-          <CSpinner size="sm" />
-          <span>Cargando...</span>
-        </div>
-      </div>
-    );
+function leerAvisoCerrado() {
+  try {
+    const valor = window.sessionStorage.getItem(CLAVE_AVISO_CERRADO);
+    return valor === null ? null : Number(valor);
+  } catch {
+    return null;
+  }
+}
+
+function guardarAvisoCerrado(cantidad) {
+  try {
+    window.sessionStorage.setItem(CLAVE_AVISO_CERRADO, String(cantidad));
+  } catch {
+    // Sin almacenamiento: queda cerrado sólo mientras no se recargue.
+  }
+}
+
+/** Texto en gris e itálica para decir que algo no está. */
+function SinDato({ children }) {
+  return <span className="text-body-tertiary fst-italic">{children}</span>;
+}
+
+export default function PantallaMisTareas() {
+  const [tareas, setTareas] = useState([]);
+  const [pendientes, setPendientes] = useState(null);
+  // Con qué cantidad de pendientes se cerró el aviso (null: no se cerró).
+  const [avisoCerradoCon, setAvisoCerradoCon] = useState(leerAvisoCerrado);
+  const [prioridades, setPrioridades] = useState([]);
+
+  const [filtroPrioridad, setFiltroPrioridad] = useState('');
+  const [filtroDesde, setFiltroDesde] = useState('');
+  const [filtroHasta, setFiltroHasta] = useState('');
+
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    listarPrioridadesDeTarea()
+      .then(setPrioridades)
+      .catch((fallo) => setError(fallo.message));
+  }, []);
+
+  // Cada vez que cambia un filtro se vuelve a pedir la lista a la API.
+  useEffect(() => {
+    let vigente = true;
+
+    async function pedir() {
+      setCargando(true);
+
+      try {
+        const respuesta = await listarMisTareas({
+          prioridad: filtroPrioridad || null,
+          desde: filtroDesde || null,
+          hasta: filtroHasta || null,
+        });
+        if (!vigente) return;
+        setTareas(respuesta.tareas);
+        setPendientes(respuesta.pendientes);
+        setError('');
+      } catch (fallo) {
+        if (vigente) setError(fallo.message);
+      } finally {
+        if (vigente) setCargando(false);
+      }
+    }
+
+    pedir();
+
+    return () => {
+      vigente = false;
+    };
+  }, [filtroPrioridad, filtroDesde, filtroHasta]);
+
+  function cerrarAvisoPendientes() {
+    setAvisoCerradoCon(pendientes);
+    guardarAvisoCerrado(pendientes);
   }
 
+  const mostrarAvisoPendientes = pendientes !== null && pendientes !== avisoCerradoCon;
+
+  function limpiarFiltros() {
+    setFiltroPrioridad('');
+    setFiltroDesde('');
+    setFiltroHasta('');
+  }
+
+  const hayFiltros = Boolean(filtroPrioridad || filtroDesde || filtroHasta);
+
+  const columnas = [
+    {
+      clave: 'prioridad',
+      encabezado: 'Prioridad',
+      render: (tarea) => <EtiquetaPrioridad prioridad={tarea.prioridad} />,
+    },
+    {
+      clave: 'descripcion',
+      encabezado: 'Tarea',
+      render: (tarea) => <span className="fw-semibold">{tarea.descripcion}</span>,
+    },
+    {
+      clave: 'fechaPrevista',
+      encabezado: 'Fecha prevista',
+      render: (tarea) =>
+        tarea.fechaPrevista ? (
+          <span className="text-nowrap">{soloFechaLegible(tarea.fechaPrevista)}</span>
+        ) : (
+          <SinDato>Sin fecha</SinDato>
+        ),
+    },
+    {
+      clave: 'activo',
+      encabezado: 'Activo',
+      render: (tarea) =>
+        tarea.activo ? (
+          <>
+            <span className="fw-semibold">{tarea.activo.codigo}</span>
+            {tarea.activo.nombreTipo && (
+              <span className="text-body-secondary"> — {tarea.activo.nombreTipo}</span>
+            )}
+          </>
+        ) : (
+          <SinDato>-</SinDato>
+        ),
+    },
+    {
+      clave: 'ubicacion',
+      encabezado: 'Ubicación',
+      render: (tarea) =>
+        tarea.ubicacion ? (
+          <span className="text-body-secondary">
+            {tarea.ubicacion.edificio} · {tarea.ubicacion.espacio}
+          </span>
+        ) : (
+          <SinDato>-</SinDato>
+        ),
+    },
+    {
+      clave: 'ot',
+      encabezado: 'OT',
+      render: (tarea) => <span className="text-body-secondary text-nowrap">#{tarea.idOt}</span>,
+    },
+    {
+      clave: 'estado',
+      encabezado: 'Estado',
+      render: (tarea) => <span className="text-body-secondary text-nowrap">{tarea.estado}</span>,
+    },
+    {
+      clave: 'acciones',
+      encabezado: 'Acción',
+      alinearDerecha: true,
+      render: (tarea) => (
+        <BotonEnlace
+          href={`/tareas/${tarea.idOt}/${tarea.idTarea}`}
+          variante="ghost"
+          className="btn-icono"
+          title="Ver la tarea"
+          aria-label={`Ver la tarea ${tarea.descripcion}`}
+        >
+          <CIcon icon={cilDescription} />
+        </BotonEnlace>
+      ),
+    },
+  ];
+
   return (
-    <div>
-      <EncabezadoPagina
-        titulo="Mis tareas"
-        descripcion="Panel del técnico — aquí verás las tareas que te fueron asignadas."
-      />
+    <>
+      <EncabezadoPagina titulo="Tareas asignadas" />
 
-      <CCard
-        className="shadow-sm border mb-4"
-        style={{
-          maxWidth: '44rem',
-          borderRadius: 'var(--sigma-radio-md)',
-          borderColor: 'var(--sigma-borde)',
-        }}
-      >
-        <CCardHeader className="bg-white py-3 border-bottom d-flex align-items-center gap-2">
-          <CIcon icon={cilUser} className="text-primary" />
-          <strong style={{ color: 'var(--sigma-ink)' }}>Bienvenido, {nombre}</strong>
-        </CCardHeader>
+      <Aviso mensaje={error} onCerrar={() => setError('')} />
 
-        <CCardBody className="p-4">
-          <div className="d-flex align-items-start gap-3 mb-3">
-            <CIcon icon={cilTask} size="xl" className="text-secondary flex-shrink-0 mt-1" />
-            <div>
-              <p className="mb-1 fw-semibold" style={{ color: 'var(--sigma-ink)' }}>
-                Panel de tareas
-              </p>
-              <p className="text-secondary small mb-0">
-                Acá aparecerán las tareas de las órdenes de trabajo que te fueron asignadas.
-                Esta sección se completará cuando se implemente el módulo de ejecución de tareas.
-              </p>
-            </div>
-          </div>
+      {mostrarAvisoPendientes && (
+        <Aviso mensaje={textoPendientes(pendientes)} color="info" onCerrar={cerrarAvisoPendientes} />
+      )}
 
-          <hr style={{ borderColor: 'var(--sigma-borde)' }} />
-
-          <div className="text-secondary small">
-            <strong>Legajo:</strong> {usuario?.identificador}
-            <br />
-            <strong>Rol:</strong> Técnico
-          </div>
+      <CCard>
+        <CCardBody>
+          <TablaDatos
+            filas={tareas}
+            claveFila={(tarea) => `${tarea.idOt}-${tarea.idTarea}`}
+            columnas={columnas}
+            buscarPor={['descripcion', 'codigoActivo']}
+            placeholderBusqueda="Buscar por tarea o activo"
+            filtros={[
+              {
+                etiqueta: 'Prioridad',
+                valor: filtroPrioridad,
+                alCambiar: setFiltroPrioridad,
+                textoTodos: 'Todas',
+                opciones: prioridades.map((prioridad) => ({ valor: prioridad, texto: prioridad })),
+              },
+              {
+                etiqueta: 'Desde',
+                tipo: 'fecha',
+                valor: filtroDesde,
+                alCambiar: setFiltroDesde,
+                // Un rango no se puede dar vuelta: el desde no pasa del hasta.
+                maximo: filtroHasta,
+              },
+              {
+                etiqueta: 'Hasta',
+                tipo: 'fecha',
+                valor: filtroHasta,
+                alCambiar: setFiltroHasta,
+                minimo: filtroDesde,
+              },
+            ]}
+            alLimpiar={limpiarFiltros}
+            cargando={cargando}
+            textoVacio={
+              hayFiltros
+                ? 'No tenés tareas que cumplan con esos filtros.'
+                : 'Todavía no tenés tareas asignadas.'
+            }
+          />
         </CCardBody>
       </CCard>
-    </div>
+    </>
   );
 }
