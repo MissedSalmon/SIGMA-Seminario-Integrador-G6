@@ -38,6 +38,7 @@ import {
   cilCog,
   cilClipboard,
   cilBriefcase,
+  cilTask,
 } from '@coreui/icons';
 
 export const navegacion = [
