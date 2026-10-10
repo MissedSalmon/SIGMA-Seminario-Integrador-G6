@@ -86,6 +86,9 @@ Una OT viene **o de un ticket, o de un plan preventivo**. Nunca de los dos.
 > - **La prioridad es de la TAREA, no de la OT.** La tabla `tarea_ot` ya tiene
 >   `tarea_prioridad`, y una misma OT puede tener una tarea urgente y otra que puede esperar.
 >   La OT muestra la prioridad más alta de sus tareas; no se guarda.
+>   *Cambio del 09/10/2026:* esa prioridad calculada es ahora la **sugerida**. El
+>   administrador puede poner otra a mano en el detalle de la OT (`orden_trabajo.ot_prioridad`),
+>   y esa manda. Si la borra, la OT vuelve a usar la sugerida.
 > - **El estado de la OT no se carga a mano, se calcula:** sin tareas, o con alguna sin
 >   responsable, queda en "Creada"; cuando todas tienen responsable pasa a "Asignada".
 > - **El ticket acompaña a su OT:** cuando la OT queda "Asignada", el ticket pasa a
@@ -194,7 +197,7 @@ Agrupadas por tema, para tener el mapa general:
 | **Evidencia** | Fotos que se adjuntan a un ticket o a una OT. |
 | **Falla** | Clasificación del problema: eléctrica, mecánica, estructural, sanitaria. Se registra en la tarea de la OT. |
 | **Herramienta** | Instrumento que no se consume y se devuelve al depósito. |
-| **Ingreso** | Entrada de materiales al depósito por remito. Sube el stock. |
+| **Ingreso** | Entrada de materiales al depósito con un remito o una factura (09/10/2026). Sube el stock. Se guarda en la tabla `remito`, con el tipo en `remito_tipo_comprobante`. Si la factura necesita datos propios (letra, importe, CUIT), queda **pendiente de confirmar**. |
 | **Inventario de activos** | Registro de los activos instalados, con ubicación, estado e historial. |
 | **Inventario de depósito** | Registro de cuánto hay de cada material y herramienta. |
 | **Ítem de inventario** | Elemento del depósito. Se divide en materiales (se consumen) y herramientas (se devuelven). |
@@ -208,7 +211,7 @@ Agrupadas por tema, para tener el mapa general:
 | **Prestador de servicio** | Empresa o profesional externo que hace trabajos que el equipo propio no puede cubrir. |
 | **Prioridad** | Nivel de importancia que el administrador le pone a la OT. |
 | **Proveedor** | Quien le vende materiales y herramientas a la facultad. |
-| **Remito** | Comprobante del ingreso de materiales al depósito. |
+| **Remito** | Uno de los comprobantes del ingreso de materiales al depósito. El otro es la **factura**. |
 | **Stock** | Cantidad disponible de un material. |
 | **Stock mínimo** | Cantidad mínima que hay que tener. Al llegar, el sistema avisa. |
 | **Tarea (de OT)** | Actividad concreta dentro de una OT. Cuando todas están completas, la OT se finaliza. Siempre sale de una tarea estándar (plantilla) del tipo de activo; su descripción se puede ajustar (decisión del 26/09/2026). |

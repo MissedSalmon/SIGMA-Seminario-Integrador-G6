@@ -63,14 +63,14 @@ export default function PantallaDetalleRemito({ params }) {
   return (
     <>
       <EncabezadoPagina
-        titulo={remito ? `Remito #${remito.id}` : 'Detalle del remito'}
+        titulo={remito ? `${remito.tipoComprobante} #${remito.id}` : 'Detalle del ingreso'}
         descripcion={remito ? `Recibido de ${remito.proveedor}.` : undefined}
       />
 
       <Aviso mensaje={error} />
 
       {cargando ? (
-        <Cargando texto="Cargando el remito..." />
+        <Cargando texto="Cargando el ingreso..." />
       ) : (
         remito && (
           <>
@@ -79,10 +79,13 @@ export default function PantallaDetalleRemito({ params }) {
               <CCardBody>
                 <CRow>
                   <CCol sm={6} lg={3}>
+                    <Dato etiqueta="Comprobante">{remito.tipoComprobante}</Dato>
+                  </CCol>
+                  <CCol sm={6} lg={3}>
                     <Dato etiqueta="Proveedor">{remito.proveedor}</Dato>
                   </CCol>
                   <CCol sm={6} lg={3}>
-                    <Dato etiqueta="N.º de remito">
+                    <Dato etiqueta="N.º de comprobante">
                       {remito.numero ?? <SinDato>Sin número</SinDato>}
                     </Dato>
                   </CCol>
@@ -136,7 +139,7 @@ export default function PantallaDetalleRemito({ params }) {
                             <span className="text-body-secondary">{renglon.cantidad}</span>
                           </CTableDataCell>
                           <CTableDataCell>
-                            <span className="text-body-secondary">{renglon.stockActual}</span>
+                            <span className="text-body-secondary">{renglon.stockActual ?? '-'}</span>
                           </CTableDataCell>
                         </CTableRow>
                       ))}

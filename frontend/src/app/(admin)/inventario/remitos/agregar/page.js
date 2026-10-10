@@ -8,7 +8,7 @@ export default function PantallaAgregarRemito() {
   return (
     <>
       <EncabezadoPagina
-        titulo="Nuevo ingreso por remito"
+        titulo="Nuevo ingreso"
         descripcion="Lo que entró al depósito. Al confirmar, sube el stock de cada ítem."
       />
       <FormularioRemito onGuardar={registrarRemito} />

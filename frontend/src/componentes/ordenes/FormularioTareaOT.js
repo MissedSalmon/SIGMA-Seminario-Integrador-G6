@@ -37,7 +37,7 @@ import { listarPrioridades } from '@/servicios/ordenesTrabajo.js';
 import { crearPlantilla, listarPlantillas } from '@/servicios/plantillasTareas.js';
 import { listarPrestadores } from '@/servicios/prestadores.js';
 import { listarTecnicos } from '@/servicios/tecnicos.js';
-import { aHorasDecimales, comoHoraMinuto } from '@/utils/duracion.js';
+import { aHorasDecimales, comoHoraMinuto, DURACION_INCOMPLETA } from '@/utils/duracion.js';
 import { hoyTexto } from '@/utils/fechas.js';
 
 /** Quién puede hacerse cargo de una tarea. */
@@ -252,9 +252,12 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
 
     /*
      * Los casilleros del reloj no dejan escribir cualquier cosa, asi que lo
-     * unico que puede pasar es que quede en 00:00, que no es una duracion.
+     * que puede pasar es que quede a medias (horas sin minutos o al reves) o
+     * en 00:00, que no es una duracion.
      */
-    if (valores.horasEstimadas !== '' && aHorasDecimales(valores.horasEstimadas) === 0) {
+    if (valores.horasEstimadas === DURACION_INCOMPLETA) {
+      fallos.horasEstimadas = 'Completá las horas y los minutos (hh:mm).';
+    } else if (valores.horasEstimadas !== '' && aHorasDecimales(valores.horasEstimadas) === 0) {
       fallos.horasEstimadas = 'Tiene que ser más de 00:00.';
     }
 

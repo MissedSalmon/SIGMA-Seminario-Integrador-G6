@@ -64,7 +64,7 @@ const NOMBRES = {
   '/activos': 'Activos',
   '/tipos-activos': 'Tipos de activos',
   '/inventario/tipos': 'Tipos de materiales y herramientas',
-  '/inventario/remitos': 'Ingresos por remito',
+  '/inventario/remitos': 'Ingresos',
   '/inventario/materiales': 'Materiales',
   '/inventario/herramientas': 'Herramientas',
   '/tecnicos': 'Técnicos',

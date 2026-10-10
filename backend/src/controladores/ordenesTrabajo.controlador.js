@@ -112,7 +112,7 @@ export async function crear(req, res) {
   res.status(201).json({ ok: true, datos: orden });
 }
 
-/** PUT /api/ordenes-trabajo/5   { descripcion } */
+/** PUT /api/ordenes-trabajo/5   { descripcion?, prioridad? }  (prioridad null = usar la sugerida) */
 export async function actualizar(req, res) {
   const orden = await ordenesServicio.actualizar(leerId(req), req.body ?? {});
   res.json({ ok: true, datos: orden });

@@ -880,8 +880,19 @@ body {
   gap: 0.375rem;
 }
 
+/*
+  La caja mide lo justo para lo que tiene adentro: "00:00", la unidad y la
+  marca. Crece sola cuando aparece "minutos" y se achica cuando no hay nada.
+*/
 .sigma-duracion .date-input-group {
-  width: calc(5ch + 4.25rem);
+  width: fit-content;
+  min-width: calc(5ch + 2rem);
+}
+
+.sigma-duracion-unidad {
+  color: var(--cui-secondary-color);
+  margin-right: 0.375rem;
+  pointer-events: none;
 }
 
 .sigma-duracion .label {

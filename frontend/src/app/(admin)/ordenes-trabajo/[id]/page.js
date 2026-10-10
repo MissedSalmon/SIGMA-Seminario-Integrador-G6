@@ -1,11 +1,15 @@
 'use client';
 
 /**
- * /ordenes-trabajo/5 - la orden, su planificación y el diagnóstico de tareas.
+ * /ordenes-trabajo/5 - la orden y su planificación. El diagnóstico de cada tarea
+ * (la falla) se ve, pero ya no se carga desde acá (09/10/2026).
  *
  * Es la pantalla donde el administrador arma la OT: le carga las tareas, les
  * pone prioridad y define quién hace cada una (un técnico de la facultad o un
  * prestador externo).
+ *
+ * La prioridad de la OT se sugiere sola (la más alta de sus tareas), pero el
+ * administrador puede poner otra a mano, o volver a la sugerida (09/10/2026).
  *
  * El estado de la OT no se toca a mano, lo calcula el sistema:
  *
@@ -54,9 +58,7 @@ import {
   obtenerOrden,
   actualizarOrden,
   eliminarTarea,
-  listarTiposFalla,
-  crearTipoFalla,
-  registrarFalla,
+  listarPrioridades,
 } from '@/servicios/ordenesTrabajo.js';
 import { formatearFechaHora } from '@/utils/fechas.js';
 import { comoHoraMinuto } from '@/utils/duracion.js';
@@ -86,15 +88,6 @@ function soloFechaLegible(iso) {
   return dia && mes && anio ? `${dia}/${mes}/${anio}` : null;
 }
 
-function ordenarTiposFalla(tipos) {
-  return [...tipos].sort((a, b) => {
-    const aEsOtra = a.toLocaleLowerCase('es') === 'otra';
-    const bEsOtra = b.toLocaleLowerCase('es') === 'otra';
-    if (aEsOtra !== bEsOtra) return aEsOtra ? 1 : -1;
-    return a.localeCompare(b, 'es');
-  });
-}
-
 export default function PantallaDetalleOrdenTrabajo({ params }) {
   const { id } = use(params);
   const { mostrarToast } = useToast();
@@ -102,7 +95,6 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
   const [orden, setOrden] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
-  const [tiposFalla, setTiposFalla] = useState([]);
 
   const [guardando, setGuardando] = useState(false);
 
@@ -113,15 +105,11 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
   const [descripcion, setDescripcion] = useState('');
   const [errorDescripcion, setErrorDescripcion] = useState('');
 
-  const [tareaDiagnostico, setTareaDiagnostico] = useState(null);
-  const [tipoFalla, setTipoFalla] = useState('');
-  const [nuevoTipoFalla, setNuevoTipoFalla] = useState('');
-  const [descripcionFalla, setDescripcionFalla] = useState('');
-  const [errorFalla, setErrorFalla] = useState('');
-  const [errorNuevoTipoFalla, setErrorNuevoTipoFalla] = useState('');
-  const [revisadoFalla, setRevisadoFalla] = useState(false);
-  const [guardandoFalla, setGuardandoFalla] = useState(false);
-  const [agregandoTipoFalla, setAgregandoTipoFalla] = useState(false);
+  const [prioridades, setPrioridades] = useState(['Alta', 'Media', 'Baja']);
+  const [modalPrioridad, setModalPrioridad] = useState(false);
+  // "" quiere decir "usar la sugerida".
+  const [prioridadElegida, setPrioridadElegida] = useState('');
+  const [errorPrioridad, setErrorPrioridad] = useState('');
 
   useEffect(() => {
     obtenerOrden(id)
@@ -131,9 +119,9 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
   }, [id]);
 
   useEffect(() => {
-    listarTiposFalla()
-      .then((tipos) => setTiposFalla(ordenarTiposFalla(tipos)))
-      .catch((fallo) => setError(fallo.message));
+    listarPrioridades()
+      .then(setPrioridades)
+      .catch(() => {});
   }, []);
 
   const cerrada = orden ? ESTADOS_CERRADOS.includes(orden.estado) : false;
@@ -180,59 +168,29 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
     }
   }
 
-  function abrirDiagnostico(tarea) {
-    setTareaDiagnostico(tarea);
-    setTipoFalla(tarea.falla?.tipo ?? '');
-    setNuevoTipoFalla('');
-    setDescripcionFalla(tarea.falla?.descripcion ?? '');
-    setErrorFalla('');
-    setErrorNuevoTipoFalla('');
-    setRevisadoFalla(false);
+  function abrirPrioridad() {
+    setPrioridadElegida(orden.prioridadManual ?? '');
+    setErrorPrioridad('');
+    setModalPrioridad(true);
   }
 
-  async function agregarTipoDeFalla() {
-    setRevisadoFalla(true);
-    if (!nuevoTipoFalla.trim()) {
-      setErrorNuevoTipoFalla('Escribí el nombre del tipo de falla.');
-      return;
-    }
-
-    setAgregandoTipoFalla(true);
-    setErrorNuevoTipoFalla('');
+  async function guardarPrioridad() {
+    setGuardando(true);
 
     try {
-      const creado = await crearTipoFalla(nuevoTipoFalla);
-      setTiposFalla((anteriores) => ordenarTiposFalla([...anteriores, creado]));
-      setTipoFalla(creado);
-      setNuevoTipoFalla('');
-      setRevisadoFalla(false);
-      mostrarToast({ tipo: 'exito', mensaje: `Se agregó el tipo de falla "${creado}".` });
-    } catch (fallo) {
-      setErrorNuevoTipoFalla(fallo.message);
-    } finally {
-      setAgregandoTipoFalla(false);
-    }
-  }
-
-  async function guardarDiagnostico() {
-    setRevisadoFalla(true);
-    if (!tipoFalla || !descripcionFalla.trim()) return;
-
-    setGuardandoFalla(true);
-    setErrorFalla('');
-
-    try {
-      const actualizada = await registrarFalla(orden.id, tareaDiagnostico.idTarea, {
-        tipo: tipoFalla,
-        descripcion: descripcionFalla.trim(),
-      });
+      const actualizada = await actualizarOrden(orden.id, { prioridad: prioridadElegida || null });
       setOrden(actualizada);
-      setTareaDiagnostico(null);
-      mostrarToast({ tipo: 'exito', mensaje: 'Se guardó el diagnóstico de la tarea.' });
+      setModalPrioridad(false);
+      mostrarToast({
+        tipo: 'exito',
+        mensaje: prioridadElegida
+          ? 'Se guardó la prioridad de la orden.'
+          : 'La orden vuelve a usar la prioridad sugerida.',
+      });
     } catch (fallo) {
-      setErrorFalla(fallo.message);
+      setErrorPrioridad(fallo.message);
     } finally {
-      setGuardandoFalla(false);
+      setGuardando(false);
     }
   }
 
@@ -267,8 +225,28 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
                         </Dato>
                       </CCol>
                       <CCol sm={4}>
-                        <Dato etiqueta="Prioridad más alta de sus tareas">
-                          <EtiquetaPrioridad prioridad={orden.prioridad} />
+                        <Dato etiqueta="Prioridad">
+                          <div className="d-flex align-items-center gap-2">
+                            <EtiquetaPrioridad prioridad={orden.prioridad} />
+                            {!cerrada && (
+                              <CButton
+                                color="primary"
+                                variant="ghost"
+                                size="sm"
+                                className="btn-icono"
+                                onClick={abrirPrioridad}
+                                title="Cambiar la prioridad de la orden"
+                                aria-label="Cambiar la prioridad de la orden"
+                              >
+                                <CIcon icon={cilPencil} />
+                              </CButton>
+                            )}
+                          </div>
+                          <div className="text-body-secondary small mt-1">
+                            {orden.prioridadManual
+                              ? `Puesta a mano. Sugerida: ${orden.prioridadSugerida ?? 'ninguna'}.`
+                              : 'Sugerida según sus tareas.'}
+                          </div>
                         </Dato>
                       </CCol>
                       <CCol sm={4}>
@@ -441,15 +419,6 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
 
                             {!cerrada && (
                               <CTableDataCell className="text-end text-nowrap">
-                                <CButton
-                                  color="secondary"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => abrirDiagnostico(tarea)}
-                                  className="me-2"
-                                >
-                                  {tarea.falla ? 'Editar diagnóstico' : 'Registrar falla'}
-                                </CButton>
                                 <BotonEnlace
                                   href={`/ordenes-trabajo/${orden.id}/tareas/${tarea.idTarea}/editar`}
                                   color="secondary"
@@ -497,83 +466,28 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
               )}
             </DialogoEliminar>
 
-            <CModal
-              visible={Boolean(tareaDiagnostico)}
-              onClose={() => !guardandoFalla && setTareaDiagnostico(null)}
-              alignment="center"
-            >
+            <CModal visible={modalPrioridad} onClose={() => !guardando && setModalPrioridad(false)} alignment="center">
               <CModalHeader>
-                <CModalTitle>Diagnóstico de la tarea {tareaDiagnostico?.idTarea}</CModalTitle>
+                <CModalTitle>Prioridad de la orden</CModalTitle>
               </CModalHeader>
               <CModalBody>
-                <Aviso mensaje={errorFalla} />
-                <div className="mb-3">
-                  <Campo
-                    id="tipoFalla"
-                    etiqueta="Tipo de falla"
-                    tipo="lista"
-                    valor={tipoFalla}
-                    alCambiar={(valor) => {
-                      setTipoFalla(valor);
-                      setErrorFalla('');
-                    }}
-                    opciones={tiposFalla.map((tipo) => ({ valor: tipo, texto: tipo }))}
-                    placeholder="Elegir tipo"
-                    obligatorio
-                    deshabilitado={tiposFalla.length === 0}
-                    revisado={revisadoFalla}
-                    error={revisadoFalla && !tipoFalla ? 'Elegí el tipo de falla.' : ''}
-                    ancho={18}
-                  />
-                </div>
-                {tipoFalla === 'Otra' && (
-                  <div className="sigma-campos align-items-end mb-3">
-                    <Campo
-                      id="nuevoTipoFalla"
-                      etiqueta="Nuevo tipo de falla"
-                      valor={nuevoTipoFalla}
-                      alCambiar={(valor) => {
-                        setNuevoTipoFalla(valor);
-                        setErrorNuevoTipoFalla('');
-                      }}
-                      maxLength={100}
-                      revisado={revisadoFalla || Boolean(errorNuevoTipoFalla)}
-                      error={errorNuevoTipoFalla}
-                      ancho={24}
-                    />
-                    <div className="sigma-campo">
-                      <CFormLabel className="invisible" aria-hidden="true">
-                        Agregar
-                      </CFormLabel>
-                      <CButton
-                        type="button"
-                        color="secondary"
-                        variant="outline"
-                        onClick={agregarTipoDeFalla}
-                        disabled={agregandoTipoFalla}
-                      >
-                        {agregandoTipoFalla ? 'Agregando...' : 'Agregar'}
-                      </CButton>
-                    </div>
-                  </div>
-                )}
+                <Aviso mensaje={errorPrioridad} />
                 <Campo
-                  id="descripcionFalla"
-                  etiqueta="Descripción"
-                  tipo="area"
-                  filas={4}
-                  valor={descripcionFalla}
-                  alCambiar={setDescripcionFalla}
-                  obligatorio
-                  revisado={revisadoFalla}
-                  error={revisadoFalla && !descripcionFalla.trim() ? 'Escribí la descripción de la falla.' : ''}
+                  id="prioridadOrden"
+                  etiqueta="Prioridad"
+                  tipo="lista"
+                  valor={prioridadElegida}
+                  alCambiar={setPrioridadElegida}
+                  opciones={prioridades.map((una) => ({ valor: una, texto: una }))}
+                  placeholder={`Usar la sugerida (${orden.prioridadSugerida ?? 'sin tareas'})`}
+                  ancho={24}
                 />
               </CModalBody>
               <CModalFooter>
                 <BotonesAccion
-                  procesando={guardandoFalla}
-                  alAceptar={guardarDiagnostico}
-                  alCancelar={() => setTareaDiagnostico(null)}
+                  procesando={guardando}
+                  alAceptar={guardarPrioridad}
+                  alCancelar={() => setModalPrioridad(false)}
                 />
               </CModalFooter>
             </CModal>

@@ -27,10 +27,13 @@
  * El idioma se fija en es-AR para que las horas vayan de 00 a 23 y no aparezca
  * el "a. m. / p. m." que agregan otros idiomas.
  */
+import { useRef, useState } from 'react';
 import { I18nProvider, Label, TimeField } from '@heroui/react';
 import { Time } from '@internationalized/date';
 import CIcon from '@coreui/icons-react';
 import { cilCheckAlt, cilX } from '@coreui/icons';
+
+import { DURACION_INCOMPLETA } from '@/utils/duracion.js';
 
 /** Lo que se lee en cada casillero mientras esta vacio. */
 const PLACEHOLDER = { hour: 'hh', minute: 'mm' };
@@ -53,6 +56,18 @@ function deHoraDelReloj(hora) {
   return `${String(hora.hour).padStart(2, '0')}:${String(hora.minute).padStart(2, '0')}`;
 }
 
+/**
+ * La unidad que se lee al final de la caja: "00:22" no dice si son horas o
+ * minutos. Menos de una hora, "minutos"; si no, "hora" u "horas".
+ */
+function unidadDeLaDuracion(texto) {
+  const hora = aHoraDelReloj(texto);
+  if (!hora) return '';
+  if (hora.hour === 0) return 'minutos';
+
+  return hora.hour === 1 && hora.minute === 0 ? 'hora' : 'horas';
+}
+
 export default function CampoDuracion({
   id,
   etiqueta,
@@ -64,15 +79,50 @@ export default function CampoDuracion({
   error = '',
   revisado = false,
 }) {
+  const contenedor = useRef(null);
+  // Si ya se salio del campo alguna vez: recien ahi se avisa que quedo a medias.
+  const [salio, setSalio] = useState(false);
+
+  /*
+   * A medias (horas sin minutos, o al reves) el TimeField no manda nada, y el
+   * formulario lo tomaria como vacio. Por eso se miran los dos casilleros (cada
+   * uno lleva data-placeholder mientras esta vacio): si uno tiene numero y el
+   * otro no, se avisa que esta incompleto.
+   *
+   * Se revisa en cada tecla, y no solo al salir, porque un Enter adentro del
+   * campo manda el formulario sin salir de el.
+   */
+  function revisarCasilleros() {
+    const casilleros = contenedor.current?.querySelectorAll('[data-type="hour"], [data-type="minute"]') ?? [];
+    const llenos = [...casilleros].filter((casillero) => !casillero.hasAttribute('data-placeholder')).length;
+
+    if (llenos > 0 && llenos < casilleros.length) alCambiar(DURACION_INCOMPLETA);
+  }
+
+  // Moverse de las horas a los minutos no cuenta como salir.
+  function alSalir(evento) {
+    if (contenedor.current?.contains(evento.relatedTarget)) return;
+    setSalio(true);
+    revisarCasilleros();
+  }
+
+  /*
+   * El aviso de "a medias" sale apenas se deja el campo, sin esperar a
+   * Guardar: es fácil no darse cuenta de que faltó un casillero.
+   */
+  const aMedias = valor === DURACION_INCOMPLETA && salio;
+  const mensaje = aMedias ? 'Completá las horas y los minutos (hh:mm).' : error;
+
   const hayValor = Boolean(valor);
-  const marca = revisado && error ? 'error' : revisado && hayValor ? 'ok' : null;
+  const marca = aMedias || (revisado && error) ? 'error' : revisado && hayValor ? 'ok' : null;
 
   const clases = ['sigma-duracion', marca && `sigma-duracion--${marca}`].filter(Boolean).join(' ');
   const idMensaje = `${id}-mensaje`;
+  const unidad = unidadDeLaDuracion(valor);
 
   return (
     <I18nProvider locale="es-AR">
-      <div className={clases}>
+      <div className={clases} ref={contenedor} onBlur={alSalir} onKeyUp={revisarCasilleros}>
         <TimeField
           name={id}
           value={aHoraDelReloj(valor)}
@@ -85,7 +135,7 @@ export default function CampoDuracion({
           isReadOnly={soloLectura}
           isRequired={obligatorio}
           isInvalid={marca === 'error'}
-          aria-describedby={error ? idMensaje : undefined}
+          aria-describedby={marca === 'error' ? idMensaje : undefined}
         >
           <Label className={obligatorio ? 'sigma-obligatorio' : undefined}>{etiqueta}</Label>
 
@@ -106,12 +156,15 @@ export default function CampoDuracion({
               )}
             </TimeField.Input>
 
-            {marca && (
+            {(unidad || marca) && (
               <TimeField.Suffix>
-                <span className="sigma-duracion-marca" aria-hidden="true">
-                  {/* El tamano lo pone globals.css, no el `size` de CoreUI. */}
-                  <CIcon icon={marca === 'ok' ? cilCheckAlt : cilX} />
-                </span>
+                {unidad && <span className="sigma-duracion-unidad">{unidad}</span>}
+                {marca && (
+                  <span className="sigma-duracion-marca" aria-hidden="true">
+                    {/* El tamano lo pone globals.css, no el `size` de CoreUI. */}
+                    <CIcon icon={marca === 'ok' ? cilCheckAlt : cilX} />
+                  </span>
+                )}
               </TimeField.Suffix>
             )}
           </TimeField.Group>
@@ -119,7 +172,7 @@ export default function CampoDuracion({
 
         {marca === 'error' && (
           <p id={idMensaje} className="sigma-campo-mensaje sigma-campo-mensaje--error">
-            {error}
+            {mensaje}
           </p>
         )}
       </div>
