@@ -3,7 +3,7 @@
 /**
  * /prestadores/tipos - listado de tipos de prestador de servicio (HU-24).
  *
- * Es una tabla de apoyo del modulo de prestadores (HU-33): aca se cargan los
+ * Es una tabla de apoyo del modulo de prestadores (HU-25): aca se cargan los
  * tipos que despues aparecen al dar de alta un prestador.
  */
 import { useEffect, useState } from 'react';

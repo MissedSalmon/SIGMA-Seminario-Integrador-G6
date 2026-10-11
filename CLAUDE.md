@@ -106,7 +106,10 @@ en los **issues de GitHub**, y el modelo de datos en `supabase/migrations/`.
   memoria** (`backend/src/datos-mock/`), no contra la base aún.
 - **HU-14 (crear la OT) está hecha (21/09/2026):** la OT se genera sola al validar el
   ticket y se planifica en `/ordenes-trabajo`, cargándole las tareas con su prioridad y su
-  responsable. Los **prestadores de servicio** son sólo lectura hasta que se haga la HU-33.
+  responsable.
+- **HU-24 (tipos de prestador) y HU-25 (prestadores de servicio) están hechas (11/10/2026):**
+  ABM en `/prestadores/tipos` y `/prestadores`. Un prestador tiene uno o más tipos y no se
+  puede eliminar si tiene tareas asignadas.
 - **HU-21 (mis tareas) está hecha (10/10/2026):** el técnico ve en `/tareas` sólo las tareas
   que le asignaron, ordenadas por prioridad y fecha prevista, con filtros y un aviso de
   cuántas le quedan pendientes. Cada una abre su detalle con el activo, dónde está y la OT.

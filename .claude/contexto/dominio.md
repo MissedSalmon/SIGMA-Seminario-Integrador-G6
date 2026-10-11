@@ -127,8 +127,13 @@ un **número** (el de la tabla). La traducción a texto está en un solo lugar:
 >   dos estados: si el ticket ya está más adelante en el flujo, no retrocede.
 > - **Una tarea tiene un solo responsable:** un técnico propio *o* un prestador externo,
 >   nunca los dos (corrección #13 de la profe). Puede quedar sin asignar mientras se planifica.
-> - Los **prestadores de servicio** son por ahora de sólo lectura (`GET /api/prestadores`):
->   se listan para poder elegirlos en una tarea. El ABM es la HU-33.
+> - **Prestadores de servicio (HU-25, 11/10/2026):** ABM completo en `/prestadores`.
+>   Datos: nombre, CUIL, teléfono, email y garantía (texto libre, "6 meses en mano de obra").
+>   Son obligatorios el **nombre**, el **CUIL** (único, con dígito verificador) y **al menos un
+>   tipo de prestador** (HU-24); el resto es opcional. Un prestador puede tener varios tipos.
+>   **No se puede eliminar un prestador con tareas asignadas**, para no perder el historial.
+>   El listado se filtra por tipo. La cuenta bancaria (`prestador_serv_cuenta_bco`) está en la
+>   tabla pero la HU no la pide: queda sin pantalla, pendiente de confirmar si hace falta.
 > - **La duración de una tarea se escribe y se lee en horas y minutos** ("30 min", "1 h 30 min"),
 >   aunque en la base siga guardándose en horas con decimales (`tarea_ot.tarea_hom`, 0.5 = 30 min).
 >   La caja deja escribir libremente y sugiere las duraciones más comunes (de 15 min a 8 h);

@@ -86,13 +86,8 @@ export const navegacion = [
     roles: ['administrador', 'autorizado'],
   },
   {
-    tipo: 'item',
-    texto: 'Registrar ticket',
-    direccion: '/tickets/agregar',
-    icono: cilTask,
-    roles: ['administrador', 'autorizado'],
-  },
-  {
+    // Registrar un ticket no va en el menu: se entra desde el boton "Agregar"
+    // de la pantalla de tickets.
     tipo: 'item',
     texto: 'Tickets',
     direccion: '/tickets',
@@ -247,8 +242,8 @@ export const navegacion = [
     roles: ['administrador'],
   },
   {
-    // Por ahora sólo tiene los tipos (HU-24). El listado de prestadores es la
-    // HU-33 y va debajo, porque para cargar un prestador hay que elegir su tipo.
+    // Los tipos (HU-24) van antes que los prestadores (HU-25), porque para
+    // cargar un prestador hay que elegir sus tipos.
     tipo: 'grupo',
     texto: 'Prestadores de servicio',
     icono: cilBriefcase,
@@ -259,6 +254,12 @@ export const navegacion = [
         texto: 'Tipos de prestador',
         direccion: '/prestadores/tipos',
         icono: cilTags,
+      },
+      {
+        tipo: 'item',
+        texto: 'Listado de prestadores',
+        direccion: '/prestadores',
+        icono: cilList,
       },
     ],
   },
