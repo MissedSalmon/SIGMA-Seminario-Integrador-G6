@@ -64,6 +64,10 @@ router.use('/tickets', rutasTickets);
 import rutasOrdenesTrabajo from './ordenesTrabajo.rutas.js';
 router.use('/ordenes-trabajo', rutasOrdenesTrabajo);
 
+// Las tareas del tecnico con la sesion activa (HU-21)
+import rutasTareas from './tareas.rutas.js';
+router.use('/tareas', rutasTareas);
+
 // Ingreso de materiales y herramientas por remito (HU-16)
 import rutasRemitos from './remitos.rutas.js';
 router.use('/remitos', rutasRemitos);

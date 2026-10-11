@@ -54,7 +54,7 @@ export const navegacion = [
   // ─── TÉCNICO ───────────────────────────────────────────────────────────────
   {
     tipo: 'titulo',
-    texto: 'Mis tareas',
+    texto: 'Mantenimiento',
     roles: ['tecnico'],
   },
   {
@@ -62,6 +62,20 @@ export const navegacion = [
     texto: 'Tareas asignadas',
     direccion: '/tareas',
     icono: cilTask,
+    roles: ['tecnico'],
+  },
+  {
+    tipo: 'item',
+    texto: 'Materiales utilizados',
+    direccion: '/tareas/materiales',
+    icono: cilStorage,
+    roles: ['tecnico'],
+  },
+  {
+    tipo: 'item',
+    texto: 'Herramientas utilizadas',
+    direccion: '/tareas/herramientas',
+    icono: cilBriefcase,
     roles: ['tecnico'],
   },
 

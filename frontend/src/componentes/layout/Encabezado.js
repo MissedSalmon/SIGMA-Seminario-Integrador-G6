@@ -54,7 +54,9 @@ import { logout } from '@/servicios/auth.js';
  */
 const NOMBRES = {
   '/tickets': 'Tickets',
-  '/tareas': 'Mis tareas',
+  '/tareas': 'Tareas asignadas',
+  '/tareas/materiales': 'Materiales utilizados',
+  '/tareas/herramientas': 'Herramientas utilizadas',
   '/ordenes-trabajo': 'Órdenes de trabajo',
   '/plantillas-tareas': 'Plantillas de tareas',
   '/edificios': 'Edificios',
@@ -150,6 +152,31 @@ function armarMigas(direccion) {
         direccion: `/ordenes-trabajo/${tramos[indice - 1]}`,
         ultima: false,
       });
+      return;
+    }
+
+    /*
+     * "Materiales utilizados" y "Herramientas utilizadas" cuelgan de /tareas en la
+     * direccion (el tecnico solo entra a /tareas...), pero son pantallas
+     * propias del menu, no parte de "Tareas asignadas": esa miga no va.
+     */
+    if (acumulada === '/tareas' && ['materiales', 'herramientas'].includes(tramos[indice + 1])) {
+      return;
+    }
+
+    /*
+     * Registrar los materiales de una tarea del tecnico (HU-22):
+     * /tareas/9/5/materiales. Los numeros no son pantallas, asi que se
+     * agrega la tarea como miga para poder volver a ella.
+     */
+    if (tramo === 'materiales' && tramos[indice - 3] === 'tareas') {
+      const [idOt, idTarea] = [tramos[indice - 2], tramos[indice - 1]];
+      migas.push({
+        texto: `Tarea ${idTarea} de la OT #${idOt}`,
+        direccion: `/tareas/${idOt}/${idTarea}`,
+        ultima: false,
+      });
+      migas.push({ texto: 'Registrar materiales', direccion: acumulada, ultima: indice === tramos.length - 1 });
       return;
     }
 

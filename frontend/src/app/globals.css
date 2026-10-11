@@ -250,6 +250,20 @@ body {
   border: 1px solid transparent;
 }
 
+/*
+ * La cruz para cerrar un aviso, más chica que la de CoreUI (10/10/2026) y
+ * centrada a la altura del texto. El área para tocarla sigue siendo cómoda: lo
+ * que se achica es el dibujo, no el padding.
+ */
+.alert-dismissible .btn-close {
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.7em;
+  height: 0.7em;
+  padding: 0.75rem;
+  background-size: 0.7em auto;
+}
+
 /* ---------- Barra lateral ---------- */
 
 .sigma-marca {
