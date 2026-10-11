@@ -185,8 +185,41 @@ un **número** (el de la tabla). La traducción a texto está en un solo lugar:
 >   filtra por fecha.
 > - **Orden por defecto:** prioridad (Alta, Media, Baja) y, dentro de la misma prioridad, la
 >   fecha prevista más cercana. Las que no tienen fecha van al final de su prioridad.
-> - **El detalle de la tarea es una pantalla** (`/tareas/[OT]/[tarea]`), sólo de lectura. La OT y
->   el activo no llevan enlace: sus pantallas son del administrador.
+> - **El detalle de la tarea es una pantalla** (`/tareas/[OT]/[tarea]`). La OT y el activo no
+>   llevan enlace: sus pantallas son del administrador.
+
+> **Decisiones del 10/10/2026 (HU-22, ejecutar la tarea; y HU-26, cierre automático):**
+> - **El técnico ejecuta la tarea desde su detalle.** "Iniciar tarea" la pasa de Creada,
+>   Asignada o Pendiente a **En ejecución**; "Finalizar tarea" la pasa de En ejecución a
+>   **Finalizada** (la HU dice "Completada": es el mismo estado, que en el diccionario se llama
+>   Finalizada). Las dos piden confirmación.
+> - **Al iniciar**, se mueve en cadena lo que corresponde, y sólo hacia adelante: la
+>   asignación del técnico pasa a En curso, la OT a En ejecución (si estaba Creada o
+>   Asignada), el ticket a En ejecución (si estaba Validado o Asignado) y el **activo a En
+>   mantenimiento** (salvo que esté Retirado).
+> - **Materiales:** se cargan en una pantalla aparte (`/tareas/[OT]/[tarea]/materiales`), igual
+>   que un ingreso por remito pero al revés, con un resumen de cómo queda el stock antes de
+>   guardar. **Sólo mientras la tarea está En ejecución.** Las cantidades son enteras. No se
+>   puede usar más de lo que hay: el campo tiene como tope el stock, y la base lo vuelve a
+>   controlar al guardar. El descuento es todo o nada (si a un material no le alcanza, no se
+>   registra ninguno) y queda como movimiento "Consumo" en el historial del depósito, con el
+>   legajo del técnico. Si se registra otra vez un material que la tarea ya tenía, se suma.
+> - **Herramientas:** el técnico toma las que necesita mientras la tarea está En ejecución, y
+>   quedan **En uso a su nombre** (es la misma asignación que hace el administrador desde el
+>   depósito). Las devuelve él mismo cuando quiere, aunque la tarea ya haya terminado. Sólo
+>   puede devolver las suyas. Las herramientas son del técnico, no de la tarea.
+> - **Cierre automático (HU-26):** cuando todas las tareas de la OT están Finalizadas o
+>   Canceladas (y al menos una Finalizada), la **OT se finaliza** con su fecha de cierre, el
+>   **ticket se cierra** con su fecha de cierre (columna nueva `ticket_fecha_cierre`) y el
+>   **activo vuelve a Operativo**, salvo que otra OT en ejecución lo siga arreglando.
+> - **Historial del técnico en el menú:** "Materiales utilizados" (`/tareas/materiales`) lista
+>   lo que se usó en sus tareas, con filtro por material y por fecha. Es sólo para consultar:
+>   no lleva acciones. "Herramientas utilizadas" (`/tareas/herramientas`) lista las que tiene
+>   ("En uso") y las que ya devolvió, y desde ahí devuelve las que todavía están a su nombre.
+>   Sólo ve lo suyo.
+> - ⬜ **Pendiente de definir:** una tarea a cargo de un **prestador externo** no la puede
+>   finalizar un técnico desde la app. Si una OT tiene una, no se va a cerrar sola hasta que
+>   haya una forma de marcar esa tarea como hecha (la tendría que hacer el administrador).
 
 ---
 

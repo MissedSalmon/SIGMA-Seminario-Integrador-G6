@@ -64,6 +64,7 @@ function consultaQueDevuelve(data) {
     select: jest.fn(() => cadena),
     eq: jest.fn(() => cadena),
     neq: jest.fn(() => cadena),
+    order: jest.fn(() => cadena),
     maybeSingle: jest.fn().mockResolvedValue({ data, error: null }),
     then: (resolver, rechazar) => Promise.resolve({ data, error: null }).then(resolver, rechazar),
   };
@@ -154,8 +155,14 @@ describe('obtenerDelTecnico', () => {
 });
 
 describe('obtenerUnaDelTecnico', () => {
-  test('trae la descripcion, el activo, la ubicacion y la OT', async () => {
-    supabase.from.mockReturnValue(consultaQueDevuelve(filaAsignacion({ idOt: 9, idTarea: 5 })));
+  test('trae la descripcion, el activo, la ubicacion, la OT y los materiales usados', async () => {
+    supabase.from
+      .mockReturnValueOnce(consultaQueDevuelve(filaAsignacion({ idOt: 9, idTarea: 5 })))
+      .mockReturnValueOnce(
+        consultaQueDevuelve([
+          { mat_cod: 'MAT-002', tamat_cant: 4, tamat_fecha_cons: '2026-10-10T12:00:00+00:00', material: { mat_nom: 'Tornillo' } },
+        ])
+      );
 
     const tarea = await obtenerUnaDelTecnico('2030', 9, 5);
 
@@ -167,12 +174,13 @@ describe('obtenerUnaDelTecnico', () => {
       activo: { codigo: 'AC-001', nombreTipo: 'Aires acondicionados' },
       ubicacion: { edificio: 'Edificio central', espacio: 'Aula 11', piso: '2' },
       ot: { id: 9, descripcion: 'Pierde agua', estado: 'Creada', origen: 'Ticket' },
+      materiales: [{ codigo: 'MAT-002', nombre: 'Tornillo', cantidad: 4 }],
     });
   });
 
   test('pide la tarea solo entre las del legajo de la sesion', async () => {
     const consulta = consultaQueDevuelve(filaAsignacion());
-    supabase.from.mockReturnValue(consulta);
+    supabase.from.mockReturnValueOnce(consulta).mockReturnValueOnce(consultaQueDevuelve([]));
 
     await obtenerUnaDelTecnico('2030', 1, 1);
 

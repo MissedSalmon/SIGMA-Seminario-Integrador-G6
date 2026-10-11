@@ -70,6 +70,87 @@ export async function obtenerMia(req, res) {
   res.json({ ok: true, datos: tarea });
 }
 
+function leerTarea(req) {
+  return {
+    idOt: leerNumero(req.params.idOt, 'orden de trabajo'),
+    idTarea: leerNumero(req.params.idTarea, 'tarea'),
+  };
+}
+
+/** POST /api/tareas/mias/:idOt/:idTarea/iniciar (HU-22) */
+export async function iniciar(req, res) {
+  const { idOt, idTarea } = leerTarea(req);
+  const tarea = await tareasServicio.iniciarTarea(req.usuario.identificador, idOt, idTarea);
+  res.json({ ok: true, datos: tarea });
+}
+
+/**
+ * POST /api/tareas/mias/:idOt/:idTarea/finalizar (HU-22)
+ *
+ * Responde { tarea, ordenFinalizada }: si con esta tarea se cerro la OT (HU-26).
+ */
+export async function finalizar(req, res) {
+  const { idOt, idTarea } = leerTarea(req);
+  const datos = await tareasServicio.finalizarTarea(req.usuario.identificador, idOt, idTarea);
+  res.json({ ok: true, datos });
+}
+
+/**
+ * POST /api/tareas/mias/:idOt/:idTarea/materiales (HU-22)
+ * Cuerpo: { items: [{ codigo: "MAT-002", cantidad: 4 }, ...] }
+ */
+export async function registrarMateriales(req, res) {
+  const { idOt, idTarea } = leerTarea(req);
+  const tarea = await tareasServicio.registrarMateriales(
+    req.usuario.identificador,
+    idOt,
+    idTarea,
+    req.body?.items
+  );
+  res.status(201).json({ ok: true, datos: tarea });
+}
+
+/**
+ * POST /api/tareas/mias/:idOt/:idTarea/herramientas (HU-22)
+ * Cuerpo: { codigo: "HER-001" }
+ */
+export async function tomarHerramienta(req, res) {
+  const { idOt, idTarea } = leerTarea(req);
+  const datos = await tareasServicio.tomarHerramienta(
+    req.usuario.identificador,
+    idOt,
+    idTarea,
+    req.body?.codigo
+  );
+  res.status(201).json({ ok: true, datos });
+}
+
+/** GET /api/tareas/materiales: los del deposito con su stock. */
+export async function listarMateriales(req, res) {
+  res.json({ ok: true, datos: await tareasServicio.listarMateriales() });
+}
+
+/** GET /api/tareas/herramientas: { mias, disponibles } */
+export async function listarHerramientas(req, res) {
+  res.json({ ok: true, datos: await tareasServicio.listarHerramientas(req.usuario.identificador) });
+}
+
+/** GET /api/tareas/historial/materiales: lo que se usó en las tareas del técnico. */
+export async function historialMateriales(req, res) {
+  res.json({ ok: true, datos: await tareasServicio.historialMateriales(req.usuario.identificador) });
+}
+
+/** GET /api/tareas/historial/herramientas: las que tiene y las que tuvo. */
+export async function historialHerramientas(req, res) {
+  res.json({ ok: true, datos: await tareasServicio.historialHerramientas(req.usuario.identificador) });
+}
+
+/** POST /api/tareas/herramientas/:codigo/devolver */
+export async function devolverHerramienta(req, res) {
+  const datos = await tareasServicio.devolverHerramienta(req.usuario.identificador, req.params.codigo);
+  res.json({ ok: true, datos });
+}
+
 /** GET /api/tareas/prioridades: para el filtro, de mas urgente a menos. */
 export function listarPrioridades(req, res) {
   res.json({ ok: true, datos: PRIORIDADES });

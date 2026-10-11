@@ -110,6 +110,12 @@ en los **issues de GitHub**, y el modelo de datos en `supabase/migrations/`.
 - **HU-21 (mis tareas) está hecha (10/10/2026):** el técnico ve en `/tareas` sólo las tareas
   que le asignaron, ordenadas por prioridad y fecha prevista, con filtros y un aviso de
   cuántas le quedan pendientes. Cada una abre su detalle con el activo, dónde está y la OT.
+- **HU-22 (ejecutar la tarea) y HU-26 (cierre automático) están hechas (10/10/2026):** desde el
+  detalle, el técnico inicia y finaliza la tarea, registra los materiales (descuentan stock
+  con la función `registrar_consumo_tarea` de la base) y toma o devuelve herramientas. Al
+  finalizar la última tarea, la OT se finaliza, el ticket se cierra y el activo vuelve a
+  Operativo. Necesita la migración `20261010180000_ejecucion_de_tareas.sql`. En el menú del
+  técnico hay además "Materiales utilizados" y "Herramientas utilizadas", con su historial.
 - **El proyecto en Supabase** y la conexión con **Vercel** en producción.
 
 *(Nota: La base de datos ya fue refactorizada e integrada con Supabase CLI en la carpeta `supabase/migrations/`)*

@@ -64,6 +64,20 @@ export const navegacion = [
     icono: cilTask,
     roles: ['tecnico'],
   },
+  {
+    tipo: 'item',
+    texto: 'Materiales utilizados',
+    direccion: '/tareas/materiales',
+    icono: cilStorage,
+    roles: ['tecnico'],
+  },
+  {
+    tipo: 'item',
+    texto: 'Herramientas utilizadas',
+    direccion: '/tareas/herramientas',
+    icono: cilBriefcase,
+    roles: ['tecnico'],
+  },
 
   // ─── MANTENIMIENTO (ADMINISTRADOR Y AUTORIZADO) ────────────────────────────
   {
