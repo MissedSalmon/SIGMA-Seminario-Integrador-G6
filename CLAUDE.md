@@ -106,7 +106,10 @@ en los **issues de GitHub**, y el modelo de datos en `supabase/migrations/`.
   memoria** (`backend/src/datos-mock/`), no contra la base aún.
 - **HU-14 (crear la OT) está hecha (21/09/2026):** la OT se genera sola al validar el
   ticket y se planifica en `/ordenes-trabajo`, cargándole las tareas con su prioridad y su
-  responsable. Los **prestadores de servicio** son sólo lectura hasta que se haga la HU-33.
+  responsable.
+- **HU-24 (tipos de prestador) y HU-25 (prestadores de servicio) están hechas (11/10/2026):**
+  ABM en `/prestadores/tipos` y `/prestadores`. Un prestador tiene uno o más tipos y no se
+  puede eliminar si tiene tareas asignadas.
 - **El proyecto en Supabase** y la conexión con **Vercel** en producción.
 
 *(Nota: La base de datos ya fue refactorizada e integrada con Supabase CLI en la carpeta `supabase/migrations/`)*

@@ -68,8 +68,8 @@ router.use('/ordenes-trabajo', rutasOrdenesTrabajo);
 import rutasRemitos from './remitos.rutas.js';
 router.use('/remitos', rutasRemitos);
 
-// Prestadores de servicio: solo lectura, para asignarlos a una tarea (HU-14).
-// El ABM es la HU-33.
+// Prestadores de servicio (HU-25). El listado tambien se usa para asignarlos a
+// una tarea de la OT (HU-14).
 import rutasPrestadores from './prestadores.rutas.js';
 router.use('/prestadores', rutasPrestadores);
 
