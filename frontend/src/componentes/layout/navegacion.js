@@ -72,13 +72,8 @@ export const navegacion = [
     roles: ['administrador', 'autorizado'],
   },
   {
-    tipo: 'item',
-    texto: 'Registrar ticket',
-    direccion: '/tickets/agregar',
-    icono: cilTask,
-    roles: ['administrador', 'autorizado'],
-  },
-  {
+    // Registrar un ticket no va en el menu: se entra desde el boton "Agregar"
+    // de la pantalla de tickets.
     tipo: 'item',
     texto: 'Tickets',
     direccion: '/tickets',
