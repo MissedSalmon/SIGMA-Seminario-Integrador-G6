@@ -38,13 +38,13 @@ afterEach(() => {
 });
 
 describe('validarCredenciales', () => {
-  test('devuelve los datos del usuario cuando el identificador y contraseña son correctos', async () => {
+  test('devuelve los datos del usuario mapeando el rol enumerado (2 -> tecnico)', async () => {
     const passwordHash = await bcrypt.hash('clave123', 10);
     const usuarioMock = {
       usuario_id: 'usr-001',
       identificador: '12345',
       password_hash: passwordHash,
-      rol: 'tecnico',
+      rol: 2,
       require_password_change: false,
       activo: true,
     };
@@ -61,13 +61,45 @@ describe('validarCredenciales', () => {
     });
   });
 
+  test('mapea correctamente los roles de administrador (1) y autorizado (3)', async () => {
+    const hash = await bcrypt.hash('clave', 10);
+    
+    // Administrador (1)
+    supabase.from.mockReturnValue(
+      consultaQueDevuelve({
+        usuario_id: 'usr-admin',
+        identificador: 'Admin',
+        password_hash: hash,
+        rol: 1,
+        require_password_change: false,
+        activo: true,
+      })
+    );
+    const adminRes = await validarCredenciales('Admin', 'clave');
+    expect(adminRes.rol).toBe('administrador');
+
+    // Autorizado (3)
+    supabase.from.mockReturnValue(
+      consultaQueDevuelve({
+        usuario_id: 'usr-aut',
+        identificador: 'AUT-001',
+        password_hash: hash,
+        rol: 3,
+        require_password_change: false,
+        activo: true,
+      })
+    );
+    const autRes = await validarCredenciales('AUT-001', 'clave');
+    expect(autRes.rol).toBe('autorizado');
+  });
+
   test('devuelve null si la contraseña no coincide', async () => {
     const passwordHash = await bcrypt.hash('otraClave', 10);
     const usuarioMock = {
       usuario_id: 'usr-001',
       identificador: '12345',
       password_hash: passwordHash,
-      rol: 'tecnico',
+      rol: 2,
       require_password_change: false,
       activo: true,
     };
@@ -167,6 +199,25 @@ describe('obtenerPerfil', () => {
     expect(resultado).toEqual({
       identificador: '99999',
       rol: 'tecnico',
+    });
+  });
+
+  test('acepta el rol tanto como número entero como texto', async () => {
+    const adminMock = {
+      admin_nom_ape: 'Carlos Olivieri',
+      admin_tel: '362 4112233',
+      admin_fecha_asun: '2020-03-01',
+    };
+
+    supabase.from.mockReturnValue(consultaQueDevuelve(adminMock));
+
+    // Pasando el código numérico 1 (administrador)
+    const resultado = await obtenerPerfil('Admin', 1);
+
+    expect(resultado).toEqual({
+      ...adminMock,
+      identificador: 'Admin',
+      rol: 'administrador',
     });
   });
 });

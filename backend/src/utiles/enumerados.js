@@ -2,12 +2,12 @@
  * Los datos enumerados del diccionario de datos (Sprint 3, 07/10/2026).
  *
  * Un dato enumerado es una columna que sólo puede tomar unos pocos valores fijos:
- * los estados (de activo, ticket, OT, tarea, técnico asignado y herramienta) y la
- * prioridad (de la tarea y de la OT). En la base cada valor se guarda como un
- * número entero: ocupa menos que el texto y la base no deja guardar uno que no
- * exista (ver supabase/migrations/20261010120000_datos_enumerados.sql). La API, en
- * cambio, sigue hablando con el texto ("Operativo", "En ejecución"), así que
- * las pantallas no se enteran del cambio.
+ * los estados (de activo, ticket, OT, tarea, técnico asignado y herramienta), la
+ * prioridad (de la tarea y de la OT) y el rol del usuario (administrador, técnico, autorizado).
+ * En la base cada valor se guarda como un número entero: ocupa menos que el texto y la base
+ * no deja guardar uno que no exista (ver supabase/migrations/20261010120000_datos_enumerados.sql
+ * y 20261012120000_usuario_rol_enumerado.sql). La API, en cambio, sigue hablando con el texto
+ * ("Operativo", "En ejecución", "administrador"), así que las pantallas no se enteran del cambio.
  *
  * Este archivo es el ÚNICO lugar donde se dice qué número es cada texto. Cada
  * lista está en el orden del diccionario: el número es la posición + 1.
@@ -98,4 +98,10 @@ export const ENUM_ESTADO_HERRAMIENTA = crearEnumerado('un estado de herramienta'
   'Disponible',
   'En uso',
   'Fuera de servicio',
+]);
+
+export const ENUM_ROL = crearEnumerado('un rol de usuario', [
+  'administrador',
+  'tecnico',
+  'autorizado',
 ]);

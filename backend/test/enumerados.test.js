@@ -13,6 +13,7 @@ import {
   ENUM_ESTADO_TAREA,
   ENUM_ESTADO_TICKET,
   ENUM_PRIORIDAD,
+  ENUM_ROL,
 } from '../src/utiles/enumerados.js';
 
 describe('el numero de cada valor no cambia', () => {
@@ -24,6 +25,7 @@ describe('el numero de cada valor no cambia', () => {
     [ENUM_PRIORIDAD, ['Alta', 'Media', 'Baja']],
     [ENUM_ESTADO_ASIGNACION_TECNICO, ['Pendiente', 'Asignada', 'En curso', 'Finalizada', 'Cancelada']],
     [ENUM_ESTADO_HERRAMIENTA, ['Disponible', 'En uso', 'Fuera de servicio']],
+    [ENUM_ROL, ['administrador', 'tecnico', 'autorizado']],
   ])('%#', (enumerado, textos) => {
     expect(enumerado.textos).toEqual(textos);
     textos.forEach((texto, posicion) => {

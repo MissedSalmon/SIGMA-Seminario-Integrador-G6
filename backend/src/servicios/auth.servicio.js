@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabase.js';
 import bcrypt from 'bcryptjs';
+import { ENUM_ROL } from '../utiles/enumerados.js';
 
 /**
  * Valida credenciales contra la base de datos
@@ -31,10 +32,12 @@ export async function validarCredenciales(identificador, passwordPlana) {
     return null;
   }
 
+  const rolTexto = ENUM_ROL.texto(usuario.rol) ?? usuario.rol;
+
   return {
     usuarioId: usuario.usuario_id,
     identificador: usuario.identificador,
-    rol: usuario.rol,
+    rol: rolTexto,
     requirePasswordChange: usuario.require_password_change,
   };
 }
@@ -45,24 +48,26 @@ export async function validarCredenciales(identificador, passwordPlana) {
 export async function obtenerPerfil(identificador, rol) {
   if (!identificador || !rol) return null;
 
+  const rolTexto = ENUM_ROL.texto(rol) ?? rol;
+
   let tablaRol = '';
   let columnaId = '';
   let campos = '';
 
-  if (rol === 'administrador') {
+  if (rolTexto === 'administrador') {
     tablaRol = 'administrador';
     columnaId = 'admin_legajo';
     campos = 'admin_nom_ape, admin_tel, admin_fecha_asun';
-  } else if (rol === 'tecnico') {
+  } else if (rolTexto === 'tecnico') {
     tablaRol = 'tecnico';
     columnaId = 'tecnico_legajo';
     campos = 'tecnico_nom_ape, tecnico_tel, tecnico_disponibilidad';
-  } else if (rol === 'autorizado') {
+  } else if (rolTexto === 'autorizado') {
     tablaRol = 'autorizado';
     columnaId = 'autorizado_legajo';
     campos = 'autorizado_legajo, autorizado_nom_ape, autorizado_dni, autorizado_cuil, autorizado_tel, autorizado_email';
   } else {
-    return { identificador, rol };
+    return { identificador, rol: rolTexto };
   }
 
   const { data, error } = await supabase
@@ -73,10 +78,10 @@ export async function obtenerPerfil(identificador, rol) {
 
   if (error || !data) {
     // Si no encuentra el perfil en la tabla especifica, devuelve al menos la info base
-    return { identificador, rol };
+    return { identificador, rol: rolTexto };
   }
 
-  return { ...data, identificador, rol };
+  return { ...data, identificador, rol: rolTexto };
 }
 
 /**

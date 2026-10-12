@@ -19,7 +19,7 @@ Responsable de almacenar las credenciales de acceso, los roles y el estado de la
 | `usuarioId` | `UUID` | **PRIMARY KEY**, `DEFAULT uuid_generate_v4()` | Identificador interno único del usuario en el sistema. |
 | `identificador` | `VARCHAR(255)` | **NOT NULL**, **UNIQUE** | Credencial de acceso ingresada en el login. Se corresponde con el *legajo* de la persona (Admin, Técnico o Autorizado). |
 | `passwordHash` | `VARCHAR(255)` | **NOT NULL** | Contraseña cifrada del usuario utilizando el algoritmo `bcrypt`. Nunca se almacena en texto plano. |
-| `rol` | `VARCHAR(50)` | **NOT NULL**, `CHECK (rol IN ('administrador', 'tecnico', 'autorizado'))` | Define el nivel de acceso y permisos del usuario en la plataforma. |
+| `rol` | `INT` | **NOT NULL**, `CHECK (rol BETWEEN 1 AND 3)` | Define el nivel de acceso y permisos del usuario en la plataforma (Dato enumerado: 1=administrador, 2=tecnico, 3=autorizado). |
 | `requirePasswordChange`| `BOOLEAN` | **NOT NULL**, `DEFAULT true` | Bandera de estado. Si es `true`, el usuario no puede navegar el sistema y es forzado a establecer una nueva contraseña (Primer Inicio de Sesión). |
 | `activo` | `BOOLEAN` | **NOT NULL**, `DEFAULT true` | Baja lógica de la cuenta. Si es `false`, el identificador no podrá iniciar sesión. |
 | `creadoEn` | `TIMESTAMP WITH TIME ZONE` | `DEFAULT CURRENT_TIMESTAMP` | Fecha y hora de creación de las credenciales. |
@@ -43,10 +43,10 @@ Al momento de obtener el perfil (`GET /api/auth/perfil`), el backend utiliza el 
 
 Se incorporan los siguientes dominios de valores y reglas de negocio al diccionario de datos general del proyecto:
 
-* **Roles del Sistema (`Usuario.rol`)**
-  * `administrador`: Acceso total, dashboard, ABM del sistema, validación de tickets y programación de OTs.
-  * `tecnico`: Acceso limitado a su panel de tareas (`/tareas`), registro de consumos y diagnóstico de fallas.
-  * `autorizado`: Acceso exclusivo a visualizar y reportar tickets (`/tickets`) sobre las áreas de las que es responsable.
+* **Roles del Sistema (`Usuario.rol`) - Enumerado (`INT`)**
+  * `1` (`administrador`): Acceso total, dashboard, ABM del sistema, validación de tickets y programación de OTs.
+  * `2` (`tecnico`): Acceso limitado a su panel de tareas (`/tareas`), registro de consumos y diagnóstico de fallas.
+  * `3` (`autorizado`): Acceso exclusivo a visualizar y reportar tickets (`/tickets`) sobre las áreas de las que es responsable.
 
 * **Estados de la Cuenta (`Usuario.requirePasswordChange`)**
   * **Primer Inicio de Sesión (`true`)**: Estado donde la cuenta fue dada de alta por el administrador (contraseña por defecto = legajo o autogenerada). El JWT emitido bloquea todas las rutas protegidas excepto `/configuracion/cambiar-password`.

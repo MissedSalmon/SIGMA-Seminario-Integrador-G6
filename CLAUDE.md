@@ -22,10 +22,10 @@ Ticket → Validación → Orden de Trabajo (OT) → Tareas → Ejecución → C
 
 ---
 
-## Estado actual (10/10/2026)
+## Estado actual (12/10/2026)
 
 - Ya se entregó la **Primera Carpeta** (17/07/2026). Nota: **76/100 — APROBADO**.
-- **HU-30 (Autenticación y Sesiones) completada (10/10/2026):** Login propio con JWT, middleware `validarSesion` y `soloAdministrador` con JWT real, vista `/tareas` para técnicos, menú lateral filtrado dinámicamente por rol y cambio de contraseña obligatorio en el primer inicio de sesión. Pruebas backend (53/53 passed).
+- **HU-30 (Autenticación y Sesiones) completada (10/10/2026) y refactorizada a enumerados (12/10/2026):** Login propio con JWT, middleware `validarSesion` y `soloAdministrador` con JWT real, vista `/tareas` para técnicos, menú lateral filtrado dinámicamente por rol y cambio de contraseña obligatorio en el primer inicio de sesión. El atributo `rol` de `usuario` migró de `VARCHAR` a dato enumerado entero (`INT`: 1=administrador, 2=tecnico, 3=autorizado) mediante `supabase/migrations/20261012120000_usuario_rol_enumerado.sql` y `ENUM_ROL` en `backend/src/utiles/enumerados.js`. Pruebas backend (107/107 passed).
 - **Sprint 0 hecho:** estructura del repositorio armada y funcionando
   (Next.js 16 + Express 5 + Supabase, monorepo with npm workspaces).
 - La base de datos ya fue integrada con Supabase CLI en `supabase/migrations/`.

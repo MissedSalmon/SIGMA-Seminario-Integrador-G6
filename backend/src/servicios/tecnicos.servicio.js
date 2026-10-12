@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabase.js';
 import bcrypt from 'bcryptjs';
+import { ENUM_ROL } from '../utiles/enumerados.js';
 import { datoInvalido, noEncontrado, conflicto } from '../utiles/errores.js';
 import { normalizarTelefono, validarTelefono } from '../utiles/validaciones.js';
 
@@ -151,7 +152,7 @@ export async function crear(datos) {
   const { error: errorUsuario } = await supabase.from('usuario').insert({
     identificador: String(legajo),
     password_hash: passwordHash,
-    rol: 'tecnico',
+    rol: ENUM_ROL.codigo('tecnico'),
     require_password_change: true,
     activo: true,
     tecnico_legajo: String(legajo),

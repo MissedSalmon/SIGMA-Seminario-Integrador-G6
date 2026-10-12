@@ -68,6 +68,14 @@ un **número** (el de la tabla). La traducción a texto está en un solo lugar:
 | **Técnico asignado a la tarea** | 1 Pendiente · 2 Asignada · 3 En curso · 4 Finalizada · 5 Cancelada |
 | **Activo** | 1 Operativo → 2 En mantenimiento → 3 Fuera de servicio → 4 Retirado |
 | **Herramienta** | 1 Disponible ⇄ 2 En uso · 3 Fuera de servicio |
+| **Rol de usuario** | 1 administrador · 2 tecnico · 3 autorizado |
+
+> **Decisiones del 12/10/2026 (Rol de usuario como dato enumerado):**
+> - El atributo `rol` de la tabla `usuario` migró de `VARCHAR(50)` a número entero (`INT`)
+>   con restricción `CHECK (rol BETWEEN 1 AND 3)`. La migración es
+>   `supabase/migrations/20261012120000_usuario_rol_enumerado.sql`.
+> - En el backend se incorporó `ENUM_ROL` a `backend/src/utiles/enumerados.js`. La API sigue
+>   manejando los textos `'administrador'`, `'tecnico'`, `'autorizado'` hacia el frontend y JWT.
 
 > **Decisiones del 07/10/2026 (valores enumerados del diccionario de datos):**
 > - Los estados y la prioridad de la tarea dejan de guardarse como texto y pasan a ser un

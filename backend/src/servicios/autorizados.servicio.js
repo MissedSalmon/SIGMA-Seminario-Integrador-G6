@@ -17,6 +17,7 @@
  */
 import { supabase } from '../config/supabase.js';
 import bcrypt from 'bcryptjs';
+import { ENUM_ROL } from '../utiles/enumerados.js';
 import { datoInvalido, noEncontrado, conflicto } from '../utiles/errores.js';
 import {
   normalizarCuil,
@@ -228,7 +229,7 @@ export async function crear(datos) {
   const { error: errorUsuario } = await supabase.from('usuario').insert({
     identificador: String(legajo),
     password_hash: passwordHash,
-    rol: 'autorizado',
+    rol: ENUM_ROL.codigo('autorizado'),
     require_password_change: true,
     activo: true,
     autorizado_legajo: String(legajo),

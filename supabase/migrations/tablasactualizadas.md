@@ -365,7 +365,7 @@ Entidad que almacena las credenciales y el estado de acceso para todos los roles
 | **PK** | `usuarioId` | Identificador único del usuario (UUID) |
 | **UK** | `identificador` | Legajo ingresado en el login |
 | | `passwordHash` | Hash seguro de la contraseña |
-| | `rol` | Rol del usuario (`administrador`, `tecnico`, `autorizado`) |
+| | `rol` | Rol del usuario como dato enumerado (`INT` / `CHECK (rol BETWEEN 1 AND 3)`: 1=administrador, 2=tecnico, 3=autorizado) |
 | | `requirePasswordChange` | Bandera booleana para forzar cambio de clave en el primer inicio de sesión |
 | **FK** | `adminLegajo` | Referencia a `Administrador` (Opcional según regla XOR) |
 | **FK** | `tecnicoLegajo` | Referencia a `Tecnico` (Opcional según regla XOR) |

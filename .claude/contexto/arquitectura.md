@@ -573,13 +573,15 @@ Siempre el mismo, para que el frontend no tenga que adivinar:
 { "ok": false, "mensaje": "El ticket no existe." }
 ```
 
-### Los datos enumerados se guardan como números (07/10/2026)
+### Los datos enumerados se guardan como números (07/10/2026 y 12/10/2026)
 
 Un **dato enumerado** es una columna que sólo puede tomar unos pocos valores fijos. En la
-base, los estados (activo, ticket, OT, tarea, técnico asignado, herramienta) y las
-prioridades (de la tarea y la manual de la OT) son un **número entero**, como pide el
-diccionario de datos: ocupan menos que el texto y la base no deja guardar uno que no existe
-(CHECK). La migración es `supabase/migrations/20261010120000_datos_enumerados.sql`.
+base, los estados (activo, ticket, OT, tarea, técnico asignado, herramienta), las
+prioridades (de la tarea y la manual de la OT) y el rol del usuario (administrador,
+técnico, autorizado) son un **número entero**, como pide el diccionario de datos: ocupan
+menos que el texto y la base no deja guardar uno que no existe (CHECK). Las migraciones son
+`supabase/migrations/20261010120000_datos_enumerados.sql` y
+`supabase/migrations/20261012120000_usuario_rol_enumerado.sql`.
 
 La traducción entre número y texto está en **un solo archivo**:
 `backend/src/utiles/enumerados.js`. Cada enumerado se llama `ENUM_...`. Los servicios
@@ -587,14 +589,16 @@ trabajan siempre con el texto y lo pasan a número sólo para leer y escribir en
 API sigue mandando el texto, así que el frontend no se entera.
 
 ```js
-import { ENUM_ESTADO_TICKET } from '../utiles/enumerados.js';
+import { ENUM_ESTADO_TICKET, ENUM_ROL } from '../utiles/enumerados.js';
 
 ENUM_ESTADO_TICKET.codigo('Validado');   // 2  -> para guardar o filtrar
 ENUM_ESTADO_TICKET.texto(fila.ticket_estado);   // 'Validado'  -> para mostrar
+ENUM_ROL.codigo('tecnico');              // 2  -> para guardar en usuario
+ENUM_ROL.texto(fila.rol);                // 'tecnico'  -> para el token JWT y respuestas
 ```
 
-**Nunca escribir un estado a mano en la base** (`ticket_estado: 'Validado'`): la columna es
-numérica y lo rechaza. Siempre pasar por el enumerado. Las pruebas de
+**Nunca escribir un estado o rol a mano en la base** (`ticket_estado: 'Validado'`, `rol: 'tecnico'`):
+la columna es numérica y lo rechaza. Siempre pasar por el enumerado. Las pruebas de
 `backend/test/enumerados.test.js` fijan el número de cada valor: si fallan, alguien cambió
 el orden de una lista.
 
