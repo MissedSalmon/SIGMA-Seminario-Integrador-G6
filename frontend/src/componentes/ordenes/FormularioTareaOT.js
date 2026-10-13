@@ -25,7 +25,19 @@
  */
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CButton, CCard, CCardBody, CCol, CFormLabel, CRow } from '@coreui/react';
+import {
+  CButton,
+  CCard,
+  CCardBody,
+  CCol,
+  CFormLabel,
+  CModal,
+  CModalBody,
+  CModalFooter,
+  CModalHeader,
+  CModalTitle,
+  CRow,
+} from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilPlus } from '@coreui/icons';
 
@@ -37,7 +49,7 @@ import { listarPrioridades } from '@/servicios/ordenesTrabajo.js';
 import { crearPlantilla, listarPlantillas } from '@/servicios/plantillasTareas.js';
 import { listarPrestadores } from '@/servicios/prestadores.js';
 import { listarTecnicos } from '@/servicios/tecnicos.js';
-import { aHorasDecimales, comoHoraMinuto } from '@/utils/duracion.js';
+import { aHorasDecimales, comoHoraMinuto, DURACION_INCOMPLETA } from '@/utils/duracion.js';
 import { hoyTexto } from '@/utils/fechas.js';
 
 /** Quién puede hacerse cargo de una tarea. */
@@ -252,9 +264,12 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
 
     /*
      * Los casilleros del reloj no dejan escribir cualquier cosa, asi que lo
-     * unico que puede pasar es que quede en 00:00, que no es una duracion.
+     * que puede pasar es que quede a medias (horas sin minutos o al reves) o
+     * en 00:00, que no es una duracion.
      */
-    if (valores.horasEstimadas !== '' && aHorasDecimales(valores.horasEstimadas) === 0) {
+    if (valores.horasEstimadas === DURACION_INCOMPLETA) {
+      fallos.horasEstimadas = 'Completá las horas y los minutos (hh:mm).';
+    } else if (valores.horasEstimadas !== '' && aHorasDecimales(valores.horasEstimadas) === 0) {
       fallos.horasEstimadas = 'Tiene que ser más de 00:00.';
     }
 
@@ -330,7 +345,7 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
               La etiqueta invisible empuja el botón a la altura de la caja,
               aunque debajo de la caja aparezca un error.
             */}
-            {idTipoActivo && !nuevaVisible && (
+            {idTipoActivo && (
               <div className="sigma-campo">
                 <CFormLabel className="invisible" aria-hidden="true">
                   Agregar
@@ -348,46 +363,6 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
               </div>
             )}
           </div>
-
-          {nuevaVisible && (
-            /*
-             * Está dentro del formulario de la tarea: el Enter de esta caja
-             * tiene que agregar la plantilla, no mandar la tarea entera.
-             */
-            <div
-              className="sigma-campos border rounded p-3 mb-3"
-              onKeyDown={(evento) => {
-                if (evento.key === 'Enter') {
-                  evento.preventDefault();
-                  agregarPlantilla();
-                }
-              }}
-            >
-              <Campo
-                id="nuevaTareaEstandar"
-                etiqueta={`Nueva tarea estándar para ${orden.activo?.nombreTipo || 'este tipo de activo'}`}
-                valor={nuevaDescripcion}
-                alCambiar={setNuevaDescripcion}
-                placeholder="Ej: limpiar los filtros"
-                obligatorio
-                maxLength={200}
-                ancho={36}
-                revisado={Boolean(errorNueva)}
-                error={errorNueva}
-              />
-
-              <div className="sigma-campo">
-                <CFormLabel className="invisible" aria-hidden="true">
-                  Agregar
-                </CFormLabel>
-                <BotonesAccion
-                  procesando={creandoPlantilla}
-                  alAceptar={agregarPlantilla}
-                  alCancelar={cancelarPlantilla}
-                />
-              </div>
-            </div>
-          )}
 
           <Campo
             id="descripcion"
@@ -517,6 +492,41 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
           <BotonesAccion procesando={guardando} hrefCancelar={volverA} className="mt-4" />
         </form>
       </CCardBody>
+
+      <CModal
+        visible={nuevaVisible}
+        onClose={() => !creandoPlantilla && cancelarPlantilla()}
+        alignment="center"
+      >
+        <CModalHeader>
+          <CModalTitle>
+            Nueva tarea estándar para {orden.activo?.nombreTipo || 'este tipo de activo'}
+          </CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          <Aviso mensaje={errorNueva} />
+          <Campo
+            id="nuevaTareaEstandar"
+            etiqueta="Descripción"
+            tipo="area"
+            filas={3}
+            valor={nuevaDescripcion}
+            alCambiar={setNuevaDescripcion}
+            placeholder="Ej: limpiar los filtros"
+            obligatorio
+            maxLength={200}
+            revisado={Boolean(errorNueva)}
+            error={errorNueva}
+          />
+        </CModalBody>
+        <CModalFooter>
+          <BotonesAccion
+            procesando={creandoPlantilla}
+            alAceptar={agregarPlantilla}
+            alCancelar={cancelarPlantilla}
+          />
+        </CModalFooter>
+      </CModal>
     </CCard>
   );
 }

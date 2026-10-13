@@ -1,38 +1,23 @@
 import { supabase } from '../config/supabase.js';
 import { datoInvalido, noEncontrado } from '../utiles/errores.js';
 import * as ordenesTrabajo from './ordenesTrabajo.servicio.js';
+import { ENUM_ESTADO_ACTIVO, ENUM_ESTADO_OT, ENUM_ESTADO_TICKET } from '../utiles/enumerados.js';
 
 /**
  * Los estados por los que pasa un ticket (ver .claude/contexto/dominio.md).
  * Todo ticket nace en "Creado": es el que todavia no fue validado y espera la
  * decision del administrador.
+ *
+ * En la base el estado es un numero (1=Creado ... 7=Rechazado); la traduccion
+ * esta en utiles/enumerados.js. Los viejos 'ABIERTO' pasaron a 1=Creado en la
+ * migracion del 07/10/2026.
  */
-export const ESTADOS = [
-  'Creado',
-  'Validado',
-  'Asignado',
-  'En ejecución',
-  'Finalizado',
-  'Cerrado',
-  'Rechazado',
-];
+export const ESTADOS = ENUM_ESTADO_TICKET.textos;
 export const ESTADO_INICIAL = 'Creado';
 
-/**
- * La tabla ticket tiene como default 'ABIERTO', y los primeros tickets
- * quedaron guardados asi. Para el sistema son lo mismo que "Creado": al leer
- * se traducen, y al filtrar por "Creado" se incluyen.
- */
-const ALIAS_ESTADO = { ABIERTO: ESTADO_INICIAL };
-
-function normalizarEstado(estado) {
-  return ALIAS_ESTADO[estado] ?? estado ?? ESTADO_INICIAL;
-}
-
-/** Los valores que hay que buscar en la base para un estado dado. */
-function valoresEnBase(estado) {
-  const alias = Object.keys(ALIAS_ESTADO).filter((clave) => ALIAS_ESTADO[clave] === estado);
-  return [estado, ...alias];
+/** El texto del estado guardado en la base. */
+function normalizarEstado(codigo) {
+  return ENUM_ESTADO_TICKET.texto(codigo) ?? ESTADO_INICIAL;
 }
 
 function limpiar(texto) {
@@ -126,7 +111,7 @@ function aTicket(fila) {
       ? {
           codigo: activo.activo_codigo,
           nombreTipo: activo.tipo_activo?.tipo_activo_nom ?? '',
-          estado: activo.activo_estado ?? '',
+          estado: ENUM_ESTADO_ACTIVO.texto(activo.activo_estado) ?? '',
           nombreEdificio: espacio?.edificio?.edificio_nom ?? '',
           espacio_num: espacio?.espacio_num ?? '',
         }
@@ -139,7 +124,7 @@ function aTicket(fila) {
     ot: ot
       ? {
           id: ot.ot_id,
-          estado: ot.ot_estado,
+          estado: ENUM_ESTADO_OT.texto(ot.ot_estado),
           fechaAlta: ot.ot_fecha_alta,
           fechaCierre: ot.ot_fecha_cierre,
           descripcion: ot.ot_desc,
@@ -159,7 +144,7 @@ function aTicket(fila) {
  * @param {string} [filtros.codigoActivo]
  * @param {number} [filtros.idArea]
  */
-export async function obtenerTodos(filtros = {}) {
+export async function obtenerTodos(filtros = {}, usuario = null) {
   const columnas = filtros.idArea ? COLUMNAS_CON_AREA : COLUMNAS;
 
   let consulta = supabase
@@ -167,8 +152,15 @@ export async function obtenerTodos(filtros = {}) {
     .select(columnas)
     .order('ticket_fecha_alta', { ascending: false });
 
+  // Si el usuario es un autorizado, solo puede ver los tickets que el mismo creo
+  if (usuario?.rol === 'autorizado') {
+    consulta = consulta.eq('autorizado_legajo', usuario.identificador);
+  } else if (filtros.autorizadoLegajo) {
+    consulta = consulta.eq('autorizado_legajo', filtros.autorizadoLegajo);
+  }
+
   if (filtros.estado) {
-    consulta = consulta.in('ticket_estado', valoresEnBase(filtros.estado));
+    consulta = consulta.eq('ticket_estado', ENUM_ESTADO_TICKET.codigo(filtros.estado));
   }
 
   if (filtros.desde) {
@@ -193,7 +185,7 @@ export async function obtenerTodos(filtros = {}) {
   return data.map(aTicket);
 }
 
-export async function obtenerPorId(id) {
+export async function obtenerPorId(id, usuario = null) {
   const { data, error } = await supabase
     .from('ticket')
     .select(COLUMNAS)
@@ -203,10 +195,17 @@ export async function obtenerPorId(id) {
   if (error) throw new Error(error.message);
   if (!data) throw noEncontrado(`No existe el ticket ${id}.`);
 
-  return aTicket(data);
+  const ticket = aTicket(data);
+
+  // Si es un usuario autorizado, solo puede ver tickets de su propia autoría
+  if (usuario?.rol === 'autorizado' && ticket.registradoPor?.legajo !== usuario.identificador) {
+    throw noEncontrado(`No existe el ticket ${id}.`);
+  }
+
+  return ticket;
 }
 
-export async function crear(datos) {
+export async function crear(datos, usuario = null) {
   const codigoActivo = limpiar(datos.codigoActivo);
   const idEdificio = datos.idEdificio ? Number(datos.idEdificio) : null;
   const espacioNum = limpiar(datos.espacioNum);
@@ -221,22 +220,20 @@ export async function crear(datos) {
     throw datoInvalido('Debe indicar el activo o el espacio afectado.');
   }
 
-  // OJO: La base de datos actual (refactor_modelo_mantenimiento.sql)
-  // exige que activo_codigo y autorizado_legajo NO sean nulos.
-  // Si el frontend envía un "espacio" en lugar de un "activo", fallará
-  // a menos que modifiquemos la BD.
-  // Por ahora, usaremos un autorizado ficticio si no viene, y
-  // lanzaremos error si intentan guardar un ticket de espacio sin modificar la BD.
-
   if (!codigoActivo) {
     throw datoInvalido('El modelo de datos actual exige que todo ticket esté asociado a un activo.');
   }
 
+  // Si el usuario es autorizado, usamos su identificador (legajo). Si es admin, puede usar el del form o '0000'
+  const legajoAutorizado = usuario?.rol === 'autorizado'
+    ? usuario.identificador
+    : (datos.autorizadoLegajo || usuario?.identificador || '0000');
+
   const { data, error } = await supabase.from('ticket').insert({
     activo_codigo: codigoActivo,
-    autorizado_legajo: '0000', // Reemplazar con el usuario logueado en el futuro
+    autorizado_legajo: legajoAutorizado,
     ticket_desc: descripcion,
-    ticket_estado: ESTADO_INICIAL,
+    ticket_estado: ENUM_ESTADO_TICKET.codigo(ESTADO_INICIAL),
     ticket_evidencia: evidencia
   }).select().single();
 
@@ -272,7 +269,7 @@ export async function validar(id) {
 
   const { error } = await supabase
     .from('ticket')
-    .update({ ticket_estado: 'Validado' })
+    .update({ ticket_estado: ENUM_ESTADO_TICKET.codigo('Validado') })
     .eq('ticket_id', id)
     .select('ticket_id')
     .single();
@@ -313,7 +310,7 @@ export async function rechazar(id, motivo) {
   const { data, error } = await supabase
     .from('ticket')
     .update({
-      ticket_estado: 'Rechazado',
+      ticket_estado: ENUM_ESTADO_TICKET.codigo('Rechazado'),
       ticket_desc: ticket.descripcion + '\n\n--- MOTIVO DE RECHAZO ---\n' + motivoLimpio
     })
     .eq('ticket_id', id)

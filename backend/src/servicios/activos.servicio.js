@@ -1,7 +1,9 @@
 import { supabase } from '../config/supabase.js';
 import { datoInvalido, noEncontrado, conflicto } from '../utiles/errores.js';
+import { ENUM_ESTADO_ACTIVO } from '../utiles/enumerados.js';
 
-export const ESTADOS = ["Operativo", "En mantenimiento", "Retirado", "Fuera de servicio"];
+// En la base el estado es un numero; la traduccion esta en utiles/enumerados.js.
+export const ESTADOS = ENUM_ESTADO_ACTIVO.textos;
 export const ESTADO_INICIAL = 'Operativo';
 const ESTADO_BAJA = 'Retirado';
 export const ESTADOS_MANUALES = ['Operativo', 'Fuera de servicio', 'Retirado'];
@@ -49,7 +51,7 @@ function aActivo(fila) {
     fechaAlta: fila.activo_fecha_alta,
     fechaUltimoMantenimiento: fila.activo_fecha_ult_maint,
     fechaUltimaReubicacion: null,
-    estado: fila.activo_estado || ESTADO_INICIAL,
+    estado: ENUM_ESTADO_ACTIVO.texto(fila.activo_estado) ?? ESTADO_INICIAL,
   };
 }
 
@@ -112,7 +114,7 @@ export async function obtenerTodos(filtros = {}) {
   }
 
   if (filtros.estado) {
-    consulta = consulta.eq('activo_estado', filtros.estado);
+    consulta = consulta.eq('activo_estado', ENUM_ESTADO_ACTIVO.codigo(filtros.estado));
   }
 
   const { data, error } = await consulta;
@@ -166,7 +168,7 @@ export async function crear(datos) {
       edificio_id: idEdificio,
       espacio_id: espacio_id,
       activo_fecha_alta: limpiar(datos.fechaAlta) ?? hoy(),
-      activo_estado: ESTADO_INICIAL,
+      activo_estado: ENUM_ESTADO_ACTIVO.codigo(ESTADO_INICIAL),
     })
     .select(COLUMNAS)
     .single();
@@ -197,7 +199,7 @@ export async function actualizar(codigo, datos) {
     edificio_id: idEdificio,
     espacio_id: espacio_id,
     activo_fecha_alta: limpiar(datos.fechaAlta) ?? actual.fechaAlta,
-    activo_estado: estado,
+    activo_estado: ENUM_ESTADO_ACTIVO.codigo(estado),
   };
 
   if (estado === ESTADO_BAJA) {
@@ -226,7 +228,7 @@ export async function darDeBaja(codigo) {
 
   const { data, error } = await supabase
     .from('activo')
-    .update({ activo_estado: ESTADO_BAJA, activo_fecha_baja: hoy() })
+    .update({ activo_estado: ENUM_ESTADO_ACTIVO.codigo(ESTADO_BAJA), activo_fecha_baja: hoy() })
     .eq('activo_codigo', codigo)
     .select(COLUMNAS)
     .single();
@@ -289,11 +291,21 @@ export async function validarImportacion(filas) {
     const errores = [];
     let { activoCodigo, activoDesc, tipoActivoId, tipoActivoNom, edificioId, espacioNum, activoEstado, activoFechaAlta, activoFechaInst } = fila;
 
+    /*
+     * El estado se puede escribir en el archivo con su nombre ("Operativo") o
+     * con su numero del diccionario ("1"): las dos formas se aceptan y se
+     * guardan como numero.
+     */
     if (!activoEstado) {
-      activoEstado = 'Operativo';
-      fila.activoEstado = 'Operativo';
+      activoEstado = ESTADO_INICIAL;
+      fila.activoEstado = ESTADO_INICIAL;
+    } else if (ENUM_ESTADO_ACTIVO.texto(activoEstado) && /^\d+$/.test(String(activoEstado).trim())) {
+      activoEstado = ENUM_ESTADO_ACTIVO.texto(activoEstado);
+      fila.activoEstado = activoEstado;
     } else if (!ESTADOS.includes(activoEstado)) {
-      errores.push(`El estado "${activoEstado}" no es válido. Valores posibles: ${ESTADOS.join(', ')}`);
+      errores.push(
+        `El estado "${activoEstado}" no es válido. Valores posibles: ${ESTADOS.map((texto, i) => `${i + 1}=${texto}`).join(', ')}`
+      );
     }
 
     if (!activoCodigo) errores.push("Falta el código del activo.");
@@ -409,7 +421,7 @@ export async function confirmarImportacion(filasValidas) {
       espacio_id: espacio_id,
       activo_fecha_alta: f.activoFechaAlta ? new Date(f.activoFechaAlta).toISOString().split('T')[0] : hoy(),
       activo_fecha_inst: f.activoFechaInst ? new Date(f.activoFechaInst).toISOString().split('T')[0] : null,
-      activo_estado: f.activoEstado
+      activo_estado: ENUM_ESTADO_ACTIVO.codigo(f.activoEstado),
     };
   });
 

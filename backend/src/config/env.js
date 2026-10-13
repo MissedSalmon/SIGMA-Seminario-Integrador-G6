@@ -2,8 +2,10 @@
  * Carga y valida las variables de entorno del backend.
  */
 import dotenv from 'dotenv';
+import path from 'path';
 
 dotenv.config();
+dotenv.config({ path: path.resolve(process.cwd(), 'backend', '.env') });
 
 /**
  * Variables que necesita la conexion a Supabase.

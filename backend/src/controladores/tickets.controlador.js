@@ -50,7 +50,7 @@ export async function listar(req, res) {
     hasta: leerFecha(hasta, 'hasta'),
     codigoActivo: codigoActivo ? String(codigoActivo).trim() : null,
     idArea: idArea ? Number(idArea) : null,
-  });
+  }, req.usuario);
 
   res.json({ ok: true, datos: tickets });
 }
@@ -66,13 +66,13 @@ export async function listarEstados(req, res) {
 
 /** GET /api/tickets/5 */
 export async function obtener(req, res) {
-  const ticket = await ticketsServicio.obtenerPorId(leerId(req));
+  const ticket = await ticketsServicio.obtenerPorId(leerId(req), req.usuario);
   res.json({ ok: true, datos: ticket });
 }
 
 /** POST /api/tickets */
 export async function crear(req, res) {
-  const nuevo = await ticketsServicio.crear(req.body);
+  const nuevo = await ticketsServicio.crear(req.body, req.usuario);
   res.status(201).json({ ok: true, datos: nuevo });
 }
 

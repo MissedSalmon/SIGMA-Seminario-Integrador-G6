@@ -1,5 +1,12 @@
 # Dominio: roles, flujo y glosario
 
+> **U-23 (13/10/2026):** Las observaciones de tarea son texto libre de hasta
+> 500 caracteres (como las descripciones de tickets y remitos). Se registran
+> por técnicos con asignación vigente, sin limitar el estado de la tarea, con
+> cuenta autora, nombre al momento de crear y fecha del servidor. No se editan
+> ni eliminan. La consulta por activo está preparada para HU-28/HU-29; su
+> pantalla de historial aún está pendiente. Ver `docs/U-23-observaciones.md`.
+
 ## Los 3 roles
 
 | Rol | Qué hace |
@@ -54,13 +61,52 @@ Una OT viene **o de un ticket, o de un plan preventivo**. Nunca de los dos.
 
 ## Estados
 
-| Entidad | Estados |
+Los estados y las prioridades son **datos enumerados**: en la base cada uno se guarda como
+un **número** (el de la tabla). La traducción a texto está en un solo lugar:
+`backend/src/utiles/enumerados.js`.
+
+| Entidad | Estados (número en la base) |
 |---|---|
-| **Ticket** | Creado → Validado → Asignado → En ejecución → Finalizado → Cerrado · (o Rechazado) |
-| **Orden de trabajo** | Creada → Asignada → En ejecución → Finalizada · (o Cancelada) |
-| **Tarea de OT** | Pendiente → En ejecución → Completada |
-| **Activo** | Operativo → En mantenimiento → Fuera de servicio → Retirado |
-| **Herramienta** | Disponible ⇄ En uso · Fuera de servicio |
+| **Ticket** | 1 Creado → 2 Validado → 3 Asignado → 4 En ejecución → 5 Finalizado → 6 Cerrado · (o 7 Rechazado) |
+| **Orden de trabajo** | 1 Creada → 2 Asignada → 3 En ejecución → 4 Finalizada · (o 5 Cancelada) |
+| **Tarea de OT** | 1 Creada · 2 Asignada · 3 En ejecución · 4 Pendiente · 5 Finalizada · 6 Cancelada |
+| **Prioridad de la tarea** | 1 Alta · 2 Media · 3 Baja |
+| **Prioridad manual de la OT** | 1 Alta · 2 Media · 3 Baja · (vacía: usa la sugerida) |
+| **Técnico asignado a la tarea** | 1 Pendiente · 2 Asignada · 3 En curso · 4 Finalizada · 5 Cancelada |
+| **Activo** | 1 Operativo → 2 En mantenimiento → 3 Fuera de servicio → 4 Retirado |
+| **Herramienta** | 1 Disponible ⇄ 2 En uso · 3 Fuera de servicio |
+| **Rol de usuario** | 1 administrador · 2 tecnico · 3 autorizado |
+
+> **Decisiones del 12/10/2026 (Rol de usuario como dato enumerado):**
+> - El atributo `rol` de la tabla `usuario` migró de `VARCHAR(50)` a número entero (`INT`)
+>   con restricción `CHECK (rol BETWEEN 1 AND 3)`. La migración es
+>   `supabase/migrations/20261012120000_usuario_rol_enumerado.sql`.
+> - En el backend se incorporó `ENUM_ROL` a `backend/src/utiles/enumerados.js`. La API sigue
+>   manejando los textos `'administrador'`, `'tecnico'`, `'autorizado'` hacia el frontend y JWT.
+
+> **Decisiones del 07/10/2026 (valores enumerados del diccionario de datos):**
+> - Los estados y la prioridad de la tarea dejan de guardarse como texto y pasan a ser un
+>   número entero (`INT`), como dice el diccionario. Cada columna sólo acepta sus números
+>   (CHECK) y lleva un comentario con lo que significa cada uno. La API sigue mandando el
+>   texto, así que las pantallas no cambiaron.
+> - **Ticket:** se agregó "En ejecución" (4), que el sistema ya usaba y el diccionario no
+>   tenía. Los viejos `ABIERTO` pasaron a 1=Creado.
+> - **Herramienta:** "En uso" ahora también se guarda (antes sólo salía de la asignación).
+>   Al asignarla pasa a 2 y al devolverla vuelve a 1.
+> - **Tarea:** quedan los 6 estados del diccionario y una tarea nueva arranca en "Creada".
+>   Las 19 tareas que había quedaron en 4=Pendiente; "Completada" pasó a llamarse
+>   "Finalizada". Una tarea se puede borrar mientras no empezó (Creada, Asignada o Pendiente).
+> - **Cuando a una tarea se le asigna alguien (un técnico o un prestador), pasa a
+>   "Asignada"**, desde Creada o Pendiente; si se le saca el responsable vuelve a "Creada".
+>   Si ya está en ejecución, finalizada o cancelada, se respeta su estado. La asignación del
+>   técnico (`tec_asig_estado`) también nace "Asignada". En la migración, las 9 tareas que ya
+>   tenían técnico pasaron a "Asignada"; las 10 sin nadie siguen en "Pendiente".
+> - Si se agrega un valor nuevo, va al final de su lista en `enumerados.js` (para no correr los
+>   números ya guardados) y en una migración se amplía el CHECK de la columna.
+> - **10/10/2026:** se pasaron a llamar **datos enumerados** (`enumerados.js`, `ENUM_...`).
+>   La prioridad manual de la OT (`ot_prioridad`) también pasó a número, con los mismos
+>   valores que la de la tarea. La migración quedó como
+>   `20261010120000_datos_enumerados.sql`, para que vaya después de las del 09/10.
 
 > **Decisiones del 13/09/2026 (HU-10, consulta de tickets):**
 > - Los estados del ticket viven en `backend/src/servicios/tickets.servicio.js` (`ESTADOS`) y
@@ -86,6 +132,9 @@ Una OT viene **o de un ticket, o de un plan preventivo**. Nunca de los dos.
 > - **La prioridad es de la TAREA, no de la OT.** La tabla `tarea_ot` ya tiene
 >   `tarea_prioridad`, y una misma OT puede tener una tarea urgente y otra que puede esperar.
 >   La OT muestra la prioridad más alta de sus tareas; no se guarda.
+>   *Cambio del 09/10/2026:* esa prioridad calculada es ahora la **sugerida**. El
+>   administrador puede poner otra a mano en el detalle de la OT (`orden_trabajo.ot_prioridad`),
+>   y esa manda. Si la borra, la OT vuelve a usar la sugerida.
 > - **El estado de la OT no se carga a mano, se calcula:** sin tareas, o con alguna sin
 >   responsable, queda en "Creada"; cuando todas tienen responsable pasa a "Asignada".
 > - **El ticket acompaña a su OT:** cuando la OT queda "Asignada", el ticket pasa a
@@ -93,8 +142,13 @@ Una OT viene **o de un ticket, o de un plan preventivo**. Nunca de los dos.
 >   dos estados: si el ticket ya está más adelante en el flujo, no retrocede.
 > - **Una tarea tiene un solo responsable:** un técnico propio *o* un prestador externo,
 >   nunca los dos (corrección #13 de la profe). Puede quedar sin asignar mientras se planifica.
-> - Los **prestadores de servicio** son por ahora de sólo lectura (`GET /api/prestadores`):
->   se listan para poder elegirlos en una tarea. El ABM es la HU-33.
+> - **Prestadores de servicio (HU-25, 11/10/2026):** ABM completo en `/prestadores`.
+>   Datos: nombre, CUIL, teléfono, email y garantía (texto libre, "6 meses en mano de obra").
+>   Son obligatorios el **nombre**, el **CUIL** (único, con dígito verificador) y **al menos un
+>   tipo de prestador** (HU-24); el resto es opcional. Un prestador puede tener varios tipos.
+>   **No se puede eliminar un prestador con tareas asignadas**, para no perder el historial.
+>   El listado se filtra por tipo. La cuenta bancaria (`prestador_serv_cuenta_bco`) está en la
+>   tabla pero la HU no la pide: queda sin pantalla, pendiente de confirmar si hace falta.
 > - **La duración de una tarea se escribe y se lee en horas y minutos** ("30 min", "1 h 30 min"),
 >   aunque en la base siga guardándose en horas con decimales (`tarea_ot.tarea_hom`, 0.5 = 30 min).
 >   La caja deja escribir libremente y sugiere las duraciones más comunes (de 15 min a 8 h);
@@ -134,6 +188,58 @@ Una OT viene **o de un ticket, o de un plan preventivo**. Nunca de los dos.
 >   ninguno: primero se registra la devolución.
 > - Un técnico que tiene o tuvo herramientas asignadas no se puede eliminar, para no perder
 >   ese historial.
+
+> **Decisiones del 10/10/2026 (HU-21, consultar mis tareas):**
+> - **El técnico ve sólo sus tareas.** La API (`GET /api/tareas/mias`) toma el legajo de la
+>   sesión, nunca de la dirección, así que no hay forma de pedir las de otro. Una tarea ajena
+>   abierta por dirección responde "No tenés asignada la tarea…", igual que si no existiera.
+> - **Una asignación cancelada ya no es del técnico** (`tec_asig_estado` = 5): no se muestra.
+> - **"Pendiente", para el aviso, es toda tarea que todavía no terminó:** la que no está
+>   Finalizada ni Cancelada. El aviso cuenta todas, sin mirar los filtros, porque dice cuánto
+>   trabajo le queda.
+> - **El aviso de pendientes se puede cerrar.** Una vez cerrado no vuelve mientras dure la
+>   pestaña del navegador (aunque se entre a una tarea y se vuelva), salvo que cambie la
+>   cantidad de pendientes: ahí hay algo nuevo que avisar y aparece otra vez.
+> - **La fecha que se filtra es la prevista de inicio** (`tarea_fecha_ini`, la que carga el
+>   administrador al planificar la OT). Una tarea sin fecha prevista no aparece cuando se
+>   filtra por fecha.
+> - **Orden por defecto:** prioridad (Alta, Media, Baja) y, dentro de la misma prioridad, la
+>   fecha prevista más cercana. Las que no tienen fecha van al final de su prioridad.
+> - **El detalle de la tarea es una pantalla** (`/tareas/[OT]/[tarea]`). La OT y el activo no
+>   llevan enlace: sus pantallas son del administrador.
+
+> **Decisiones del 10/10/2026 (HU-22, ejecutar la tarea; y HU-26, cierre automático):**
+> - **El técnico ejecuta la tarea desde su detalle.** "Iniciar tarea" la pasa de Creada,
+>   Asignada o Pendiente a **En ejecución**; "Finalizar tarea" la pasa de En ejecución a
+>   **Finalizada** (la HU dice "Completada": es el mismo estado, que en el diccionario se llama
+>   Finalizada). Las dos piden confirmación.
+> - **Al iniciar**, se mueve en cadena lo que corresponde, y sólo hacia adelante: la
+>   asignación del técnico pasa a En curso, la OT a En ejecución (si estaba Creada o
+>   Asignada), el ticket a En ejecución (si estaba Validado o Asignado) y el **activo a En
+>   mantenimiento** (salvo que esté Retirado).
+> - **Materiales:** se cargan en una pantalla aparte (`/tareas/[OT]/[tarea]/materiales`), igual
+>   que un ingreso por remito pero al revés, con un resumen de cómo queda el stock antes de
+>   guardar. **Sólo mientras la tarea está En ejecución.** Las cantidades son enteras. No se
+>   puede usar más de lo que hay: el campo tiene como tope el stock, y la base lo vuelve a
+>   controlar al guardar. El descuento es todo o nada (si a un material no le alcanza, no se
+>   registra ninguno) y queda como movimiento "Consumo" en el historial del depósito, con el
+>   legajo del técnico. Si se registra otra vez un material que la tarea ya tenía, se suma.
+> - **Herramientas:** el técnico toma las que necesita mientras la tarea está En ejecución, y
+>   quedan **En uso a su nombre** (es la misma asignación que hace el administrador desde el
+>   depósito). Las devuelve él mismo cuando quiere, aunque la tarea ya haya terminado. Sólo
+>   puede devolver las suyas. Las herramientas son del técnico, no de la tarea.
+> - **Cierre automático (HU-26):** cuando todas las tareas de la OT están Finalizadas o
+>   Canceladas (y al menos una Finalizada), la **OT se finaliza** con su fecha de cierre, el
+>   **ticket se cierra** con su fecha de cierre (columna nueva `ticket_fecha_cierre`) y el
+>   **activo vuelve a Operativo**, salvo que otra OT en ejecución lo siga arreglando.
+> - **Historial del técnico en el menú:** "Materiales utilizados" (`/tareas/materiales`) lista
+>   lo que se usó en sus tareas, con filtro por material y por fecha. Es sólo para consultar:
+>   no lleva acciones. "Herramientas utilizadas" (`/tareas/herramientas`) lista las que tiene
+>   ("En uso") y las que ya devolvió, y desde ahí devuelve las que todavía están a su nombre.
+>   Sólo ve lo suyo.
+> - ⬜ **Pendiente de definir:** una tarea a cargo de un **prestador externo** no la puede
+>   finalizar un técnico desde la app. Si una OT tiene una, no se va a cerrar sola hasta que
+>   haya una forma de marcar esa tarea como hecha (la tendría que hacer el administrador).
 
 ---
 
@@ -194,7 +300,7 @@ Agrupadas por tema, para tener el mapa general:
 | **Evidencia** | Fotos que se adjuntan a un ticket o a una OT. |
 | **Falla** | Clasificación del problema: eléctrica, mecánica, estructural, sanitaria. Se registra en la tarea de la OT. |
 | **Herramienta** | Instrumento que no se consume y se devuelve al depósito. |
-| **Ingreso** | Entrada de materiales al depósito por remito. Sube el stock. |
+| **Ingreso** | Entrada de materiales al depósito con un remito o una factura (09/10/2026). Sube el stock. Se guarda en la tabla `remito`, con el tipo en `remito_tipo_comprobante`. Si la factura necesita datos propios (letra, importe, CUIT), queda **pendiente de confirmar**. |
 | **Inventario de activos** | Registro de los activos instalados, con ubicación, estado e historial. |
 | **Inventario de depósito** | Registro de cuánto hay de cada material y herramienta. |
 | **Ítem de inventario** | Elemento del depósito. Se divide en materiales (se consumen) y herramientas (se devuelven). |
@@ -208,7 +314,7 @@ Agrupadas por tema, para tener el mapa general:
 | **Prestador de servicio** | Empresa o profesional externo que hace trabajos que el equipo propio no puede cubrir. |
 | **Prioridad** | Nivel de importancia que el administrador le pone a la OT. |
 | **Proveedor** | Quien le vende materiales y herramientas a la facultad. |
-| **Remito** | Comprobante del ingreso de materiales al depósito. |
+| **Remito** | Uno de los comprobantes del ingreso de materiales al depósito. El otro es la **factura**. |
 | **Stock** | Cantidad disponible de un material. |
 | **Stock mínimo** | Cantidad mínima que hay que tener. Al llegar, el sistema avisa. |
 | **Tarea (de OT)** | Actividad concreta dentro de una OT. Cuando todas están completas, la OT se finaliza. Siempre sale de una tarea estándar (plantilla) del tipo de activo; su descripción se puede ajustar (decisión del 26/09/2026). |
@@ -217,4 +323,5 @@ Agrupadas por tema, para tener el mapa general:
 | **Tipo de activo** | Categoría de activos: aires acondicionados, mobiliario, luminarias. |
 | **Tipo de trabajo** | Clasificación del trabajo técnico: eléctrica, refrigeración, sanitaria, civil. La usan tanto los técnicos como los prestadores externos. |
 | **Trazabilidad** | Poder seguir el historial completo de un ticket, una OT o un activo. |
+| **Usuario** | Entidad técnica (HU-30) que almacena credenciales (identificador, passwordHash), rol y controla el estado del primer inicio de sesión para centralizar el acceso al sistema sin usar Supabase Auth directamente en el frontend. |
 | **Usuario autorizado** | Responsable de un área, habilitado para cargar tickets y consultar su estado. |

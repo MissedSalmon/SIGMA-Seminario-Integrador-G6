@@ -14,6 +14,8 @@ const router = Router();
 router.use(soloAdministrador);
 
 router.get('/', remitos.listar);
+// Va ANTES que /:id, si no Express la toma como un id.
+router.get('/tipos-comprobante', remitos.listarTiposComprobante);
 router.get('/:id', remitos.obtener);
 router.post('/', remitos.crear);
 

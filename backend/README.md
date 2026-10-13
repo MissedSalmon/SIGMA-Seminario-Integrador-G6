@@ -36,7 +36,17 @@ backend/
     ├── rutas/            # define las direcciones de la API
     ├── controladores/    # reciben el pedido y arman la respuesta
     ├── servicios/        # reglas de negocio y consultas a la base
-    └── middlewares/      # errores y ruta no encontrada
+    └── middlewares/      # manejo de roles (JWT), errores y ruta no encontrada
+
+## Autenticación y Seguridad (HU-30)
+
+El sistema utiliza un esquema basado en JSON Web Tokens (JWT) para la autenticación, con los siguientes middlewares ubicados en `src/middlewares/`:
+
+*   **Validación de Sesión:** Middleware encargado de verificar la validez del token en cada solicitud protegida.
+*   **Protección de Rutas por Rol:** Control de acceso que restringe las rutas según el rol del usuario que hizo la petición:
+    *   `/admin/*`: Exclusivo para Administradores (acceso total).
+    *   `/tickets`: Permite operaciones por Usuarios Autorizados.
+    *   `/tareas`: Permite gestiones por los Técnicos.
 ```
 
 ## Cómo se agrega un módulo nuevo

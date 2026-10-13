@@ -4,7 +4,7 @@ import { datoInvalido, noEncontrado, conflicto, errorDeBase } from '../utiles/er
 /**
  * Tipos de prestador de servicio (HU-24): la clase de servicio que da una
  * empresa o un profesional de afuera. Es una tabla de apoyo de los
- * prestadores (HU-33).
+ * prestadores (HU-25).
  */
 
 const QUE_FALTA = 'de tipos de prestador';
@@ -114,9 +114,10 @@ export async function actualizar(idTipoPrestador, datos) {
 export async function eliminar(idTipoPrestador) {
   const tipo = await obtenerPorId(idTipoPrestador);
 
-  // No se borra un tipo que ya tiene prestadores: quedarian sin tipo.
+  // No se borra un tipo que ya tiene prestadores: quedarian sin tipo. Desde la
+  // HU-25 los tipos de cada prestador estan en la tabla intermedia.
   const { count, error: errorUso } = await supabase
-    .from('prestador_servicio')
+    .from('prestador_tipo_prestador')
     .select('prestador_serv_id', { count: 'exact', head: true })
     .eq('tipo_prestador_id', idTipoPrestador);
 

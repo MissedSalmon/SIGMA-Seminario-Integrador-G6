@@ -22,15 +22,13 @@ Ticket → Validación → Orden de Trabajo (OT) → Tareas → Ejecución → C
 
 ---
 
-## Estado actual (27/08/2026)
+## Estado actual (12/10/2026)
 
 - Ya se entregó la **Primera Carpeta** (17/07/2026). Nota: **76/100 — APROBADO**.
-- Hay una **devolución con correcciones** que todavía no se aplicaron.
-  El punto más pesado: **hay que rehacer el Modelo de Tablas**.
+- **HU-30 (Autenticación y Sesiones) completada (10/10/2026) y refactorizada a enumerados (12/10/2026):** Login propio con JWT, middleware `validarSesion` y `soloAdministrador` con JWT real, vista `/tareas` para técnicos, menú lateral filtrado dinámicamente por rol y cambio de contraseña obligatorio en el primer inicio de sesión. El atributo `rol` de `usuario` migró de `VARCHAR` a dato enumerado entero (`INT`: 1=administrador, 2=tecnico, 3=autorizado) mediante `supabase/migrations/20261012120000_usuario_rol_enumerado.sql` y `ENUM_ROL` en `backend/src/utiles/enumerados.js`. Pruebas backend (107/107 passed).
 - **Sprint 0 hecho:** estructura del repositorio armada y funcionando
-  (Next.js 16 + Express 5 + Supabase, monorepo con npm workspaces).
-  Falta sólo la tarea T3 (base de datos), que depende de rehacer el modelo.
-- Según el cronograma, el Sprint 1 terminó el 23/08 y el **Sprint 2 está en curso**.
+  (Next.js 16 + Express 5 + Supabase, monorepo with npm workspaces).
+- La base de datos ya fue integrada con Supabase CLI en `supabase/migrations/`.
 
 ---
 
@@ -108,7 +106,10 @@ en los **issues de GitHub**, y el modelo de datos en `supabase/migrations/`.
   memoria** (`backend/src/datos-mock/`), no contra la base aún.
 - **HU-14 (crear la OT) está hecha (21/09/2026):** la OT se genera sola al validar el
   ticket y se planifica en `/ordenes-trabajo`, cargándole las tareas con su prioridad y su
-  responsable. Los **prestadores de servicio** son sólo lectura hasta que se haga la HU-33.
+  responsable.
+- **HU-24 (tipos de prestador) y HU-25 (prestadores de servicio) están hechas (11/10/2026):**
+  ABM en `/prestadores/tipos` y `/prestadores`. Un prestador tiene uno o más tipos y no se
+  puede eliminar si tiene tareas asignadas.
 - **El proyecto en Supabase** y la conexión con **Vercel** en producción.
 
 *(Nota: La base de datos ya fue refactorizada e integrada con Supabase CLI en la carpeta `supabase/migrations/`)*

@@ -3,7 +3,8 @@
 /**
  * Badge de prioridad de una tarea de la OT (HU-14).
  *
- * La prioridad se carga en cada tarea; la OT muestra la más alta de las suyas.
+ * La prioridad se carga en cada tarea; la OT sugiere la más alta de las suyas,
+ * salvo que el administrador le haya puesto otra a mano.
  * El color acompaña, pero lo que se lee es la palabra: "Alta", "Media" o
  * "Baja". Si una OT no tiene tareas todavía, no hay prioridad que mostrar y se
  * devuelve un guion.

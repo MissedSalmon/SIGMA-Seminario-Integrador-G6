@@ -509,21 +509,34 @@ Cuando esté la base hay que deshacer las tres cosas:
 
 ---
 
-## Las dos conexiones a Supabase
+## La conexión a Supabase y la Autenticación
 
-Es lo más importante de entender y lo más fácil de equivocar:
+El sistema tiene una arquitectura clara respecto a dónde se realizan las validaciones y cómo se accede a los datos:
 
 | Archivo | Clave | Dónde corre | Para qué |
 |---|---|---|---|
-| `backend/src/config/supabase.js` | `SERVICE_ROLE_KEY` | Servidor | Todo el negocio. Saltea las reglas de seguridad. |
-| `frontend/src/lib/supabase.js` | `ANON_KEY` | Navegador | Sólo login y subida de fotos. |
+| `backend/src/config/supabase.js` | `SERVICE_ROLE_KEY` | Servidor | Todo el negocio y consultas a la base de datos. Saltea reglas de seguridad locales de Supabase. |
+| `frontend/src/utils/supabase/` | `ANON_KEY` | Navegador | Sólo para subida y lectura de fotos o archivos públicos si se requiere, pero **nunca para Login**. |
 
 > ⚠️ **La `SERVICE_ROLE_KEY` nunca va al frontend.** Si se filtra, cualquiera puede leer y
 > modificar toda la base. Va únicamente en `backend/.env`, que no se sube al repositorio.
 > En Next.js, toda variable que empiece con `NEXT_PUBLIC_` queda visible en el navegador.
 
-Para todo lo demás el frontend **no habla directo con Supabase**: llama al backend a través
-de `frontend/src/servicios/api.js`, porque ahí viven las reglas de negocio.
+**Autenticación y Sesiones (HU-30):**
+El frontend **no habla directo con Supabase Auth** para el inicio de sesión. La autenticación se maneja exclusivamente a través del backend enviando credenciales (legajo o usuario) y contraseña. El backend valida contra la tabla `usuario` y emite un **token JWT** almacenado en cookie HttpOnly. El estado de la sesión, los permisos y el control de primer inicio de sesión se gestionan mediante este token y un middleware en Next.js. El frontend interactúa con el sistema siempre a través de `frontend/src/servicios/api.js`.
+
+- **Pantalla de Login (`/login`):** Centrada, minimalista, con la identidad visual institucional de SIGMA (`--sigma-teal`, `--sigma-fondo`, `--sigma-superficie`, `--sigma-borde`, tipografía Inter).
+- **Vistas del Frontend y Filtrado por Rol:** 
+  - **Administrador:** Acceso completo al sistema y menú de administración.
+  - **Técnico:** Redirigido a la vista de tareas en `/tareas`.
+  - **Usuario Autorizado:** Redirigido a la vista de tickets en `/tickets`.
+  - El menú lateral (`BarraLateral.js`, `navegacion.js`) utiliza `ContextoSesion.js` para leer el rol directamente desde el JWT de la cookie y desplegar únicamente los ítems permitidos para el rol activo.
+  - La ruta `/tareas` fue agregada al mapa de migas de pan en `Encabezado.js`.
+- **Middlewares Backend (`validarSesion` y `soloAdministrador`):**
+  - Las rutas de tickets en `tickets.rutas.js` aplican `validarSesion` para garantizar token JWT válido.
+  - El middleware `soloAdministrador.js` extrae y valida el rol `administrador` del JWT real descodificado del request, desestimando headers ad-hoc.
+- **Cierre de Sesión:** Accesible tanto desde la **barra lateral principal** (en `CSidebarFooter`) como desde el menú de usuario del **encabezado** (`CDropdown`) y desde la pantalla de **Mi Perfil** (`/perfil`), estandarizado con el ícono `cilAccountLogout` y botones propios de CoreUI/SIGMA.
+- **Pruebas unitarias de autenticación:** Ubicadas en `backend/test/auth.servicio.test.js` (y resto de tests de la suite backend: 53 passed) con cobertura para validación de credenciales (casos exitosos, contraseñas erróneas, usuarios inactivos o inexistentes), obtención de perfil por rol y cambio de contraseña.
 
 ---
 
@@ -559,6 +572,35 @@ Siempre el mismo, para que el frontend no tenga que adivinar:
 { "ok": true,  "datos": { } }
 { "ok": false, "mensaje": "El ticket no existe." }
 ```
+
+### Los datos enumerados se guardan como números (07/10/2026 y 12/10/2026)
+
+Un **dato enumerado** es una columna que sólo puede tomar unos pocos valores fijos. En la
+base, los estados (activo, ticket, OT, tarea, técnico asignado, herramienta), las
+prioridades (de la tarea y la manual de la OT) y el rol del usuario (administrador,
+técnico, autorizado) son un **número entero**, como pide el diccionario de datos: ocupan
+menos que el texto y la base no deja guardar uno que no existe (CHECK). Las migraciones son
+`supabase/migrations/20261010120000_datos_enumerados.sql` y
+`supabase/migrations/20261012120000_usuario_rol_enumerado.sql`.
+
+La traducción entre número y texto está en **un solo archivo**:
+`backend/src/utiles/enumerados.js`. Cada enumerado se llama `ENUM_...`. Los servicios
+trabajan siempre con el texto y lo pasan a número sólo para leer y escribir en la base. La
+API sigue mandando el texto, así que el frontend no se entera.
+
+```js
+import { ENUM_ESTADO_TICKET, ENUM_ROL } from '../utiles/enumerados.js';
+
+ENUM_ESTADO_TICKET.codigo('Validado');   // 2  -> para guardar o filtrar
+ENUM_ESTADO_TICKET.texto(fila.ticket_estado);   // 'Validado'  -> para mostrar
+ENUM_ROL.codigo('tecnico');              // 2  -> para guardar en usuario
+ENUM_ROL.texto(fila.rol);                // 'tecnico'  -> para el token JWT y respuestas
+```
+
+**Nunca escribir un estado o rol a mano en la base** (`ticket_estado: 'Validado'`, `rol: 'tecnico'`):
+la columna es numérica y lo rechaza. Siempre pasar por el enumerado. Las pruebas de
+`backend/test/enumerados.test.js` fijan el número de cada valor: si fallan, alguien cambió
+el orden de una lista.
 
 ---
 

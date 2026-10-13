@@ -16,6 +16,8 @@
  *     la otra tabla), asi que la exige este servicio.
  */
 import { supabase } from '../config/supabase.js';
+import bcrypt from 'bcryptjs';
+import { ENUM_ROL } from '../utiles/enumerados.js';
 import { datoInvalido, noEncontrado, conflicto } from '../utiles/errores.js';
 import {
   normalizarCuil,
@@ -221,6 +223,24 @@ export async function crear(datos) {
   if (error) throw new Error(error.message);
 
   await asignarArea(legajo, limpio.idArea);
+
+  // Crear usuario asociado en la tabla usuario (HU-30)
+  const passwordHash = await bcrypt.hash(String(legajo), 10);
+  const { error: errorUsuario } = await supabase.from('usuario').insert({
+    identificador: String(legajo),
+    password_hash: passwordHash,
+    rol: ENUM_ROL.codigo('autorizado'),
+    require_password_change: true,
+    activo: true,
+    autorizado_legajo: String(legajo),
+  });
+
+  if (errorUsuario) {
+    // Si falla la inserción del usuario, hacemos rollback
+    await supabase.from('area').update({ autorizado_legajo: null }).eq('autorizado_legajo', legajo);
+    await supabase.from('autorizado').delete().eq('autorizado_legajo', legajo);
+    throw new Error(`Error al crear las credenciales de usuario: ${errorUsuario.message}`);
+  }
 
   return obtenerPorId(legajo);
 }

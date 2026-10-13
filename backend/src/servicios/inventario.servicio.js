@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabase.js';
 import { conflicto, datoInvalido, errorDeBase, noEncontrado } from '../utiles/errores.js';
+import { ENUM_ESTADO_HERRAMIENTA } from '../utiles/enumerados.js';
 
 /**
  * Catalogo del deposito (HU-15): materiales (se consumen) y herramientas (se
@@ -49,21 +50,11 @@ function aMaterial(fila) {
 }
 
 /**
- * Deja el estado de una herramienta en uno de los tres que muestra el
- * sistema, sin importar como se haya escrito en la base ('DISPONIBLE',
- * 'Fuera_de_servicio'...). Tambien reconoce el nombre viejo ('En reparación')
- * para no perder lo que ya este guardado con ese valor.
+ * El texto del estado guardado en la base (1=Disponible, 2=En uso, 3=Fuera de
+ * servicio; ver utiles/enumerados.js).
  */
-function normalizarEstado(valor) {
-  const limpio = String(valor ?? '')
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[_\s]+/g, ' ')
-    .trim()
-    .toUpperCase();
-  if (limpio === 'EN USO') return 'En uso';
-  if (['FUERA DE SERVICIO', 'EN REPARACION', 'NO DISPONIBLE'].includes(limpio)) return 'Fuera de servicio';
-  return 'Disponible';
+function normalizarEstado(codigo) {
+  return ENUM_ESTADO_HERRAMIENTA.texto(codigo) ?? 'Disponible';
 }
 
 /**
@@ -273,7 +264,7 @@ export async function crearItem(datos) {
 
   const { data, error } = await supabase
     .from('herramienta')
-    .insert({ herr_cod: codigo, herr_nom: item.nombre, herr_desc: item.descripcion, inventariotipoid: item.idTipo, herr_estado: 'Disponible' })
+    .insert({ herr_cod: codigo, herr_nom: item.nombre, herr_desc: item.descripcion, inventariotipoid: item.idTipo, herr_estado: ENUM_ESTADO_HERRAMIENTA.codigo('Disponible') })
     .select(COLUMNAS)
     .single();
   if (error) throw new Error(error.message);
@@ -356,6 +347,18 @@ export async function obtenerMovimientos(codigo) {
   }));
 }
 
+/**
+ * Guarda el estado de la herramienta en la columna. "En uso" tambien queda
+ * guardado (07/10/2026), aunque el que manda sigue siendo el prestamo abierto.
+ */
+async function guardarEstado(codigo, estado) {
+  const { error } = await supabase
+    .from('herramienta')
+    .update({ herr_estado: ENUM_ESTADO_HERRAMIENTA.codigo(estado) })
+    .eq('herr_cod', codigo);
+  if (error) throw new Error(error.message);
+}
+
 /** La herramienta con ese codigo, con su prestamo abierto si lo tiene. */
 async function obtenerHerramienta(codigo) {
   const fila = await buscarHerramienta(codigo);
@@ -402,6 +405,7 @@ export async function asignarHerramienta(codigo, datos = {}) {
     throw new Error(error.message);
   }
 
+  await guardarEstado(codigo, 'En uso');
   return obtenerHerramienta(codigo);
 }
 
@@ -445,6 +449,7 @@ export async function devolverHerramienta(codigo) {
     .is('tec_herr_fecha_dev', null);
   if (error) throw new Error(error.message);
 
+  await guardarEstado(codigo, 'Disponible');
   return obtenerHerramienta(codigo);
 }
 
@@ -460,7 +465,7 @@ export async function ponerEnServicio(codigo) {
 
   const { error } = await supabase
     .from('herramienta')
-    .update({ herr_estado: 'Disponible' })
+    .update({ herr_estado: ENUM_ESTADO_HERRAMIENTA.codigo('Disponible') })
     .eq('herr_cod', codigo);
   if (error) throw new Error(error.message);
 
@@ -491,7 +496,7 @@ export async function eliminarItem(codigo) {
 
     const { error } = await supabase
       .from('herramienta')
-      .update({ herr_estado: 'Fuera de servicio' })
+      .update({ herr_estado: ENUM_ESTADO_HERRAMIENTA.codigo('Fuera de servicio') })
       .eq('herr_cod', codigo);
     if (error) throw new Error(error.message);
     return obtenerHerramienta(codigo);

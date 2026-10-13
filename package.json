@@ -22,7 +22,8 @@
     "lint": "npm run lint --workspace frontend",
     "db:link": "npx supabase link --project-ref agayydinmimmqoyuybbi",
     "db:push": "npx supabase db push",
-    "db:start": "npx supabase start"
+    "db:start": "npx supabase start",
+    "db:seed": "node seed_admin.js"
   },
   "devDependencies": {
     "concurrently": "^10.0.5",

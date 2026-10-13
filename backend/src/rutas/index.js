@@ -21,6 +21,10 @@ import rutasInventario from './inventario.rutas.js';
 
 const router = Router();
 
+// Autenticación y Sesiones (HU-30)
+import rutasAuth from './auth.rutas.js';
+router.use('/auth', rutasAuth);
+
 // Estructura edilicia (Sprint 1)
 router.use('/edificios', rutasEdificios);
 router.use('/espacios', rutasEspacios);
@@ -60,12 +64,16 @@ router.use('/tickets', rutasTickets);
 import rutasOrdenesTrabajo from './ordenesTrabajo.rutas.js';
 router.use('/ordenes-trabajo', rutasOrdenesTrabajo);
 
+// Las tareas del tecnico con la sesion activa (HU-21)
+import rutasTareas from './tareas.rutas.js';
+router.use('/tareas', rutasTareas);
+
 // Ingreso de materiales y herramientas por remito (HU-16)
 import rutasRemitos from './remitos.rutas.js';
 router.use('/remitos', rutasRemitos);
 
-// Prestadores de servicio: solo lectura, para asignarlos a una tarea (HU-14).
-// El ABM es la HU-33.
+// Prestadores de servicio (HU-25). El listado tambien se usa para asignarlos a
+// una tarea de la OT (HU-14).
 import rutasPrestadores from './prestadores.rutas.js';
 router.use('/prestadores', rutasPrestadores);
 

@@ -11,6 +11,7 @@
 import { CContainer } from '@coreui/react';
 
 import { ProveedorLayout } from './ContextoLayout.js';
+import { ProveedorSesion } from './ContextoSesion.js';
 import BarraLateral from './BarraLateral.js';
 import Encabezado from './Encabezado.js';
 import PieDePagina from './PieDePagina.js';
@@ -20,23 +21,25 @@ import Toast from '@/componentes/toast/Toast.js';
 export default function LayoutAdmin({ children }) {
   return (
     <ProveedorToast>
-      <ProveedorLayout>
-        <BarraLateral />
+      <ProveedorSesion>
+        <ProveedorLayout>
+          <BarraLateral />
 
-        <div className="wrapper d-flex flex-column min-vh-100">
-          <Encabezado />
+          <div className="wrapper d-flex flex-column min-vh-100">
+            <Encabezado />
 
-          <div className="body flex-grow-1">
-            <CContainer className="px-4" fluid>
-              {children}
-            </CContainer>
+            <div className="body flex-grow-1">
+              <CContainer className="px-4" fluid>
+                {children}
+              </CContainer>
+            </div>
+
+            <PieDePagina />
           </div>
 
-          <PieDePagina />
-        </div>
-
-        <Toast />
-      </ProveedorLayout>
+          <Toast />
+        </ProveedorLayout>
+      </ProveedorSesion>
     </ProveedorToast>
   );
 }

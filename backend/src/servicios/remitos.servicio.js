@@ -1,5 +1,9 @@
 /**
- * Ingreso de materiales y herramientas por remito (HU-16).
+ * Ingreso de materiales y herramientas por remito o por factura (HU-16).
+ *
+ * El comprobante puede ser un remito o una factura (09/10/2026). Los dos se
+ * guardan en la tabla remito, con su tipo en remito_tipo_comprobante: el
+ * ingreso al deposito es el mismo, lo unico que cambia es el papel.
  *
  * El remito es el comprobante con el que el deposito recibe la mercaderia. Al
  * confirmarlo suben los stocks y queda anotado un movimiento de Ingreso por
@@ -26,6 +30,9 @@
 import { supabase } from '../config/supabase.js';
 import { datoInvalido, errorDeBase, noEncontrado } from '../utiles/errores.js';
 
+/** Con que papel puede llegar la mercaderia. */
+export const TIPOS_COMPROBANTE = ['Remito', 'Factura'];
+
 function texto(valor) {
   if (typeof valor !== 'string') return null;
   const resultado = valor.trim();
@@ -39,6 +46,7 @@ function hoy() {
 
 const COLUMNAS = `
   remito_id,
+  remito_tipo_comprobante,
   remito_proveedor,
   remito_num,
   remito_fecha_recepcion,
@@ -99,6 +107,8 @@ function aRemito(fila, detalles) {
 
   return {
     id: fila.remito_id,
+    // Los ingresos de antes de las facturas eran todos con remito.
+    tipoComprobante: fila.remito_tipo_comprobante ?? 'Remito',
     proveedor: fila.remito_proveedor,
     numero: fila.remito_num ?? null,
     fechaRecepcion: fila.remito_fecha_recepcion,
@@ -119,7 +129,7 @@ function aRemito(fila, detalles) {
  */
 function leerItems(valor) {
   if (!Array.isArray(valor) || valor.length === 0) {
-    throw datoInvalido('El remito tiene que tener al menos un ítem.');
+    throw datoInvalido('El ingreso tiene que tener al menos un ítem.');
   }
 
   const vistos = new Set();
@@ -168,7 +178,7 @@ async function verificarItems(items) {
       `${faltan.length === 1 ? 'El código' : 'Los códigos'} ${faltan
         .map((codigo) => `"${codigo}"`)
         .join(', ')} no ${faltan.length === 1 ? 'está' : 'están'} en el catálogo del depósito. ` +
-        'Hay que darlo de alta antes de cargar el remito.'
+        'Hay que darlo de alta antes de cargar el ingreso.'
     );
   }
 }
@@ -217,13 +227,22 @@ export async function obtenerPorId(id) {
  * Registra el remito y actualiza el stock.
  *
  * @param {object} datos
+ * @param {string} datos.tipoComprobante - "Remito" | "Factura"
  * @param {string} datos.proveedor
  * @param {string} datos.fechaRecepcion  - "2026-09-28"
  * @param {Array}  datos.items           - [{ codigo, cantidad }]
- * @param {string} [datos.numero]
+ * @param {string} datos.numero         - "0001-00012345"
  * @param {string} [datos.observaciones]
  */
 export async function crear(datos) {
+  const tipoComprobante = texto(datos?.tipoComprobante);
+  if (!tipoComprobante) {
+    throw datoInvalido('Hay que elegir el comprobante: remito o factura.');
+  }
+  if (!TIPOS_COMPROBANTE.includes(tipoComprobante)) {
+    throw datoInvalido(`"${tipoComprobante}" no es un comprobante válido. Son: ${TIPOS_COMPROBANTE.join(', ')}.`);
+  }
+
   const proveedor = texto(datos?.proveedor);
   const fechaRecepcion = texto(datos?.fechaRecepcion);
 
@@ -232,7 +251,7 @@ export async function crear(datos) {
   }
 
   if (!fechaRecepcion) {
-    throw datoInvalido('Hay que indicar la fecha de recepción del remito.');
+    throw datoInvalido('Hay que indicar la fecha de recepción.');
   }
 
   if (Number.isNaN(Date.parse(fechaRecepcion))) {
@@ -243,6 +262,16 @@ export async function crear(datos) {
     throw datoInvalido('La fecha de recepción no puede ser posterior a hoy.');
   }
 
+  // Obligatorio y como el del papel: "0001-00012345", sólo números y guion, hasta 13.
+  const numero = texto(datos?.numero);
+  if (!numero) {
+    throw datoInvalido('Hay que indicar el número de comprobante.');
+  }
+
+  if (!/^[0-9-]{1,13}$/.test(numero)) {
+    throw datoInvalido('El número de comprobante lleva sólo números y guion, hasta 13 caracteres.');
+  }
+
   const items = leerItems(datos?.items);
   await verificarItems(items);
 
@@ -250,10 +279,11 @@ export async function crear(datos) {
     p_proveedor: proveedor,
     p_fecha_recepcion: fechaRecepcion.slice(0, 10),
     p_items: items,
-    p_num: texto(datos?.numero),
+    p_num: numero,
     p_obs: texto(datos?.observaciones),
     // Todavia no hay login: cuando lo haya, aca va el usuario de la sesion.
     p_usuario: null,
+    p_tipo_comprobante: tipoComprobante,
   });
 
   if (error) {

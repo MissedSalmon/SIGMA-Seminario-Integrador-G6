@@ -2,9 +2,10 @@
  * Pruebas del servicio de tickets (HU-10: consulta con filtros).
  *
  * Se prueba lo que no es evidente leyendo el codigo: que la lista salga del
- * mas nuevo al mas viejo, que los filtros se combinen, que "Creado" incluya
- * los tickets viejos guardados como 'ABIERTO', y que el ticket salga bien
- * tanto con OT y evidencia como sin ellas.
+ * mas nuevo al mas viejo, que los filtros se combinen, que el estado se
+ * traduzca entre el numero de la base y el texto de la API (datos enumerados,
+ * ver src/utiles/enumerados.js), y que el ticket salga bien tanto con OT y
+ * evidencia como sin ellas.
  */
 import { jest } from '@jest/globals';
 
@@ -27,11 +28,11 @@ function filaTicket(cambios = {}) {
     autorizado_legajo: '1234',
     ticket_fecha_alta: '2026-09-05T12:30:00+00:00',
     ticket_desc: 'Falta un tornillo en la silla',
-    ticket_estado: 'Validado',
+    ticket_estado: 2, // Validado
     ticket_evidencia: 'https://fotos/silla.jpg',
     activo: {
       activo_codigo: 'C-01',
-      activo_estado: 'Operativo',
+      activo_estado: 1, // Operativo
       tipo_activo: { tipo_activo_nom: 'Mobiliario' },
       espacio: {
         espacio_id: 2,
@@ -42,7 +43,8 @@ function filaTicket(cambios = {}) {
     },
     autorizado: { autorizado_legajo: '1234', autorizado_nom_ape: 'Martin Guimenez' },
     orden_trabajo: [
-      { ot_id: 1, ot_estado: 'Creada', ot_fecha_alta: '2026-09-06T10:00:00+00:00', ot_fecha_cierre: null, ot_desc: 'Reparar silla' },
+      // ot_estado 1 = Creada
+      { ot_id: 1, ot_estado: 1, ot_fecha_alta: '2026-09-06T10:00:00+00:00', ot_fecha_cierre: null, ot_desc: 'Reparar silla' },
     ],
     ...cambios,
   };
@@ -104,22 +106,19 @@ describe('obtenerTodos', () => {
     expect(consulta.lte).not.toHaveBeenCalled();
   });
 
-  test('filtrar por "Creado" incluye los tickets viejos guardados como ABIERTO', async () => {
-    const consulta = consultaQueDevuelve([]);
-    supabase.from.mockReturnValue(consulta);
-
-    await obtenerTodos({ estado: 'Creado' });
-
-    expect(consulta.in).toHaveBeenCalledWith('ticket_estado', ['Creado', 'ABIERTO']);
-  });
-
-  test('filtrar por otro estado busca solo ese estado', async () => {
+  test('filtrar por estado busca su numero en la base', async () => {
     const consulta = consultaQueDevuelve([]);
     supabase.from.mockReturnValue(consulta);
 
     await obtenerTodos({ estado: 'Validado' });
 
-    expect(consulta.in).toHaveBeenCalledWith('ticket_estado', ['Validado']);
+    expect(consulta.eq).toHaveBeenCalledWith('ticket_estado', 2);
+  });
+
+  test('filtrar por un estado que no existe es un error', async () => {
+    supabase.from.mockReturnValue(consultaQueDevuelve([]));
+
+    await expect(obtenerTodos({ estado: 'Inventado' })).rejects.toThrow('no es un estado de ticket válido');
   });
 
   test('los filtros se combinan: fecha + activo + area, todos juntos', async () => {
@@ -134,7 +133,7 @@ describe('obtenerTodos', () => {
       idArea: 4,
     });
 
-    expect(consulta.in).toHaveBeenCalledWith('ticket_estado', ['Creado', 'ABIERTO']);
+    expect(consulta.eq).toHaveBeenCalledWith('ticket_estado', 1);
     expect(consulta.gte).toHaveBeenCalledWith('ticket_fecha_alta', '2026-09-01T03:00:00.000Z');
     expect(consulta.lte).toHaveBeenCalledWith('ticket_fecha_alta', '2026-09-10T02:59:59.999Z');
     expect(consulta.eq).toHaveBeenCalledWith('activo_codigo', 'PC-001');
@@ -162,14 +161,14 @@ describe('obtenerTodos', () => {
     expect(consulta.select.mock.calls[0][0]).not.toContain('!inner');
   });
 
-  test('traduce ABIERTO a "Creado" al devolver la lista', async () => {
+  test('devuelve el estado como texto, no como numero', async () => {
     supabase.from.mockReturnValue(
-      consultaQueDevuelve([filaTicket({ ticket_id: 2, ticket_estado: 'ABIERTO' })])
+      consultaQueDevuelve([filaTicket({ ticket_id: 2, ticket_estado: 7 })])
     );
 
     const [ticket] = await obtenerTodos();
 
-    expect(ticket.estado).toBe('Creado');
+    expect(ticket.estado).toBe('Rechazado');
   });
 });
 
@@ -200,7 +199,7 @@ describe('obtenerPorId', () => {
           orden_trabajo: [],
           activo: {
             activo_codigo: 'AC-001',
-            activo_estado: 'Operativo',
+            activo_estado: 1, // Operativo
             tipo_activo: { tipo_activo_nom: 'Aires' },
             espacio: { espacio_id: 3, espacio_num: '11', edificio: { edificio_nom: 'Central' }, area: [] },
           },
@@ -229,7 +228,7 @@ describe('crear', () => {
       ticket_id: 9,
       activo_codigo: 'AC-001',
       ticket_desc: 'Hace ruido',
-      ticket_estado: 'Creado',
+      ticket_estado: 1, // Creado
       ticket_evidencia: null,
       ticket_fecha_alta: '2026-09-13T16:00:00+00:00',
     });
@@ -237,7 +236,7 @@ describe('crear', () => {
 
     const nuevo = await crear({ codigoActivo: 'AC-001', descripcion: 'Hace ruido' });
 
-    expect(consulta.insert).toHaveBeenCalledWith(expect.objectContaining({ ticket_estado: 'Creado' }));
+    expect(consulta.insert).toHaveBeenCalledWith(expect.objectContaining({ ticket_estado: 1 }));
     expect(nuevo.estado).toBe('Creado');
   });
 });

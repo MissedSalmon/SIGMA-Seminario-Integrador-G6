@@ -24,11 +24,22 @@
  * react-aria son <a> comunes hasta que se les dice como navegar.
  */
 import { usePathname, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Breadcrumbs, RouterProvider } from '@heroui/react';
-import { CContainer, CHeader } from '@coreui/react';
+import {
+  CContainer,
+  CHeader,
+  CDropdown,
+  CDropdownToggle,
+  CDropdownMenu,
+  CDropdownItem,
+  CDropdownDivider,
+  CDropdownHeader,
+} from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilMenu } from '@coreui/icons';
+import { cilMenu, cilUser, cilAccountLogout, cilLockLocked } from '@coreui/icons';
 import { useLayout } from './ContextoLayout.js';
+import { logout } from '@/servicios/auth.js';
 
 /**
  * Como se muestra cada pantalla en las migas.
@@ -43,6 +54,9 @@ import { useLayout } from './ContextoLayout.js';
  */
 const NOMBRES = {
   '/tickets': 'Tickets',
+  '/tareas': 'Tareas asignadas',
+  '/tareas/materiales': 'Materiales utilizados',
+  '/tareas/herramientas': 'Herramientas utilizadas',
   '/ordenes-trabajo': 'Órdenes de trabajo',
   '/plantillas-tareas': 'Plantillas de tareas',
   '/edificios': 'Edificios',
@@ -52,13 +66,17 @@ const NOMBRES = {
   '/activos': 'Activos',
   '/tipos-activos': 'Tipos de activos',
   '/inventario/tipos': 'Tipos de materiales y herramientas',
-  '/inventario/remitos': 'Ingresos por remito',
+  '/inventario/remitos': 'Ingresos',
   '/inventario/materiales': 'Materiales',
   '/inventario/herramientas': 'Herramientas',
   '/tecnicos': 'Técnicos',
   '/especialidades': 'Especialidades',
+  '/prestadores': 'Listado de prestadores',
   '/prestadores/tipos': 'Tipos de prestador',
   '/autorizados': 'Usuarios autorizados',
+  '/perfil': 'Mi Perfil',
+  '/configuracion': 'Configuración',
+  '/configuracion/cambiar-password': 'Cambiar contraseña'
 };
 
 /** Los tramos que se repiten igual en todos los modulos. */
@@ -110,14 +128,6 @@ function armarMigas(direccion) {
       return;
     }
 
-    // Lo mismo con "Prestadores de servicio": el listado de prestadores es la
-    // HU-33 y todavia no existe. Cuando se haga, se saca esto y se agrega
-    // '/prestadores' al mapa NOMBRES.
-    if (acumulada === '/prestadores') {
-      migas.push({ texto: 'Prestadores de servicio', direccion: null, ultima: false });
-      return;
-    }
-
     /*
      * Un codigo colgado de un modulo es un identificador, salvo que ese tramo
      * sea una pantalla: una con nombre propio o una de las comunes
@@ -145,6 +155,15 @@ function armarMigas(direccion) {
       return;
     }
 
+    /*
+     * "Materiales utilizados" y "Herramientas utilizadas" cuelgan de /tareas en la
+     * direccion (el tecnico solo entra a /tareas...), pero son pantallas
+     * propias del menu, no parte de "Tareas asignadas": esa miga no va.
+     */
+    if (acumulada === '/tareas' && ['materiales', 'herramientas'].includes(tramos[indice + 1])) {
+      return;
+    }
+
     migas.push({
       texto: NOMBRES[acumulada] ?? NOMBRES_COMUNES[tramo] ?? tramo,
       direccion: acumulada,
@@ -161,31 +180,77 @@ export default function Encabezado() {
   const router = useRouter();
   const migas = armarMigas(direccionActual);
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push('/login');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
+  };
+
   return (
     <CHeader position="sticky" className="mb-4 p-0">
-      <CContainer className="border-bottom px-4 py-3 d-flex align-items-center" fluid>
-        <button
-          className="btn btn-link text-body p-0 d-md-none me-3"
-          onClick={() => setBarraVisible(!barraVisible)}
-          aria-label="Alternar menú"
-        >
-          <CIcon icon={cilMenu} size="lg" />
-        </button>
-        <RouterProvider navigate={router.push}>
-          <Breadcrumbs className="sigma-migas">
-            {/* En la pantalla de inicio, "Inicio" es la unica miga y es la actual. */}
-            <Breadcrumbs.Item href={migas.length > 0 ? '/' : undefined}>Inicio</Breadcrumbs.Item>
+      <CContainer className="border-bottom px-4 py-3 d-flex align-items-center justify-content-between" fluid>
+        <div className="d-flex align-items-center flex-grow-1">
+          <button
+            className="btn btn-link text-body p-0 d-md-none me-3"
+            onClick={() => setBarraVisible(!barraVisible)}
+            aria-label="Alternar menú"
+          >
+            <CIcon icon={cilMenu} size="lg" />
+          </button>
+          <RouterProvider navigate={router.push}>
+            <Breadcrumbs className="sigma-migas">
+              {/* En la pantalla de inicio, "Inicio" es la unica miga y es la actual. */}
+              <Breadcrumbs.Item href={migas.length > 0 ? '/' : undefined}>Inicio</Breadcrumbs.Item>
 
-            {migas.map((miga) => (
-              <Breadcrumbs.Item
-                key={miga.direccion ?? miga.texto}
-                href={miga.ultima || !miga.direccion ? undefined : miga.direccion}
+              {migas.map((miga) => (
+                <Breadcrumbs.Item
+                  key={miga.direccion ?? miga.texto}
+                  href={miga.ultima || !miga.direccion ? undefined : miga.direccion}
+                >
+                  {miga.texto}
+                </Breadcrumbs.Item>
+              ))}
+            </Breadcrumbs>
+          </RouterProvider>
+        </div>
+
+        <div className="d-flex align-items-center">
+          <CDropdown variant="nav-item" placement="bottom-end">
+            <CDropdownToggle
+              className="py-0 px-2 d-flex align-items-center btn btn-ghost-primary rounded-circle"
+              caret={false}
+              aria-label="Perfil y opciones de cuenta"
+              style={{ width: '2.4rem', height: '2.4rem', justifyContent: 'center' }}
+            >
+              <CIcon icon={cilUser} size="lg" />
+            </CDropdownToggle>
+            <CDropdownMenu className="pt-0 shadow-sm border" style={{ minWidth: '13rem', borderRadius: 'var(--sigma-radio-md)' }}>
+              <CDropdownHeader className="bg-light fw-semibold py-2 text-secondary" style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Mi Cuenta
+              </CDropdownHeader>
+              <CDropdownItem as={Link} href="/perfil" className="d-flex align-items-center gap-2 py-2">
+                <CIcon icon={cilUser} />
+                <span>Mi Perfil</span>
+              </CDropdownItem>
+              <CDropdownItem as={Link} href="/configuracion/cambiar-password" className="d-flex align-items-center gap-2 py-2">
+                <CIcon icon={cilLockLocked} />
+                <span>Cambiar contraseña</span>
+              </CDropdownItem>
+              <CDropdownDivider className="my-1" />
+              <CDropdownItem
+                as="button"
+                onClick={handleLogout}
+                className="d-flex align-items-center gap-2 py-2 text-danger"
               >
-                {miga.texto}
-              </Breadcrumbs.Item>
-            ))}
-          </Breadcrumbs>
-        </RouterProvider>
+                <CIcon icon={cilAccountLogout} />
+                <span>Cerrar sesión</span>
+              </CDropdownItem>
+            </CDropdownMenu>
+          </CDropdown>
+        </div>
       </CContainer>
     </CHeader>
   );

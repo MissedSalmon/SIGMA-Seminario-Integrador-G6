@@ -12,6 +12,10 @@
  *
  *   { tipo: 'grupo', texto: 'Espacios', icono: cilRoom, items: [ ...items... ] }
  *
+ * ROLES: cada entrada puede tener un array `roles` que indica quienes la ven.
+ * Si no tiene `roles`, la ven todos. Los valores posibles son:
+ *   'administrador' | 'tecnico' | 'autorizado'
+ *
  * EL ORDEN NO ES LIBRE: primero la clasificacion y despues lo que depende de
  * ella. Los tipos de espacio antes que los espacios, los tipos de activo antes
  * que los activos, las especialidades antes que los tecnicos. Es el orden en
@@ -29,36 +33,66 @@ import {
   cilDevices,
   cilPeople,
   cilStorage,
-  cilTask,
   cilListRich,
   cilUser,
   cilCog,
   cilClipboard,
   cilBriefcase,
+  cilTask,
 } from '@coreui/icons';
 
 export const navegacion = [
+  // ─── PANEL PRINCIPAL ───────────────────────────────────────────────────────
   {
     tipo: 'item',
     texto: 'Panel',
     direccion: '/',
     icono: cilSpeedometer,
+    roles: ['administrador'],
   },
+
+  // ─── TÉCNICO ───────────────────────────────────────────────────────────────
   {
     tipo: 'titulo',
     texto: 'Mantenimiento',
+    roles: ['tecnico'],
   },
   {
     tipo: 'item',
-    texto: 'Registrar ticket',
-    direccion: '/tickets/agregar',
+    texto: 'Tareas asignadas',
+    direccion: '/tareas',
     icono: cilTask,
+    roles: ['tecnico'],
   },
   {
+    tipo: 'item',
+    texto: 'Materiales utilizados',
+    direccion: '/tareas/materiales',
+    icono: cilStorage,
+    roles: ['tecnico'],
+  },
+  {
+    tipo: 'item',
+    texto: 'Herramientas utilizadas',
+    direccion: '/tareas/herramientas',
+    icono: cilBriefcase,
+    roles: ['tecnico'],
+  },
+
+  // ─── MANTENIMIENTO (ADMINISTRADOR Y AUTORIZADO) ────────────────────────────
+  {
+    tipo: 'titulo',
+    texto: 'Mantenimiento',
+    roles: ['administrador', 'autorizado'],
+  },
+  {
+    // Registrar un ticket no va en el menu: se entra desde el boton "Agregar"
+    // de la pantalla de tickets.
     tipo: 'item',
     texto: 'Tickets',
     direccion: '/tickets',
     icono: cilList,
+    roles: ['administrador', 'autorizado'],
   },
   {
     // Va despues de los tickets: la OT nace de un ticket validado.
@@ -66,27 +100,34 @@ export const navegacion = [
     texto: 'Órdenes de trabajo',
     direccion: '/ordenes-trabajo',
     icono: cilClipboard,
+    roles: ['administrador'],
   },
   {
     tipo: 'item',
     texto: 'Plantillas de tareas',
     direccion: '/plantillas-tareas',
     icono: cilListRich,
+    roles: ['administrador'],
   },
+
+  // ─── ESTRUCTURA EDILICIA (SOLO ADMINISTRADOR) ──────────────────────────────
   {
     tipo: 'titulo',
     texto: 'Estructura edilicia',
+    roles: ['administrador'],
   },
   {
     tipo: 'item',
     texto: 'Edificios',
     direccion: '/edificios',
     icono: cilBuilding,
+    roles: ['administrador'],
   },
   {
     tipo: 'grupo',
     texto: 'Espacios',
     icono: cilRoom,
+    roles: ['administrador'],
     items: [
       {
         tipo: 'item',
@@ -107,15 +148,20 @@ export const navegacion = [
     texto: 'Áreas',
     direccion: '/areas',
     icono: cilSitemap,
+    roles: ['administrador'],
   },
+
+  // ─── GESTIÓN DE ACTIVOS (SOLO ADMINISTRADOR) ──────────────────────────────
   {
     tipo: 'titulo',
     texto: 'Gestión de Activos',
+    roles: ['administrador'],
   },
   {
     tipo: 'grupo',
     texto: 'Activos',
     icono: cilDevices,
+    roles: ['administrador'],
     items: [
       {
         tipo: 'item',
@@ -131,14 +177,18 @@ export const navegacion = [
       },
     ],
   },
+
+  // ─── INVENTARIO (SOLO ADMINISTRADOR) ──────────────────────────────────────
   {
     tipo: 'titulo',
     texto: 'Gestión de inventario',
+    roles: ['administrador'],
   },
   {
     tipo: 'grupo',
     texto: 'Inventario',
     icono: cilStorage,
+    roles: ['administrador'],
     items: [
       {
         tipo: 'item',
@@ -164,40 +214,52 @@ export const navegacion = [
         // Va al final: para ingresar algo por remito, antes tiene que estar en
         // el catalogo.
         tipo: 'item',
-        texto: 'Ingresos por remito',
+        texto: 'Ingresos',
         direccion: '/inventario/remitos',
         icono: cilClipboard,
       },
     ],
   },
+
+  // ─── PERSONAL (SOLO ADMINISTRADOR) ────────────────────────────────────────
   {
     tipo: 'titulo',
     texto: 'Personal',
+    roles: ['administrador'],
   },
   {
     tipo: 'item',
     texto: 'Especialidades',
     direccion: '/especialidades',
     icono: cilTags,
+    roles: ['administrador'],
   },
   {
     tipo: 'item',
     texto: 'Técnicos',
     direccion: '/tecnicos',
     icono: cilPeople,
+    roles: ['administrador'],
   },
   {
-    // Por ahora sólo tiene los tipos (HU-24). El listado de prestadores es la
-    // HU-33 y va debajo, porque para cargar un prestador hay que elegir su tipo.
+    // Los tipos (HU-24) van antes que los prestadores (HU-25), porque para
+    // cargar un prestador hay que elegir sus tipos.
     tipo: 'grupo',
     texto: 'Prestadores de servicio',
     icono: cilBriefcase,
+    roles: ['administrador'],
     items: [
       {
         tipo: 'item',
         texto: 'Tipos de prestador',
         direccion: '/prestadores/tipos',
         icono: cilTags,
+      },
+      {
+        tipo: 'item',
+        texto: 'Listado de prestadores',
+        direccion: '/prestadores',
+        icono: cilList,
       },
     ],
   },
@@ -208,5 +270,6 @@ export const navegacion = [
     texto: 'Usuarios autorizados',
     direccion: '/autorizados',
     icono: cilUser,
+    roles: ['administrador'],
   },
 ];

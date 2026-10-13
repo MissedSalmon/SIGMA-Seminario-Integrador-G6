@@ -32,9 +32,9 @@ const baseURL = obtenerBaseURL();
 
 export const api = axios.create({
   baseURL,
+  withCredentials: true,
   headers: { 
-    'Content-Type': 'application/json',
-    'x-rol': 'Administrador'
+    'Content-Type': 'application/json'
   },
   timeout: 15000,
 });
