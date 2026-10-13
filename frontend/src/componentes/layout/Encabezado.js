@@ -164,22 +164,6 @@ function armarMigas(direccion) {
       return;
     }
 
-    /*
-     * Registrar los materiales de una tarea del tecnico (HU-22):
-     * /tareas/9/5/materiales. Los numeros no son pantallas, asi que se
-     * agrega la tarea como miga para poder volver a ella.
-     */
-    if (tramo === 'materiales' && tramos[indice - 3] === 'tareas') {
-      const [idOt, idTarea] = [tramos[indice - 2], tramos[indice - 1]];
-      migas.push({
-        texto: `Tarea ${idTarea} de la OT #${idOt}`,
-        direccion: `/tareas/${idOt}/${idTarea}`,
-        ultima: false,
-      });
-      migas.push({ texto: 'Registrar materiales', direccion: acumulada, ultima: indice === tramos.length - 1 });
-      return;
-    }
-
     migas.push({
       texto: NOMBRES[acumulada] ?? NOMBRES_COMUNES[tramo] ?? tramo,
       direccion: acumulada,

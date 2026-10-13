@@ -8,8 +8,8 @@
  *
  * HU-22: desde acá también la ejecuta.
  *   - "Iniciar tarea": pasa a En ejecución y el activo a En mantenimiento.
- *   - Mientras está en ejecución registra los materiales que usa (descuentan
- *     stock) y toma las herramientas que necesita (quedan a su nombre).
+ *   - Mientras está en ejecución registra en una ventana los materiales que usa
+ *     (descuentan stock) y toma las herramientas que necesita (quedan a su nombre).
  *   - "Finalizar tarea": pasa a Finalizada. Si era la última de la OT, la OT
  *     se finaliza sola y el ticket se cierra (HU-26).
  *
@@ -47,6 +47,7 @@ import { Cargando } from '@/componentes/EstadoTabla.js';
 import EtiquetaEstadoOT from '@/componentes/ordenes/EtiquetaEstadoOT.js';
 import EtiquetaPrioridad from '@/componentes/ordenes/EtiquetaPrioridad.js';
 import DialogoHerramienta from '@/componentes/tareas/DialogoHerramienta.js';
+import DialogoMaterial from '@/componentes/tareas/DialogoMaterial.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { finalizarTarea, iniciarTarea, listarMisHerramientas, obtenerMiTarea } from '@/servicios/tareas.js';
 import { formatearFechaHora, soloFechaLegible } from '@/utils/fechas.js';
@@ -78,7 +79,7 @@ export default function PantallaDetalleMiTarea({ params }) {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
-  // Qué ventana está abierta: 'iniciar', 'finalizar', 'tomar', o la herramienta a devolver.
+  // Qué ventana está abierta: 'iniciar', 'finalizar', 'material', 'tomar', o la herramienta a devolver.
   const [ventana, setVentana] = useState(null);
   const [procesando, setProcesando] = useState(false);
   const [errorVentana, setErrorVentana] = useState('');
@@ -277,10 +278,10 @@ export default function PantallaDetalleMiTarea({ params }) {
                   <CCardHeader className="d-flex justify-content-between align-items-center">
                     <span className="fw-semibold">Materiales utilizados</span>
                     {enEjecucion && (
-                      <BotonEnlace href={`/tareas/${idOt}/${idTarea}/materiales`} tamano="sm">
+                      <CButton color="primary" size="sm" onClick={() => abrir('material')}>
                         <CIcon icon={cilPlus} size="sm" className="me-1" />
                         Agregar
-                      </BotonEnlace>
+                      </CButton>
                     )}
                   </CCardHeader>
                   <CCardBody>
@@ -426,6 +427,18 @@ export default function PantallaDetalleMiTarea({ params }) {
           />
         </CModalFooter>
       </CModal>
+
+      {ventana === 'material' && (
+        <DialogoMaterial
+          idOt={idOt}
+          idTarea={idTarea}
+          onCerrar={() => setVentana(null)}
+          onGuardado={(datos) => {
+            setTarea(datos);
+            setVentana(null);
+          }}
+        />
+      )}
 
       {(ventana === 'tomar' || (ventana && typeof ventana === 'object')) && (
         <DialogoHerramienta

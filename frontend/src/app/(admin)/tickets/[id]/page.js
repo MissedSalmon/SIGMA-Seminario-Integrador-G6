@@ -28,6 +28,7 @@ import { crearOrdenDesdeTicket } from '@/servicios/ordenesTrabajo.js';
 import { obtenerActivo, actualizarActivo } from '@/servicios/activos.js';
 import { formatearFechaHora } from '@/utils/fechas.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
+import { useSesion } from '@/componentes/layout/ContextoSesion.js';
 
 /*
  * Los estados en los que no corresponde hablar todavia de la orden de trabajo.
@@ -74,6 +75,9 @@ function SinDato({ children }) {
 
 export default function PantallaDetalleTicket({ params }) {
   const { id } = use(params);
+  // El usuario autorizado no entra a las OT: el enlace a la orden es sólo del administrador.
+  const { usuario } = useSesion();
+  const esAutorizado = usuario?.rol === 'autorizado';
   const { mostrarToast } = useToast();
 
   const [ticket, setTicket] = useState(null);
@@ -388,18 +392,20 @@ export default function PantallaDetalleTicket({ params }) {
                               <Dato etiqueta="Descripción">{ticket.ot.descripcion}</Dato>
                             </CCol>
                           )}
-                          <CCol sm={12}>
-                            <BotonEnlace
-                              href={`/ordenes-trabajo/${ticket.ot.id}`}
-                              color="secondary"
-                              variante="outline"
-                              tamano="sm"
-                              title="Ver la orden de trabajo y planificar sus tareas"
-                            >
-                              <CIcon icon={cilDescription} size="sm" className="me-1" />
-                              Ver la orden de trabajo
-                            </BotonEnlace>
-                          </CCol>
+                          {!esAutorizado && (
+                            <CCol sm={12}>
+                              <BotonEnlace
+                                href={`/ordenes-trabajo/${ticket.ot.id}`}
+                                color="secondary"
+                                variante="outline"
+                                tamano="sm"
+                                title="Ver la orden de trabajo y planificar sus tareas"
+                              >
+                                <CIcon icon={cilDescription} size="sm" className="me-1" />
+                                Ver la orden de trabajo
+                              </BotonEnlace>
+                            </CCol>
+                          )}
                         </CRow>
                       ) : (
                         <>
