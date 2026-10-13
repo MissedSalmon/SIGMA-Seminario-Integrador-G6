@@ -1,5 +1,12 @@
 # Dominio: roles, flujo y glosario
 
+> **U-23 (13/10/2026):** Las observaciones de tarea son texto libre de hasta
+> 500 caracteres (como las descripciones de tickets y remitos). Se registran
+> por técnicos con asignación vigente, sin limitar el estado de la tarea, con
+> cuenta autora, nombre al momento de crear y fecha del servidor. No se editan
+> ni eliminan. La consulta por activo está preparada para HU-28/HU-29; su
+> pantalla de historial aún está pendiente. Ver `docs/U-23-observaciones.md`.
+
 ## Los 3 roles
 
 | Rol | Qué hace |

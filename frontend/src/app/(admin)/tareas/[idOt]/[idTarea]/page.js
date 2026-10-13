@@ -48,6 +48,7 @@ import EtiquetaEstadoOT from '@/componentes/ordenes/EtiquetaEstadoOT.js';
 import EtiquetaPrioridad from '@/componentes/ordenes/EtiquetaPrioridad.js';
 import DialogoHerramienta from '@/componentes/tareas/DialogoHerramienta.js';
 import DialogoMaterial from '@/componentes/tareas/DialogoMaterial.js';
+import ObservacionesTarea from '@/componentes/tareas/ObservacionesTarea.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { finalizarTarea, iniciarTarea, listarMisHerramientas, obtenerMiTarea } from '@/servicios/tareas.js';
 import { formatearFechaHora, soloFechaLegible } from '@/utils/fechas.js';
@@ -175,6 +176,17 @@ export default function PantallaDetalleMiTarea({ params }) {
       ) : (
         tarea && (
           <>
+            <ObservacionesTarea
+              key={`${idOt}-${idTarea}`}
+              idOt={idOt}
+              idTarea={idTarea}
+              observaciones={tarea.observaciones ?? []}
+              onGuardado={(observacion) => setTarea((actual) => ({
+                ...actual,
+                observaciones: [...(actual.observaciones ?? []), observacion]
+                  .sort((a, b) => a.fecha.localeCompare(b.fecha) || Number(a.id) - Number(b.id)),
+              }))}
+            />
             <CRow className="g-4 mb-4">
               <CCol lg={7}>
                 <CCard className="h-100">

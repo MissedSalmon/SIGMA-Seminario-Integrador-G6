@@ -6,6 +6,11 @@
  */
 import { api } from './api.js';
 
+export async function agregarObservacion(idOt, idTarea, texto) {
+  const { data } = await api.post(`/tareas/mias/${idOt}/${idTarea}/observaciones`, { texto });
+  return data.datos;
+}
+
 /**
  * Las tareas del técnico, ya ordenadas por prioridad y fecha prevista, y
  * cuántas le quedan pendientes. Los filtros se combinan.
