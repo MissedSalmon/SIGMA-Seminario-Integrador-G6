@@ -16,7 +16,19 @@
  */
 import axios from 'axios';
 
-const baseURL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';
+const isServer = typeof window === 'undefined';
+
+function obtenerBaseURL() {
+  if (isServer && process.env.BACKEND_URL) {
+    const backendOrigin = process.env.BACKEND_URL.endsWith('/')
+      ? process.env.BACKEND_URL
+      : `${process.env.BACKEND_URL}/`;
+    return new URL('api', backendOrigin).toString();
+  }
+  return process.env.NEXT_PUBLIC_API_URL ?? (isServer ? 'http://localhost:4000/api' : '/api');
+}
+
+const baseURL = obtenerBaseURL();
 
 export const api = axios.create({
   baseURL,
