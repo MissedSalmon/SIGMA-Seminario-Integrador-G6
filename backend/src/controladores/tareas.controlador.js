@@ -8,6 +8,13 @@
 import * as tareasServicio from '../servicios/tareas.servicio.js';
 import { PRIORIDADES } from '../servicios/tareas.servicio.js';
 import { datoInvalido } from '../utiles/errores.js';
+import { registrarObservacion } from '../servicios/observaciones.servicio.js';
+
+export async function agregarObservacion(req, res) {
+  const { idOt, idTarea } = leerTarea(req);
+  const observacion = await registrarObservacion(req.usuario.identificador, idOt, idTarea, req.body?.texto);
+  res.status(201).json({ ok: true, datos: observacion });
+}
 
 /** Un dia escrito como "2026-10-01". Si viene y no es eso, se avisa. */
 function leerDia(valor, nombre) {

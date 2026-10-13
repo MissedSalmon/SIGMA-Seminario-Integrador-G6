@@ -25,6 +25,7 @@ router.get('/historial/herramientas', tareas.historialHerramientas);
 
 router.get('/mias', tareas.listarMias);
 router.get('/mias/:idOt/:idTarea', tareas.obtenerMia);
+router.post('/mias/:idOt/:idTarea/observaciones', tareas.agregarObservacion);
 router.post('/mias/:idOt/:idTarea/iniciar', tareas.iniciar);
 router.post('/mias/:idOt/:idTarea/finalizar', tareas.finalizar);
 router.post('/mias/:idOt/:idTarea/materiales', tareas.registrarMateriales);

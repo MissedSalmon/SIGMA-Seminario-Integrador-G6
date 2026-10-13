@@ -30,6 +30,7 @@ import {
   ENUM_PRIORIDAD,
 } from '../utiles/enumerados.js';
 import * as inventario from './inventario.servicio.js';
+import { observacionesDeLaTarea } from './observaciones.servicio.js';
 
 /** De mas urgente a menos: con este orden sale la lista. */
 export const PRIORIDADES = ENUM_PRIORIDAD.textos;
@@ -220,7 +221,11 @@ export async function obtenerUnaDelTecnico(legajo, idOt, idTarea) {
   if (error) throw errorDeBase(error, 'de las tareas');
   if (!data) throw noEncontrado(`No tenés asignada la tarea ${idTarea} de la orden de trabajo ${idOt}.`);
 
-  return { ...aTarea(data), materiales: await materialesDeLaTarea(idOt, idTarea) };
+  return {
+    ...aTarea(data),
+    materiales: await materialesDeLaTarea(idOt, idTarea),
+    observaciones: await observacionesDeLaTarea(idOt, idTarea),
+  };
 }
 
 /* ======================================================================

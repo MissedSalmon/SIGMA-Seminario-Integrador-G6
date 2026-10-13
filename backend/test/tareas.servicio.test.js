@@ -162,7 +162,13 @@ describe('obtenerUnaDelTecnico', () => {
         consultaQueDevuelve([
           { mat_cod: 'MAT-002', tamat_cant: 4, tamat_fecha_cons: '2026-10-10T12:00:00+00:00', material: { mat_nom: 'Tornillo' } },
         ])
-      );
+      ).mockReturnValueOnce(consultaQueDevuelve([
+        {
+          observacion_id: 1, ot_id: 9, tarea_id: 5, usuario_id: 'usuario-tecnico',
+          observacion_texto: 'Se limpió el filtro', observacion_autor_nombre: 'Ana Pérez',
+          observacion_fecha: '2026-10-13T12:00:00Z',
+        },
+      ]));
 
     const tarea = await obtenerUnaDelTecnico('2030', 9, 5);
 
@@ -175,12 +181,14 @@ describe('obtenerUnaDelTecnico', () => {
       ubicacion: { edificio: 'Edificio central', espacio: 'Aula 11', piso: '2' },
       ot: { id: 9, descripcion: 'Pierde agua', estado: 'Creada', origen: 'Ticket' },
       materiales: [{ codigo: 'MAT-002', nombre: 'Tornillo', cantidad: 4 }],
+      observaciones: [{ id: 1, texto: 'Se limpió el filtro', autor: 'Ana Pérez', fecha: '2026-10-13T12:00:00Z' }],
     });
   });
 
   test('pide la tarea solo entre las del legajo de la sesion', async () => {
     const consulta = consultaQueDevuelve(filaAsignacion());
-    supabase.from.mockReturnValueOnce(consulta).mockReturnValueOnce(consultaQueDevuelve([]));
+    supabase.from.mockReturnValueOnce(consulta).mockReturnValueOnce(consultaQueDevuelve([]))
+      .mockReturnValueOnce(consultaQueDevuelve([]));
 
     await obtenerUnaDelTecnico('2030', 1, 1);
 
