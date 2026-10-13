@@ -30,8 +30,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Todas las rutas de la API cuelgan de /api.
+// Todas las rutas de la API cuelgan de /api (y / como soporte de compatibilidad).
 app.use('/api', rutas);
+app.use('/', rutas);
 
 // Estos dos van siempre al final y en este orden.
 app.use(noEncontrado);
