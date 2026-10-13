@@ -479,7 +479,7 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
                   valor={prioridadElegida}
                   alCambiar={setPrioridadElegida}
                   opciones={prioridades.map((una) => ({ valor: una, texto: una }))}
-                  placeholder={`Usar la sugerida (${orden.prioridadSugerida ?? 'sin tareas'})`}
+                  placeholder="Seleccionar"
                   ancho={24}
                 />
               </CModalBody>
