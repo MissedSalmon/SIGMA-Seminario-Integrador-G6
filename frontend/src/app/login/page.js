@@ -98,7 +98,7 @@ export default function LoginPage() {
                 letterSpacing: '0.02em',
               }}
             >
-              UTN — FRRe
+              UTN - FRRe
             </div>
           </div>
 
