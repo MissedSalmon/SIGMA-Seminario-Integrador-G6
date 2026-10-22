@@ -4,8 +4,9 @@
  * /tareas - Tareas asignadas: las del técnico de la sesión (HU-21).
  *
  * - El técnico ve sólo las suyas: la API las busca por el legajo de la sesión.
- * - La lista ya viene ordenada por prioridad y fecha prevista, para que no
- *   tenga que decidir por dónde empezar.
+ * - La lista viene ordenada por creación, de la más vieja a la más nueva.
+ * - Arranca mostrando sólo las pendientes (22/10/2026): las finalizadas y
+ *   canceladas se ven eligiendo "Todas" en el filtro de estado.
  * - Arriba, un aviso con cuántas le quedan pendientes. Ese número no cambia con
  *   los filtros: dice todo el trabajo que le queda.
  * - Cada fila lleva al detalle de la tarea (activo, ubicación y OT).
@@ -22,6 +23,9 @@ import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import EtiquetaPrioridad from '@/componentes/ordenes/EtiquetaPrioridad.js';
 import { listarMisTareas, listarPrioridadesDeTarea } from '@/servicios/tareas.js';
 import { soloFechaLegible } from '@/utils/fechas.js';
+
+/** El valor del filtro de estado que deja sólo lo que falta hacer. */
+const SOLO_PENDIENTES = 'Pendientes';
 
 /** "Tenés 3 tareas pendientes." en singular o plural. */
 function textoPendientes(cantidad) {
@@ -68,6 +72,8 @@ export default function PantallaMisTareas() {
   const [avisoCerradoCon, setAvisoCerradoCon] = useState(leerAvisoCerrado);
   const [prioridades, setPrioridades] = useState([]);
 
+  // Arranca en "Pendientes"; vacío es "Todas".
+  const [filtroEstado, setFiltroEstado] = useState(SOLO_PENDIENTES);
   const [filtroPrioridad, setFiltroPrioridad] = useState('');
   const [filtroDesde, setFiltroDesde] = useState('');
   const [filtroHasta, setFiltroHasta] = useState('');
@@ -90,6 +96,7 @@ export default function PantallaMisTareas() {
 
       try {
         const respuesta = await listarMisTareas({
+          estado: filtroEstado || null,
           prioridad: filtroPrioridad || null,
           desde: filtroDesde || null,
           hasta: filtroHasta || null,
@@ -110,7 +117,7 @@ export default function PantallaMisTareas() {
     return () => {
       vigente = false;
     };
-  }, [filtroPrioridad, filtroDesde, filtroHasta]);
+  }, [filtroEstado, filtroPrioridad, filtroDesde, filtroHasta]);
 
   function cerrarAvisoPendientes() {
     setAvisoCerradoCon(pendientes);
@@ -119,13 +126,16 @@ export default function PantallaMisTareas() {
 
   const mostrarAvisoPendientes = pendientes !== null && pendientes !== avisoCerradoCon;
 
+  // Limpiar vuelve a como arranca la pantalla: sólo las pendientes.
   function limpiarFiltros() {
+    setFiltroEstado(SOLO_PENDIENTES);
     setFiltroPrioridad('');
     setFiltroDesde('');
     setFiltroHasta('');
   }
 
   const hayFiltros = Boolean(filtroPrioridad || filtroDesde || filtroHasta);
+  const soloPendientes = filtroEstado === SOLO_PENDIENTES;
 
   const columnas = [
     {
@@ -223,6 +233,14 @@ export default function PantallaMisTareas() {
             placeholderBusqueda="Buscar por tarea o activo"
             filtros={[
               {
+                etiqueta: 'Estado',
+                valor: filtroEstado,
+                alCambiar: setFiltroEstado,
+                textoTodos: 'Todas',
+                opciones: [{ valor: SOLO_PENDIENTES, texto: 'Pendientes' }],
+                ancho: 11,
+              },
+              {
                 etiqueta: 'Prioridad',
                 valor: filtroPrioridad,
                 alCambiar: setFiltroPrioridad,
@@ -250,7 +268,9 @@ export default function PantallaMisTareas() {
             textoVacio={
               hayFiltros
                 ? 'No tenés tareas que cumplan con esos filtros.'
-                : 'Todavía no tenés tareas asignadas.'
+                : soloPendientes
+                  ? 'No tenés tareas pendientes.'
+                  : 'Todavía no tenés tareas asignadas.'
             }
           />
         </CCardBody>

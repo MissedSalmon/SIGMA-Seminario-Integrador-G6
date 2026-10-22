@@ -32,7 +32,7 @@ import {
 import * as inventario from './inventario.servicio.js';
 import { observacionesDeLaTarea } from './observaciones.servicio.js';
 
-/** De mas urgente a menos: con este orden sale la lista. */
+/** De mas urgente a menos: con este orden se ofrecen en el filtro. */
 export const PRIORIDADES = ENUM_PRIORIDAD.textos;
 
 /** Una tarea en estos estados ya no es trabajo pendiente. */
@@ -130,26 +130,21 @@ function aTarea(fila) {
 }
 
 /**
- * El orden por defecto (criterio de la HU-21): primero la prioridad (Alta,
- * Media, Baja) y dentro de la misma prioridad la fecha prevista mas cercana.
- * Las que no tienen fecha van al final de su prioridad. Si empatan en todo, por
- * numero de OT y de tarea, para que la lista no cambie de orden sola.
+ * El orden por defecto (22/10/2026): cronologico de creacion, de la mas vieja
+ * a la mas nueva. Antes era por prioridad y fecha prevista.
+ *
+ * La tarea no guarda cuando se creo, pero se puede reconstruir: el numero de
+ * OT crece con cada OT nueva, y dentro de la OT el numero de tarea crece con
+ * cada tarea que se le carga. Ordenar por los dos es ordenar por creacion
+ * (salvo una tarea agregada tarde a una OT vieja, que queda con su OT).
  */
 function compararTareas(una, otra) {
-  const porPrioridad = PRIORIDADES.indexOf(una.prioridad) - PRIORIDADES.indexOf(otra.prioridad);
-  if (porPrioridad !== 0) return porPrioridad;
-
-  if (una.fechaPrevista !== otra.fechaPrevista) {
-    if (!una.fechaPrevista) return 1;
-    if (!otra.fechaPrevista) return -1;
-    return una.fechaPrevista < otra.fechaPrevista ? -1 : 1;
-  }
-
   return una.idOt - otra.idOt || una.idTarea - otra.idTarea;
 }
 
 /** Si la tarea cumple con los filtros. Todos juntos (AND). */
-function cumpleFiltros(tarea, { prioridad, desde, hasta }) {
+function cumpleFiltros(tarea, { soloPendientes, prioridad, desde, hasta }) {
+  if (soloPendientes && !tarea.pendiente) return false;
   if (prioridad && tarea.prioridad !== prioridad) return false;
   if ((desde || hasta) && !tarea.fechaPrevista) return false;
   if (desde && tarea.fechaPrevista < desde) return false;
@@ -171,6 +166,7 @@ function consultarAsignaciones(legajo) {
  *
  * @param {string} legajo - el del tecnico con la sesion activa
  * @param {object} [filtros]
+ * @param {boolean} [filtros.soloPendientes] - sin las Finalizadas ni Canceladas
  * @param {string} [filtros.prioridad] - "Alta" | "Media" | "Baja"
  * @param {string} [filtros.desde]     - "2026-10-01": fecha prevista desde (inclusive)
  * @param {string} [filtros.hasta]     - "2026-10-31": fecha prevista hasta (inclusive)

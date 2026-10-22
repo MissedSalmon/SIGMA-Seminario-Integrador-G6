@@ -22,10 +22,11 @@ export async function agregarObservacion(idOt, idTarea, texto) {
  * @returns {Promise<{ tareas: object[], pendientes: number }>}
  */
 export async function listarMisTareas(filtros = {}) {
-  const { prioridad, desde, hasta } = filtros;
+  const { estado, prioridad, desde, hasta } = filtros;
 
   const { data } = await api.get('/tareas/mias', {
     params: {
+      ...(estado ? { estado } : {}),
       ...(prioridad ? { prioridad } : {}),
       ...(desde ? { desde } : {}),
       ...(hasta ? { hasta } : {}),

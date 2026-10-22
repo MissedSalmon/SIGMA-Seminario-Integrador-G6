@@ -203,8 +203,12 @@ un **número** (el de la tabla). La traducción a texto está en un solo lugar:
 > - **La fecha que se filtra es la prevista de inicio** (`tarea_fecha_ini`, la que carga el
 >   administrador al planificar la OT). Una tarea sin fecha prevista no aparece cuando se
 >   filtra por fecha.
-> - **Orden por defecto:** prioridad (Alta, Media, Baja) y, dentro de la misma prioridad, la
->   fecha prevista más cercana. Las que no tienen fecha van al final de su prioridad.
+> - **Orden por defecto** *(cambiado el 22/10/2026)*: cronológico de creación, de la más vieja
+>   a la más nueva. La tarea no guarda su fecha de alta, así que se ordena por número de OT y,
+>   dentro de la OT, por número de tarea. Antes era por prioridad y fecha prevista.
+> - **Sólo pendientes al entrar** *(22/10/2026)*: la lista arranca con el filtro "Estado" en
+>   "Pendientes" (sin Finalizadas ni Canceladas). Eligiendo "Todas" se ven también las
+>   terminadas. "Limpiar" vuelve a "Pendientes".
 > - **El detalle de la tarea es una pantalla** (`/tareas/[OT]/[tarea]`). La OT y el activo no
 >   llevan enlace: sus pantallas son del administrador.
 
