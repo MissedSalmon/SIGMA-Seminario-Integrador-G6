@@ -5,8 +5,13 @@
  * tareas, del más nuevo al más viejo (10/10/2026).
  *
  * Una fila por tarea y material. Es sólo para consultar: no lleva acciones.
+ *
+ * La OT de cada fila es un enlace (22/10/2026). Lleva al detalle de la tarea,
+ * que muestra los datos de la OT: la pantalla de órdenes de trabajo es del
+ * administrador y el técnico no puede entrar.
  */
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { CCard, CCardBody } from '@coreui/react';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
@@ -86,7 +91,14 @@ export default function PantallaMaterialesUtilizados() {
       render: (fila) => (
         <>
           {fila.tarea}
-          <span className="text-body-secondary text-nowrap"> (OT #{fila.idOt})</span>
+          {' '}
+          <Link
+            href={`/tareas/${fila.idOt}/${fila.idTarea}`}
+            className="text-nowrap"
+            title={`Ver la tarea de la OT #${fila.idOt}`}
+          >
+            (OT #{fila.idOt})
+          </Link>
         </>
       ),
     },
