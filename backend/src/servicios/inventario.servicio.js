@@ -396,9 +396,19 @@ export async function asignarHerramienta(codigo, datos = {}) {
   if (errorTecnico) throw new Error(errorTecnico.message);
   if (!tecnico) throw datoInvalido(`No existe el técnico ${legajo}.`);
 
-  const { error } = await supabase
-    .from('tecnico_utiliza_herramienta')
-    .insert({ tecnico_legajo: legajo, herr_cod: codigo });
+  // Si se toma desde una tarea, el prestamo guarda la OT y la tarea (22/10/2026).
+  const desdeTarea = datos.idOt && datos.idTarea ? { ot_id: datos.idOt, tarea_id: datos.idTarea } : {};
+
+  const prestar = (tarea) =>
+    supabase.from('tecnico_utiliza_herramienta').insert({ tecnico_legajo: legajo, herr_cod: codigo, ...tarea });
+
+  let { error } = await prestar(desdeTarea);
+
+  // Si la base todavia no tiene la migracion 20261022120000 (falta ot_id), el
+  // prestamo se guarda igual, sin la tarea. 42703 o PGRST204: columna inexistente.
+  if (error && ['42703', 'PGRST204'].includes(error.code)) {
+    ({ error } = await prestar({}));
+  }
   if (error) {
     // 23505: otro pedido la asigno al mismo tiempo y el indice unico lo freno.
     if (error.code === '23505') throw conflicto(`"${herramienta.nombre}" ya está asignada a otro técnico.`);

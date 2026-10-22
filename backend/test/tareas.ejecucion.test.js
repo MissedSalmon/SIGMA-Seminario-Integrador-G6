@@ -301,8 +301,8 @@ describe('historial', () => {
     lecturas.tecnico_utiliza_herramienta = [
       {
         data: [
-          { herr_cod: 'HER-1', tec_herr_fecha_prest: '2026-10-10', tec_herr_fecha_dev: null, herramienta: { herr_nom: 'Taladro' } },
-          { herr_cod: 'HER-2', tec_herr_fecha_prest: '2026-10-01', tec_herr_fecha_dev: '2026-10-02', herramienta: { herr_nom: 'Escalera' } },
+          { herr_cod: 'HER-1', tec_herr_fecha_prest: '2026-10-10', tec_herr_fecha_dev: null, ot_id: 9, tarea_id: 1, herramienta: { herr_nom: 'Taladro' } },
+          { herr_cod: 'HER-2', tec_herr_fecha_prest: '2026-10-01', tec_herr_fecha_dev: '2026-10-02', ot_id: null, tarea_id: null, herramienta: { herr_nom: 'Escalera' } },
         ],
         error: null,
       },
@@ -310,7 +310,7 @@ describe('historial', () => {
 
     const filas = await tareas.historialHerramientas('2030');
 
-    expect(filas.map((fila) => [fila.codigo, fila.enUso])).toEqual([['HER-1', true], ['HER-2', false]]);
+    expect(filas.map((fila) => [fila.codigo, fila.enUso, fila.idOt])).toEqual([['HER-1', true, 9], ['HER-2', false, null]]);
     expect(llamadas[0].ops).toContainEqual(['eq', 'tecnico_legajo', '2030']);
   });
 });
@@ -336,7 +336,7 @@ describe('herramientas', () => {
 
     await tareas.tomarHerramienta('2030', 9, 1, 'HER-2');
 
-    expect(inventario.asignarHerramienta).toHaveBeenCalledWith('HER-2', { legajo: '2030' });
+    expect(inventario.asignarHerramienta).toHaveBeenCalledWith('HER-2', { legajo: '2030', idOt: 9, idTarea: 1 });
   });
 
   test('no se toma una herramienta si la tarea no está en ejecución', async () => {

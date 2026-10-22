@@ -40,6 +40,9 @@ const ESTADOS_TERMINADOS = ['Finalizada', 'Cancelada'];
 
 const ASIGNACION_CANCELADA = ENUM_ESTADO_ASIGNACION_TECNICO.codigo('Cancelada');
 
+/** Errores de la base cuando una columna no existe (42703 al leer, PGRST204 al escribir). */
+const FALTA_COLUMNA = ['42703', 'PGRST204'];
+
 /** El activo y donde esta. Se repite para el ticket y para el preventivo. */
 const ACTIVO = `
   activo (
@@ -557,7 +560,7 @@ export async function tomarHerramienta(legajo, idOt, idTarea, codigo) {
   const limpio = typeof codigo === 'string' ? codigo.trim() : '';
   if (!limpio) throw datoInvalido('Hay que elegir la herramienta.');
 
-  await inventario.asignarHerramienta(limpio, { legajo });
+  await inventario.asignarHerramienta(limpio, { legajo, idOt, idTarea });
   return listarHerramientas(legajo);
 }
 
@@ -605,13 +608,27 @@ export async function historialMateriales(legajo) {
 /**
  * Todas las herramientas que tuvo el tecnico, de la mas nueva a la mas vieja:
  * las que tiene ahora (sin devolucion) y las que ya devolvio.
+ *
+ * Si la tomo desde una tarea, viene la OT y la tarea. Las que le asigno el
+ * administrador desde el deposito, y las de antes del 22/10/2026, no la tienen.
  */
 export async function historialHerramientas(legajo) {
-  const { data, error } = await supabase
-    .from('tecnico_utiliza_herramienta')
-    .select('herr_cod, tec_herr_fecha_prest, tec_herr_fecha_dev, herramienta ( herr_nom )')
-    .eq('tecnico_legajo', legajo)
-    .order('tec_herr_fecha_prest', { ascending: false });
+  const consultar = (columnas) =>
+    supabase
+      .from('tecnico_utiliza_herramienta')
+      .select(columnas)
+      .eq('tecnico_legajo', legajo)
+      .order('tec_herr_fecha_prest', { ascending: false });
+
+  let { data, error } = await consultar(
+    'herr_cod, tec_herr_fecha_prest, tec_herr_fecha_dev, ot_id, tarea_id, herramienta ( herr_nom )'
+  );
+
+  // Si la base todavia no tiene la migracion 20261022120000 (falta ot_id), se
+  // muestra el historial igual, sin la OT, en vez de romper la pantalla.
+  if (error && FALTA_COLUMNA.includes(error.code)) {
+    ({ data, error } = await consultar('herr_cod, tec_herr_fecha_prest, tec_herr_fecha_dev, herramienta ( herr_nom )'));
+  }
   if (error) throw errorDeBase(error, 'de las herramientas');
 
   return (data ?? []).map((fila) => ({
@@ -620,6 +637,8 @@ export async function historialHerramientas(legajo) {
     desde: fila.tec_herr_fecha_prest,
     hasta: fila.tec_herr_fecha_dev ?? null,
     enUso: !fila.tec_herr_fecha_dev,
+    idOt: fila.ot_id ?? null,
+    idTarea: fila.tarea_id ?? null,
   }));
 }
 
