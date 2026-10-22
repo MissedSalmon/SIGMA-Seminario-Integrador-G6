@@ -176,17 +176,6 @@ export default function PantallaDetalleMiTarea({ params }) {
       ) : (
         tarea && (
           <>
-            <ObservacionesTarea
-              key={`${idOt}-${idTarea}`}
-              idOt={idOt}
-              idTarea={idTarea}
-              observaciones={tarea.observaciones ?? []}
-              onGuardado={(observacion) => setTarea((actual) => ({
-                ...actual,
-                observaciones: [...(actual.observaciones ?? []), observacion]
-                  .sort((a, b) => a.fecha.localeCompare(b.fecha) || Number(a.id) - Number(b.id)),
-              }))}
-            />
             <CRow className="g-4 mb-4">
               <CCol lg={7}>
                 <CCard className="h-100">
@@ -219,6 +208,18 @@ export default function PantallaDetalleMiTarea({ params }) {
                         </Dato>
                       </CCol>
                     </CRow>
+
+                    <ObservacionesTarea
+                      key={`${idOt}-${idTarea}`}
+                      idOt={idOt}
+                      idTarea={idTarea}
+                      observaciones={tarea.observaciones ?? []}
+                      onGuardado={(observacion) => setTarea((actual) => ({
+                        ...actual,
+                        observaciones: [...(actual.observaciones ?? []), observacion]
+                          .sort((a, b) => a.fecha.localeCompare(b.fecha) || Number(a.id) - Number(b.id)),
+                      }))}
+                    />
                   </CCardBody>
                 </CCard>
               </CCol>
@@ -380,6 +381,7 @@ export default function PantallaDetalleMiTarea({ params }) {
                 </CCard>
               </CCol>
             </CRow>
+
           </>
         )
       )}
