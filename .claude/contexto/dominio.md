@@ -268,6 +268,20 @@ No son historias de usuario aparte: son reglas dentro de historias existentes.
 
 > La **prioridad** la define el administrador **en la OT**, no el usuario que carga el ticket.
 
+> **Alerta de stock mínimo (HU-33, 23/10/2026):**
+> - Hay alerta cuando el stock actual está **por debajo** del mínimo. Si es igual al
+>   mínimo, no hay alerta (mismo criterio que el listado de materiales).
+> - La alerta **no se guarda en una tabla**: se calcula del stock cada vez que se pide.
+>   Por eso aparece sola cuando un consumo baja el stock y se resuelve sola cuando un
+>   remito lo sube. No hay que crearla ni cerrarla a mano.
+> - Se muestra en la **campana de notificaciones** de la barra de arriba, sólo para el
+>   administrador. La campana lleva la cantidad y, al abrirla, muestra los 5 materiales
+>   que más faltan. «Ver más» lleva a `/notificaciones`, con la lista completa: stock
+>   actual, mínimo y **cuánto falta** para llegar al mínimo.
+> - Además sale un **mensaje flotante** (toast) al entrar al sistema si hay materiales con
+>   stock bajo, y después cada vez que aparece un material nuevo en la lista. Un mismo
+>   material no se vuelve a avisar en la sesión, salvo que se reponga y vuelva a bajar.
+
 ---
 
 ## Entidades principales

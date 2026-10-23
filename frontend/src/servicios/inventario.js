@@ -5,6 +5,12 @@ export async function listarItems(clase) {
   return data.datos;
 }
 
+/** Los materiales por debajo del stock mínimo, con cuánto falta para llegar (HU-33). */
+export async function listarAlertasStock() {
+  const { data } = await api.get('/inventario/alertas');
+  return data.datos;
+}
+
 export async function obtenerItem(codigo) {
   const { data } = await api.get(`/inventario/${encodeURIComponent(codigo)}`);
   return data.datos;

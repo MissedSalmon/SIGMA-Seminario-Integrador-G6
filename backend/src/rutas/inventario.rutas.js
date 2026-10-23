@@ -11,6 +11,9 @@ router.delete('/tipos/:id', inventario.eliminarTipo);
 
 router.get('/', inventario.listarItems);
 router.post('/', inventario.crearItem);
+// Los materiales por debajo del stock minimo (HU-33). Va antes de /:codigo
+// para que "alertas" no se tome como un codigo.
+router.get('/alertas', inventario.listarAlertasStock);
 router.get('/:codigo', inventario.obtenerItem);
 // El historial de ingresos y consumos del item (HU-16).
 router.get('/:codigo/movimientos', inventario.listarMovimientos);

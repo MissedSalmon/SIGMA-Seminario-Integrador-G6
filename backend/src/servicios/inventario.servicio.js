@@ -214,6 +214,32 @@ export async function obtenerItems(clase) {
   return items.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
 }
 
+/**
+ * Las alertas de stock minimo (HU-33): los materiales cuyo stock actual esta
+ * por debajo del minimo, con cuanto falta para llegar a el.
+ *
+ * La alerta no se guarda en una tabla: se calcula del stock cada vez que se
+ * pide. Asi aparece sola cuando un consumo en una tarea baja el stock (HU-22)
+ * y se resuelve sola cuando un remito lo vuelve a subir (HU-16), sin que nadie
+ * tenga que acordarse de crearla ni de cerrarla.
+ *
+ * Van primero los que mas faltan; a igual faltante, por nombre.
+ */
+export async function obtenerAlertasStock() {
+  const materiales = await obtenerItems('Material');
+  return materiales
+    .filter((material) => material.bajoMinimo)
+    .map((material) => ({
+      codigo: material.codigo,
+      nombre: material.nombre,
+      nombreTipo: material.nombreTipo,
+      stockActual: material.stockActual,
+      stockMinimo: material.stockMinimo,
+      faltante: material.stockMinimo - material.stockActual,
+    }))
+    .sort((a, b) => b.faltante - a.faltante || a.nombre.localeCompare(b.nombre, 'es'));
+}
+
 function leerDatos(datos) {
   const nombre = texto(datos.nombre);
   const clase = leerClase(datos.clase);

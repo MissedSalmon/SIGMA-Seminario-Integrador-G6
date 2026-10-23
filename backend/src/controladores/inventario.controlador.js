@@ -19,6 +19,7 @@ export async function crearTipo(req, res) { res.status(201).json({ ok: true, dat
 export async function actualizarTipo(req, res) { res.json({ ok: true, datos: await servicio.actualizarTipo(leerId(req), req.body) }); }
 export async function eliminarTipo(req, res) { res.json({ ok: true, datos: await servicio.eliminarTipo(leerId(req)) }); }
 export async function listarItems(req, res) { res.json({ ok: true, datos: await servicio.obtenerItems(req.query.clase) }); }
+export async function listarAlertasStock(req, res) { res.json({ ok: true, datos: await servicio.obtenerAlertasStock() }); }
 export async function obtenerItem(req, res) { res.json({ ok: true, datos: await servicio.obtenerItem(leerCodigo(req)) }); }
 export async function crearItem(req, res) { res.status(201).json({ ok: true, datos: await servicio.crearItem(req.body) }); }
 export async function actualizarItem(req, res) { res.json({ ok: true, datos: await servicio.actualizarItem(leerCodigo(req), req.body) }); }

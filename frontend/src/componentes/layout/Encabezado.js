@@ -39,6 +39,8 @@ import {
 import CIcon from '@coreui/icons-react';
 import { cilMenu, cilUser, cilAccountLogout, cilLockLocked } from '@coreui/icons';
 import { useLayout } from './ContextoLayout.js';
+import { useSesion } from './ContextoSesion.js';
+import CampanaNotificaciones, { olvidarAvisadas } from './CampanaNotificaciones.js';
 import { logout } from '@/servicios/auth.js';
 
 /**
@@ -74,6 +76,7 @@ const NOMBRES = {
   '/prestadores': 'Listado de prestadores',
   '/prestadores/tipos': 'Tipos de prestador',
   '/autorizados': 'Usuarios autorizados',
+  '/notificaciones': 'Notificaciones',
   '/perfil': 'Mi Perfil',
   '/configuracion': 'Configuración',
   '/configuracion/cambiar-password': 'Cambiar contraseña'
@@ -178,11 +181,13 @@ export default function Encabezado() {
   const { barraVisible, setBarraVisible } = useLayout();
   const direccionActual = usePathname();
   const router = useRouter();
+  const { usuario } = useSesion();
   const migas = armarMigas(direccionActual);
 
   const handleLogout = async () => {
     try {
       await logout();
+      olvidarAvisadas();
       router.push('/login');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
@@ -217,7 +222,9 @@ export default function Encabezado() {
           </RouterProvider>
         </div>
 
-        <div className="d-flex align-items-center">
+        <div className="d-flex align-items-center gap-1">
+          {/* Las alertas de stock son para el que repone: el administrador (HU-33). */}
+          {usuario?.rol === 'administrador' && <CampanaNotificaciones />}
           <CDropdown variant="nav-item" placement="bottom-end">
             <CDropdownToggle
               className="py-0 px-2 d-flex align-items-center btn btn-ghost-primary rounded-circle"
