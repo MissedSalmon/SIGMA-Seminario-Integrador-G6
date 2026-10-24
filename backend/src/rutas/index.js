@@ -56,6 +56,10 @@ router.use('/especialidades', rutasEspecialidades);
 import rutasAutorizados from './autorizados.rutas.js';
 router.use('/autorizados', rutasAutorizados);
 
+// Gestión de cuentas de acceso
+import rutasUsuarios from './usuarios.rutas.js';
+router.use('/usuarios', rutasUsuarios);
+
 // Tickets (HU-9)
 import rutasTickets from './tickets.rutas.js';
 router.use('/tickets', rutasTickets);
