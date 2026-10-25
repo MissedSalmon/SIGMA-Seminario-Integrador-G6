@@ -374,6 +374,48 @@ export async function obtenerMovimientos(codigo) {
 }
 
 /**
+ * En que tareas se consumio el material (HU-35), de la mas nueva a la mas vieja.
+ *
+ * Sale de tarea_ot_consume_material: una fila por tarea, con la cantidad ya
+ * sumada si se registro mas de una vez y la fecha del ultimo registro
+ * (decision del 23/10/2026, para no cambiar el modelo de datos).
+ *
+ * El tecnico se trae aparte porque tecnico_asignado_tarea_ot apunta a la tarea
+ * con dos columnas y no se puede embeber.
+ */
+export async function obtenerConsumos(codigo) {
+  const item = await obtenerItem(codigo);
+  if (item.clase !== 'Material') throw datoInvalido('Una herramienta no se consume: se presta y se devuelve.');
+
+  const { data, error } = await supabase
+    .from('tarea_ot_consume_material')
+    .select('ot_id, tarea_id, tamat_cant, tamat_fecha_cons, tarea_ot ( tarea_desc )')
+    .eq('mat_cod', codigo)
+    .order('tamat_fecha_cons', { ascending: false });
+  if (error) throw errorDeBase(error, 'de los materiales usados');
+  if (data.length === 0) return [];
+
+  const { data: asignaciones, error: errorAsignaciones } = await supabase
+    .from('tecnico_asignado_tarea_ot')
+    .select('ot_id, tarea_id, tecnico ( tecnico_nom_ape )')
+    .in('ot_id', [...new Set(data.map((fila) => fila.ot_id))]);
+  if (errorAsignaciones) throw errorDeBase(errorAsignaciones, 'de las tareas');
+
+  const tecnicos = new Map(
+    asignaciones.map((fila) => [`${fila.ot_id}-${fila.tarea_id}`, fila.tecnico?.tecnico_nom_ape ?? null])
+  );
+
+  return data.map((fila) => ({
+    idOt: fila.ot_id,
+    idTarea: fila.tarea_id,
+    tarea: fila.tarea_ot?.tarea_desc ?? '',
+    cantidad: Number(fila.tamat_cant),
+    fecha: fila.tamat_fecha_cons,
+    tecnico: tecnicos.get(`${fila.ot_id}-${fila.tarea_id}`) ?? null,
+  }));
+}
+
+/**
  * Guarda el estado de la herramienta en la columna. "En uso" tambien queda
  * guardado (07/10/2026), aunque el que manda sigue siendo el prestamo abierto.
  */

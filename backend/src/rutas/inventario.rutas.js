@@ -17,6 +17,8 @@ router.get('/alertas', inventario.listarAlertasStock);
 router.get('/:codigo', inventario.obtenerItem);
 // El historial de ingresos y consumos del item (HU-16).
 router.get('/:codigo/movimientos', inventario.listarMovimientos);
+// En que tareas se consumio el material (HU-35).
+router.get('/:codigo/consumos', inventario.listarConsumos);
 router.put('/:codigo', inventario.actualizarItem);
 // Asignar una herramienta a un tecnico, registrar que la devolvio y ver quien la tuvo.
 router.get('/:codigo/asignaciones', inventario.listarAsignaciones);

@@ -32,6 +32,12 @@ export async function listarMovimientos(codigo) {
   return data.datos;
 }
 
+/** En qué tareas se consumió el material: una fila por tarea, con la cantidad sumada (HU-35). */
+export async function listarConsumos(codigo) {
+  const { data } = await api.get(`/inventario/${encodeURIComponent(codigo)}/consumos`);
+  return data.datos;
+}
+
 /** Le asigna la herramienta a un técnico. Si ya la tiene otro, la API lo rechaza. */
 export async function asignarHerramienta(codigo, legajo) {
   const { data } = await api.post(`/inventario/${encodeURIComponent(codigo)}/asignacion`, { legajo });
