@@ -7,8 +7,8 @@
  * - La lista viene ordenada por creación, de la más vieja a la más nueva.
  * - Arranca mostrando sólo las pendientes (22/10/2026): las finalizadas y
  *   canceladas se ven eligiendo "Todas" en el filtro de estado.
- * - Arriba, un aviso con cuántas le quedan pendientes. Ese número no cambia con
- *   los filtros: dice todo el trabajo que le queda.
+ * - Las pendientes también aparecen en la campana de notificaciones de arriba
+ *   (23/10/2026). Antes había un aviso en esta pantalla con la cantidad.
  * - Cada fila lleva al detalle de la tarea (activo, ubicación y OT).
  */
 import { useEffect, useState } from 'react';
@@ -27,39 +27,6 @@ import { soloFechaLegible } from '@/utils/fechas.js';
 /** El valor del filtro de estado que deja sólo lo que falta hacer. */
 const SOLO_PENDIENTES = 'Pendientes';
 
-/** "Tenés 3 tareas pendientes." en singular o plural. */
-function textoPendientes(cantidad) {
-  if (cantidad === 0) return 'No tenés tareas pendientes.';
-  if (cantidad === 1) return 'Tenés 1 tarea pendiente.';
-  return `Tenés ${cantidad} tareas pendientes.`;
-}
-
-/*
- * El aviso de pendientes se puede cerrar (10/10/2026). Se recuerda con qué
- * cantidad se cerró, sólo en esta pestaña del navegador (sessionStorage): no
- * vuelve al entrar a una tarea y regresar, pero sí cuando la cantidad cambia,
- * porque ahí hay algo nuevo que avisar. Si el navegador no deja guardar, el
- * aviso se cierra igual hasta que se recarga la pantalla.
- */
-const CLAVE_AVISO_CERRADO = 'sigma.tareas.avisoPendientesCerrado';
-
-function leerAvisoCerrado() {
-  try {
-    const valor = window.sessionStorage.getItem(CLAVE_AVISO_CERRADO);
-    return valor === null ? null : Number(valor);
-  } catch {
-    return null;
-  }
-}
-
-function guardarAvisoCerrado(cantidad) {
-  try {
-    window.sessionStorage.setItem(CLAVE_AVISO_CERRADO, String(cantidad));
-  } catch {
-    // Sin almacenamiento: queda cerrado sólo mientras no se recargue.
-  }
-}
-
 /** Texto en gris e itálica para decir que algo no está. */
 function SinDato({ children }) {
   return <span className="text-body-tertiary fst-italic">{children}</span>;
@@ -67,9 +34,6 @@ function SinDato({ children }) {
 
 export default function PantallaMisTareas() {
   const [tareas, setTareas] = useState([]);
-  const [pendientes, setPendientes] = useState(null);
-  // Con qué cantidad de pendientes se cerró el aviso (null: no se cerró).
-  const [avisoCerradoCon, setAvisoCerradoCon] = useState(leerAvisoCerrado);
   const [prioridades, setPrioridades] = useState([]);
 
   // Arranca en "Pendientes"; vacío es "Todas".
@@ -103,7 +67,6 @@ export default function PantallaMisTareas() {
         });
         if (!vigente) return;
         setTareas(respuesta.tareas);
-        setPendientes(respuesta.pendientes);
         setError('');
       } catch (fallo) {
         if (vigente) setError(fallo.message);
@@ -118,13 +81,6 @@ export default function PantallaMisTareas() {
       vigente = false;
     };
   }, [filtroEstado, filtroPrioridad, filtroDesde, filtroHasta]);
-
-  function cerrarAvisoPendientes() {
-    setAvisoCerradoCon(pendientes);
-    guardarAvisoCerrado(pendientes);
-  }
-
-  const mostrarAvisoPendientes = pendientes !== null && pendientes !== avisoCerradoCon;
 
   // Limpiar vuelve a como arranca la pantalla: sólo las pendientes.
   function limpiarFiltros() {
@@ -218,10 +174,6 @@ export default function PantallaMisTareas() {
       <EncabezadoPagina titulo="Tareas asignadas" />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
-
-      {mostrarAvisoPendientes && (
-        <Aviso mensaje={textoPendientes(pendientes)} color="info" onCerrar={cerrarAvisoPendientes} />
-      )}
 
       <CCard>
         <CCardBody>

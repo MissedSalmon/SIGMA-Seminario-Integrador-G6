@@ -197,9 +197,9 @@ un **número** (el de la tabla). La traducción a texto está en un solo lugar:
 > - **"Pendiente", para el aviso, es toda tarea que todavía no terminó:** la que no está
 >   Finalizada ni Cancelada. El aviso cuenta todas, sin mirar los filtros, porque dice cuánto
 >   trabajo le queda.
-> - **El aviso de pendientes se puede cerrar.** Una vez cerrado no vuelve mientras dure la
->   pestaña del navegador (aunque se entre a una tarea y se vuelva), salvo que cambie la
->   cantidad de pendientes: ahí hay algo nuevo que avisar y aparece otra vez.
+> - ~~**El aviso de pendientes se puede cerrar.**~~ Reemplazado el 23/10/2026: el aviso de
+>   arriba de `/tareas` se sacó y las pendientes se ven en la campana de notificaciones
+>   (ver "Campana de notificaciones" más abajo).
 > - **La fecha que se filtra es la prevista de inicio** (`tarea_fecha_ini`, la que carga el
 >   administrador al planificar la OT). Una tarea sin fecha prevista no aparece cuando se
 >   filtra por fecha.
@@ -281,6 +281,17 @@ No son historias de usuario aparte: son reglas dentro de historias existentes.
 > - Además sale un **mensaje flotante** (toast) al entrar al sistema si hay materiales con
 >   stock bajo, y después cada vez que aparece un material nuevo en la lista. Un mismo
 >   material no se vuelve a avisar en la sesión, salvo que se reponga y vuelva a bajar.
+
+> **Campana de notificaciones por rol (23/10/2026):**
+> - La campana es **la misma para todos los roles**. La API (`GET /api/notificaciones`) mira
+>   el rol y el legajo de la sesión (JWT) y devuelve sólo las de ese usuario.
+> - **Administrador:** las alertas de stock mínimo (como arriba). «Ver más» → `/notificaciones`.
+> - **Técnico:** sus tareas pendientes (las que no están Finalizadas ni Canceladas), la última
+>   asignada primero. Reemplaza al aviso que había arriba de `/tareas`. «Ver más» → `/tareas`.
+> - **Usuario autorizado:** todavía no tiene campana. **Pendiente de confirmar** qué se le
+>   notifica (por ejemplo, cambios de estado de sus tickets); el relevamiento no lo dice.
+> - Ninguna notificación se guarda en una tabla ni se marca como leída: el número es la
+>   cantidad de cosas que hay hoy para atender.
 
 ---
 

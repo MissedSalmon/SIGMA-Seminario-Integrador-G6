@@ -68,6 +68,10 @@ router.use('/ordenes-trabajo', rutasOrdenesTrabajo);
 import rutasTareas from './tareas.rutas.js';
 router.use('/tareas', rutasTareas);
 
+// La campana de notificaciones: cada rol recibe las suyas (HU-33 y HU-21)
+import rutasNotificaciones from './notificaciones.rutas.js';
+router.use('/notificaciones', rutasNotificaciones);
+
 // Ingreso de materiales y herramientas por remito (HU-16)
 import rutasRemitos from './remitos.rutas.js';
 router.use('/remitos', rutasRemitos);

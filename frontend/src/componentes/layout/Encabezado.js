@@ -40,7 +40,7 @@ import CIcon from '@coreui/icons-react';
 import { cilMenu, cilUser, cilAccountLogout, cilLockLocked } from '@coreui/icons';
 import { useLayout } from './ContextoLayout.js';
 import { useSesion } from './ContextoSesion.js';
-import CampanaNotificaciones, { olvidarAvisadas } from './CampanaNotificaciones.js';
+import CampanaNotificaciones, { olvidarAvisadas, ROLES_CON_NOTIFICACIONES } from './CampanaNotificaciones.js';
 import { logout } from '@/servicios/auth.js';
 
 /**
@@ -223,8 +223,7 @@ export default function Encabezado() {
         </div>
 
         <div className="d-flex align-items-center gap-1">
-          {/* Las alertas de stock son para el que repone: el administrador (HU-33). */}
-          {usuario?.rol === 'administrador' && <CampanaNotificaciones />}
+          {ROLES_CON_NOTIFICACIONES.includes(usuario?.rol) && <CampanaNotificaciones />}
           <CDropdown variant="nav-item" placement="bottom-end">
             <CDropdownToggle
               className="py-0 px-2 d-flex align-items-center btn btn-ghost-primary rounded-circle"
