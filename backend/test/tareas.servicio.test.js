@@ -117,6 +117,20 @@ describe('obtenerDelTecnico', () => {
     expect(tareas.map((tarea) => tarea.idOt)).toEqual([1, 2]);
   });
 
+  test('filtra por un estado', async () => {
+    supabase.from.mockReturnValue(
+      consultaQueDevuelve([
+        filaAsignacion({ idOt: 1, estado: 2 }), // Asignada
+        filaAsignacion({ idOt: 2, estado: 3 }), // En ejecución
+        filaAsignacion({ idOt: 3, estado: 2 }), // Asignada
+      ])
+    );
+
+    const { tareas } = await obtenerDelTecnico('2030', { estado: 'Asignada' });
+
+    expect(tareas.map((tarea) => tarea.idOt)).toEqual([1, 3]);
+  });
+
   test('filtra por prioridad', async () => {
     supabase.from.mockReturnValue(
       consultaQueDevuelve([filaAsignacion({ idOt: 1, prioridad: 1 }), filaAsignacion({ idOt: 2, prioridad: 3 })])

@@ -8,6 +8,7 @@
 import * as tareasServicio from '../servicios/tareas.servicio.js';
 import { PRIORIDADES } from '../servicios/tareas.servicio.js';
 import { datoInvalido } from '../utiles/errores.js';
+import { ENUM_ESTADO_TAREA } from '../utiles/enumerados.js';
 import { registrarObservacion } from '../servicios/observaciones.servicio.js';
 
 export async function agregarObservacion(req, res) {
@@ -40,7 +41,7 @@ function leerNumero(valor, nombre) {
 
 /**
  * GET /api/tareas/mias
- * GET /api/tareas/mias?estado=Pendientes&prioridad=Alta&desde=2026-10-01&hasta=2026-10-31
+ * GET /api/tareas/mias?estado=Asignada&prioridad=Alta&desde=2026-10-01&hasta=2026-10-31
  *
  * Responde { tareas, pendientes }: la lista ya ordenada por creacion, y
  * cuantas tareas le quedan pendientes al tecnico (sin filtros).
@@ -48,8 +49,8 @@ function leerNumero(valor, nombre) {
 export async function listarMias(req, res) {
   const { prioridad, estado } = req.query;
 
-  if (estado && estado !== 'Pendientes') {
-    throw datoInvalido(`"${estado}" no es un estado válido para filtrar. Es: Pendientes.`);
+  if (estado && !ENUM_ESTADO_TAREA.incluye(estado)) {
+    throw datoInvalido(`"${estado}" no es un estado de tarea válido. Son: ${ENUM_ESTADO_TAREA.textos.join(', ')}.`);
   }
 
   if (prioridad && !PRIORIDADES.includes(prioridad)) {
@@ -64,7 +65,7 @@ export async function listarMias(req, res) {
   }
 
   const datos = await tareasServicio.obtenerDelTecnico(req.usuario.identificador, {
-    soloPendientes: estado === 'Pendientes',
+    estado: estado || null,
     prioridad: prioridad || null,
     desde,
     hasta,

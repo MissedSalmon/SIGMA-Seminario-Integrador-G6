@@ -203,12 +203,17 @@ un **número** (el de la tabla). La traducción a texto está en un solo lugar:
 > - **La fecha que se filtra es la prevista de inicio** (`tarea_fecha_ini`, la que carga el
 >   administrador al planificar la OT). Una tarea sin fecha prevista no aparece cuando se
 >   filtra por fecha.
-> - **Orden por defecto** *(cambiado el 22/10/2026)*: cronológico de creación, de la más vieja
->   a la más nueva. La tarea no guarda su fecha de alta, así que se ordena por número de OT y,
->   dentro de la OT, por número de tarea. Antes era por prioridad y fecha prevista.
-> - **Sólo pendientes al entrar** *(22/10/2026)*: la lista arranca con el filtro "Estado" en
->   "Pendientes" (sin Finalizadas ni Canceladas). Eligiendo "Todas" se ven también las
->   terminadas. "Limpiar" vuelve a "Pendientes".
+> - **Orden por defecto** *(cambiado el 25/10/2026)*: por estado, primero lo que el técnico
+>   tiene entre manos: En ejecución, Asignada, Pendiente, Creada y al final Finalizada y
+>   Cancelada. Dentro de cada estado, prioridad más alta primero y después la fecha prevista
+>   más cercana (sin fecha, al final). Lo ordena la pantalla, no la API. Antes (22/10/2026) era
+>   cronológico de creación, por número de OT y de tarea.
+> - **El estado es la segunda columna** *(25/10/2026)*, después de la prioridad, con la misma
+>   etiqueta (punto de color + texto) que el estado de la OT (`EtiquetaEstadoOT`): la tarea
+>   tiene los mismos estados. El color acompaña; lo que se lee es la palabra.
+> - **El filtro "Estado" ofrece los estados de la tarea** *(25/10/2026)*: En ejecución,
+>   Asignada, Finalizada y Cancelada. Arranca en "Todas"; por el orden, las terminadas quedan al
+>   final. Reemplaza a la opción "Pendientes" (22/10/2026), que no era un estado.
 > - **El detalle de la tarea es una pantalla** (`/tareas/[OT]/[tarea]`). La OT y el activo no
 >   llevan enlace: sus pantallas son del administrador.
 

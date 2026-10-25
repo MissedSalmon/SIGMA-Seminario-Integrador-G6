@@ -146,8 +146,9 @@ function compararTareas(una, otra) {
 }
 
 /** Si la tarea cumple con los filtros. Todos juntos (AND). */
-function cumpleFiltros(tarea, { soloPendientes, prioridad, desde, hasta }) {
+function cumpleFiltros(tarea, { soloPendientes, estado, prioridad, desde, hasta }) {
   if (soloPendientes && !tarea.pendiente) return false;
+  if (estado && tarea.estado !== estado) return false;
   if (prioridad && tarea.prioridad !== prioridad) return false;
   if ((desde || hasta) && !tarea.fechaPrevista) return false;
   if (desde && tarea.fechaPrevista < desde) return false;
@@ -169,7 +170,8 @@ function consultarAsignaciones(legajo) {
  *
  * @param {string} legajo - el del tecnico con la sesion activa
  * @param {object} [filtros]
- * @param {boolean} [filtros.soloPendientes] - sin las Finalizadas ni Canceladas
+ * @param {boolean} [filtros.soloPendientes] - sin las Finalizadas ni Canceladas (lo usa la campana)
+ * @param {string} [filtros.estado]    - "Asignada" | "En ejecución" | ...: uno de ENUM_ESTADO_TAREA
  * @param {string} [filtros.prioridad] - "Alta" | "Media" | "Baja"
  * @param {string} [filtros.desde]     - "2026-10-01": fecha prevista desde (inclusive)
  * @param {string} [filtros.hasta]     - "2026-10-31": fecha prevista hasta (inclusive)
