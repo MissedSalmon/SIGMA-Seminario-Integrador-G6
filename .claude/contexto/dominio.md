@@ -287,7 +287,13 @@ No son historias de usuario aparte: son reglas dentro de historias existentes.
 >   el rol y el legajo de la sesión (JWT) y devuelve sólo las de ese usuario.
 > - **Administrador:** las alertas de stock mínimo (como arriba). «Ver más» → `/notificaciones`.
 > - **Técnico:** sus tareas pendientes (las que no están Finalizadas ni Canceladas), la última
->   asignada primero. Reemplaza al aviso que había arriba de `/tareas`. «Ver más» → `/tareas`.
+>   asignada primero. Reemplaza al aviso que había arriba de `/tareas`. «Ver más» → `/notificaciones`, con la
+>   lista completa de sus pendientes (25/10/2026: antes iba a `/tareas`, que es su pantalla de
+>   inicio, y el enlace no hacía nada estando ahí).
+> - **El mensaje de cada tarea del técnico (25/10/2026)** dice en qué punto está: «Falta
+>   finalizar la tarea …» si está En ejecución; «Tarea … está atrasada» si no empezó y su
+>   fecha prevista de inicio ya pasó; si no, «Te asignaron la tarea …». Abajo: la OT, dónde es, la prioridad y la fecha
+>   prevista. En `/notificaciones` cada mensaje lleva el botón «Ver tarea».
 > - **Usuario autorizado:** todavía no tiene campana. **Pendiente de confirmar** qué se le
 >   notifica (por ejemplo, cambios de estado de sus tickets); el relevamiento no lo dice.
 > - Ninguna notificación se guarda en una tabla ni se marca como leída: el número es la

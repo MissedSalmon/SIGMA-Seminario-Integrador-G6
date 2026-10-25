@@ -26,17 +26,51 @@ async function delAdministrador() {
   };
 }
 
+/** "2026-10-25" en Argentina: el servidor puede estar en UTC, donde despues de las 21 ya es mañana. */
+function hoyEnArgentina() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
+}
+
+function fechaLegible(texto) {
+  const [anio, mes, dia] = texto.split('-');
+  return `${dia}/${mes}/${anio}`;
+}
+
+/**
+ * El mensaje de una tarea pendiente, segun en que punto esta (25/10/2026):
+ *   - en ejecucion: falta finalizarla;
+ *   - sin empezar y con la fecha prevista de inicio ya pasada: esta atrasada;
+ *   - sin empezar: se la asignaron.
+ */
+function mensajeDeTarea(tarea, hoy) {
+  const nombre = `la tarea «${tarea.descripcion}»`;
+  const atrasada = tarea.estado !== 'En ejecución' && tarea.fechaPrevista && tarea.fechaPrevista < hoy;
+
+  let titulo = `Te asignaron ${nombre}`;
+  if (tarea.estado === 'En ejecución') titulo = `Falta finalizar ${nombre}`;
+  else if (atrasada) titulo = `Tarea «${tarea.descripcion}» está atrasada`;
+
+  const donde = tarea.ubicacion ? ` en ${tarea.ubicacion.edificio}, ${tarea.ubicacion.espacio}` : '';
+  const partes = [`Es de la OT #${tarea.idOt}${donde}.`, `Prioridad ${tarea.prioridad.toLowerCase()}.`];
+  if (atrasada) partes.push(`Tenía que empezar el ${fechaLegible(tarea.fechaPrevista)}.`);
+  else if (tarea.estado !== 'En ejecución' && tarea.fechaPrevista) {
+    partes.push(`Empieza el ${fechaLegible(tarea.fechaPrevista)}.`);
+  }
+
+  return { titulo, detalle: partes.join(' ') };
+}
+
 async function delTecnico(legajo) {
   const { tareas } = await obtenerDelTecnico(legajo, { soloPendientes: true });
+  const hoy = hoyEnArgentina();
 
   return {
-    // /tareas ya arranca mostrando sólo las pendientes.
-    verMas: '/tareas',
+    // No /tareas: es la pantalla de inicio del tecnico y el enlace no hacia nada estando ahi.
+    verMas: '/notificaciones',
     // La API las da de la mas vieja a la mas nueva; en la campana va primero la ultima asignada.
     notificaciones: tareas.reverse().map((tarea) => ({
       clave: `tarea-${tarea.idOt}-${tarea.idTarea}`,
-      titulo: `Tarea pendiente: ${tarea.descripcion}`,
-      detalle: `OT #${tarea.idOt} · Prioridad ${tarea.prioridad} · ${tarea.estado}`,
+      ...mensajeDeTarea(tarea, hoy),
       enlace: `/tareas/${tarea.idOt}/${tarea.idTarea}`,
     })),
   };

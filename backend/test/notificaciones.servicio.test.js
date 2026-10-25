@@ -55,12 +55,12 @@ describe('obtenerDelUsuario', () => {
 
     expect(obtenerDelTecnico).toHaveBeenCalledWith('T-100', { soloPendientes: true });
     expect(obtenerAlertasStock).not.toHaveBeenCalled();
-    expect(resultado.verMas).toBe('/tareas');
+    expect(resultado.verMas).toBe('/notificaciones');
     expect(resultado.notificaciones).toEqual([
       {
         clave: 'tarea-1-1',
-        titulo: 'Tarea pendiente: Tarea 1-1',
-        detalle: 'OT #1 · Prioridad Alta · Asignada',
+        titulo: 'Te asignaron la tarea «Tarea 1-1»',
+        detalle: 'Es de la OT #1. Prioridad alta.',
         enlace: '/tareas/1/1',
       },
     ]);
@@ -72,6 +72,53 @@ describe('obtenerDelUsuario', () => {
     const { notificaciones } = await obtenerDelUsuario({ rol: 'tecnico', identificador: 'T-100' });
 
     expect(notificaciones.map((notificacion) => notificacion.clave)).toEqual(['tarea-3-1', 'tarea-1-2', 'tarea-1-1']);
+  });
+
+  describe('el mensaje de cada tarea del tecnico', () => {
+    beforeEach(() => {
+      // Las 23 en Argentina: en UTC ya es el 26, y la tarea del 25 todavia no tiene que figurar atrasada.
+      jest.useFakeTimers({ now: new Date('2026-10-26T02:00:00Z') });
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    async function mensajeDe(datos) {
+      obtenerDelTecnico.mockResolvedValue({ tareas: [{ ...tarea(7, 2), ...datos }], pendientes: 1 });
+      const { notificaciones } = await obtenerDelUsuario({ rol: 'tecnico', identificador: 'T-100' });
+      return { titulo: notificaciones[0].titulo, detalle: notificaciones[0].detalle };
+    }
+
+    test('una tarea sin empezar dice donde es y cuando empieza', async () => {
+      const mensaje = await mensajeDe({
+        fechaPrevista: '2026-10-25',
+        ubicacion: { edificio: 'Edificio Central', espacio: 'Aula 3' },
+      });
+
+      expect(mensaje).toEqual({
+        titulo: 'Te asignaron la tarea «Tarea 7-2»',
+        detalle: 'Es de la OT #7 en Edificio Central, Aula 3. Prioridad alta. Empieza el 25/10/2026.',
+      });
+    });
+
+    test('una tarea sin empezar con la fecha prevista ya pasada figura atrasada', async () => {
+      const mensaje = await mensajeDe({ estado: 'Pendiente', fechaPrevista: '2026-10-20' });
+
+      expect(mensaje).toEqual({
+        titulo: 'Tarea «Tarea 7-2» está atrasada',
+        detalle: 'Es de la OT #7. Prioridad alta. Tenía que empezar el 20/10/2026.',
+      });
+    });
+
+    test('una tarea en ejecucion avisa que falta finalizarla, aunque su fecha haya pasado', async () => {
+      const mensaje = await mensajeDe({ estado: 'En ejecución', fechaPrevista: '2026-10-20' });
+
+      expect(mensaje).toEqual({
+        titulo: 'Falta finalizar la tarea «Tarea 7-2»',
+        detalle: 'Es de la OT #7. Prioridad alta.',
+      });
+    });
   });
 
   test('un rol sin notificaciones recibe la lista vacia', async () => {

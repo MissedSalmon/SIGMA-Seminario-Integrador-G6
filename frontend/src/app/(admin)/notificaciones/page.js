@@ -1,15 +1,16 @@
 'use client';
 
 /**
- * /notificaciones - la lista completa de notificaciones (HU-33). Es a donde
- * lleva el "Ver más" de la campana de arriba.
- *
- * Por ahora son las alertas de stock minimo: cada material que esta por
- * debajo de su minimo, con cuanto falta para llegar. La lista se calcula del
- * stock: un remito que lo sube hace que el material deje de aparecer.
+ * /notificaciones - la lista completa de notificaciones. Es a donde lleva el
+ * "Ver más" de la campana de arriba, y muestra lo mismo que ella según el rol:
+ *   - Administrador: las alertas de stock minimo (HU-33). Cada material que
+ *     esta por debajo de su minimo, con cuanto falta para llegar. La lista se
+ *     calcula del stock: un remito que lo sube hace que deje de aparecer.
+ *   - Técnico: sus tareas pendientes (HU-21) como mensajes, la última asignada
+ *     primero, cada una con el botón que lleva a la tarea.
  */
 import { useEffect, useState } from 'react';
-import { CCard, CCardBody } from '@coreui/react';
+import { CCard, CCardBody, CListGroup, CListGroupItem, CSpinner } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilDescription } from '@coreui/icons';
 
@@ -17,9 +18,11 @@ import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
+import { useSesion } from '@/componentes/layout/ContextoSesion.js';
 import { listarAlertasStock } from '@/servicios/inventario.js';
+import { listarNotificaciones } from '@/servicios/notificaciones.js';
 
-export default function PantallaNotificaciones() {
+function AlertasDeStock() {
   const [alertas, setAlertas] = useState([]);
   const [categoria, setCategoria] = useState('');
   const [cargando, setCargando] = useState(true);
@@ -76,8 +79,6 @@ export default function PantallaNotificaciones() {
 
   return (
     <>
-      <EncabezadoPagina titulo="Notificaciones" />
-
       <Aviso mensaje={error} onCerrar={() => setError('')} />
 
       <CCard>
@@ -106,6 +107,70 @@ export default function PantallaNotificaciones() {
           />
         </CCardBody>
       </CCard>
+    </>
+  );
+}
+
+/** Cada tarea pendiente como un mensaje, con el botón para ir a ella. El texto lo arma la API. */
+function MensajesDelTecnico() {
+  const [notificaciones, setNotificaciones] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    listarNotificaciones()
+      .then((respuesta) => setNotificaciones(respuesta.notificaciones))
+      .catch((fallo) => setError(fallo.message))
+      .finally(() => setCargando(false));
+  }, []);
+
+  if (cargando) {
+    return (
+      <div className="py-4 text-center">
+        <CSpinner size="sm" />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Aviso mensaje={error} onCerrar={() => setError('')} />
+
+      <CCard>
+        {notificaciones.length === 0 ? (
+          <CCardBody className="text-body-secondary">No tenés tareas pendientes.</CCardBody>
+        ) : (
+          <CListGroup flush>
+            {notificaciones.map((notificacion) => (
+              <CListGroupItem
+                key={notificacion.clave}
+                className="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2 py-3"
+              >
+                <div>
+                  <div className="fw-semibold">{notificacion.titulo}</div>
+                  <div className="text-body-secondary">{notificacion.detalle}</div>
+                </div>
+                <BotonEnlace href={notificacion.enlace} variante="outline" tamano="sm" className="text-nowrap align-self-start align-self-sm-center">
+                  Ver tarea
+                </BotonEnlace>
+              </CListGroupItem>
+            ))}
+          </CListGroup>
+        )}
+      </CCard>
+    </>
+  );
+}
+
+export default function PantallaNotificaciones() {
+  const { usuario } = useSesion();
+
+  return (
+    <>
+      <EncabezadoPagina titulo="Notificaciones" />
+      {/* Hasta saber el rol no se pide nada: si no, al técnico le saldría el error de la lista de stock. */}
+      {usuario?.rol === 'administrador' && <AlertasDeStock />}
+      {usuario?.rol === 'tecnico' && <MensajesDelTecnico />}
     </>
   );
 }
