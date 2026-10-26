@@ -863,6 +863,13 @@ body {
   font-size: 0.875rem;
 }
 
+/* Abajo de 40rem HeroUI pasa la fecha a 16px para que el celular no haga zoom: la caja crece con ella. */
+@media (max-width: 39.99rem) {
+  .sigma-fecha--compacto .date-input-group {
+    width: calc(10ch + 5rem);
+  }
+}
+
 /*
   ---------- El campo de duracion (HeroUI) ----------
 

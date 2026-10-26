@@ -246,6 +246,28 @@ un **número** (el de la tabla). La traducción a texto está en un solo lugar:
 >   no lleva acciones. "Herramientas utilizadas" (`/tareas/herramientas`) lista las que tiene
 >   ("En uso") y las que ya devolvió, y desde ahí devuelve las que todavía están a su nombre.
 >   Sólo ve lo suyo.
+> - **Cómo se muestra la tarea en ese historial** *(25/10/2026)*: la descripción de la tarea es
+>   el dato principal y el enlace lleva a la tarea (`/tareas/[OT]/[tarea]`). Abajo, en gris y
+>   sin enlace, van la OT, el activo y el espacio (`OT #3 · PROY-001 · Aula 11`). La OT no
+>   lleva enlace porque su pantalla es del administrador. No se muestra la descripción de la
+>   OT: es lo que escribió quien hizo el ticket y no ayuda a reconocer el trabajo.
+> - **Orden de las columnas** *(25/10/2026)*: como en el resto de las listas, primero lo que se
+>   lista (el material o la herramienta), después sus datos, la tarea como última columna de
+>   datos y, si hay, la acción al final.
+> - **Materiales utilizados** *(25/10/2026)*: columnas Material, Cantidad, Fecha y Tarea. La
+>   fecha va sin la hora; los filtros "Desde" y "Hasta" toman el día en la hora local.
+> - **Herramientas utilizadas: una fila por préstamo** *(25/10/2026)*, cada vez que la tomó,
+>   como materiales tiene una fila por consumo. Columnas Herramienta, Estado, Desde, Hasta,
+>   Tarea y Acción ("Devolver", sólo en la que tiene todavía). El estado va con una etiqueta
+>   (punto + texto, como el de la OT): **celeste = En uso** (la tiene a su nombre y la puede
+>   devolver) y **gris = Devuelta** (ya no la tiene; queda como historial). Primero las En uso. Reemplaza a
+>   la fila por herramienta con las columnas "Último uso" y "Veces" y la ventana "Ver OT"
+>   (22/10/2026). Un préstamo sin tarea (los que asignó el administrador desde el depósito y
+>   los de antes del 22/10/2026) dice "Sin tarea registrada".
+> - **En el celular** *(25/10/2026)*: las dos pantallas entran sin correrse de costado. Las
+>   columnas de fechas, estado, cantidad y acción se esconden y su dato pasa abajo de la
+>   herramienta o del material. En herramientas, "Desde" y "Hasta" recién aparecen en
+>   pantallas grandes (desde 1200 px): con el menú lateral abierto no entran las seis columnas.
 > - ⬜ **Pendiente de definir:** una tarea a cargo de un **prestador externo** no la puede
 >   finalizar un técnico desde la app. Si una OT tiene una, no se va a cerrar sola hasta que
 >   haya una forma de marcar esa tarea como hecha (la tendría que hacer el administrador).

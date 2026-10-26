@@ -88,6 +88,13 @@ function soloElDia(valor) {
   return valor ? String(valor).slice(0, 10) : null;
 }
 
+/** "Aula 11", o "Espacio 11" si el espacio no tiene tipo. */
+function nombreDelEspacio(espacio) {
+  return espacio.tipo_espacio
+    ? `${espacio.tipo_espacio.tipo_espacio_nom} ${espacio.espacio_num}`
+    : `Espacio ${espacio.espacio_num}`;
+}
+
 function aTarea(fila) {
   const tarea = fila.tarea_ot;
   const orden = tarea.orden_trabajo ?? null;
@@ -115,9 +122,7 @@ function aTarea(fila) {
     ubicacion: espacio
       ? {
           edificio: espacio.edificio?.edificio_nom ?? '',
-          espacio: espacio.tipo_espacio
-            ? `${espacio.tipo_espacio.tipo_espacio_nom} ${espacio.espacio_num}`
-            : `Espacio ${espacio.espacio_num}`,
+          espacio: nombreDelEspacio(espacio),
           piso: espacio.espacio_piso ?? null,
         }
       : null,
@@ -568,6 +573,29 @@ export async function tomarHerramienta(legajo, idOt, idTarea, codigo) {
 
 /* ---------------------------------------------------------------- Historial */
 
+/** La tarea de cada fila del historial, con el activo y el espacio de su OT. */
+const TAREA_DEL_HISTORIAL = `
+  tarea_ot (
+    tarea_desc,
+    orden_trabajo (
+      ticket ( ${ACTIVO} ),
+      mantenimiento_preventivo ( ${ACTIVO} )
+    )
+  )
+`;
+
+/** Lo que el técnico reconoce de una tarea: qué era, sobre qué activo y dónde. */
+function tareaDelHistorial(tareaOt) {
+  const orden = tareaOt?.orden_trabajo ?? null;
+  const activo = orden?.ticket?.activo ?? orden?.mantenimiento_preventivo?.activo ?? null;
+
+  return {
+    tarea: tareaOt?.tarea_desc ?? '',
+    codigoActivo: activo?.activo_codigo ?? null,
+    espacio: activo?.espacio ? nombreDelEspacio(activo.espacio) : null,
+  };
+}
+
 /**
  * Los materiales usados en las tareas del tecnico, del mas nuevo al mas viejo.
  * Una fila por tarea y material (si se registro dos veces, ya viene sumado).
@@ -589,7 +617,7 @@ export async function historialMateriales(legajo) {
 
   const { data, error } = await supabase
     .from('tarea_ot_consume_material')
-    .select('ot_id, tarea_id, mat_cod, tamat_cant, tamat_fecha_cons, material ( mat_nom ), tarea_ot ( tarea_desc )')
+    .select(`ot_id, tarea_id, mat_cod, tamat_cant, tamat_fecha_cons, material ( mat_nom ), ${TAREA_DEL_HISTORIAL}`)
     .in('ot_id', ordenes)
     .order('tamat_fecha_cons', { ascending: false });
   if (error) throw errorDeBase(error, 'de los materiales usados');
@@ -603,7 +631,7 @@ export async function historialMateriales(legajo) {
       cantidad: Number(fila.tamat_cant),
       idOt: fila.ot_id,
       idTarea: fila.tarea_id,
-      tarea: fila.tarea_ot?.tarea_desc ?? '',
+      ...tareaDelHistorial(fila.tarea_ot),
     }));
 }
 
@@ -623,7 +651,7 @@ export async function historialHerramientas(legajo) {
       .order('tec_herr_fecha_prest', { ascending: false });
 
   let { data, error } = await consultar(
-    'herr_cod, tec_herr_fecha_prest, tec_herr_fecha_dev, ot_id, tarea_id, herramienta ( herr_nom )'
+    `herr_cod, tec_herr_fecha_prest, tec_herr_fecha_dev, ot_id, tarea_id, herramienta ( herr_nom ), ${TAREA_DEL_HISTORIAL}`
   );
 
   // Si la base todavia no tiene la migracion 20261022120000 (falta ot_id), se
@@ -641,6 +669,7 @@ export async function historialHerramientas(legajo) {
     enUso: !fila.tec_herr_fecha_dev,
     idOt: fila.ot_id ?? null,
     idTarea: fila.tarea_id ?? null,
+    ...tareaDelHistorial(fila.tarea_ot),
   }));
 }
 

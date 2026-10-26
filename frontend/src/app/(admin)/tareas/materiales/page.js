@@ -6,19 +6,20 @@
  *
  * Una fila por tarea y material. Es sólo para consultar: no lleva acciones.
  *
- * La OT de cada fila es un enlace (22/10/2026). Lleva al detalle de la tarea,
- * que muestra los datos de la OT: la pantalla de órdenes de trabajo es del
- * administrador y el técnico no puede entrar.
+ * Desde el 25/10/2026 la tarea va en la última columna y su descripción es el
+ * enlace a la tarea. La OT va abajo, en gris y sin enlace, con el activo y el
+ * espacio. La fecha va sin la hora. En el celular la cantidad y la fecha pasan
+ * abajo del material.
  */
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { CCard, CCardBody } from '@coreui/react';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
+import TareaDelHistorial from '@/componentes/tareas/TareaDelHistorial.js';
 import { listarHistorialMateriales } from '@/servicios/tareas.js';
-import { formatearFechaHora } from '@/utils/fechas.js';
+import { diaLocal, formatearFecha } from '@/utils/fechas.js';
 
 export default function PantallaMaterialesUtilizados() {
   const [filas, setFilas] = useState([]);
@@ -47,7 +48,7 @@ export default function PantallaMaterialesUtilizados() {
   const filtradas = useMemo(
     () =>
       filas.filter((fila) => {
-        const dia = String(fila.fecha).slice(0, 10);
+        const dia = diaLocal(fila.fecha);
         if (filtroMaterial && fila.codigo !== filtroMaterial) return false;
         if (filtroDesde && dia < filtroDesde) return false;
         if (filtroHasta && dia > filtroHasta) return false;
@@ -66,41 +67,34 @@ export default function PantallaMaterialesUtilizados() {
 
   const columnas = [
     {
-      clave: 'fecha',
-      encabezado: 'Fecha',
-      render: (fila) => <span className="text-nowrap">{formatearFechaHora(fila.fecha)}</span>,
-    },
-    {
       clave: 'material',
       encabezado: 'Material',
       render: (fila) => (
         <>
           <span className="fw-semibold">{fila.codigo}</span>
           <span className="text-body-secondary"> — {fila.nombre}</span>
+          <div className="d-md-none text-body-secondary small">
+            Cantidad: {fila.cantidad} · {formatearFecha(fila.fecha)}
+          </div>
         </>
       ),
     },
     {
       clave: 'cantidad',
       encabezado: 'Cantidad',
+      ocultarDebajoDe: 'md',
       render: (fila) => fila.cantidad,
+    },
+    {
+      clave: 'fecha',
+      encabezado: 'Fecha',
+      ocultarDebajoDe: 'md',
+      render: (fila) => <span className="text-nowrap">{formatearFecha(fila.fecha)}</span>,
     },
     {
       clave: 'tarea',
       encabezado: 'Tarea',
-      render: (fila) => (
-        <>
-          {fila.tarea}
-          {' '}
-          <Link
-            href={`/tareas/${fila.idOt}/${fila.idTarea}`}
-            className="text-nowrap"
-            title={`Ver la tarea de la OT #${fila.idOt}`}
-          >
-            (OT #{fila.idOt})
-          </Link>
-        </>
-      ),
+      render: (fila) => <TareaDelHistorial fila={fila} />,
     },
   ];
 

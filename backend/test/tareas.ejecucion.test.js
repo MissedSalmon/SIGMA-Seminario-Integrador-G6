@@ -276,7 +276,21 @@ describe('historial', () => {
     lecturas.tarea_ot_consume_material = [
       {
         data: [
-          { ot_id: 9, tarea_id: 1, mat_cod: 'MAT-002', tamat_cant: 4, tamat_fecha_cons: '2026-10-10', material: { mat_nom: 'Tornillo' }, tarea_ot: { tarea_desc: 'Cambiar el filtro' } },
+          {
+            ot_id: 9,
+            tarea_id: 1,
+            mat_cod: 'MAT-002',
+            tamat_cant: 4,
+            tamat_fecha_cons: '2026-10-10',
+            material: { mat_nom: 'Tornillo' },
+            tarea_ot: {
+              tarea_desc: 'Cambiar el filtro',
+              orden_trabajo: {
+                ticket: { activo: { activo_codigo: 'AC-01', espacio: { espacio_num: 11, tipo_espacio: { tipo_espacio_nom: 'Aula' } } } },
+                mantenimiento_preventivo: null,
+              },
+            },
+          },
           { ot_id: 9, tarea_id: 2, mat_cod: 'MAT-003', tamat_cant: 1, tamat_fecha_cons: '2026-10-10', material: { mat_nom: 'Cinta' }, tarea_ot: { tarea_desc: 'De otro técnico' } },
         ],
         error: null,
@@ -286,7 +300,15 @@ describe('historial', () => {
     const filas = await tareas.historialMateriales('2030');
 
     expect(filas).toEqual([
-      expect.objectContaining({ codigo: 'MAT-002', cantidad: 4, idOt: 9, idTarea: 1, tarea: 'Cambiar el filtro' }),
+      expect.objectContaining({
+        codigo: 'MAT-002',
+        cantidad: 4,
+        idOt: 9,
+        idTarea: 1,
+        tarea: 'Cambiar el filtro',
+        codigoActivo: 'AC-01',
+        espacio: 'Aula 11',
+      }),
     ]);
   });
 
