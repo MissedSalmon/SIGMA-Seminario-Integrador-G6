@@ -4,8 +4,8 @@
 > 500 caracteres (como las descripciones de tickets y remitos). Se registran
 > por técnicos con asignación vigente, sin limitar el estado de la tarea, con
 > cuenta autora, nombre al momento de crear y fecha del servidor. No se editan
-> ni eliminan. La consulta por activo está preparada para HU-28/HU-29; su
-> pantalla de historial aún está pendiente. Ver `docs/U-23-observaciones.md`.
+> ni eliminan. La consulta por activo la usa el historial de intervenciones
+> de HU-29 (25/10/2026). Ver `docs/U-23-observaciones.md`.
 
 ## Los 3 roles
 
@@ -249,6 +249,25 @@ un **número** (el de la tabla). La traducción a texto está en un solo lugar:
 > - ⬜ **Pendiente de definir:** una tarea a cargo de un **prestador externo** no la puede
 >   finalizar un técnico desde la app. Si una OT tiene una, no se va a cerrar sola hasta que
 >   haya una forma de marcar esa tarea como hecha (la tendría que hacer el administrador).
+
+> **Decisiones del 25/10/2026 (HU-29, historial de intervenciones por activo):**
+> - **Una intervención es una OT del activo**, no cada tarea. Es **correctiva** si viene de un
+>   ticket y **preventiva** si viene de un plan.
+> - **Entran las OT En ejecución y Finalizadas.** Las Creadas y Asignadas todavía no le
+>   hicieron nada al activo, y las Canceladas no se trabajaron.
+> - **La fecha que se muestra** es la de cierre si la OT está Finalizada, y la de alta si sigue
+>   en ejecución. Con esa fecha se ordenan, de la más reciente a la más antigua.
+> - **La falla, quién la ejecutó, los materiales y las observaciones son de cada tarea**, así
+>   que se muestran tarea por tarea. Quien ejecutó es el responsable de la tarea: un técnico
+>   (sin contar una asignación cancelada) o un prestador. Las tareas canceladas no se
+>   muestran. En las correctivas también se ve el problema que se reportó en el ticket.
+> - **Último mantenimiento** es la fecha de cierre de la OT Finalizada más reciente, correctiva
+>   o preventiva. **Se calcula, no se guarda:** la columna `activo.activo_fecha_ult_maint`
+>   no la escribe nadie y el historial no la usa.
+> - El historial está en la ficha del activo (`/activos/[codigo]`), a la que se llega con el
+>   ícono de la ficha (la hoja, el mismo que en materiales y herramientas) del listado de
+>   activos. Cada intervención es un renglón; «Ver más» abre el detalle de sus tareas. La API es
+>   `GET /api/activos/:codigo/historial` y es sólo para el administrador.
 
 ---
 
