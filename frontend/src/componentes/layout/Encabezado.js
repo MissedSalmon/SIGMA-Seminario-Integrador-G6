@@ -141,6 +141,10 @@ function armarMigas(direccion) {
       !NOMBRES[acumulada] &&
       !NOMBRES_COMUNES[tramo]
     ) {
+      // La ficha del activo (HU-29) es una pantalla: la miga lleva su titulo.
+      if (padre === '/activos' && indice === tramos.length - 1) {
+        migas.push({ texto: `Activo ${decodeURIComponent(tramo)}`, direccion: acumulada, ultima: true });
+      }
       return;
     }
 
