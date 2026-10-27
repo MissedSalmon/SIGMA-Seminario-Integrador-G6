@@ -3,7 +3,7 @@ import { jwtVerify } from 'jose'; // Usaremos jose porque jsonwebtoken no corre 
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'supersecret123');
 
-export async function proxy(request) {
+export async function middleware(request) {
   const url = request.nextUrl.clone();
   
   // Rutas públicas
