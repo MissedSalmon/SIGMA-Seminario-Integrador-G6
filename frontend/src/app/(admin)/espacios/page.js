@@ -165,6 +165,7 @@ export default function PantallaEspacios() {
                 })),
               },
             ]}
+            alLimpiar={() => setFiltroEdificio('')}
             cargando={cargando}
             textoVacio={
               filtroEdificio

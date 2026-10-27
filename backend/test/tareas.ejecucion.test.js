@@ -66,7 +66,7 @@ const inventario = await import('../src/servicios/inventario.servicio.js');
 const tareas = await import('../src/servicios/tareas.servicio.js');
 
 /** La asignacion del tecnico 2030 a la tarea 1 de la OT 9, con sus estados en numero. */
-function filaAsignacion({ estadoTarea = 2, estadoOt = 2 } = {}) {
+function filaAsignacion({ estadoTarea = 2, estadoOt = 2, esPreventiva = false, fechaInicio = null } = {}) {
   return {
     ot_id: 9,
     tarea_id: 1,
@@ -76,14 +76,14 @@ function filaAsignacion({ estadoTarea = 2, estadoOt = 2 } = {}) {
       tarea_desc: 'Cambiar el filtro',
       tarea_estado: estadoTarea,
       tarea_prioridad: 2,
-      tarea_fecha_ini: null,
+      tarea_fecha_ini: fechaInicio,
       tarea_fecha_fin: null,
       orden_trabajo: {
         ot_id: 9,
         ot_desc: 'Pierde agua',
         ot_estado: estadoOt,
-        ticket: { ticket_id: 3, activo: null },
-        mantenimiento_preventivo: null,
+        ticket: esPreventiva ? null : { ticket_id: 3, activo: null },
+        mantenimiento_preventivo: esPreventiva ? { mant_prev_id: 5, activo: null } : null,
       },
     },
   };
@@ -165,6 +165,32 @@ describe('iniciarTarea', () => {
     escrituras.tarea_ot = { data: [], error: null }; // el update no encontró la fila en ese estado
 
     await expect(tareas.iniciarTarea('2030', 9, 1)).rejects.toThrow('cambió de estado');
+  });
+
+  test('en OT preventiva rechaza iniciar si no tiene fecha programada (C6, D2)', async () => {
+    laTareaEsta({ estadoTarea: 2, esPreventiva: true, fechaInicio: null });
+
+    await expect(tareas.iniciarTarea('2030', 9, 1)).rejects.toThrow(
+      'La tarea preventiva requiere tener una fecha programada para poder iniciarse.'
+    );
+  });
+
+  test('en OT preventiva rechaza iniciar si la fecha programada es futura (C6, D2)', async () => {
+    laTareaEsta({ estadoTarea: 2, esPreventiva: true, fechaInicio: '2099-01-01' });
+
+    await expect(tareas.iniciarTarea('2030', 9, 1)).rejects.toThrow(
+      'no puede iniciarse antes de esa fecha'
+    );
+  });
+
+  test('en OT preventiva sí inicia si tiene fecha programada ya alcanzada (C6, D2)', async () => {
+    laTareaEsta({ estadoTarea: 2, esPreventiva: true, fechaInicio: '2020-01-01' });
+    lecturas.orden_trabajo = [ORDEN_CON_ACTIVO];
+
+    await tareas.iniciarTarea('2030', 9, 1);
+
+    const [tarea] = escriturasEn('tarea_ot');
+    expect(valorEscrito(tarea)).toEqual({ tarea_estado: 3 }); // En ejecución
   });
 });
 

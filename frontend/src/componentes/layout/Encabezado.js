@@ -58,6 +58,8 @@ const NOMBRES = {
   '/tareas/materiales': 'Materiales utilizados',
   '/tareas/herramientas': 'Herramientas utilizadas',
   '/ordenes-trabajo': 'Órdenes de trabajo',
+  '/planes-mantenimiento': 'Planes de mantenimiento',
+  '/planes-mantenimiento/agregar': 'Agregar plan de mantenimiento',
   '/plantillas-tareas': 'Plantillas de tareas',
   '/edificios': 'Edificios',
   '/espacios': 'Espacios',

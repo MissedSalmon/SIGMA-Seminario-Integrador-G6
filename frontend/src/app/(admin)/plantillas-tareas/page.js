@@ -136,6 +136,7 @@ export default function PantallaPlantillas() {
                 opciones: tipos.map((tipo) => ({ valor: tipo.idTipoActivo, texto: tipo.nombre })),
               },
             ]}
+            alLimpiar={() => setFiltroTipo('')}
             cargando={cargando}
             textoVacio="Todavia no hay plantillas de tareas cargadas."
           />

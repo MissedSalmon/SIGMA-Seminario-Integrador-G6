@@ -172,11 +172,23 @@ const COLUMNAS = `
   ot_id,
   ticket_id,
   mant_prev_id,
+  activo_codigo,
   ot_fecha_alta,
   ot_fecha_cierre,
   ot_estado,
   ot_desc,
   ot_prioridad,
+  activo (
+    activo_codigo,
+    activo_estado,
+    tipo_activo_id,
+    tipo_activo ( tipo_activo_nom ),
+    espacio (
+      espacio_num,
+      edificio ( edificio_nom ),
+      area ( area_id, area_nom )
+    )
+  ),
   mantenimiento_preventivo (
     mant_prev_id,
     activo_codigo,
@@ -326,7 +338,7 @@ function aTarea(fila, asignaciones) {
 function aOrden(fila, asignaciones = []) {
   const ticket = fila.ticket ?? null;
   const mantenimientoPreventivo = fila.mantenimiento_preventivo ?? null;
-  const activo = ticket?.activo ?? mantenimientoPreventivo?.activo ?? null;
+  const activo = fila.activo ?? ticket?.activo ?? mantenimientoPreventivo?.activo ?? null;
   const espacio = activo?.espacio ?? null;
   const areas = espacio?.area ?? [];
   const autorizado = ticket?.autorizado ?? null;
@@ -367,7 +379,7 @@ function aOrden(fila, asignaciones = []) {
           fechaAlta: ticket.ticket_fecha_alta,
         }
       : null,
-    codigoActivo: ticket?.activo_codigo ?? mantenimientoPreventivo?.activo_codigo ?? null,
+    codigoActivo: fila.activo_codigo ?? ticket?.activo_codigo ?? mantenimientoPreventivo?.activo_codigo ?? null,
     activo: activo
       ? {
           codigo: activo.activo_codigo,

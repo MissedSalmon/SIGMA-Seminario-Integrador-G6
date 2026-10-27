@@ -267,6 +267,7 @@ export default function PantallaActivos() {
                 opciones: ESTADOS.map((unEstado) => ({ valor: unEstado, texto: unEstado })),
               },
             ]}
+            alLimpiar={() => { setFiltroEspacio(''); setFiltroTipo(''); setFiltroEstado(''); }}
             cargando={cargando}
             textoVacio={
               hayFiltros

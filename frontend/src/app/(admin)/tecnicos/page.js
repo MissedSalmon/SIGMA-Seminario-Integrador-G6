@@ -188,6 +188,7 @@ export default function PantallaTecnicos() {
                 ],
               },
             ]}
+            alLimpiar={() => { setFiltroEspecialidad(''); setFiltroDisponibilidad(''); }}
             cargando={cargando}
             textoVacio={
               filtroEspecialidad || filtroDisponibilidad
