@@ -148,13 +148,35 @@ export default function PantallaDetalleMiTarea({ params }) {
   const sinEmpezar = tarea && ESTADOS_SIN_EMPEZAR.includes(tarea.estado);
   const enEjecucion = tarea?.estado === 'En ejecución';
 
+  const hoy = new Date().toISOString().slice(0, 10);
+  const esPreventiva = tarea?.ot?.origen === 'Mantenimiento preventivo';
+  let motivoBloqueoInicio = null;
+  if (esPreventiva) {
+    if (!tarea.fechaPrevista) {
+      motivoBloqueoInicio = 'La tarea preventiva requiere tener una fecha programada para poder iniciarse.';
+    } else if (tarea.fechaPrevista > hoy) {
+      motivoBloqueoInicio = `La tarea preventiva está programada para el ${soloFechaLegible(tarea.fechaPrevista)} y no puede iniciarse antes de esa fecha.`;
+    }
+  }
+
   const acciones = tarea && (sinEmpezar || enEjecucion) && (
-    <>
+    <div className="d-flex flex-column align-items-end">
       {sinEmpezar && (
-        <CButton color="primary" onClick={() => abrir('iniciar')}>
-          <CIcon icon={cilMediaPlay} className="me-2" />
-          Iniciar tarea
-        </CButton>
+        <span title={motivoBloqueoInicio || undefined}>
+          <CButton
+            color="primary"
+            disabled={Boolean(motivoBloqueoInicio)}
+            onClick={() => abrir('iniciar')}
+          >
+            <CIcon icon={cilMediaPlay} className="me-2" />
+            Iniciar tarea
+          </CButton>
+        </span>
+      )}
+      {motivoBloqueoInicio && (
+        <span className="text-body-secondary small mt-1 text-end" style={{ maxWidth: '320px' }}>
+          {motivoBloqueoInicio}
+        </span>
       )}
       {enEjecucion && (
         <CButton color="primary" onClick={() => abrir('finalizar')}>
@@ -162,7 +184,7 @@ export default function PantallaDetalleMiTarea({ params }) {
           Finalizar tarea
         </CButton>
       )}
-    </>
+    </div>
   );
 
   return (

@@ -341,6 +341,23 @@ export async function iniciarTarea(legajo, idOt, idTarea) {
     throw conflicto(`La tarea está ${tarea.estado.toLowerCase()}: ya no se puede iniciar.`);
   }
 
+  // Regla C6 / D2: Requisito excluyente para tareas preventivas
+  // Debe tener técnico asignado y haber llegado su fecha programada.
+  if (tarea.ot?.origen === 'Mantenimiento preventivo') {
+    if (!legajo) {
+      throw conflicto('La tarea preventiva debe tener un técnico autorizado asignado para poder iniciarse.');
+    }
+    if (!tarea.fechaPrevista) {
+      throw conflicto('La tarea preventiva requiere tener una fecha programada para poder iniciarse.');
+    }
+    const hoy = new Date().toISOString().slice(0, 10);
+    if (tarea.fechaPrevista > hoy) {
+      throw conflicto(
+        `La tarea preventiva está programada para el ${tarea.fechaPrevista} y no puede iniciarse antes de esa fecha.`
+      );
+    }
+  }
+
   await cambiarEstadoTarea(idOt, idTarea, ESTADOS_SIN_EMPEZAR, 'En ejecución');
   await cambiarAsignacion(legajo, idOt, idTarea, 'En curso');
 

@@ -177,6 +177,7 @@ export default function PantallaPrestadores() {
                 })),
               },
             ]}
+            alLimpiar={() => setFiltroTipo('')}
             cargando={cargando}
             textoVacio={
               filtroTipo

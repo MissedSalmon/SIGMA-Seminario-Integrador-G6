@@ -64,6 +64,10 @@ router.use('/tickets', rutasTickets);
 import rutasOrdenesTrabajo from './ordenesTrabajo.rutas.js';
 router.use('/ordenes-trabajo', rutasOrdenesTrabajo);
 
+// Planes de mantenimiento preventivo (Sprint 5)
+import rutasPlanesMantenimiento from './planesMantenimiento.rutas.js';
+router.use('/planes-mantenimiento', rutasPlanesMantenimiento);
+
 // Las tareas del tecnico con la sesion activa (HU-21)
 import rutasTareas from './tareas.rutas.js';
 router.use('/tareas', rutasTareas);

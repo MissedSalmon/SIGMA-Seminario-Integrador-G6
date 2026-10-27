@@ -266,6 +266,18 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
                               <CIcon icon={cilDescription} size="sm" className="me-1" />
                               Ticket #{orden.idTicket}
                             </BotonEnlace>
+                          ) : orden.idMantenimientoPreventivo ? (
+                            <BotonEnlace
+                              href={`/planes-mantenimiento/${orden.idMantenimientoPreventivo}`}
+                              color="secondary"
+                              variante="ghost"
+                              tamano="sm"
+                              className="px-0"
+                              title="Ver el plan preventivo que originó esta orden"
+                            >
+                              <CIcon icon={cilDescription} size="sm" className="me-1" />
+                              Plan preventivo #{orden.idMantenimientoPreventivo}
+                            </BotonEnlace>
                           ) : (
                             'Mantenimiento preventivo'
                           )}

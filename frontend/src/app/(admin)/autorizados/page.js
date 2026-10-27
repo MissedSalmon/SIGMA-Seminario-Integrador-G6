@@ -176,6 +176,7 @@ export default function PantallaAutorizados() {
                 })),
               },
             ]}
+            alLimpiar={() => setFiltroArea('')}
             cargando={cargando}
             textoVacio={
               filtroArea

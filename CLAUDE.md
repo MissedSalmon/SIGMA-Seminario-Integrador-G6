@@ -25,6 +25,7 @@ Ticket → Validación → Orden de Trabajo (OT) → Tareas → Ejecución → C
 ## Estado actual (12/10/2026)
 
 - Ya se entregó la **Primera Carpeta** (17/07/2026). Nota: **76/100 — APROBADO**.
+- **Sprint 5 — HU-22 (Planes de Mantenimiento Preventivo) completada (26/10/2026):** Gestión completa de planes preventivos por tipo de activo, asignación de tareas y técnicos autorizados, cálculo de periodicidad determinista, aviso de planes por vencer (7 días) en panel de administración, baja lógica sin afectar OTs generadas, generación automática idempotente mediante endpoint protegido con postergación si falta técnico (C7/D4), y concurrencia verificada entre preventivo y correctivo (C8/D6). Suite completa de pruebas backend (142/142 passed) y frontend compilando sin errores.
 - **HU-30 (Autenticación y Sesiones) completada (10/10/2026) y refactorizada a enumerados (12/10/2026):** Login propio con JWT, middleware `validarSesion` y `soloAdministrador` con JWT real, vista `/tareas` para técnicos, menú lateral filtrado dinámicamente por rol y cambio de contraseña obligatorio en el primer inicio de sesión. El atributo `rol` de `usuario` migró de `VARCHAR` a dato enumerado entero (`INT`: 1=administrador, 2=tecnico, 3=autorizado) mediante `supabase/migrations/20261012120000_usuario_rol_enumerado.sql` y `ENUM_ROL` en `backend/src/utiles/enumerados.js`. Pruebas backend (107/107 passed).
 - **Sprint 0 hecho:** estructura del repositorio armada y funcionando
   (Next.js 16 + Express 5 + Supabase, monorepo with npm workspaces).
