@@ -863,6 +863,13 @@ body {
   font-size: 0.875rem;
 }
 
+/* Abajo de 40rem HeroUI pasa la fecha a 16px para que el celular no haga zoom: la caja crece con ella. */
+@media (max-width: 39.99rem) {
+  .sigma-fecha--compacto .date-input-group {
+    width: calc(10ch + 5rem);
+  }
+}
+
 /*
   ---------- El campo de duracion (HeroUI) ----------
 
@@ -1334,6 +1341,12 @@ body {
   color: var(--cui-danger, #e55353);
 }
 
+/* Una notificacion (HU-33): la campana, con el color principal de SIGMA. */
+.sigma-toast--aviso .sigma-toast-icono {
+  background: var(--cui-primary-bg-subtle);
+  color: var(--cui-primary);
+}
+
 .sigma-toast-cerrar {
   margin-left: auto;
   background: none;
@@ -1551,4 +1564,41 @@ body {
   border-radius: 3px;
   background: color-mix(in srgb, var(--cui-danger, #e55353) 7%, transparent);
   border: 1px solid color-mix(in srgb, var(--cui-danger, #e55353) 45%, transparent);
+}
+
+/*
+  Campana de notificaciones de la barra de arriba (HU-33,
+  src/componentes/layout/CampanaNotificaciones.js). El menu no pasa del ancho
+  de la pantalla en el celular y cada notificacion corta el nombre largo con
+  puntos suspensivos en vez de ensanchar el menu.
+*/
+.sigma-campana-menu {
+  width: 20rem;
+  max-width: calc(100vw - 2rem);
+  border-radius: var(--sigma-radio-md);
+}
+
+.sigma-campana-item {
+  white-space: normal;
+}
+
+/* El numero: chico y pegado arriba a la derecha de la campana. */
+.sigma-campana-numero {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.25rem;
+  border-radius: 999px;
+  background: var(--cui-primary);
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 1;
+  pointer-events: none;
 }

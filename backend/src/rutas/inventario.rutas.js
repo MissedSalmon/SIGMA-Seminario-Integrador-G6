@@ -11,9 +11,14 @@ router.delete('/tipos/:id', inventario.eliminarTipo);
 
 router.get('/', inventario.listarItems);
 router.post('/', inventario.crearItem);
+// Los materiales por debajo del stock minimo (HU-33). Va antes de /:codigo
+// para que "alertas" no se tome como un codigo.
+router.get('/alertas', inventario.listarAlertasStock);
 router.get('/:codigo', inventario.obtenerItem);
 // El historial de ingresos y consumos del item (HU-16).
 router.get('/:codigo/movimientos', inventario.listarMovimientos);
+// En que tareas se consumio el material (HU-35).
+router.get('/:codigo/consumos', inventario.listarConsumos);
 router.put('/:codigo', inventario.actualizarItem);
 // Asignar una herramienta a un tecnico, registrar que la devolvio y ver quien la tuvo.
 router.get('/:codigo/asignaciones', inventario.listarAsignaciones);

@@ -6,6 +6,9 @@
  * Sus datos y, debajo, el historial de movimientos: como llego el stock al
  * numero que se ve hoy. Cada renglon es un Ingreso (viene de un remito) o un
  * Consumo (sale de una tarea de la OT).
+ *
+ * La tarjeta Consumos (HU-35, 23/10/2026) dice en que tarea se uso: una fila
+ * por tarea, con la cantidad sumada si se registro mas de una vez.
  */
 import { use, useEffect, useState } from 'react';
 import {
@@ -28,7 +31,7 @@ import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import { Cargando, SinDatos } from '@/componentes/EstadoTabla.js';
-import { listarMovimientos, obtenerItem } from '@/servicios/inventario.js';
+import { listarConsumos, listarMovimientos, obtenerItem } from '@/servicios/inventario.js';
 import { soloFechaLegible } from '@/utils/fechas.js';
 
 /** Un renglón "etiqueta: valor" de la ficha. */
@@ -54,14 +57,16 @@ export default function PantallaFichaItem({ params }) {
 
   const [item, setItem] = useState(null);
   const [movimientos, setMovimientos] = useState([]);
+  const [consumos, setConsumos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    Promise.all([obtenerItem(codigoItem), listarMovimientos(codigoItem)])
-      .then(([ficha, historial]) => {
+    Promise.all([obtenerItem(codigoItem), listarMovimientos(codigoItem), listarConsumos(codigoItem)])
+      .then(([ficha, historial, usos]) => {
         setItem(ficha);
         setMovimientos(historial);
+        setConsumos(usos);
       })
       .catch((fallo) => setError(fallo.message))
       .finally(() => setCargando(false));
@@ -136,6 +141,55 @@ export default function PantallaFichaItem({ params }) {
                     </Dato>
                   </CCol>
                 </CRow>
+              </CCardBody>
+            </CCard>
+
+            <CCard className="mb-4">
+              <CCardHeader className="fw-semibold">Consumos</CCardHeader>
+              <CCardBody>
+                {consumos.length === 0 ? (
+                  <SinDatos texto="Todavía no se usó este material en ninguna tarea." />
+                ) : (
+                  <div className="table-responsive">
+                    <CTable hover align="middle" className="mb-0">
+                      <CTableHead>
+                        <CTableRow>
+                          <CTableHeaderCell>Fecha</CTableHeaderCell>
+                          <CTableHeaderCell>Cantidad</CTableHeaderCell>
+                          <CTableHeaderCell>Tarea</CTableHeaderCell>
+                          <CTableHeaderCell>OT</CTableHeaderCell>
+                          <CTableHeaderCell>Técnico</CTableHeaderCell>
+                        </CTableRow>
+                      </CTableHead>
+
+                      <CTableBody>
+                        {consumos.map((consumo) => (
+                          <CTableRow key={`${consumo.idOt}-${consumo.idTarea}`}>
+                            <CTableDataCell>
+                              <span className="fw-semibold">{soloFechaLegible(consumo.fecha)}</span>
+                            </CTableDataCell>
+                            <CTableDataCell>{consumo.cantidad}</CTableDataCell>
+                            <CTableDataCell>{consumo.tarea}</CTableDataCell>
+                            <CTableDataCell>
+                              <BotonEnlace
+                                href={`/ordenes-trabajo/${consumo.idOt}`}
+                                color="secondary"
+                                variante="ghost"
+                                tamano="sm"
+                                className="p-0 text-nowrap"
+                              >
+                                OT #{consumo.idOt}
+                              </BotonEnlace>
+                            </CTableDataCell>
+                            <CTableDataCell>
+                              {consumo.tecnico ?? <SinDato>Sin técnico asignado</SinDato>}
+                            </CTableDataCell>
+                          </CTableRow>
+                        ))}
+                      </CTableBody>
+                    </CTable>
+                  </div>
+                )}
               </CCardBody>
             </CCard>
 

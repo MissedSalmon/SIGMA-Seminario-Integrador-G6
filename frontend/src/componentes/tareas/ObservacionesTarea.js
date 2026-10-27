@@ -67,7 +67,7 @@ export default function ObservacionesTarea({ idOt, idTarea, observaciones, onGua
         <Aviso mensaje={error} />
         <p role="status">{confirmacion}</p>
         <CButton type="submit" color="primary" disabled={guardando}>
-          {guardando ? 'Guardando...' : 'Agregar'}
+          {guardando ? 'Guardando...' : 'Guardar'}
         </CButton>
       </form>
     </section>

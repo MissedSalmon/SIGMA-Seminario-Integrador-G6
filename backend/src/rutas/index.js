@@ -56,6 +56,10 @@ router.use('/especialidades', rutasEspecialidades);
 import rutasAutorizados from './autorizados.rutas.js';
 router.use('/autorizados', rutasAutorizados);
 
+// Gestión de cuentas de acceso
+import rutasUsuarios from './usuarios.rutas.js';
+router.use('/usuarios', rutasUsuarios);
+
 // Tickets (HU-9)
 import rutasTickets from './tickets.rutas.js';
 router.use('/tickets', rutasTickets);
@@ -71,6 +75,10 @@ router.use('/planes-mantenimiento', rutasPlanesMantenimiento);
 // Las tareas del tecnico con la sesion activa (HU-21)
 import rutasTareas from './tareas.rutas.js';
 router.use('/tareas', rutasTareas);
+
+// La campana de notificaciones: cada rol recibe las suyas (HU-33 y HU-21)
+import rutasNotificaciones from './notificaciones.rutas.js';
+router.use('/notificaciones', rutasNotificaciones);
 
 // Ingreso de materiales y herramientas por remito (HU-16)
 import rutasRemitos from './remitos.rutas.js';

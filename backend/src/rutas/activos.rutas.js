@@ -4,6 +4,7 @@
  */
 import { Router } from 'express';
 import * as activos from '../controladores/activos.controlador.js';
+import { soloAdministrador } from '../middlewares/soloAdministrador.js';
 
 const router = Router();
 
@@ -15,6 +16,7 @@ router.post('/importar/confirmar', activos.confirmarImportacion);
 
 router.get('/', activos.listar);
 router.get('/:codigo', activos.obtener);
+router.get('/:codigo/historial', soloAdministrador, activos.historial);
 router.post('/', activos.crear);
 router.put('/:codigo', activos.actualizar);
 // No borra: da de baja, o sea que pasa el activo a Retirado.

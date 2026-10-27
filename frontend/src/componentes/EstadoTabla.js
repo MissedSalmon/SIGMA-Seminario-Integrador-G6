@@ -26,7 +26,7 @@ export function EsqueletoFilas({ columnas, filas = 5 }) {
   return Array.from({ length: filas }).map((_, indiceFila) => (
     <tr key={indiceFila}>
       {columnas.map((columna, indiceColumna) => (
-        <td key={columna.clave ?? indiceColumna}>
+        <td key={columna.clave ?? indiceColumna} className={columna.ocultarDebajoDe ? `d-none d-${columna.ocultarDebajoDe}-table-cell` : undefined}>
           <div
             className="sigma-esqueleto-linea"
             style={{ width: indiceColumna === columnas.length - 1 ? '4rem' : `${60 + ((indiceColumna * 13) % 30)}%` }}

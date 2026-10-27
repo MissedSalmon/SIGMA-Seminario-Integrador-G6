@@ -111,6 +111,10 @@ en los **issues de GitHub**, y el modelo de datos en `supabase/migrations/`.
 - **HU-24 (tipos de prestador) y HU-25 (prestadores de servicio) están hechas (11/10/2026):**
   ABM en `/prestadores/tipos` y `/prestadores`. Un prestador tiene uno o más tipos y no se
   puede eliminar si tiene tareas asignadas.
+- **HU-33 (alertas de stock mínimo) está hecha (23/10/2026):** campana de notificaciones
+  arriba (sólo administrador) con los materiales por debajo de su mínimo, y la lista
+  completa en `/notificaciones` (`GET /inventario/alertas`). La alerta se calcula del
+  stock, no se guarda (ver [dominio.md](.claude/contexto/dominio.md)).
 - **El proyecto en Supabase** y la conexión con **Vercel** en producción.
 
 *(Nota: La base de datos ya fue refactorizada e integrada con Supabase CLI en la carpeta `supabase/migrations/`)*

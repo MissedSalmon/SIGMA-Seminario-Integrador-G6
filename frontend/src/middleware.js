@@ -41,8 +41,8 @@ export async function middleware(request) {
       return NextResponse.redirect(url);
     }
 
-    // Tecnicos: exclusivo /tareas
-    if (rol === 'tecnico' && !url.pathname.startsWith('/tareas') && !url.pathname.startsWith('/perfil') && !url.pathname.startsWith('/configuracion')) {
+    // Tecnicos: exclusivo /tareas, mas la lista completa de su campana (/notificaciones)
+    if (rol === 'tecnico' && !url.pathname.startsWith('/tareas') && !url.pathname.startsWith('/notificaciones') && !url.pathname.startsWith('/perfil') && !url.pathname.startsWith('/configuracion')) {
       url.pathname = '/tareas';
       return NextResponse.redirect(url);
     }

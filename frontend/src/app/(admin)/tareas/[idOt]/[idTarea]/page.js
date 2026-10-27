@@ -51,7 +51,7 @@ import DialogoMaterial from '@/componentes/tareas/DialogoMaterial.js';
 import ObservacionesTarea from '@/componentes/tareas/ObservacionesTarea.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { finalizarTarea, iniciarTarea, listarMisHerramientas, obtenerMiTarea } from '@/servicios/tareas.js';
-import { formatearFechaHora, soloFechaLegible } from '@/utils/fechas.js';
+import { formatearFecha, formatearFechaHora, soloFechaLegible } from '@/utils/fechas.js';
 
 /** Una tarea en estos estados todavía no empezó: se puede iniciar. */
 const ESTADOS_SIN_EMPEZAR = ['Creada', 'Asignada', 'Pendiente'];
@@ -383,7 +383,7 @@ export default function PantallaDetalleMiTarea({ params }) {
                               <span className="text-body-secondary"> — {herramienta.nombre}</span>
                               {herramienta.desde && (
                                 <div className="text-body-secondary small">
-                                  Desde el {soloFechaLegible(herramienta.desde)}
+                                  Desde el {formatearFecha(herramienta.desde)}
                                 </div>
                               )}
                             </div>

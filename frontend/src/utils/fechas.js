@@ -25,6 +25,30 @@ export function formatearFechaHora(iso) {
   });
 }
 
+/** De un ISO con hora arma sólo el día, en la hora de la máquina: "13/09/2026". */
+export function formatearFecha(iso) {
+  if (!iso) return '-';
+
+  const fecha = new Date(iso);
+  if (Number.isNaN(fecha.getTime())) return '-';
+
+  return fecha.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+/**
+ * El día de un ISO con hora en la hora de la máquina, como texto "2026-09-13",
+ * para compararlo con un filtro de fecha. Cortar el ISO no sirve: después de
+ * las 21 h de Argentina, en UTC ya es el día siguiente.
+ */
+export function diaLocal(iso) {
+  const fecha = new Date(iso);
+  if (!iso || Number.isNaN(fecha.getTime())) return null;
+
+  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+  const dia = String(fecha.getDate()).padStart(2, '0');
+  return `${fecha.getFullYear()}-${mes}-${dia}`;
+}
+
 /**
  * Los dos extremos de un dia elegido en un <input type="date"> ("2026-09-13"),
  * como instantes ISO en la zona horaria del navegador. Sirven para mandarle

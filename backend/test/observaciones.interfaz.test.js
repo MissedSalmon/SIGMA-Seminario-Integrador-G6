@@ -50,10 +50,10 @@ test('muestra texto, técnico y fecha de múltiples observaciones escapando HTML
   expect(html).not.toContain('<script>');
   expect(html.indexOf('Ana Pérez')).toBeLessThan(html.indexOf('Luis Gómez'));
 });
-test('el detalle sin observaciones muestra la acción para agregar', () => {
+test('el detalle sin observaciones muestra el botón para guardar una', () => {
   const html = renderToStaticMarkup(React.createElement(ObservacionesTarea, {
     idOt: 9, idTarea: 2, onGuardado: () => {}, observaciones: [],
   }));
   expect(html).toContain('Todavía no se registraron observaciones.');
-  expect(html).toContain('Agregar');
+  expect(html).toContain('Guardar');
 });

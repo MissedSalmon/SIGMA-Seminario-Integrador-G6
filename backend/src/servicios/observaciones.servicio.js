@@ -38,7 +38,7 @@ export async function registrarObservacion(identificador, idOt, idTarea, texto) 
   return aObservacion(data);
 }
 
-/** Consulta preparada para el historial HU-28/HU-29; una fila por observación. */
+/** La usa el historial de intervenciones del activo (HU-29); una fila por observación. */
 export async function observacionesDelActivo(codigoActivo) {
   const { data, error } = await supabase.from('activo_historial_observacion').select('*')
     .eq('activo_codigo', codigoActivo)

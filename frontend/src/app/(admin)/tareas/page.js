@@ -4,11 +4,14 @@
  * /tareas - Tareas asignadas: las del técnico de la sesión (HU-21).
  *
  * - El técnico ve sólo las suyas: la API las busca por el legajo de la sesión.
- * - La lista viene ordenada por creación, de la más vieja a la más nueva.
- * - Arranca mostrando sólo las pendientes (22/10/2026): las finalizadas y
- *   canceladas se ven eligiendo "Todas" en el filtro de estado.
- * - Arriba, un aviso con cuántas le quedan pendientes. Ese número no cambia con
- *   los filtros: dice todo el trabajo que le queda.
+ * - Orden (25/10/2026): primero lo que tiene entre manos. En ejecución, después
+ *   Asignada y después el resto; dentro de cada estado, la prioridad más alta y
+ *   la fecha prevista más cercana primero. El estado va como segunda columna,
+ *   con la misma etiqueta que el estado de la OT.
+ * - El filtro de estado ofrece los estados de la tarea (25/10/2026). Arranca en
+ *   "Todas": por el orden, las finalizadas y canceladas quedan al final.
+ * - Las pendientes también aparecen en la campana de notificaciones de arriba
+ *   (23/10/2026). Antes había un aviso en esta pantalla con la cantidad.
  * - Cada fila lleva al detalle de la tarea (activo, ubicación y OT).
  */
 import { useEffect, useState } from 'react';
@@ -21,43 +24,32 @@ import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import EtiquetaPrioridad from '@/componentes/ordenes/EtiquetaPrioridad.js';
+import EtiquetaEstadoOT from '@/componentes/ordenes/EtiquetaEstadoOT.js';
 import { listarMisTareas, listarPrioridadesDeTarea } from '@/servicios/tareas.js';
 import { soloFechaLegible } from '@/utils/fechas.js';
 
-/** El valor del filtro de estado que deja sólo lo que falta hacer. */
-const SOLO_PENDIENTES = 'Pendientes';
+/** El orden de la lista: lo que el técnico está haciendo, después lo que le asignaron. */
+const ORDEN_ESTADO = ['En ejecución', 'Asignada', 'Pendiente', 'Creada', 'Finalizada', 'Cancelada'];
+const ORDEN_PRIORIDAD = ['Alta', 'Media', 'Baja'];
 
-/** "Tenés 3 tareas pendientes." en singular o plural. */
-function textoPendientes(cantidad) {
-  if (cantidad === 0) return 'No tenés tareas pendientes.';
-  if (cantidad === 1) return 'Tenés 1 tarea pendiente.';
-  return `Tenés ${cantidad} tareas pendientes.`;
+/** Los que ofrece el filtro: Creada y Pendiente existen en la base, pero el técnico no las tiene. */
+const ESTADOS_DEL_FILTRO = ['En ejecución', 'Asignada', 'Finalizada', 'Cancelada'];
+
+/** Un valor que no está en la lista va al final. */
+function posicion(lista, valor) {
+  const indice = lista.indexOf(valor);
+  return indice === -1 ? lista.length : indice;
 }
 
-/*
- * El aviso de pendientes se puede cerrar (10/10/2026). Se recuerda con qué
- * cantidad se cerró, sólo en esta pestaña del navegador (sessionStorage): no
- * vuelve al entrar a una tarea y regresar, pero sí cuando la cantidad cambia,
- * porque ahí hay algo nuevo que avisar. Si el navegador no deja guardar, el
- * aviso se cierra igual hasta que se recarga la pantalla.
- */
-const CLAVE_AVISO_CERRADO = 'sigma.tareas.avisoPendientesCerrado';
-
-function leerAvisoCerrado() {
-  try {
-    const valor = window.sessionStorage.getItem(CLAVE_AVISO_CERRADO);
-    return valor === null ? null : Number(valor);
-  } catch {
-    return null;
-  }
-}
-
-function guardarAvisoCerrado(cantidad) {
-  try {
-    window.sessionStorage.setItem(CLAVE_AVISO_CERRADO, String(cantidad));
-  } catch {
-    // Sin almacenamiento: queda cerrado sólo mientras no se recargue.
-  }
+function compararTareas(una, otra) {
+  return (
+    posicion(ORDEN_ESTADO, una.estado) - posicion(ORDEN_ESTADO, otra.estado) ||
+    posicion(ORDEN_PRIORIDAD, una.prioridad) - posicion(ORDEN_PRIORIDAD, otra.prioridad) ||
+    // Sin fecha prevista va después de las que tienen. El texto "2026-10-02" se compara como fecha.
+    (una.fechaPrevista ?? '9999').localeCompare(otra.fechaPrevista ?? '9999') ||
+    una.idOt - otra.idOt ||
+    una.idTarea - otra.idTarea
+  );
 }
 
 /** Texto en gris e itálica para decir que algo no está. */
@@ -67,13 +59,9 @@ function SinDato({ children }) {
 
 export default function PantallaMisTareas() {
   const [tareas, setTareas] = useState([]);
-  const [pendientes, setPendientes] = useState(null);
-  // Con qué cantidad de pendientes se cerró el aviso (null: no se cerró).
-  const [avisoCerradoCon, setAvisoCerradoCon] = useState(leerAvisoCerrado);
   const [prioridades, setPrioridades] = useState([]);
 
-  // Arranca en "Pendientes"; vacío es "Todas".
-  const [filtroEstado, setFiltroEstado] = useState(SOLO_PENDIENTES);
+  const [filtroEstado, setFiltroEstado] = useState('');
   const [filtroPrioridad, setFiltroPrioridad] = useState('');
   const [filtroDesde, setFiltroDesde] = useState('');
   const [filtroHasta, setFiltroHasta] = useState('');
@@ -102,8 +90,7 @@ export default function PantallaMisTareas() {
           hasta: filtroHasta || null,
         });
         if (!vigente) return;
-        setTareas(respuesta.tareas);
-        setPendientes(respuesta.pendientes);
+        setTareas([...respuesta.tareas].sort(compararTareas));
         setError('');
       } catch (fallo) {
         if (vigente) setError(fallo.message);
@@ -119,29 +106,26 @@ export default function PantallaMisTareas() {
     };
   }, [filtroEstado, filtroPrioridad, filtroDesde, filtroHasta]);
 
-  function cerrarAvisoPendientes() {
-    setAvisoCerradoCon(pendientes);
-    guardarAvisoCerrado(pendientes);
-  }
-
-  const mostrarAvisoPendientes = pendientes !== null && pendientes !== avisoCerradoCon;
-
-  // Limpiar vuelve a como arranca la pantalla: sólo las pendientes.
   function limpiarFiltros() {
-    setFiltroEstado(SOLO_PENDIENTES);
+    setFiltroEstado('');
     setFiltroPrioridad('');
     setFiltroDesde('');
     setFiltroHasta('');
   }
 
-  const hayFiltros = Boolean(filtroPrioridad || filtroDesde || filtroHasta);
-  const soloPendientes = filtroEstado === SOLO_PENDIENTES;
+  const hayFiltros = Boolean(filtroEstado || filtroPrioridad || filtroDesde || filtroHasta);
 
   const columnas = [
     {
       clave: 'prioridad',
       encabezado: 'Prioridad',
       render: (tarea) => <EtiquetaPrioridad prioridad={tarea.prioridad} />,
+    },
+    {
+      clave: 'estado',
+      encabezado: 'Estado',
+      // La tarea tiene los mismos estados que la OT (salvo Pendiente): se usa su etiqueta.
+      render: (tarea) => <EtiquetaEstadoOT estado={tarea.estado} />,
     },
     {
       clave: 'descripcion',
@@ -191,11 +175,6 @@ export default function PantallaMisTareas() {
       render: (tarea) => <span className="text-body-secondary text-nowrap">#{tarea.idOt}</span>,
     },
     {
-      clave: 'estado',
-      encabezado: 'Estado',
-      render: (tarea) => <span className="text-body-secondary text-nowrap">{tarea.estado}</span>,
-    },
-    {
       clave: 'acciones',
       encabezado: 'Acción',
       alinearDerecha: true,
@@ -219,10 +198,6 @@ export default function PantallaMisTareas() {
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
 
-      {mostrarAvisoPendientes && (
-        <Aviso mensaje={textoPendientes(pendientes)} color="info" onCerrar={cerrarAvisoPendientes} />
-      )}
-
       <CCard>
         <CCardBody>
           <TablaDatos
@@ -237,8 +212,8 @@ export default function PantallaMisTareas() {
                 valor: filtroEstado,
                 alCambiar: setFiltroEstado,
                 textoTodos: 'Todas',
-                opciones: [{ valor: SOLO_PENDIENTES, texto: 'Pendientes' }],
-                ancho: 11,
+                opciones: ESTADOS_DEL_FILTRO.map((estado) => ({ valor: estado, texto: estado })),
+                ancho: 12,
               },
               {
                 etiqueta: 'Prioridad',
@@ -266,11 +241,7 @@ export default function PantallaMisTareas() {
             alLimpiar={limpiarFiltros}
             cargando={cargando}
             textoVacio={
-              hayFiltros
-                ? 'No tenés tareas que cumplan con esos filtros.'
-                : soloPendientes
-                  ? 'No tenés tareas pendientes.'
-                  : 'Todavía no tenés tareas asignadas.'
+              hayFiltros ? 'No tenés tareas que cumplan con esos filtros.' : 'Todavía no tenés tareas asignadas.'
             }
           />
         </CCardBody>
