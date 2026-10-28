@@ -21,6 +21,20 @@
 
 Los tres cubren todo el sistema y no se superponen.
 
+> **Decisiones del 27/10/2026 (Gestión de usuarios):**
+> - Las cuentas viven en **una sola tabla `usuario`** (la de HU-30), no en cada tabla de persona:
+>   el login consulta un solo lugar, el rol está en una sola columna y el restablecimiento de
+>   contraseña (HU-31) usa la misma tabla.
+> - **Una persona tiene como máximo un usuario**, y el rol es el tipo de persona: rol 1 apunta a un
+>   administrador, 2 a un técnico, 3 a un usuario autorizado. La base lo controla
+>   (`supabase/migrations/20261027120000_gestion_usuarios.sql`).
+> - **Un usuario no se borra, se desactiva** (`activo = false`). Un usuario desactivado no puede
+>   iniciar sesión, pero se conserva todo lo que registró. Se puede volver a activar.
+> - Un administrador **no se puede desactivar a sí mismo**, y siempre tiene que quedar **al menos un
+>   administrador activo**.
+> - La gestión de usuarios (`/usuarios`) es sólo para un administrador **activo según la base**, no
+>   sólo según el token.
+
 ---
 
 ## El flujo principal (correctivo)
