@@ -21,7 +21,7 @@
 
 Los tres cubren todo el sistema y no se superponen.
 
-> **Decisiones del 27/10/2026 (Gestión de usuarios):**
+> **Decisiones del 27/10/2026 (HU-32, gestión de usuarios, Sprint 5):**
 > - Las cuentas viven en **una sola tabla `usuario`** (la de HU-30), no en cada tabla de persona:
 >   el login consulta un solo lugar, el rol está en una sola columna y el restablecimiento de
 >   contraseña (HU-31) usa la misma tabla.

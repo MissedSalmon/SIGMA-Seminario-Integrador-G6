@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migración HU Gestión de usuarios (Sprint 6, 27/10/2026)
+-- Migración HU-32 Gestión de usuarios (Sprint 5, 27/10/2026)
 -- =============================================================================
 --
 -- La tabla usuario ya existe desde HU-30 (Login). Esta HU no crea otra: la
