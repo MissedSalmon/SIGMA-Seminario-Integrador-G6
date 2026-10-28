@@ -78,6 +78,7 @@ export default function PantallaDetalleTicket({ params }) {
   // El usuario autorizado no entra a las OT: el enlace a la orden es sólo del administrador.
   const { usuario } = useSesion();
   const esAutorizado = usuario?.rol === 'autorizado';
+  const esAdministrador = usuario?.rol === 'administrador';
   const { mostrarToast } = useToast();
 
   const [ticket, setTicket] = useState(null);
@@ -246,7 +247,8 @@ export default function PantallaDetalleTicket({ params }) {
                 <CCard className="mb-4">
                   <CCardHeader className="d-flex justify-content-between align-items-center">
                     <span className="fw-semibold">Datos generales</span>
-                    {ticket.estado === 'Creado' && (
+                    {/* Validar y rechazar es sólo del administrador (la API también lo controla). */}
+                    {ticket.estado === 'Creado' && esAdministrador && (
                       <div className="d-flex gap-2">
                         <CButton color="success" className="text-white" size="sm" onClick={abrirModalValidar} disabled={procesando}>
                           <CIcon icon={cilCheckAlt} className="me-1" />

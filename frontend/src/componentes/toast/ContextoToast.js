@@ -9,6 +9,9 @@
  *
  *   const { mostrarToast } = useToast();
  *   mostrarToast({ tipo: 'exito', mensaje: 'Se guardo el edificio.' });
+ *
+ * Los tipos son 'exito', 'error' y 'aviso' (una notificacion, como las alertas
+ * de stock de HU-33). `duracion` es opcional, en milisegundos.
  */
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 
@@ -24,13 +27,13 @@ export function ProveedorToast({ children }) {
   }, []);
 
   const mostrarToast = useCallback(
-    ({ tipo = 'exito', mensaje }) => {
+    ({ tipo = 'exito', mensaje, duracion = DURACION_MS }) => {
       if (!mensaje) return;
 
       const id = Date.now() + Math.random();
       setToasts((actuales) => [...actuales, { id, tipo, mensaje }]);
 
-      setTimeout(() => cerrarToast(id), DURACION_MS);
+      setTimeout(() => cerrarToast(id), duracion);
     },
     [cerrarToast]
   );

@@ -84,19 +84,19 @@ export function formatearCuil(texto) {
  * cualquier numero cambiado. Si tambien hay DNI cargado, controla que los 8 del
  * medio sean ese DNI.
  */
-export function validarCuil(texto, dni = '') {
+export function validarCuil(texto, dni = '', nombre = 'CUIL') {
   const digitos = soloDigitos(texto);
   if (!digitos) return '';
 
-  if (digitos.length !== LARGO_CUIL) return `El CUIL tiene ${LARGO_CUIL} dígitos.`;
+  if (digitos.length !== LARGO_CUIL) return `El ${nombre} tiene ${LARGO_CUIL} dígitos.`;
 
   if (digitoVerificador(digitos.slice(0, 10)) !== Number(digitos[10])) {
-    return 'El CUIL no es válido: revisá los números.';
+    return `El ${nombre} no es válido: revisá los números.`;
   }
 
   const digitosDni = soloDigitos(dni);
   if (digitosDni.length === LARGO_DNI && digitos.slice(2, 10) !== digitosDni) {
-    return 'El CUIL no coincide con el DNI cargado.';
+    return `El ${nombre} no coincide con el DNI cargado.`;
   }
 
   return '';

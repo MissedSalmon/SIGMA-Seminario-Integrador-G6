@@ -4,8 +4,8 @@
 > 500 caracteres (como las descripciones de tickets y remitos). Se registran
 > por técnicos con asignación vigente, sin limitar el estado de la tarea, con
 > cuenta autora, nombre al momento de crear y fecha del servidor. No se editan
-> ni eliminan. La consulta por activo está preparada para HU-28/HU-29; su
-> pantalla de historial aún está pendiente. Ver `docs/U-23-observaciones.md`.
+> ni eliminan. La consulta por activo la usa el historial de intervenciones
+> de HU-29 (25/10/2026). Ver `docs/U-23-observaciones.md`.
 
 ## Los 3 roles
 
@@ -20,6 +20,20 @@
 * **Asignación de Áreas:** La relación con el Área es 1 a 1. Un área solo puede tener *un* responsable asignado. Al cargar o editar un usuario, el sistema solo lista las áreas "libres". Si todas las áreas ya tienen responsable, se debe crear un área nueva o liberar una existente.
 
 Los tres cubren todo el sistema y no se superponen.
+
+> **Decisiones del 27/10/2026 (HU-32, gestión de usuarios, Sprint 5):**
+> - Las cuentas viven en **una sola tabla `usuario`** (la de HU-30), no en cada tabla de persona:
+>   el login consulta un solo lugar, el rol está en una sola columna y el restablecimiento de
+>   contraseña (HU-31) usa la misma tabla.
+> - **Una persona tiene como máximo un usuario**, y el rol es el tipo de persona: rol 1 apunta a un
+>   administrador, 2 a un técnico, 3 a un usuario autorizado. La base lo controla
+>   (`supabase/migrations/20261027120000_gestion_usuarios.sql`).
+> - **Un usuario no se borra, se desactiva** (`activo = false`). Un usuario desactivado no puede
+>   iniciar sesión, pero se conserva todo lo que registró. Se puede volver a activar.
+> - Un administrador **no se puede desactivar a sí mismo**, y siempre tiene que quedar **al menos un
+>   administrador activo**.
+> - La gestión de usuarios (`/usuarios`) es sólo para un administrador **activo según la base**, no
+>   sólo según el token.
 
 ---
 
@@ -197,14 +211,23 @@ un **número** (el de la tabla). La traducción a texto está en un solo lugar:
 > - **"Pendiente", para el aviso, es toda tarea que todavía no terminó:** la que no está
 >   Finalizada ni Cancelada. El aviso cuenta todas, sin mirar los filtros, porque dice cuánto
 >   trabajo le queda.
-> - **El aviso de pendientes se puede cerrar.** Una vez cerrado no vuelve mientras dure la
->   pestaña del navegador (aunque se entre a una tarea y se vuelva), salvo que cambie la
->   cantidad de pendientes: ahí hay algo nuevo que avisar y aparece otra vez.
+> - ~~**El aviso de pendientes se puede cerrar.**~~ Reemplazado el 23/10/2026: el aviso de
+>   arriba de `/tareas` se sacó y las pendientes se ven en la campana de notificaciones
+>   (ver "Campana de notificaciones" más abajo).
 > - **La fecha que se filtra es la prevista de inicio** (`tarea_fecha_ini`, la que carga el
 >   administrador al planificar la OT). Una tarea sin fecha prevista no aparece cuando se
 >   filtra por fecha.
-> - **Orden por defecto:** prioridad (Alta, Media, Baja) y, dentro de la misma prioridad, la
->   fecha prevista más cercana. Las que no tienen fecha van al final de su prioridad.
+> - **Orden por defecto** *(cambiado el 25/10/2026)*: por estado, primero lo que el técnico
+>   tiene entre manos: En ejecución, Asignada, Pendiente, Creada y al final Finalizada y
+>   Cancelada. Dentro de cada estado, prioridad más alta primero y después la fecha prevista
+>   más cercana (sin fecha, al final). Lo ordena la pantalla, no la API. Antes (22/10/2026) era
+>   cronológico de creación, por número de OT y de tarea.
+> - **El estado es la segunda columna** *(25/10/2026)*, después de la prioridad, con la misma
+>   etiqueta (punto de color + texto) que el estado de la OT (`EtiquetaEstadoOT`): la tarea
+>   tiene los mismos estados. El color acompaña; lo que se lee es la palabra.
+> - **El filtro "Estado" ofrece los estados de la tarea** *(25/10/2026)*: En ejecución,
+>   Asignada, Finalizada y Cancelada. Arranca en "Todas"; por el orden, las terminadas quedan al
+>   final. Reemplaza a la opción "Pendientes" (22/10/2026), que no era un estado.
 > - **El detalle de la tarea es una pantalla** (`/tareas/[OT]/[tarea]`). La OT y el activo no
 >   llevan enlace: sus pantallas son del administrador.
 
@@ -237,9 +260,50 @@ un **número** (el de la tabla). La traducción a texto está en un solo lugar:
 >   no lleva acciones. "Herramientas utilizadas" (`/tareas/herramientas`) lista las que tiene
 >   ("En uso") y las que ya devolvió, y desde ahí devuelve las que todavía están a su nombre.
 >   Sólo ve lo suyo.
+> - **Cómo se muestra la tarea en ese historial** *(25/10/2026)*: la descripción de la tarea es
+>   el dato principal y el enlace lleva a la tarea (`/tareas/[OT]/[tarea]`). Abajo, en gris y
+>   sin enlace, van la OT, el activo y el espacio (`OT #3 · PROY-001 · Aula 11`). La OT no
+>   lleva enlace porque su pantalla es del administrador. No se muestra la descripción de la
+>   OT: es lo que escribió quien hizo el ticket y no ayuda a reconocer el trabajo.
+> - **Orden de las columnas** *(25/10/2026)*: como en el resto de las listas, primero lo que se
+>   lista (el material o la herramienta), después sus datos, la tarea como última columna de
+>   datos y, si hay, la acción al final.
+> - **Materiales utilizados** *(25/10/2026)*: columnas Material, Cantidad, Fecha y Tarea. La
+>   fecha va sin la hora; los filtros "Desde" y "Hasta" toman el día en la hora local.
+> - **Herramientas utilizadas: una fila por préstamo** *(25/10/2026)*, cada vez que la tomó,
+>   como materiales tiene una fila por consumo. Columnas Herramienta, Estado, Desde, Hasta,
+>   Tarea y Acción ("Devolver", sólo en la que tiene todavía). El estado va con una etiqueta
+>   (punto + texto, como el de la OT): **celeste = En uso** (la tiene a su nombre y la puede
+>   devolver) y **gris = Devuelta** (ya no la tiene; queda como historial). Primero las En uso. Reemplaza a
+>   la fila por herramienta con las columnas "Último uso" y "Veces" y la ventana "Ver OT"
+>   (22/10/2026). Un préstamo sin tarea (los que asignó el administrador desde el depósito y
+>   los de antes del 22/10/2026) dice "Sin tarea registrada".
+> - **En el celular** *(25/10/2026)*: las dos pantallas entran sin correrse de costado. Las
+>   columnas de fechas, estado, cantidad y acción se esconden y su dato pasa abajo de la
+>   herramienta o del material. En herramientas, "Desde" y "Hasta" recién aparecen en
+>   pantallas grandes (desde 1200 px): con el menú lateral abierto no entran las seis columnas.
 > - ⬜ **Pendiente de definir:** una tarea a cargo de un **prestador externo** no la puede
 >   finalizar un técnico desde la app. Si una OT tiene una, no se va a cerrar sola hasta que
 >   haya una forma de marcar esa tarea como hecha (la tendría que hacer el administrador).
+
+> **Decisiones del 25/10/2026 (HU-29, historial de intervenciones por activo):**
+> - **Una intervención es una OT del activo**, no cada tarea. Es **correctiva** si viene de un
+>   ticket y **preventiva** si viene de un plan.
+> - **Entran las OT En ejecución y Finalizadas.** Las Creadas y Asignadas todavía no le
+>   hicieron nada al activo, y las Canceladas no se trabajaron.
+> - **La fecha que se muestra** es la de cierre si la OT está Finalizada, y la de alta si sigue
+>   en ejecución. Con esa fecha se ordenan, de la más reciente a la más antigua.
+> - **La falla, quién la ejecutó, los materiales y las observaciones son de cada tarea**, así
+>   que se muestran tarea por tarea. Quien ejecutó es el responsable de la tarea: un técnico
+>   (sin contar una asignación cancelada) o un prestador. Las tareas canceladas no se
+>   muestran. En las correctivas también se ve el problema que se reportó en el ticket.
+> - **Último mantenimiento** es la fecha de cierre de la OT Finalizada más reciente, correctiva
+>   o preventiva. **Se calcula, no se guarda:** la columna `activo.activo_fecha_ult_maint`
+>   no la escribe nadie y el historial no la usa.
+> - El historial está en la ficha del activo (`/activos/[codigo]`), a la que se llega con el
+>   ícono de la ficha (la hoja, el mismo que en materiales y herramientas) del listado de
+>   activos. Cada intervención es un renglón; «Ver más» abre el detalle de sus tareas. La API es
+>   `GET /api/activos/:codigo/historial` y es sólo para el administrador.
 
 ---
 
@@ -263,6 +327,37 @@ No son historias de usuario aparte: son reglas dentro de historias existentes.
 | OT preventiva | El sistema la genera según la frecuencia del plan. |
 
 > La **prioridad** la define el administrador **en la OT**, no el usuario que carga el ticket.
+
+> **Alerta de stock mínimo (HU-33, 23/10/2026):**
+> - Hay alerta cuando el stock actual está **por debajo** del mínimo. Si es igual al
+>   mínimo, no hay alerta (mismo criterio que el listado de materiales).
+> - La alerta **no se guarda en una tabla**: se calcula del stock cada vez que se pide.
+>   Por eso aparece sola cuando un consumo baja el stock y se resuelve sola cuando un
+>   remito lo sube. No hay que crearla ni cerrarla a mano.
+> - Se muestra en la **campana de notificaciones** de la barra de arriba, sólo para el
+>   administrador. La campana lleva la cantidad y, al abrirla, muestra los 5 materiales
+>   que más faltan. «Ver más» lleva a `/notificaciones`, con la lista completa: stock
+>   actual, mínimo y **cuánto falta** para llegar al mínimo.
+> - Además sale un **mensaje flotante** (toast) al entrar al sistema si hay materiales con
+>   stock bajo, y después cada vez que aparece un material nuevo en la lista. Un mismo
+>   material no se vuelve a avisar en la sesión, salvo que se reponga y vuelva a bajar.
+
+> **Campana de notificaciones por rol (23/10/2026):**
+> - La campana es **la misma para todos los roles**. La API (`GET /api/notificaciones`) mira
+>   el rol y el legajo de la sesión (JWT) y devuelve sólo las de ese usuario.
+> - **Administrador:** las alertas de stock mínimo (como arriba). «Ver más» → `/notificaciones`.
+> - **Técnico:** sus tareas pendientes (las que no están Finalizadas ni Canceladas), la última
+>   asignada primero. Reemplaza al aviso que había arriba de `/tareas`. «Ver más» → `/notificaciones`, con la
+>   lista completa de sus pendientes (25/10/2026: antes iba a `/tareas`, que es su pantalla de
+>   inicio, y el enlace no hacía nada estando ahí).
+> - **El mensaje de cada tarea del técnico (25/10/2026)** dice en qué punto está: «Falta
+>   finalizar la tarea …» si está En ejecución; «Tarea … está atrasada» si no empezó y su
+>   fecha prevista de inicio ya pasó; si no, «Te asignaron la tarea …». Abajo: la OT, dónde es, la prioridad y la fecha
+>   prevista. En `/notificaciones` cada mensaje lleva el botón «Ver tarea».
+> - **Usuario autorizado:** todavía no tiene campana. **Pendiente de confirmar** qué se le
+>   notifica (por ejemplo, cambios de estado de sus tickets); el relevamiento no lo dice.
+> - Ninguna notificación se guarda en una tabla ni se marca como leída: el número es la
+>   cantidad de cosas que hay hoy para atender.
 
 ---
 

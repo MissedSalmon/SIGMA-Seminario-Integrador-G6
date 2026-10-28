@@ -19,7 +19,7 @@ import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Campo from '@/componentes/formulario/Campo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { devolverHerramienta, tomarHerramienta } from '@/servicios/tareas.js';
-import { soloFechaLegible } from '@/utils/fechas.js';
+import { formatearFecha } from '@/utils/fechas.js';
 
 export default function DialogoHerramienta({ idOt, idTarea, disponibles = [], aDevolver, onCerrar, onGuardado }) {
   const { mostrarToast } = useToast();
@@ -77,7 +77,7 @@ export default function DialogoHerramienta({ idOt, idTarea, disponibles = [], aD
         {devolviendo ? (
           <p className="mb-0">
             <strong>{aDevolver.nombre}</strong> ({aDevolver.codigo})
-            {aDevolver.desde && <> la tenés desde el {soloFechaLegible(aDevolver.desde)}</>}.
+            {aDevolver.desde && <> la tenés desde el {formatearFecha(aDevolver.desde)}</>}.
           </p>
         ) : disponibles.length === 0 ? (
           <Aviso color="warning" mensaje="No hay herramientas disponibles en este momento." />

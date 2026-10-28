@@ -23,6 +23,11 @@
  *
  * `claseFila` (opcional): funcion que devuelve una clase CSS para resaltar una fila.
  *
+ * Una columna con `ocultarDebajoDe: 'md'` (o 'lg', 'xl') no se muestra en
+ * pantallas más angostas que ese corte de Bootstrap. Si su dato hace falta
+ * igual, la pantalla lo repite dentro de otra columna con la clase `d-md-none`
+ * (o `d-lg-none`, `d-xl-none`).
+ *
  * Los filtros se pasan como datos, no como JSX. Los arma la tabla para que en
  * todas las pantallas se vean y se ubiquen igual: primero el buscador y
  * despues "Filtrar por:" con los desplegables, todo en la misma linea.
@@ -69,6 +74,12 @@ import CampoFecha from '@/componentes/formulario/CampoFecha.js';
 import CampoLista from '@/componentes/formulario/CampoLista.js';
 
 const TAMANO_PAGINA = 10;
+
+/** Las clases de la celda y del encabezado de una columna. */
+function claseColumna(columna) {
+  const clases = [columna.alinearDerecha && 'text-end', columna.ocultarDebajoDe && `d-none d-${columna.ocultarDebajoDe}-table-cell`];
+  return clases.filter(Boolean).join(' ') || undefined;
+}
 
 export default function TablaDatos({
   filas,
@@ -201,7 +212,7 @@ export default function TablaDatos({
             <CTableHead>
               <CTableRow>
                 {columnas.map((columna) => (
-                  <CTableHeaderCell key={columna.clave} className={columna.alinearDerecha ? 'text-end' : undefined}>
+                  <CTableHeaderCell key={columna.clave} className={claseColumna(columna)}>
                     {columna.encabezado}
                   </CTableHeaderCell>
                 ))}
@@ -215,7 +226,7 @@ export default function TablaDatos({
                 filasPagina.map((fila) => (
                   <CTableRow key={claveFila(fila)} className={claseFila?.(fila)}>
                     {columnas.map((columna) => (
-                      <CTableDataCell key={columna.clave} className={columna.alinearDerecha ? 'text-end' : undefined}>
+                      <CTableDataCell key={columna.clave} className={claseColumna(columna)}>
                         {columna.render(fila)}
                       </CTableDataCell>
                     ))}

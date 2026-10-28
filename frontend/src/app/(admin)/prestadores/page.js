@@ -92,7 +92,7 @@ export default function PantallaPrestadores() {
     },
     {
       clave: 'cuil',
-      encabezado: 'CUIL',
+      encabezado: 'CUIL o CUIT',
       render: (prestador) => (
         <span className="text-body-secondary text-nowrap">{prestador.cuil || '-'}</span>
       ),
@@ -177,6 +177,7 @@ export default function PantallaPrestadores() {
                 })),
               },
             ]}
+            alLimpiar={() => setFiltroTipo('')}
             cargando={cargando}
             textoVacio={
               filtroTipo

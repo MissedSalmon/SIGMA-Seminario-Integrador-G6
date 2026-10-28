@@ -11,6 +11,11 @@
  *
  *   <BotonEnlace href="/edificios/agregar">Agregar edificio</BotonEnlace>
  *   <BotonEnlace href="/edificios" color="secondary" variante="outline">Cancelar</BotonEnlace>
+ *
+ * Si no se pasa `href`, renderiza un <button> en vez de un <Link>, util para
+ * acciones inline como abrir un dialogo de confirmacion.
+ *
+ *   <BotonEnlace onClick={() => setMostrarDialogo(true)} variante="ghost">Eliminar</BotonEnlace>
  */
 import Link from 'next/link';
 
@@ -31,6 +36,14 @@ export default function BotonEnlace({
   ]
     .filter(Boolean)
     .join(' ');
+
+  if (!href) {
+    return (
+      <button type="button" className={clases} {...resto}>
+        {children}
+      </button>
+    );
+  }
 
   return (
     <Link href={href} className={clases} {...resto}>

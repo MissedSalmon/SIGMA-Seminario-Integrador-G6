@@ -25,6 +25,10 @@ const router = Router();
 import rutasAuth from './auth.rutas.js';
 router.use('/auth', rutasAuth);
 
+// Gestion de usuarios: alta, listado, baja logica (HU-32) y restablecer contraseña (HU-31)
+import rutasUsuarios from './usuarios.rutas.js';
+router.use('/usuarios', rutasUsuarios);
+
 // Estructura edilicia (Sprint 1)
 router.use('/edificios', rutasEdificios);
 router.use('/espacios', rutasEspacios);
@@ -64,9 +68,17 @@ router.use('/tickets', rutasTickets);
 import rutasOrdenesTrabajo from './ordenesTrabajo.rutas.js';
 router.use('/ordenes-trabajo', rutasOrdenesTrabajo);
 
+// Planes de mantenimiento preventivo (Sprint 5)
+import rutasPlanesMantenimiento from './planesMantenimiento.rutas.js';
+router.use('/planes-mantenimiento', rutasPlanesMantenimiento);
+
 // Las tareas del tecnico con la sesion activa (HU-21)
 import rutasTareas from './tareas.rutas.js';
 router.use('/tareas', rutasTareas);
+
+// La campana de notificaciones: cada rol recibe las suyas (HU-33 y HU-21)
+import rutasNotificaciones from './notificaciones.rutas.js';
+router.use('/notificaciones', rutasNotificaciones);
 
 // Ingreso de materiales y herramientas por remito (HU-16)
 import rutasRemitos from './remitos.rutas.js';

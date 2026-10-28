@@ -87,20 +87,48 @@ describe('obtenerDelTecnico', () => {
     expect(consulta.neq).toHaveBeenCalledWith('tec_asig_estado', 5); // 5 = Cancelada
   });
 
-  test('ordena por prioridad y, dentro de la misma, por fecha prevista; sin fecha al final', async () => {
+  test('ordena por creacion: numero de OT y, dentro de la OT, numero de tarea', async () => {
     supabase.from.mockReturnValue(
       consultaQueDevuelve([
-        filaAsignacion({ idOt: 1, idTarea: 1, prioridad: 3, fecha: '2026-10-01' }), // Baja
-        filaAsignacion({ idOt: 2, idTarea: 1, prioridad: 1, fecha: null }), // Alta, sin fecha
-        filaAsignacion({ idOt: 3, idTarea: 1, prioridad: 1, fecha: '2026-10-20' }), // Alta
-        filaAsignacion({ idOt: 4, idTarea: 1, prioridad: 1, fecha: '2026-10-05' }), // Alta
-        filaAsignacion({ idOt: 5, idTarea: 1, prioridad: 2, fecha: '2026-10-02' }), // Media
+        filaAsignacion({ idOt: 5, idTarea: 1, prioridad: 1, fecha: '2026-10-01' }),
+        filaAsignacion({ idOt: 2, idTarea: 2, prioridad: 3, fecha: null }),
+        filaAsignacion({ idOt: 4, idTarea: 1, prioridad: 2, fecha: '2026-10-20' }),
+        filaAsignacion({ idOt: 2, idTarea: 1, prioridad: 1, fecha: '2026-10-05' }),
       ])
     );
 
     const { tareas } = await obtenerDelTecnico('2030');
 
-    expect(tareas.map((tarea) => tarea.idOt)).toEqual([4, 3, 2, 5, 1]);
+    expect(tareas.map((tarea) => `${tarea.idOt}-${tarea.idTarea}`)).toEqual(['2-1', '2-2', '4-1', '5-1']);
+  });
+
+  test('con soloPendientes deja afuera las finalizadas y canceladas', async () => {
+    supabase.from.mockReturnValue(
+      consultaQueDevuelve([
+        filaAsignacion({ idOt: 1, estado: 2 }), // Asignada
+        filaAsignacion({ idOt: 2, estado: 3 }), // En ejecución
+        filaAsignacion({ idOt: 3, estado: 5 }), // Finalizada
+        filaAsignacion({ idOt: 4, estado: 6 }), // Cancelada
+      ])
+    );
+
+    const { tareas } = await obtenerDelTecnico('2030', { soloPendientes: true });
+
+    expect(tareas.map((tarea) => tarea.idOt)).toEqual([1, 2]);
+  });
+
+  test('filtra por un estado', async () => {
+    supabase.from.mockReturnValue(
+      consultaQueDevuelve([
+        filaAsignacion({ idOt: 1, estado: 2 }), // Asignada
+        filaAsignacion({ idOt: 2, estado: 3 }), // En ejecución
+        filaAsignacion({ idOt: 3, estado: 2 }), // Asignada
+      ])
+    );
+
+    const { tareas } = await obtenerDelTecnico('2030', { estado: 'Asignada' });
+
+    expect(tareas.map((tarea) => tarea.idOt)).toEqual([1, 3]);
   });
 
   test('filtra por prioridad', async () => {

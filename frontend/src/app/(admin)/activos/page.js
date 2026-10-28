@@ -7,12 +7,12 @@
  * El buscador de arriba busca por codigo, tipo.
  *
  * Dar de baja no borra: pasa el activo a Retirado y lo deja en la lista, para
- * conservar su historial de intervenciones.
+ * conservar su historial de intervenciones (HU-29, en /activos/[codigo]).
  */
 import { useEffect, useState } from 'react';
 import { CButton, CButtonGroup, CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilPencil, cilTrash, cilCloudUpload, cilCloudDownload } from '@coreui/icons';
+import { cilDescription, cilPencil, cilTrash, cilCloudUpload, cilCloudDownload } from '@coreui/icons';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
@@ -178,6 +178,14 @@ export default function PantallaActivos() {
       alinearDerecha: true,
       render: (activo) => (
         <CButtonGroup size="sm">
+          <BotonEnlace
+            href={`/activos/${encodeURIComponent(activo.codigo)}`}
+            variante="ghost"
+            className="btn-icono"
+            title="Ver la ficha y el historial de intervenciones"
+          >
+            <CIcon icon={cilDescription} />
+          </BotonEnlace>
           {/* Un activo retirado se conserva como historial: ya no se toca. */}
           {activo.estado !== 'Retirado' && (
             <>
@@ -267,6 +275,7 @@ export default function PantallaActivos() {
                 opciones: ESTADOS.map((unEstado) => ({ valor: unEstado, texto: unEstado })),
               },
             ]}
+            alLimpiar={() => { setFiltroEspacio(''); setFiltroTipo(''); setFiltroEstado(''); }}
             cargando={cargando}
             textoVacio={
               hayFiltros

@@ -51,7 +51,7 @@ import DialogoMaterial from '@/componentes/tareas/DialogoMaterial.js';
 import ObservacionesTarea from '@/componentes/tareas/ObservacionesTarea.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { finalizarTarea, iniciarTarea, listarMisHerramientas, obtenerMiTarea } from '@/servicios/tareas.js';
-import { formatearFechaHora, soloFechaLegible } from '@/utils/fechas.js';
+import { formatearFecha, formatearFechaHora, soloFechaLegible } from '@/utils/fechas.js';
 
 /** Una tarea en estos estados todavía no empezó: se puede iniciar. */
 const ESTADOS_SIN_EMPEZAR = ['Creada', 'Asignada', 'Pendiente'];
@@ -148,13 +148,35 @@ export default function PantallaDetalleMiTarea({ params }) {
   const sinEmpezar = tarea && ESTADOS_SIN_EMPEZAR.includes(tarea.estado);
   const enEjecucion = tarea?.estado === 'En ejecución';
 
+  const hoy = new Date().toISOString().slice(0, 10);
+  const esPreventiva = tarea?.ot?.origen === 'Mantenimiento preventivo';
+  let motivoBloqueoInicio = null;
+  if (esPreventiva) {
+    if (!tarea.fechaPrevista) {
+      motivoBloqueoInicio = 'La tarea preventiva requiere tener una fecha programada para poder iniciarse.';
+    } else if (tarea.fechaPrevista > hoy) {
+      motivoBloqueoInicio = `La tarea preventiva está programada para el ${soloFechaLegible(tarea.fechaPrevista)} y no puede iniciarse antes de esa fecha.`;
+    }
+  }
+
   const acciones = tarea && (sinEmpezar || enEjecucion) && (
-    <>
+    <div className="d-flex flex-column align-items-end">
       {sinEmpezar && (
-        <CButton color="primary" onClick={() => abrir('iniciar')}>
-          <CIcon icon={cilMediaPlay} className="me-2" />
-          Iniciar tarea
-        </CButton>
+        <span title={motivoBloqueoInicio || undefined}>
+          <CButton
+            color="primary"
+            disabled={Boolean(motivoBloqueoInicio)}
+            onClick={() => abrir('iniciar')}
+          >
+            <CIcon icon={cilMediaPlay} className="me-2" />
+            Iniciar tarea
+          </CButton>
+        </span>
+      )}
+      {motivoBloqueoInicio && (
+        <span className="text-body-secondary small mt-1 text-end" style={{ maxWidth: '320px' }}>
+          {motivoBloqueoInicio}
+        </span>
       )}
       {enEjecucion && (
         <CButton color="primary" onClick={() => abrir('finalizar')}>
@@ -162,7 +184,7 @@ export default function PantallaDetalleMiTarea({ params }) {
           Finalizar tarea
         </CButton>
       )}
-    </>
+    </div>
   );
 
   return (
@@ -176,17 +198,6 @@ export default function PantallaDetalleMiTarea({ params }) {
       ) : (
         tarea && (
           <>
-            <ObservacionesTarea
-              key={`${idOt}-${idTarea}`}
-              idOt={idOt}
-              idTarea={idTarea}
-              observaciones={tarea.observaciones ?? []}
-              onGuardado={(observacion) => setTarea((actual) => ({
-                ...actual,
-                observaciones: [...(actual.observaciones ?? []), observacion]
-                  .sort((a, b) => a.fecha.localeCompare(b.fecha) || Number(a.id) - Number(b.id)),
-              }))}
-            />
             <CRow className="g-4 mb-4">
               <CCol lg={7}>
                 <CCard className="h-100">
@@ -219,6 +230,18 @@ export default function PantallaDetalleMiTarea({ params }) {
                         </Dato>
                       </CCol>
                     </CRow>
+
+                    <ObservacionesTarea
+                      key={`${idOt}-${idTarea}`}
+                      idOt={idOt}
+                      idTarea={idTarea}
+                      observaciones={tarea.observaciones ?? []}
+                      onGuardado={(observacion) => setTarea((actual) => ({
+                        ...actual,
+                        observaciones: [...(actual.observaciones ?? []), observacion]
+                          .sort((a, b) => a.fecha.localeCompare(b.fecha) || Number(a.id) - Number(b.id)),
+                      }))}
+                    />
                   </CCardBody>
                 </CCard>
               </CCol>
@@ -360,7 +383,7 @@ export default function PantallaDetalleMiTarea({ params }) {
                               <span className="text-body-secondary"> — {herramienta.nombre}</span>
                               {herramienta.desde && (
                                 <div className="text-body-secondary small">
-                                  Desde el {soloFechaLegible(herramienta.desde)}
+                                  Desde el {formatearFecha(herramienta.desde)}
                                 </div>
                               )}
                             </div>
@@ -380,6 +403,7 @@ export default function PantallaDetalleMiTarea({ params }) {
                 </CCard>
               </CCol>
             </CRow>
+
           </>
         )
       )}

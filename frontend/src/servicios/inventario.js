@@ -5,6 +5,12 @@ export async function listarItems(clase) {
   return data.datos;
 }
 
+/** Los materiales por debajo del stock mínimo, con cuánto falta para llegar (HU-33). */
+export async function listarAlertasStock() {
+  const { data } = await api.get('/inventario/alertas');
+  return data.datos;
+}
+
 export async function obtenerItem(codigo) {
   const { data } = await api.get(`/inventario/${encodeURIComponent(codigo)}`);
   return data.datos;
@@ -23,6 +29,12 @@ export async function actualizarItem(codigo, item) {
 /** El historial de ingresos y consumos del item, del mas nuevo al mas viejo (HU-16). */
 export async function listarMovimientos(codigo) {
   const { data } = await api.get(`/inventario/${encodeURIComponent(codigo)}/movimientos`);
+  return data.datos;
+}
+
+/** En qué tareas se consumió el material: una fila por tarea, con la cantidad sumada (HU-35). */
+export async function listarConsumos(codigo) {
+  const { data } = await api.get(`/inventario/${encodeURIComponent(codigo)}/consumos`);
   return data.datos;
 }
 

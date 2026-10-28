@@ -58,14 +58,13 @@ function deHoraDelReloj(hora) {
 
 /**
  * La unidad que se lee al final de la caja: "00:22" no dice si son horas o
- * minutos. Menos de una hora, "minutos"; si no, "hora" u "horas".
+ * minutos. Como el campo es hh:mm, siempre se lee en horas, aun vacio: "hora"
+ * sólo para 01:00 y "horas" para todo lo demás.
  */
 function unidadDeLaDuracion(texto) {
   const hora = aHoraDelReloj(texto);
-  if (!hora) return '';
-  if (hora.hour === 0) return 'minutos';
 
-  return hora.hour === 1 && hora.minute === 0 ? 'hora' : 'horas';
+  return hora?.hour === 1 && hora.minute === 0 ? 'hora' : 'horas';
 }
 
 export default function CampoDuracion({

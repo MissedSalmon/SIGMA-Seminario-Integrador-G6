@@ -6,7 +6,12 @@
  * Se puede filtrar por area para ver quien es responsable de cada una.
  */
 import { useEffect, useState } from 'react';
-import { CButton, CButtonGroup, CCard, CCardBody } from '@coreui/react';
+import {
+  CButton,
+  CButtonGroup,
+  CCard,
+  CCardBody,
+} from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilPencil, cilTrash } from '@coreui/icons';
 
@@ -176,6 +181,7 @@ export default function PantallaAutorizados() {
                 })),
               },
             ]}
+            alLimpiar={() => setFiltroArea('')}
             cargando={cargando}
             textoVacio={
               filtroArea

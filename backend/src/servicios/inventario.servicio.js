@@ -214,6 +214,32 @@ export async function obtenerItems(clase) {
   return items.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
 }
 
+/**
+ * Las alertas de stock minimo (HU-33): los materiales cuyo stock actual esta
+ * por debajo del minimo, con cuanto falta para llegar a el.
+ *
+ * La alerta no se guarda en una tabla: se calcula del stock cada vez que se
+ * pide. Asi aparece sola cuando un consumo en una tarea baja el stock (HU-22)
+ * y se resuelve sola cuando un remito lo vuelve a subir (HU-16), sin que nadie
+ * tenga que acordarse de crearla ni de cerrarla.
+ *
+ * Van primero los que mas faltan; a igual faltante, por nombre.
+ */
+export async function obtenerAlertasStock() {
+  const materiales = await obtenerItems('Material');
+  return materiales
+    .filter((material) => material.bajoMinimo)
+    .map((material) => ({
+      codigo: material.codigo,
+      nombre: material.nombre,
+      nombreTipo: material.nombreTipo,
+      stockActual: material.stockActual,
+      stockMinimo: material.stockMinimo,
+      faltante: material.stockMinimo - material.stockActual,
+    }))
+    .sort((a, b) => b.faltante - a.faltante || a.nombre.localeCompare(b.nombre, 'es'));
+}
+
 function leerDatos(datos) {
   const nombre = texto(datos.nombre);
   const clase = leerClase(datos.clase);
@@ -348,6 +374,48 @@ export async function obtenerMovimientos(codigo) {
 }
 
 /**
+ * En que tareas se consumio el material (HU-35), de la mas nueva a la mas vieja.
+ *
+ * Sale de tarea_ot_consume_material: una fila por tarea, con la cantidad ya
+ * sumada si se registro mas de una vez y la fecha del ultimo registro
+ * (decision del 23/10/2026, para no cambiar el modelo de datos).
+ *
+ * El tecnico se trae aparte porque tecnico_asignado_tarea_ot apunta a la tarea
+ * con dos columnas y no se puede embeber.
+ */
+export async function obtenerConsumos(codigo) {
+  const item = await obtenerItem(codigo);
+  if (item.clase !== 'Material') throw datoInvalido('Una herramienta no se consume: se presta y se devuelve.');
+
+  const { data, error } = await supabase
+    .from('tarea_ot_consume_material')
+    .select('ot_id, tarea_id, tamat_cant, tamat_fecha_cons, tarea_ot ( tarea_desc )')
+    .eq('mat_cod', codigo)
+    .order('tamat_fecha_cons', { ascending: false });
+  if (error) throw errorDeBase(error, 'de los materiales usados');
+  if (data.length === 0) return [];
+
+  const { data: asignaciones, error: errorAsignaciones } = await supabase
+    .from('tecnico_asignado_tarea_ot')
+    .select('ot_id, tarea_id, tecnico ( tecnico_nom_ape )')
+    .in('ot_id', [...new Set(data.map((fila) => fila.ot_id))]);
+  if (errorAsignaciones) throw errorDeBase(errorAsignaciones, 'de las tareas');
+
+  const tecnicos = new Map(
+    asignaciones.map((fila) => [`${fila.ot_id}-${fila.tarea_id}`, fila.tecnico?.tecnico_nom_ape ?? null])
+  );
+
+  return data.map((fila) => ({
+    idOt: fila.ot_id,
+    idTarea: fila.tarea_id,
+    tarea: fila.tarea_ot?.tarea_desc ?? '',
+    cantidad: Number(fila.tamat_cant),
+    fecha: fila.tamat_fecha_cons,
+    tecnico: tecnicos.get(`${fila.ot_id}-${fila.tarea_id}`) ?? null,
+  }));
+}
+
+/**
  * Guarda el estado de la herramienta en la columna. "En uso" tambien queda
  * guardado (07/10/2026), aunque el que manda sigue siendo el prestamo abierto.
  */
@@ -396,9 +464,19 @@ export async function asignarHerramienta(codigo, datos = {}) {
   if (errorTecnico) throw new Error(errorTecnico.message);
   if (!tecnico) throw datoInvalido(`No existe el técnico ${legajo}.`);
 
-  const { error } = await supabase
-    .from('tecnico_utiliza_herramienta')
-    .insert({ tecnico_legajo: legajo, herr_cod: codigo });
+  // Si se toma desde una tarea, el prestamo guarda la OT y la tarea (22/10/2026).
+  const desdeTarea = datos.idOt && datos.idTarea ? { ot_id: datos.idOt, tarea_id: datos.idTarea } : {};
+
+  const prestar = (tarea) =>
+    supabase.from('tecnico_utiliza_herramienta').insert({ tecnico_legajo: legajo, herr_cod: codigo, ...tarea });
+
+  let { error } = await prestar(desdeTarea);
+
+  // Si la base todavia no tiene la migracion 20261022120000 (falta ot_id), el
+  // prestamo se guarda igual, sin la tarea. 42703 o PGRST204: columna inexistente.
+  if (error && ['42703', 'PGRST204'].includes(error.code)) {
+    ({ error } = await prestar({}));
+  }
   if (error) {
     // 23505: otro pedido la asigno al mismo tiempo y el indice unico lo freno.
     if (error.code === '23505') throw conflicto(`"${herramienta.nombre}" ya está asignada a otro técnico.`);

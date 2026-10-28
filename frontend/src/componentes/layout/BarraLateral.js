@@ -197,7 +197,6 @@ export default function BarraLateral() {
         {usuario && (
           <div className="text-white-50 small" style={{ fontSize: '0.78rem' }}>
             {usuario.admin_nom_ape || usuario.tecnico_nom_ape || usuario.autorizado_nom_ape || usuario.identificador}
-            <span className="ms-1 badge bg-secondary text-capitalize">{rol}</span>
           </div>
         )}
         <button
