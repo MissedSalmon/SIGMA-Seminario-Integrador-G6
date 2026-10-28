@@ -26,6 +26,9 @@ import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { useSesion } from '@/componentes/layout/ContextoSesion.js';
 import { NOMBRES_ROL, OPCIONES_ROL } from '@/componentes/usuarios/roles.js';
+import DialogoRestablecerContrasena, {
+  AccionRestablecerContrasena,
+} from '@/componentes/usuarios/RestablecerContrasena.js';
 import { soloFechaLegible } from '@/utils/fechas.js';
 import { listarUsuarios, desactivarUsuario, activarUsuario } from '@/servicios/usuarios.js';
 
@@ -48,6 +51,7 @@ export default function PantallaUsuarios() {
   // El usuario que se va a activar o desactivar (abre la ventana de confirmacion).
   const [aCambiar, setACambiar] = useState(null);
   const [cambiando, setCambiando] = useState(false);
+  const [aRestablecer, setARestablecer] = useState(null);
 
   // Se suma 1 para volver a pedir la lista (por ejemplo, despues de desactivar).
   const [recarga, setRecarga] = useState(0);
@@ -145,18 +149,29 @@ export default function PantallaUsuarios() {
       clave: 'acciones',
       encabezado: 'Acciones',
       alinearDerecha: true,
-      // El administrador no se puede desactivar a si mismo, asi que en su fila no hay boton.
+      // El administrador no se puede desactivar a si mismo, asi que en su fila no hay botones.
       render: (usuario) =>
         usuario.nombreUsuario === sesion?.identificador ? null : (
-          <CButton
-            size="sm"
-            variant="outline"
-            color={usuario.activo ? 'danger' : 'primary'}
-            className="text-nowrap"
-            onClick={() => setACambiar(usuario)}
-          >
-            {usuario.activo ? 'Desactivar' : 'Activar'}
-          </CButton>
+          <div className="d-flex justify-content-end align-items-center gap-1">
+            <AccionRestablecerContrasena
+              nombre={usuario.persona || usuario.nombreUsuario}
+              onClick={() =>
+                setARestablecer({
+                  identificador: usuario.nombreUsuario,
+                  nombre: usuario.persona || usuario.nombreUsuario,
+                })
+              }
+            />
+            <CButton
+              size="sm"
+              variant="outline"
+              color={usuario.activo ? 'danger' : 'primary'}
+              className="text-nowrap"
+              onClick={() => setACambiar(usuario)}
+            >
+              {usuario.activo ? 'Desactivar' : 'Activar'}
+            </CButton>
+          </div>
         ),
     },
   ];
@@ -165,7 +180,7 @@ export default function PantallaUsuarios() {
 
   return (
     <>
-      <EncabezadoPagina titulo="Usuarios" accion={{ direccion: '/usuarios/agregar' }} />
+      <EncabezadoPagina titulo="Usuarios" />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
 
@@ -230,6 +245,11 @@ export default function PantallaUsuarios() {
           />
         </CModalFooter>
       </CModal>
+
+      <DialogoRestablecerContrasena
+        usuario={aRestablecer}
+        onCerrar={() => setARestablecer(null)}
+      />
     </>
   );
 }
