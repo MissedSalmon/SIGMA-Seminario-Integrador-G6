@@ -39,6 +39,7 @@ import {
   cilClipboard,
   cilBriefcase,
   cilTask,
+  cilLockLocked,
 } from '@coreui/icons';
 
 export const navegacion = [
@@ -270,6 +271,15 @@ export const navegacion = [
     texto: 'Usuarios autorizados',
     direccion: '/autorizados',
     icono: cilUser,
+    roles: ['administrador'],
+  },
+  {
+    // Va al final: un usuario se crea para una persona que ya esta cargada
+    // (administrador, tecnico o usuario autorizado).
+    tipo: 'item',
+    texto: 'Usuarios',
+    direccion: '/usuarios',
+    icono: cilLockLocked,
     roles: ['administrador'],
   },
 ];
