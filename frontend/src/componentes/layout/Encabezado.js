@@ -78,6 +78,7 @@ const NOMBRES = {
   '/prestadores': 'Listado de prestadores',
   '/prestadores/tipos': 'Tipos de prestador',
   '/autorizados': 'Usuarios autorizados',
+  '/usuarios': 'Usuarios',
   '/notificaciones': 'Notificaciones',
   '/perfil': 'Mi Perfil',
   '/configuracion': 'Configuración',

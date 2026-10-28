@@ -3,7 +3,12 @@ import bcrypt from 'bcryptjs';
 import { ENUM_ROL } from '../utiles/enumerados.js';
 
 /**
- * Valida credenciales contra la base de datos
+ * Valida credenciales contra la base de datos.
+ *
+ * Es la unica funcion que autentica: la usa el login (POST /api/auth/login).
+ * Devuelve null si el usuario no existe, si la contraseña no coincide o si el
+ * usuario esta desactivado (gestion de usuarios). El login contesta lo mismo en
+ * los tres casos, asi no se revela cual fue el motivo.
  */
 export async function validarCredenciales(identificador, passwordPlana) {
   if (!identificador || !passwordPlana || typeof identificador !== 'string' || typeof passwordPlana !== 'string') {
@@ -21,7 +26,8 @@ export async function validarCredenciales(identificador, passwordPlana) {
     .eq('activo', true)
     .single();
 
-  if (error || !usuario) {
+  // La consulta ya filtra los activos; se vuelve a mirar por si la fila llega igual.
+  if (error || !usuario || usuario.activo !== true) {
     return null;
   }
 

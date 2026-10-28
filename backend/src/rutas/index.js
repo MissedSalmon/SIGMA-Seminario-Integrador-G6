@@ -25,6 +25,10 @@ const router = Router();
 import rutasAuth from './auth.rutas.js';
 router.use('/auth', rutasAuth);
 
+// Gestion de usuarios: alta, listado, baja logica (HU-32) y restablecer contraseña (HU-31)
+import rutasUsuarios from './usuarios.rutas.js';
+router.use('/usuarios', rutasUsuarios);
+
 // Estructura edilicia (Sprint 1)
 router.use('/edificios', rutasEdificios);
 router.use('/espacios', rutasEspacios);
@@ -55,10 +59,6 @@ router.use('/especialidades', rutasEspecialidades);
 // Usuarios autorizados (HU-8)
 import rutasAutorizados from './autorizados.rutas.js';
 router.use('/autorizados', rutasAutorizados);
-
-// Gestión de cuentas de acceso
-import rutasUsuarios from './usuarios.rutas.js';
-router.use('/usuarios', rutasUsuarios);
 
 // Tickets (HU-9)
 import rutasTickets from './tickets.rutas.js';
