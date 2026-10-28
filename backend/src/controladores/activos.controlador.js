@@ -3,6 +3,7 @@
  */
 import * as activosServicio from '../servicios/activos.servicio.js';
 import { ESTADOS, ESTADOS_MANUALES } from '../servicios/activos.servicio.js';
+import * as historialActivo from '../servicios/historialActivo.servicio.js';
 import { datoInvalido } from '../utiles/errores.js';
 
 /**
@@ -63,6 +64,17 @@ export async function listarEstados(req, res) {
 export async function obtener(req, res) {
   const activo = await activosServicio.obtenerPorId(leerCodigo(req));
   res.json({ ok: true, datos: activo });
+}
+
+/**
+ * GET /api/activos/AC-014/historial
+ *
+ * Las intervenciones del activo, de la mas reciente a la mas vieja, y el
+ * resumen (cuantas son y cuando fue el ultimo mantenimiento). HU-29.
+ */
+export async function historial(req, res) {
+  const historial = await historialActivo.obtenerHistorial(leerCodigo(req));
+  res.json({ ok: true, datos: historial });
 }
 
 /** POST /api/activos */

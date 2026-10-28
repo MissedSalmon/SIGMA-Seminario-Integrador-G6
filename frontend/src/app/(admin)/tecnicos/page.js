@@ -16,6 +16,9 @@ import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
 import DialogoEliminar from '@/componentes/DialogoEliminar.js';
+import DialogoRestablecerContrasena, {
+  AccionRestablecerContrasena,
+} from '@/componentes/usuarios/RestablecerContrasena.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarEspecialidades } from '@/servicios/especialidades.js';
@@ -34,6 +37,7 @@ export default function PantallaTecnicos() {
 
   const [aEliminar, setAEliminar] = useState(null);
   const [eliminando, setEliminando] = useState(false);
+  const [aRestablecer, setARestablecer] = useState(null);
 
   // Las especialidades se cargan una sola vez: son las del desplegable del filtro.
   useEffect(() => {
@@ -135,6 +139,15 @@ export default function PantallaTecnicos() {
           >
             <CIcon icon={cilPencil} />
           </BotonEnlace>
+          <AccionRestablecerContrasena
+            nombre={tecnico.nombre}
+            onClick={() =>
+              setARestablecer({
+                identificador: String(tecnico.legajo),
+                nombre: tecnico.nombre,
+              })
+            }
+          />
           <CButton
             variant="ghost"
             color="danger"
@@ -188,6 +201,7 @@ export default function PantallaTecnicos() {
                 ],
               },
             ]}
+            alLimpiar={() => { setFiltroEspecialidad(''); setFiltroDisponibilidad(''); }}
             cargando={cargando}
             textoVacio={
               filtroEspecialidad || filtroDisponibilidad
@@ -216,6 +230,11 @@ export default function PantallaTecnicos() {
           historial, marcalo como &quot;No disponible&quot; en vez de eliminarlo.
         </p>
       </DialogoEliminar>
+
+      <DialogoRestablecerContrasena
+        usuario={aRestablecer}
+        onCerrar={() => setARestablecer(null)}
+      />
     </>
   );
 }

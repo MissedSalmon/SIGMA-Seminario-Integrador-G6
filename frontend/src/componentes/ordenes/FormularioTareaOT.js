@@ -68,7 +68,6 @@ const TAREA_VACIA = {
   legajoTecnico: '',
   idPrestador: '',
   fechaInicio: '',
-  fechaFin: '',
   horasEstimadas: '',
   idPlantilla: '',
 };
@@ -84,7 +83,6 @@ function comoValores(tarea) {
     legajoTecnico: tarea.responsable?.tipo === 'Técnico' ? tarea.responsable.legajo : '',
     idPrestador: tarea.responsable?.tipo === 'Prestador' ? String(tarea.responsable.idPrestador) : '',
     fechaInicio: soloFecha(tarea.fechaInicio),
-    fechaFin: soloFecha(tarea.fechaFin),
     // Se muestra como se carga ("01:30"), no como se guarda (1.5).
     horasEstimadas: comoHoraMinuto(tarea.horasEstimadas),
     idPlantilla: tarea.idPlantilla ? String(tarea.idPlantilla) : '',
@@ -105,6 +103,8 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
   const [revisado, setRevisado] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
+  // La ventana que pide confirmar cuando no se cargó el inicio previsto.
+  const [confirmarSinInicio, setConfirmarSinInicio] = useState(false);
 
   // Lo que se puede elegir al cargar una tarea.
   const [prioridades, setPrioridades] = useState(['Alta', 'Media', 'Baja']);
@@ -144,8 +144,8 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
   }, [idTipoActivo]);
 
   /*
-   * Las tareas se planifican para adelante: ni el inicio ni el fin pueden
-   * quedar antes de hoy. El almanaque directamente no deja elegir un día
+   * Las tareas se planifican para adelante: el inicio no puede quedar antes
+   * de hoy. El almanaque directamente no deja elegir un día
    * anterior (`min`), y si igual llega uno, la revisión lo corta.
    *
    * La excepción es editar una tarea vieja: la fecha que ya estaba guardada se
@@ -154,13 +154,8 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
    */
   const hoy = hoyTexto();
   const inicioOriginal = tarea ? soloFecha(tarea.fechaInicio) : '';
-  const finOriginal = tarea ? soloFecha(tarea.fechaFin) : '';
 
   const minimoInicio = inicioOriginal && inicioOriginal < hoy ? inicioOriginal : hoy;
-  const minimoFin = [finOriginal && finOriginal < hoy ? finOriginal : hoy, valores.fechaInicio]
-    .filter(Boolean)
-    .sort()
-    .at(-1);
 
   function cambiar(campo, valor) {
     setValores((anteriores) => ({ ...anteriores, [campo]: valor }));
@@ -254,14 +249,6 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
       fallos.fechaInicio = 'No puede ser anterior a hoy.';
     }
 
-    if (valores.fechaFin && valores.fechaFin < hoy && valores.fechaFin !== finOriginal) {
-      fallos.fechaFin = 'No puede ser anterior a hoy.';
-    }
-
-    if (valores.fechaInicio && valores.fechaFin && valores.fechaFin < valores.fechaInicio) {
-      fallos.fechaFin = 'No puede ser anterior a la fecha de inicio.';
-    }
-
     /*
      * Los casilleros del reloj no dejan escribir cualquier cosa, asi que lo
      * que puede pasar es que quede a medias (horas sin minutos o al reves) o
@@ -277,12 +264,27 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
     return Object.keys(fallos).length === 0;
   }
 
+  /*
+   * Sin inicio previsto la tarea no se puede programar. No se prohíbe (a veces
+   * todavía no se sabe cuándo se hace), pero antes de guardar se avisa y se
+   * pide confirmar.
+   */
   async function manejarEnvio(evento) {
     evento.preventDefault();
     setRevisado(true);
     setError('');
     if (!revisar()) return;
 
+    if (!valores.fechaInicio) {
+      setConfirmarSinInicio(true);
+      return;
+    }
+
+    await guardar();
+  }
+
+  async function guardar() {
+    setConfirmarSinInicio(false);
     setGuardando(true);
     try {
       await onGuardar({
@@ -292,7 +294,8 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
         idPrestador: valores.tipoResponsable === 'Prestador' ? Number(valores.idPrestador) : null,
         idPlantilla: Number(valores.idPlantilla),
         fechaInicio: valores.fechaInicio || null,
-        fechaFin: valores.fechaFin || null,
+        // El fin previsto ya no se carga (22/10/2026).
+        fechaFin: null,
         horasEstimadas: aHorasDecimales(valores.horasEstimadas),
       });
 
@@ -376,8 +379,13 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
             error={errores.descripcion}
           />
 
-          <CRow>
-            <CCol md={4}>
+          {/*
+            Los campos chicos van en una grilla de tres columnas, así ocupan el
+            ancho de la hoja: arriba el cuándo (prioridad, inicio y duración) y
+            abajo el quién. En pantallas angostas cada campo baja a su renglón.
+          */}
+          <CRow className="g-3 mb-3">
+            <CCol sm={6} lg={4}>
               <Campo
                 id="prioridad"
                 etiqueta="Prioridad"
@@ -389,7 +397,7 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
               />
             </CCol>
 
-            <CCol md={4}>
+            <CCol sm={6} lg={4}>
               <Campo
                 id="fechaInicio"
                 etiqueta="Inicio previsto"
@@ -402,22 +410,21 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
               />
             </CCol>
 
-            <CCol md={4}>
+            <CCol sm={6} lg={4}>
               <Campo
-                id="fechaFin"
-                etiqueta="Fin previsto"
-                tipoHtml="date"
-                valor={valores.fechaFin}
-                alCambiar={(valor) => cambiar('fechaFin', valor)}
-                min={minimoFin}
+                id="horasEstimadas"
+                etiqueta="Duración prevista"
+                tipo="duracion"
+                valor={valores.horasEstimadas}
+                alCambiar={(valor) => cambiar('horasEstimadas', valor)}
                 revisado={revisado}
-                error={errores.fechaFin}
+                error={errores.horasEstimadas}
               />
             </CCol>
           </CRow>
 
-          <CRow>
-            <CCol md={4}>
+          <CRow className="g-3 mb-3">
+            <CCol sm={6} lg={4}>
               <Campo
                 id="tipoResponsable"
                 etiqueta="Lo hace"
@@ -429,59 +436,51 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
               />
             </CCol>
 
-            <CCol md={8}>
-              {valores.tipoResponsable === 'Técnico' && (
-                <Campo
-                  id="legajoTecnico"
-                  etiqueta="Técnico"
-                  tipo="lista"
-                  valor={valores.legajoTecnico}
-                  alCambiar={(valor) => cambiar('legajoTecnico', valor)}
-                  opciones={tecnicos.map((tecnico) => ({
-                    valor: tecnico.legajo,
-                    texto: textoDelTecnico(tecnico),
-                  }))}
-                  placeholder="Elegir técnico"
-                  obligatorio
-                  revisado={revisado}
-                  error={errores.legajoTecnico}
-                  ancho={34}
-                />
-              )}
+            {valores.tipoResponsable !== SIN_ASIGNAR && (
+              <CCol sm={6} lg={8}>
+                {valores.tipoResponsable === 'Técnico' && (
+                  <Campo
+                    id="legajoTecnico"
+                    etiqueta="Técnico"
+                    tipo="lista"
+                    valor={valores.legajoTecnico}
+                    alCambiar={(valor) => cambiar('legajoTecnico', valor)}
+                    opciones={tecnicos.map((tecnico) => ({
+                      valor: tecnico.legajo,
+                      texto: textoDelTecnico(tecnico),
+                    }))}
+                    placeholder="Elegir técnico"
+                    obligatorio
+                    revisado={revisado}
+                    error={errores.legajoTecnico}
+                    ancho={34}
+                  />
+                )}
 
-              {valores.tipoResponsable === 'Prestador' && (
-                <Campo
-                  id="idPrestador"
-                  etiqueta="Prestador"
-                  tipo="lista"
-                  valor={valores.idPrestador}
-                  alCambiar={(valor) => cambiar('idPrestador', valor)}
-                  opciones={prestadores.map((prestador) => ({
-                    valor: String(prestador.idPrestador),
-                    texto: prestador.nombre,
-                  }))}
-                  placeholder={
-                    prestadores.length === 0 ? 'Todavía no hay prestadores cargados' : 'Elegir prestador'
-                  }
-                  obligatorio
-                  deshabilitado={prestadores.length === 0}
-                  revisado={revisado}
-                  error={errores.idPrestador}
-                  ancho={34}
-                />
-              )}
-            </CCol>
+                {valores.tipoResponsable === 'Prestador' && (
+                  <Campo
+                    id="idPrestador"
+                    etiqueta="Prestador"
+                    tipo="lista"
+                    valor={valores.idPrestador}
+                    alCambiar={(valor) => cambiar('idPrestador', valor)}
+                    opciones={prestadores.map((prestador) => ({
+                      valor: String(prestador.idPrestador),
+                      texto: prestador.nombre,
+                    }))}
+                    placeholder={
+                      prestadores.length === 0 ? 'Todavía no hay prestadores cargados' : 'Elegir prestador'
+                    }
+                    obligatorio
+                    deshabilitado={prestadores.length === 0}
+                    revisado={revisado}
+                    error={errores.idPrestador}
+                    ancho={34}
+                  />
+                )}
+              </CCol>
+            )}
           </CRow>
-
-          <Campo
-            id="horasEstimadas"
-            etiqueta="Duración prevista"
-            tipo="duracion"
-            valor={valores.horasEstimadas}
-            alCambiar={(valor) => cambiar('horasEstimadas', valor)}
-            revisado={revisado}
-            error={errores.horasEstimadas}
-          />
 
           {revisado && hayErrores && (
             <p className="sigma-campo-mensaje sigma-campo-mensaje--error mb-3">
@@ -492,6 +491,26 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
           <BotonesAccion procesando={guardando} hrefCancelar={volverA} className="mt-4" />
         </form>
       </CCardBody>
+
+      <CModal
+        visible={confirmarSinInicio}
+        onClose={() => setConfirmarSinInicio(false)}
+        alignment="center"
+      >
+        <CModalHeader>
+          <CModalTitle>Falta el inicio previsto</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          No cargaste la fecha de inicio prevista de la tarea. ¿Querés guardarla igual?
+        </CModalBody>
+        <CModalFooter>
+          <BotonesAccion
+            procesando={guardando}
+            alAceptar={guardar}
+            alCancelar={() => setConfirmarSinInicio(false)}
+          />
+        </CModalFooter>
+      </CModal>
 
       <CModal
         visible={nuevaVisible}

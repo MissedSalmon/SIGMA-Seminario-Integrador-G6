@@ -6,6 +6,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  experimental: {
+    agentUpgrade: 'security',
+  },
   /*
    * SIGMA es un monorepo (npm workspaces): ademas de este package.json hay
    * uno en la raiz, otro en backend/ y otro en pruebas/, cada uno con su
@@ -21,6 +24,15 @@ const nextConfig = {
    */
   turbopack: {
     root: path.join(__dirname, '..'),
+  },
+  async rewrites() {
+    const backendUrl = (process.env.BACKEND_URL || 'http://localhost:4000').replace(/\/+$/, '');
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${backendUrl}/api/:path*`,
+      },
+    ];
   },
 };
 

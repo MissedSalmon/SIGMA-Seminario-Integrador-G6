@@ -12,20 +12,22 @@ export async function agregarObservacion(idOt, idTarea, texto) {
 }
 
 /**
- * Las tareas del técnico, ya ordenadas por prioridad y fecha prevista, y
- * cuántas le quedan pendientes. Los filtros se combinan.
+ * Las tareas del técnico y cuántas le quedan pendientes. Los filtros se combinan.
+ * El orden de la lista lo pone la pantalla.
  *
  * @param {object} [filtros]
+ * @param {string} [filtros.estado]    - "En ejecución" | "Asignada" | "Finalizada" | "Cancelada"
  * @param {string} [filtros.prioridad] - "Alta" | "Media" | "Baja"
  * @param {string} [filtros.desde]     - "2026-10-01": fecha prevista de inicio desde
  * @param {string} [filtros.hasta]     - "2026-10-31": fecha prevista de inicio hasta
  * @returns {Promise<{ tareas: object[], pendientes: number }>}
  */
 export async function listarMisTareas(filtros = {}) {
-  const { prioridad, desde, hasta } = filtros;
+  const { estado, prioridad, desde, hasta } = filtros;
 
   const { data } = await api.get('/tareas/mias', {
     params: {
+      ...(estado ? { estado } : {}),
       ...(prioridad ? { prioridad } : {}),
       ...(desde ? { desde } : {}),
       ...(hasta ? { hasta } : {}),

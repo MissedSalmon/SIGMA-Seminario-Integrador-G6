@@ -66,7 +66,7 @@ const inventario = await import('../src/servicios/inventario.servicio.js');
 const tareas = await import('../src/servicios/tareas.servicio.js');
 
 /** La asignacion del tecnico 2030 a la tarea 1 de la OT 9, con sus estados en numero. */
-function filaAsignacion({ estadoTarea = 2, estadoOt = 2 } = {}) {
+function filaAsignacion({ estadoTarea = 2, estadoOt = 2, esPreventiva = false, fechaInicio = null } = {}) {
   return {
     ot_id: 9,
     tarea_id: 1,
@@ -76,14 +76,14 @@ function filaAsignacion({ estadoTarea = 2, estadoOt = 2 } = {}) {
       tarea_desc: 'Cambiar el filtro',
       tarea_estado: estadoTarea,
       tarea_prioridad: 2,
-      tarea_fecha_ini: null,
+      tarea_fecha_ini: fechaInicio,
       tarea_fecha_fin: null,
       orden_trabajo: {
         ot_id: 9,
         ot_desc: 'Pierde agua',
         ot_estado: estadoOt,
-        ticket: { ticket_id: 3, activo: null },
-        mantenimiento_preventivo: null,
+        ticket: esPreventiva ? null : { ticket_id: 3, activo: null },
+        mantenimiento_preventivo: esPreventiva ? { mant_prev_id: 5, activo: null } : null,
       },
     },
   };
@@ -165,6 +165,32 @@ describe('iniciarTarea', () => {
     escrituras.tarea_ot = { data: [], error: null }; // el update no encontró la fila en ese estado
 
     await expect(tareas.iniciarTarea('2030', 9, 1)).rejects.toThrow('cambió de estado');
+  });
+
+  test('en OT preventiva rechaza iniciar si no tiene fecha programada (C6, D2)', async () => {
+    laTareaEsta({ estadoTarea: 2, esPreventiva: true, fechaInicio: null });
+
+    await expect(tareas.iniciarTarea('2030', 9, 1)).rejects.toThrow(
+      'La tarea preventiva requiere tener una fecha programada para poder iniciarse.'
+    );
+  });
+
+  test('en OT preventiva rechaza iniciar si la fecha programada es futura (C6, D2)', async () => {
+    laTareaEsta({ estadoTarea: 2, esPreventiva: true, fechaInicio: '2099-01-01' });
+
+    await expect(tareas.iniciarTarea('2030', 9, 1)).rejects.toThrow(
+      'no puede iniciarse antes de esa fecha'
+    );
+  });
+
+  test('en OT preventiva sí inicia si tiene fecha programada ya alcanzada (C6, D2)', async () => {
+    laTareaEsta({ estadoTarea: 2, esPreventiva: true, fechaInicio: '2020-01-01' });
+    lecturas.orden_trabajo = [ORDEN_CON_ACTIVO];
+
+    await tareas.iniciarTarea('2030', 9, 1);
+
+    const [tarea] = escriturasEn('tarea_ot');
+    expect(valorEscrito(tarea)).toEqual({ tarea_estado: 3 }); // En ejecución
   });
 });
 
@@ -276,7 +302,21 @@ describe('historial', () => {
     lecturas.tarea_ot_consume_material = [
       {
         data: [
-          { ot_id: 9, tarea_id: 1, mat_cod: 'MAT-002', tamat_cant: 4, tamat_fecha_cons: '2026-10-10', material: { mat_nom: 'Tornillo' }, tarea_ot: { tarea_desc: 'Cambiar el filtro' } },
+          {
+            ot_id: 9,
+            tarea_id: 1,
+            mat_cod: 'MAT-002',
+            tamat_cant: 4,
+            tamat_fecha_cons: '2026-10-10',
+            material: { mat_nom: 'Tornillo' },
+            tarea_ot: {
+              tarea_desc: 'Cambiar el filtro',
+              orden_trabajo: {
+                ticket: { activo: { activo_codigo: 'AC-01', espacio: { espacio_num: 11, tipo_espacio: { tipo_espacio_nom: 'Aula' } } } },
+                mantenimiento_preventivo: null,
+              },
+            },
+          },
           { ot_id: 9, tarea_id: 2, mat_cod: 'MAT-003', tamat_cant: 1, tamat_fecha_cons: '2026-10-10', material: { mat_nom: 'Cinta' }, tarea_ot: { tarea_desc: 'De otro técnico' } },
         ],
         error: null,
@@ -286,7 +326,15 @@ describe('historial', () => {
     const filas = await tareas.historialMateriales('2030');
 
     expect(filas).toEqual([
-      expect.objectContaining({ codigo: 'MAT-002', cantidad: 4, idOt: 9, idTarea: 1, tarea: 'Cambiar el filtro' }),
+      expect.objectContaining({
+        codigo: 'MAT-002',
+        cantidad: 4,
+        idOt: 9,
+        idTarea: 1,
+        tarea: 'Cambiar el filtro',
+        codigoActivo: 'AC-01',
+        espacio: 'Aula 11',
+      }),
     ]);
   });
 
@@ -301,8 +349,8 @@ describe('historial', () => {
     lecturas.tecnico_utiliza_herramienta = [
       {
         data: [
-          { herr_cod: 'HER-1', tec_herr_fecha_prest: '2026-10-10', tec_herr_fecha_dev: null, herramienta: { herr_nom: 'Taladro' } },
-          { herr_cod: 'HER-2', tec_herr_fecha_prest: '2026-10-01', tec_herr_fecha_dev: '2026-10-02', herramienta: { herr_nom: 'Escalera' } },
+          { herr_cod: 'HER-1', tec_herr_fecha_prest: '2026-10-10', tec_herr_fecha_dev: null, ot_id: 9, tarea_id: 1, herramienta: { herr_nom: 'Taladro' } },
+          { herr_cod: 'HER-2', tec_herr_fecha_prest: '2026-10-01', tec_herr_fecha_dev: '2026-10-02', ot_id: null, tarea_id: null, herramienta: { herr_nom: 'Escalera' } },
         ],
         error: null,
       },
@@ -310,7 +358,7 @@ describe('historial', () => {
 
     const filas = await tareas.historialHerramientas('2030');
 
-    expect(filas.map((fila) => [fila.codigo, fila.enUso])).toEqual([['HER-1', true], ['HER-2', false]]);
+    expect(filas.map((fila) => [fila.codigo, fila.enUso, fila.idOt])).toEqual([['HER-1', true, 9], ['HER-2', false, null]]);
     expect(llamadas[0].ops).toContainEqual(['eq', 'tecnico_legajo', '2030']);
   });
 });
@@ -336,7 +384,7 @@ describe('herramientas', () => {
 
     await tareas.tomarHerramienta('2030', 9, 1, 'HER-2');
 
-    expect(inventario.asignarHerramienta).toHaveBeenCalledWith('HER-2', { legajo: '2030' });
+    expect(inventario.asignarHerramienta).toHaveBeenCalledWith('HER-2', { legajo: '2030', idOt: 9, idTarea: 1 });
   });
 
   test('no se toma una herramienta si la tarea no está en ejecución', async () => {

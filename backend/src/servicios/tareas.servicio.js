@@ -32,13 +32,16 @@ import {
 import * as inventario from './inventario.servicio.js';
 import { observacionesDeLaTarea } from './observaciones.servicio.js';
 
-/** De mas urgente a menos: con este orden sale la lista. */
+/** De mas urgente a menos: con este orden se ofrecen en el filtro. */
 export const PRIORIDADES = ENUM_PRIORIDAD.textos;
 
 /** Una tarea en estos estados ya no es trabajo pendiente. */
 const ESTADOS_TERMINADOS = ['Finalizada', 'Cancelada'];
 
 const ASIGNACION_CANCELADA = ENUM_ESTADO_ASIGNACION_TECNICO.codigo('Cancelada');
+
+/** Errores de la base cuando una columna no existe (42703 al leer, PGRST204 al escribir). */
+const FALTA_COLUMNA = ['42703', 'PGRST204'];
 
 /** El activo y donde esta. Se repite para el ticket y para el preventivo. */
 const ACTIVO = `
@@ -85,6 +88,13 @@ function soloElDia(valor) {
   return valor ? String(valor).slice(0, 10) : null;
 }
 
+/** "Aula 11", o "Espacio 11" si el espacio no tiene tipo. */
+function nombreDelEspacio(espacio) {
+  return espacio.tipo_espacio
+    ? `${espacio.tipo_espacio.tipo_espacio_nom} ${espacio.espacio_num}`
+    : `Espacio ${espacio.espacio_num}`;
+}
+
 function aTarea(fila) {
   const tarea = fila.tarea_ot;
   const orden = tarea.orden_trabajo ?? null;
@@ -112,9 +122,7 @@ function aTarea(fila) {
     ubicacion: espacio
       ? {
           edificio: espacio.edificio?.edificio_nom ?? '',
-          espacio: espacio.tipo_espacio
-            ? `${espacio.tipo_espacio.tipo_espacio_nom} ${espacio.espacio_num}`
-            : `Espacio ${espacio.espacio_num}`,
+          espacio: nombreDelEspacio(espacio),
           piso: espacio.espacio_piso ?? null,
         }
       : null,
@@ -130,26 +138,22 @@ function aTarea(fila) {
 }
 
 /**
- * El orden por defecto (criterio de la HU-21): primero la prioridad (Alta,
- * Media, Baja) y dentro de la misma prioridad la fecha prevista mas cercana.
- * Las que no tienen fecha van al final de su prioridad. Si empatan en todo, por
- * numero de OT y de tarea, para que la lista no cambie de orden sola.
+ * El orden por defecto (22/10/2026): cronologico de creacion, de la mas vieja
+ * a la mas nueva. Antes era por prioridad y fecha prevista.
+ *
+ * La tarea no guarda cuando se creo, pero se puede reconstruir: el numero de
+ * OT crece con cada OT nueva, y dentro de la OT el numero de tarea crece con
+ * cada tarea que se le carga. Ordenar por los dos es ordenar por creacion
+ * (salvo una tarea agregada tarde a una OT vieja, que queda con su OT).
  */
 function compararTareas(una, otra) {
-  const porPrioridad = PRIORIDADES.indexOf(una.prioridad) - PRIORIDADES.indexOf(otra.prioridad);
-  if (porPrioridad !== 0) return porPrioridad;
-
-  if (una.fechaPrevista !== otra.fechaPrevista) {
-    if (!una.fechaPrevista) return 1;
-    if (!otra.fechaPrevista) return -1;
-    return una.fechaPrevista < otra.fechaPrevista ? -1 : 1;
-  }
-
   return una.idOt - otra.idOt || una.idTarea - otra.idTarea;
 }
 
 /** Si la tarea cumple con los filtros. Todos juntos (AND). */
-function cumpleFiltros(tarea, { prioridad, desde, hasta }) {
+function cumpleFiltros(tarea, { soloPendientes, estado, prioridad, desde, hasta }) {
+  if (soloPendientes && !tarea.pendiente) return false;
+  if (estado && tarea.estado !== estado) return false;
   if (prioridad && tarea.prioridad !== prioridad) return false;
   if ((desde || hasta) && !tarea.fechaPrevista) return false;
   if (desde && tarea.fechaPrevista < desde) return false;
@@ -171,6 +175,8 @@ function consultarAsignaciones(legajo) {
  *
  * @param {string} legajo - el del tecnico con la sesion activa
  * @param {object} [filtros]
+ * @param {boolean} [filtros.soloPendientes] - sin las Finalizadas ni Canceladas (lo usa la campana)
+ * @param {string} [filtros.estado]    - "Asignada" | "En ejecución" | ...: uno de ENUM_ESTADO_TAREA
  * @param {string} [filtros.prioridad] - "Alta" | "Media" | "Baja"
  * @param {string} [filtros.desde]     - "2026-10-01": fecha prevista desde (inclusive)
  * @param {string} [filtros.hasta]     - "2026-10-31": fecha prevista hasta (inclusive)
@@ -340,6 +346,23 @@ export async function iniciarTarea(legajo, idOt, idTarea) {
   if (tarea.estado === 'En ejecución') throw conflicto('La tarea ya está en ejecución.');
   if (!ESTADOS_SIN_EMPEZAR.includes(tarea.estado)) {
     throw conflicto(`La tarea está ${tarea.estado.toLowerCase()}: ya no se puede iniciar.`);
+  }
+
+  // Regla C6 / D2: Requisito excluyente para tareas preventivas
+  // Debe tener técnico asignado y haber llegado su fecha programada.
+  if (tarea.ot?.origen === 'Mantenimiento preventivo') {
+    if (!legajo) {
+      throw conflicto('La tarea preventiva debe tener un técnico autorizado asignado para poder iniciarse.');
+    }
+    if (!tarea.fechaPrevista) {
+      throw conflicto('La tarea preventiva requiere tener una fecha programada para poder iniciarse.');
+    }
+    const hoy = new Date().toISOString().slice(0, 10);
+    if (tarea.fechaPrevista > hoy) {
+      throw conflicto(
+        `La tarea preventiva está programada para el ${tarea.fechaPrevista} y no puede iniciarse antes de esa fecha.`
+      );
+    }
   }
 
   await cambiarEstadoTarea(idOt, idTarea, ESTADOS_SIN_EMPEZAR, 'En ejecución');
@@ -561,11 +584,34 @@ export async function tomarHerramienta(legajo, idOt, idTarea, codigo) {
   const limpio = typeof codigo === 'string' ? codigo.trim() : '';
   if (!limpio) throw datoInvalido('Hay que elegir la herramienta.');
 
-  await inventario.asignarHerramienta(limpio, { legajo });
+  await inventario.asignarHerramienta(limpio, { legajo, idOt, idTarea });
   return listarHerramientas(legajo);
 }
 
 /* ---------------------------------------------------------------- Historial */
+
+/** La tarea de cada fila del historial, con el activo y el espacio de su OT. */
+const TAREA_DEL_HISTORIAL = `
+  tarea_ot (
+    tarea_desc,
+    orden_trabajo (
+      ticket ( ${ACTIVO} ),
+      mantenimiento_preventivo ( ${ACTIVO} )
+    )
+  )
+`;
+
+/** Lo que el técnico reconoce de una tarea: qué era, sobre qué activo y dónde. */
+function tareaDelHistorial(tareaOt) {
+  const orden = tareaOt?.orden_trabajo ?? null;
+  const activo = orden?.ticket?.activo ?? orden?.mantenimiento_preventivo?.activo ?? null;
+
+  return {
+    tarea: tareaOt?.tarea_desc ?? '',
+    codigoActivo: activo?.activo_codigo ?? null,
+    espacio: activo?.espacio ? nombreDelEspacio(activo.espacio) : null,
+  };
+}
 
 /**
  * Los materiales usados en las tareas del tecnico, del mas nuevo al mas viejo.
@@ -588,7 +634,7 @@ export async function historialMateriales(legajo) {
 
   const { data, error } = await supabase
     .from('tarea_ot_consume_material')
-    .select('ot_id, tarea_id, mat_cod, tamat_cant, tamat_fecha_cons, material ( mat_nom ), tarea_ot ( tarea_desc )')
+    .select(`ot_id, tarea_id, mat_cod, tamat_cant, tamat_fecha_cons, material ( mat_nom ), ${TAREA_DEL_HISTORIAL}`)
     .in('ot_id', ordenes)
     .order('tamat_fecha_cons', { ascending: false });
   if (error) throw errorDeBase(error, 'de los materiales usados');
@@ -602,20 +648,34 @@ export async function historialMateriales(legajo) {
       cantidad: Number(fila.tamat_cant),
       idOt: fila.ot_id,
       idTarea: fila.tarea_id,
-      tarea: fila.tarea_ot?.tarea_desc ?? '',
+      ...tareaDelHistorial(fila.tarea_ot),
     }));
 }
 
 /**
  * Todas las herramientas que tuvo el tecnico, de la mas nueva a la mas vieja:
  * las que tiene ahora (sin devolucion) y las que ya devolvio.
+ *
+ * Si la tomo desde una tarea, viene la OT y la tarea. Las que le asigno el
+ * administrador desde el deposito, y las de antes del 22/10/2026, no la tienen.
  */
 export async function historialHerramientas(legajo) {
-  const { data, error } = await supabase
-    .from('tecnico_utiliza_herramienta')
-    .select('herr_cod, tec_herr_fecha_prest, tec_herr_fecha_dev, herramienta ( herr_nom )')
-    .eq('tecnico_legajo', legajo)
-    .order('tec_herr_fecha_prest', { ascending: false });
+  const consultar = (columnas) =>
+    supabase
+      .from('tecnico_utiliza_herramienta')
+      .select(columnas)
+      .eq('tecnico_legajo', legajo)
+      .order('tec_herr_fecha_prest', { ascending: false });
+
+  let { data, error } = await consultar(
+    `herr_cod, tec_herr_fecha_prest, tec_herr_fecha_dev, ot_id, tarea_id, herramienta ( herr_nom ), ${TAREA_DEL_HISTORIAL}`
+  );
+
+  // Si la base todavia no tiene la migracion 20261022120000 (falta ot_id), se
+  // muestra el historial igual, sin la OT, en vez de romper la pantalla.
+  if (error && FALTA_COLUMNA.includes(error.code)) {
+    ({ data, error } = await consultar('herr_cod, tec_herr_fecha_prest, tec_herr_fecha_dev, herramienta ( herr_nom )'));
+  }
   if (error) throw errorDeBase(error, 'de las herramientas');
 
   return (data ?? []).map((fila) => ({
@@ -624,6 +684,9 @@ export async function historialHerramientas(legajo) {
     desde: fila.tec_herr_fecha_prest,
     hasta: fila.tec_herr_fecha_dev ?? null,
     enUso: !fila.tec_herr_fecha_dev,
+    idOt: fila.ot_id ?? null,
+    idTarea: fila.tarea_id ?? null,
+    ...tareaDelHistorial(fila.tarea_ot),
   }));
 }
 

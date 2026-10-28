@@ -33,3 +33,11 @@ export async function activarUsuario(idUsuario) {
   const { data } = await api.put(`/usuarios/${idUsuario}/activar`);
   return data.datos;
 }
+
+/** Restablecer la contraseña (HU-31). Devuelve { identificador, contrasenaProvisoria }. */
+export async function restablecerContrasenaUsuario(identificador) {
+  const { data } = await api.post(
+    `/usuarios/${encodeURIComponent(identificador)}/restablecer-contrasena`
+  );
+  return data.datos;
+}

@@ -40,6 +40,7 @@ import {
   cilBriefcase,
   cilTask,
   cilLockLocked,
+  cilCalendar,
 } from '@coreui/icons';
 
 export const navegacion = [
@@ -101,6 +102,13 @@ export const navegacion = [
     texto: 'Órdenes de trabajo',
     direccion: '/ordenes-trabajo',
     icono: cilClipboard,
+    roles: ['administrador'],
+  },
+  {
+    tipo: 'item',
+    texto: 'Planes de mantenimiento',
+    direccion: '/planes-mantenimiento',
+    icono: cilCalendar,
     roles: ['administrador'],
   },
   {

@@ -20,4 +20,7 @@ router.post('/', usuarios.crear);
 router.put('/:id/desactivar', usuarios.desactivar);
 router.put('/:id/activar', usuarios.activar);
 
+// Restablecer la contraseña (HU-31). La base vuelve a controlar que sea un administrador activo.
+router.post('/:identificador/restablecer-contrasena', usuarios.restablecerContrasena);
+
 export default router;

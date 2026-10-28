@@ -39,6 +39,8 @@ import {
 import CIcon from '@coreui/icons-react';
 import { cilMenu, cilUser, cilAccountLogout, cilLockLocked } from '@coreui/icons';
 import { useLayout } from './ContextoLayout.js';
+import { useSesion } from './ContextoSesion.js';
+import CampanaNotificaciones, { olvidarAvisadas, ROLES_CON_NOTIFICACIONES } from './CampanaNotificaciones.js';
 import { logout } from '@/servicios/auth.js';
 
 /**
@@ -58,6 +60,8 @@ const NOMBRES = {
   '/tareas/materiales': 'Materiales utilizados',
   '/tareas/herramientas': 'Herramientas utilizadas',
   '/ordenes-trabajo': 'Órdenes de trabajo',
+  '/planes-mantenimiento': 'Planes de mantenimiento',
+  '/planes-mantenimiento/agregar': 'Agregar plan de mantenimiento',
   '/plantillas-tareas': 'Plantillas de tareas',
   '/edificios': 'Edificios',
   '/espacios': 'Espacios',
@@ -75,6 +79,7 @@ const NOMBRES = {
   '/prestadores/tipos': 'Tipos de prestador',
   '/autorizados': 'Usuarios autorizados',
   '/usuarios': 'Usuarios',
+  '/notificaciones': 'Notificaciones',
   '/perfil': 'Mi Perfil',
   '/configuracion': 'Configuración',
   '/configuracion/cambiar-password': 'Cambiar contraseña'
@@ -139,6 +144,10 @@ function armarMigas(direccion) {
       !NOMBRES[acumulada] &&
       !NOMBRES_COMUNES[tramo]
     ) {
+      // La ficha del activo (HU-29) es una pantalla: la miga lleva su titulo.
+      if (padre === '/activos' && indice === tramos.length - 1) {
+        migas.push({ texto: `Activo ${decodeURIComponent(tramo)}`, direccion: acumulada, ultima: true });
+      }
       return;
     }
 
@@ -179,11 +188,13 @@ export default function Encabezado() {
   const { barraVisible, setBarraVisible } = useLayout();
   const direccionActual = usePathname();
   const router = useRouter();
+  const { usuario } = useSesion();
   const migas = armarMigas(direccionActual);
 
   const handleLogout = async () => {
     try {
       await logout();
+      olvidarAvisadas();
       router.push('/login');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
@@ -218,7 +229,8 @@ export default function Encabezado() {
           </RouterProvider>
         </div>
 
-        <div className="d-flex align-items-center">
+        <div className="d-flex align-items-center gap-1">
+          {ROLES_CON_NOTIFICACIONES.includes(usuario?.rol) && <CampanaNotificaciones />}
           <CDropdown variant="nav-item" placement="bottom-end">
             <CDropdownToggle
               className="py-0 px-2 d-flex align-items-center btn btn-ghost-primary rounded-circle"

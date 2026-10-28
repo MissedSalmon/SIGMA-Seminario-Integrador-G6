@@ -45,3 +45,18 @@ export async function activar(req, res) {
   const usuario = await usuariosServicio.activar(leerId(req));
   res.json({ ok: true, datos: usuario, mensaje: `Se activó el usuario "${usuario.nombreUsuario}".` });
 }
+
+function leerIdentificador(req) {
+  const identificador = String(req.params.identificador ?? '').trim();
+  if (!identificador) throw datoInvalido('Falta el identificador del usuario.');
+  return identificador;
+}
+
+/** POST /api/usuarios/:identificador/restablecer-contrasena (HU-31) */
+export async function restablecerContrasena(req, res) {
+  const datos = await usuariosServicio.restablecerContrasena(
+    leerIdentificador(req),
+    req.usuario.usuarioId
+  );
+  res.json({ ok: true, datos });
+}

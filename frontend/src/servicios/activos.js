@@ -35,6 +35,15 @@ export async function obtenerActivo(codigo) {
   return data.datos;
 }
 
+/**
+ * Las intervenciones del activo (HU-29), de la más reciente a la más vieja:
+ * { resumen: { cantidadIntervenciones, fechaUltimoMantenimiento }, intervenciones: [...] }.
+ */
+export async function obtenerHistorialActivo(codigo) {
+  const { data } = await api.get(`/activos/${encodeURIComponent(codigo)}/historial`);
+  return data.datos;
+}
+
 export async function crearActivo(activo) {
   const { data } = await api.post('/activos', activo);
   return data.datos;

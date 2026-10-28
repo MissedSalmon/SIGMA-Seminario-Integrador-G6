@@ -6,9 +6,11 @@
  * ContextoToast.js.
  */
 import CIcon from '@coreui/icons-react';
-import { cilCheckCircle, cilWarning, cilX } from '@coreui/icons';
+import { cilBell, cilCheckCircle, cilWarning, cilX } from '@coreui/icons';
 
 import { useToast } from './ContextoToast.js';
+
+const ICONOS = { exito: cilCheckCircle, error: cilWarning, aviso: cilBell };
 
 export default function Toast() {
   const { toasts, cerrarToast } = useToast();
@@ -20,7 +22,7 @@ export default function Toast() {
       {toasts.map((toast) => (
         <div key={toast.id} className={`sigma-toast sigma-toast--${toast.tipo}`} role="status">
           <span className="sigma-toast-icono">
-            <CIcon icon={toast.tipo === 'error' ? cilWarning : cilCheckCircle} size="sm" />
+            <CIcon icon={ICONOS[toast.tipo] ?? cilCheckCircle} size="sm" />
           </span>
           <span className="flex-grow-1">{toast.mensaje}</span>
           <button

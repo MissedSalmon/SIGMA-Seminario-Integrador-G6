@@ -10,12 +10,14 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { CCard, CCol, CRow } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilBuilding, cilRoom, cilSitemap } from '@coreui/icons';
+import { cilBuilding, cilRoom, cilSitemap, cilCalendar } from '@coreui/icons';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
+import AvisoPlanesPorVencer from '@/componentes/planes/AvisoPlanesPorVencer.js';
 import { listarEdificios } from '@/servicios/edificios.js';
 import { listarEspacios } from '@/servicios/espacios.js';
 import { listarAreas } from '@/servicios/areas.js';
+import { listarPlanes } from '@/servicios/planesMantenimiento.js';
 
 const MODULOS = [
   {
@@ -42,6 +44,14 @@ const MODULOS = [
     color: 'warning',
     cargar: listarAreas,
   },
+  {
+    clave: 'planes',
+    titulo: 'Planes preventivos',
+    direccion: '/planes-mantenimiento',
+    icono: cilCalendar,
+    color: 'success',
+    cargar: listarPlanes,
+  },
 ];
 
 export default function PantallaInicio() {
@@ -62,6 +72,8 @@ export default function PantallaInicio() {
   return (
     <>
       <EncabezadoPagina titulo="Panel" />
+
+      <AvisoPlanesPorVencer />
 
       <CRow className="g-4">
         {MODULOS.map((modulo) => (

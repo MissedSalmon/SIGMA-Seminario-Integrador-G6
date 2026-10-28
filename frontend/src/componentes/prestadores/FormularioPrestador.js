@@ -58,8 +58,8 @@ export default function FormularioPrestador({ prestador = null, onGuardar }) {
 
     if (!nombre.trim()) encontrados.nombre = 'El nombre es obligatorio.';
 
-    if (!cuil.trim()) encontrados.cuil = 'El CUIL es obligatorio.';
-    else if (validarCuil(cuil)) encontrados.cuil = validarCuil(cuil);
+    if (!cuil.trim()) encontrados.cuil = 'El CUIL o CUIT es obligatorio.';
+    else if (validarCuil(cuil, '', 'CUIL o CUIT')) encontrados.cuil = validarCuil(cuil, '', 'CUIL o CUIT');
 
     if (validarTelefono(telefono)) encontrados.telefono = validarTelefono(telefono);
     if (validarEmail(email)) encontrados.email = validarEmail(email);
@@ -145,6 +145,7 @@ export default function FormularioPrestador({ prestador = null, onGuardar }) {
             />
 
             <CampoCuil
+              etiqueta="CUIL o CUIT"
               valor={cuil}
               alCambiar={setCuil}
               obligatorio
