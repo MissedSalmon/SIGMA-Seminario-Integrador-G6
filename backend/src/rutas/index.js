@@ -25,6 +25,10 @@ const router = Router();
 import rutasAuth from './auth.rutas.js';
 router.use('/auth', rutasAuth);
 
+// Gestion de usuarios: alta, listado y baja logica (Sprint 6)
+import rutasUsuarios from './usuarios.rutas.js';
+router.use('/usuarios', rutasUsuarios);
+
 // Estructura edilicia (Sprint 1)
 router.use('/edificios', rutasEdificios);
 router.use('/espacios', rutasEspacios);
