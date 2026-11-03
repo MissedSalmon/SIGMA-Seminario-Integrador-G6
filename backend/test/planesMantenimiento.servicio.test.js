@@ -110,7 +110,7 @@ describe('Planes de Mantenimiento Preventivo - Servicio', () => {
           return consultaQueDevuelve({ tipo_activo_id: 1 });
         }
         if (tabla === 'plantilla_de_tarea') {
-          return consultaQueDevuelve([{ tarea_plan_id: 10, tipo_activo_id: 1 }]);
+          return consultaQueDevuelve([{ tarea_plan_id: 10 }]);
         }
         if (tabla === 'tecnico') {
           return consultaQueDevuelve([{ tecnico_legajo: 'TEC-001', tecnico_disponibilidad: true }]);
@@ -122,7 +122,7 @@ describe('Planes de Mantenimiento Preventivo - Servicio', () => {
       supabase.from
         .mockReturnValueOnce(consultaQueDevuelve(null)) // Unicidad
         .mockReturnValueOnce(consultaQueDevuelve({ tipo_activo_id: 1 })) // Tipo activo
-        .mockReturnValueOnce(consultaQueDevuelve([{ tarea_plan_id: 10, tipo_activo_id: 1 }])) // Tareas
+        .mockReturnValueOnce(consultaQueDevuelve([{ tarea_plan_id: 10 }])) // Tareas
         .mockReturnValueOnce(consultaQueDevuelve([{ tecnico_legajo: 'TEC-001' }])) // Técnicos
         .mockReturnValueOnce(consultaQueDevuelve({ mant_prev_id: 5 })) // Insert plan
         .mockReturnValueOnce(consultaQueDevuelve(null)) // Insert tareas
@@ -153,7 +153,7 @@ describe('Planes de Mantenimiento Preventivo - Servicio', () => {
       supabase.from
         .mockReturnValueOnce(consultaQueDevuelve(null)) // Unicidad
         .mockReturnValueOnce(consultaQueDevuelve({ tipo_activo_id: 1 })) // Tipo activo
-        .mockReturnValueOnce(consultaQueDevuelve([{ tarea_plan_id: 10, tipo_activo_id: 1 }])) // Tareas
+        .mockReturnValueOnce(consultaQueDevuelve([{ tarea_plan_id: 10 }])) // Tareas
         .mockReturnValueOnce(consultaQueDevuelve({ mant_prev_id: 6 })) // Insert plan
         .mockReturnValueOnce(consultaQueDevuelve(null)) // Insert tareas
         .mockReturnValueOnce(consultaQueDevuelve(planSinTecnicoFila)); // Detalle final
@@ -198,22 +198,20 @@ describe('Planes de Mantenimiento Preventivo - Servicio', () => {
       );
     });
 
-    test('rechaza si la tarea no pertenece al tipo de activo', async () => {
+    test('rechaza si alguna tarea no existe', async () => {
       supabase.from
         .mockReturnValueOnce(consultaQueDevuelve(null))
         .mockReturnValueOnce(consultaQueDevuelve({ tipo_activo_id: 1 }))
-        .mockReturnValueOnce(consultaQueDevuelve([{ tarea_plan_id: 10, tipo_activo_id: 99 }]));
+        .mockReturnValueOnce(consultaQueDevuelve([]));
 
-      await expect(crearPlan(DATOS_VALIDOS)).rejects.toThrow(
-        'Una o más tareas seleccionadas no existen o no corresponden al tipo de activo indicado.'
-      );
+      await expect(crearPlan(DATOS_VALIDOS)).rejects.toThrow('Una o más tareas seleccionadas no existen.');
     });
 
     test('rechaza si se indica un técnico que no existe', async () => {
       supabase.from
         .mockReturnValueOnce(consultaQueDevuelve(null))
         .mockReturnValueOnce(consultaQueDevuelve({ tipo_activo_id: 1 }))
-        .mockReturnValueOnce(consultaQueDevuelve([{ tarea_plan_id: 10, tipo_activo_id: 1 }]))
+        .mockReturnValueOnce(consultaQueDevuelve([{ tarea_plan_id: 10 }]))
         .mockReturnValueOnce(consultaQueDevuelve([])); // Técnicos vacíos
 
       await expect(crearPlan(DATOS_VALIDOS)).rejects.toThrow(
@@ -407,6 +405,67 @@ describe('Planes de Mantenimiento Preventivo - Servicio', () => {
       expect(resultado.otsGeneradas).toBe(0);
       expect(resultado.detalles[0].estado).toBe('postergado');
       expect(resultado.detalles[0].motivo).toContain('no tiene técnico autorizado');
+    });
+
+    test('asigna a cada tarea el técnico autorizado que tiene su especialidad', async () => {
+      const plan = {
+        mant_prev_id: 30,
+        mant_prev_nom: 'Plan mixto',
+        mant_prev_intervalo: 1,
+        mant_prev_unidad_frec: 'meses',
+        mant_prev_fecha_prox_gen: '2026-10-26',
+        mant_prev_activo: true,
+        tipo_activo: { tipo_activo_id: 3, tipo_activo_nom: 'Aire' },
+        mant_prev_tarea: [
+          { plantilla_de_tarea: { tarea_plan_id: 1, tarea_plan_nom: 'Limpiar filtros', especialidad_id: 7 } },
+          { plantilla_de_tarea: { tarea_plan_id: 2, tarea_plan_nom: 'Revisar cableado', especialidad_id: 8 } },
+        ],
+        mant_prev_tecnico: [
+          { tecnico: { tecnico_legajo: 'TEC-1', tecnico_especialidad: [{ especialidad_id: 7 }] } },
+          { tecnico: { tecnico_legajo: 'TEC-2', tecnico_especialidad: [{ especialidad_id: 8 }] } },
+        ],
+      };
+      const insertarAsignacion = jest.fn(() => Promise.resolve({ error: null }));
+
+      supabase.from
+        .mockReturnValueOnce(consultaQueDevuelve([plan]))
+        .mockReturnValueOnce(consultaQueDevuelve([{ activo_codigo: 'AC-01', activo_estado: 1 }]))
+        .mockReturnValueOnce(consultaQueDevuelve(null))
+        .mockReturnValueOnce(consultaQueDevuelve({ ot_id: 600 }))
+        .mockReturnValueOnce(consultaQueDevuelve({ tarea_id: 1 }))
+        .mockReturnValueOnce({ insert: insertarAsignacion })
+        .mockReturnValueOnce(consultaQueDevuelve({ tarea_id: 2 }))
+        .mockReturnValueOnce({ insert: insertarAsignacion })
+        .mockReturnValueOnce(consultaQueDevuelve(null));
+
+      await procesarGeneracionAutomatica('2026-10-26');
+
+      expect(insertarAsignacion).toHaveBeenNthCalledWith(1, expect.objectContaining({ tarea_id: 1, tecnico_legajo: 'TEC-1' }));
+      expect(insertarAsignacion).toHaveBeenNthCalledWith(2, expect.objectContaining({ tarea_id: 2, tecnico_legajo: 'TEC-2' }));
+    });
+
+    test('si ningún técnico autorizado tiene la especialidad de una tarea, se posterga el plan', async () => {
+      const plan = {
+        mant_prev_id: 31,
+        mant_prev_nom: 'Plan sin especialista',
+        mant_prev_fecha_prox_gen: '2026-10-26',
+        mant_prev_activo: true,
+        tipo_activo: { tipo_activo_id: 3 },
+        mant_prev_tarea: [
+          { plantilla_de_tarea: { tarea_plan_id: 2, tarea_plan_nom: 'Revisar cableado', especialidad_id: 8 } },
+        ],
+        mant_prev_tecnico: [
+          { tecnico: { tecnico_legajo: 'TEC-1', tecnico_especialidad: [{ especialidad_id: 7 }] } },
+        ],
+      };
+
+      supabase.from.mockReturnValueOnce(consultaQueDevuelve([plan]));
+
+      const resultado = await procesarGeneracionAutomatica('2026-10-26');
+
+      expect(resultado.planesGenerados).toBe(0);
+      expect(resultado.planesPostergadosSinTecnico).toBe(1);
+      expect(resultado.detalles[0].motivo).toContain('Revisar cableado');
     });
   });
 });

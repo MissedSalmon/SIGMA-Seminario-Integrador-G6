@@ -62,41 +62,22 @@ export default function FormularioPlan({ plan = null, onGuardar }) {
   const [plantillasDisponibles, setPlantillasDisponibles] = useState([]);
   const [tecnicosDisponibles, setTecnicosDisponibles] = useState([]);
 
-  const [cargandoPlantillas, setCargandoPlantillas] = useState(false);
+  const [cargandoPlantillas, setCargandoPlantillas] = useState(true);
   const [revisado, setRevisado] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
-  // Carga inicial de tipos de activo y técnicos
+  // Carga inicial de tipos de activo, técnicos y tareas modelo (que son de una especialidad, no de un tipo de activo)
   useEffect(() => {
-    Promise.all([listarTiposActivos(), listarTecnicos()])
-      .then(([tipos, tecnicos]) => {
+    Promise.all([listarTiposActivos(), listarTecnicos(), listarPlantillas()])
+      .then(([tipos, tecnicos, plantillas]) => {
         setTiposActivos(tipos);
         setTecnicosDisponibles(tecnicos);
-      })
-      .catch((fallo) => setError(fallo.message));
-  }, []);
-
-  // Cargar plantillas de tareas cuando cambia el tipo de activo seleccionado
-  useEffect(() => {
-    if (!idTipoActivo) {
-      setPlantillasDisponibles([]);
-      if (!editando) setTareasSeleccionadas([]);
-      return;
-    }
-
-    setCargandoPlantillas(true);
-    listarPlantillas(idTipoActivo)
-      .then((plantillas) => {
         setPlantillasDisponibles(plantillas);
-        // Si no estamos editando o si cambió el tipo de activo, seleccionamos por defecto
-        if (!editando) {
-          setTareasSeleccionadas(plantillas.map((p) => p.idPlantilla));
-        }
       })
       .catch((fallo) => setError(fallo.message))
       .finally(() => setCargandoPlantillas(false));
-  }, [idTipoActivo, editando]);
+  }, []);
 
   // Si no hay fecha cargada, poner hoy por defecto
   useEffect(() => {
@@ -279,15 +260,11 @@ export default function FormularioPlan({ plan = null, onGuardar }) {
               {/* Tareas que incluye el plan (CA1) */}
               <CCol md={12} className="mt-4">
                 <div className="fw-semibold mb-2">Tareas incluidas *</div>
-                {!idTipoActivo ? (
-                  <div className="text-body-tertiary small fst-italic">
-                    Elegí primero un tipo de activo para ver sus tareas modelo disponibles.
-                  </div>
-                ) : cargandoPlantillas ? (
+                {cargandoPlantillas ? (
                   <div className="text-body-secondary small">Cargando tareas modelo...</div>
                 ) : plantillasDisponibles.length === 0 ? (
                   <div className="text-body-tertiary small fst-italic">
-                    No hay plantillas de tareas creadas para este tipo de activo.
+                    No hay plantillas de tareas creadas.
                   </div>
                 ) : (
                   <div className="border rounded p-3 bg-light">
@@ -300,6 +277,10 @@ export default function FormularioPlan({ plan = null, onGuardar }) {
                           label={
                             <div>
                               <span className="fw-medium">{plantilla.descripcion}</span>
+                              <span className="text-body-secondary">
+                                {' '}
+                                ({plantilla.nombreEspecialidad ?? 'Sin especialidad'})
+                              </span>
                             </div>
                           }
                           checked={tildada}
@@ -333,6 +314,8 @@ export default function FormularioPlan({ plan = null, onGuardar }) {
                           label={
                             <span>
                               <strong>{tecnico.nombre}</strong> (Legajo {tecnico.legajo})
+                              {tecnico.especialidades?.length > 0 &&
+                                ` — ${tecnico.especialidades.map((una) => una.nombre).join(', ')}`}
                             </span>
                           }
                           checked={tildado}

@@ -93,6 +93,8 @@ function formatearPlan(fila) {
         id: p.tarea_plan_id,
         nombre: p.tarea_plan_nom,
         descripcion: p.tarea_plan_desc ?? null,
+        idEspecialidad: p.especialidad_id ?? null,
+        nombreEspecialidad: p.especialidad?.especialidad_nom ?? null,
       };
     })
     .filter(Boolean);
@@ -106,6 +108,7 @@ function formatearPlan(fila) {
         nombre: t.tecnico_nom_ape,
         telefono: t.tecnico_tel ?? null,
         disponible: t.tecnico_disponibilidad !== false,
+        idsEspecialidad: (t.tecnico_especialidad ?? []).map((e) => e.especialidad_id),
       };
     })
     .filter(Boolean);
@@ -151,6 +154,15 @@ function formatearPlan(fila) {
   };
 }
 
+/**
+ * El técnico autorizado del plan que puede hacer la tarea: el primero que tenga
+ * su especialidad. Una tarea sin especialidad la puede hacer cualquiera.
+ */
+function tecnicoParaTarea(tecnicos, tarea) {
+  if (!tarea.idEspecialidad) return tecnicos[0] ?? null;
+  return tecnicos.find((t) => t.idsEspecialidad.includes(tarea.idEspecialidad)) ?? null;
+}
+
 const SELECT_PLAN = `
   mant_prev_id,
   activo_codigo,
@@ -173,7 +185,9 @@ const SELECT_PLAN = `
     plantilla_de_tarea (
       tarea_plan_id,
       tarea_plan_nom,
-      tarea_plan_desc
+      tarea_plan_desc,
+      especialidad_id,
+      especialidad ( especialidad_nom )
     )
   ),
   mant_prev_tecnico (
@@ -182,7 +196,8 @@ const SELECT_PLAN = `
       tecnico_legajo,
       tecnico_nom_ape,
       tecnico_tel,
-      tecnico_disponibilidad
+      tecnico_disponibilidad,
+      tecnico_especialidad ( especialidad_id )
     )
   ),
   orden_trabajo (
@@ -301,17 +316,15 @@ export async function crearPlan(datos = {}) {
     throw datoInvalido('El plan debe incluir al menos una tarea.');
   }
 
-  // Validar que las tareas correspondan al tipo de activo
   const { data: plantillasValidas, error: errorPlantillas } = await supabase
     .from('plantilla_de_tarea')
-    .select('tarea_plan_id, tipo_activo_id')
+    .select('tarea_plan_id')
     .in('tarea_plan_id', tareasIds);
 
   if (errorPlantillas) throw errorDeBase(errorPlantillas, 'de plantillas de tarea');
 
-  const idsValidos = (plantillasValidas ?? []).filter((p) => p.tipo_activo_id === tipoActivoId);
-  if (idsValidos.length !== tareasIds.length) {
-    throw datoInvalido('Una o más tareas seleccionadas no existen o no corresponden al tipo de activo indicado.');
+  if ((plantillasValidas ?? []).length !== tareasIds.length) {
+    throw datoInvalido('Una o más tareas seleccionadas no existen.');
   }
 
   // Técnicos opcionales (C5)
@@ -480,12 +493,11 @@ export async function actualizarPlan(id, datos = {}) {
 
     const { data: plantillasValidas } = await supabase
       .from('plantilla_de_tarea')
-      .select('tarea_plan_id, tipo_activo_id')
-      .in('tarea_plan_id', tareasIds)
-      .eq('tipo_activo_id', planActual.tipoActivo.id);
+      .select('tarea_plan_id')
+      .in('tarea_plan_id', tareasIds);
 
     if ((plantillasValidas ?? []).length !== tareasIds.length) {
-      throw datoInvalido('Una o más tareas seleccionadas no corresponden al tipo de activo del plan.');
+      throw datoInvalido('Una o más tareas seleccionadas no existen.');
     }
 
     // Reemplazar tareas
@@ -646,6 +658,19 @@ export async function procesarGeneracionAutomatica(fechaCorte) {
       continue;
     }
 
+    // Una tarea que ningún técnico autorizado puede hacer también posterga el plan
+    const tareasSinTecnico = plan.tareas.filter((t) => !tecnicoParaTarea(plan.tecnicos, t));
+    if (tareasSinTecnico.length > 0) {
+      resultado.planesPostergadosSinTecnico++;
+      resultado.detalles.push({
+        idPlan: plan.id,
+        nombre: plan.nombre,
+        estado: 'postergado',
+        motivo: `Ningún técnico autorizado tiene la especialidad de: ${tareasSinTecnico.map((t) => t.nombre).join(', ')}. Se posterga la generación.`,
+      });
+      continue;
+    }
+
     // Buscar activos del tipo de activo del plan que no estén retirados
     const { data: activos, error: errorActivos } = await supabase
       .from('activo')
@@ -707,9 +732,9 @@ export async function procesarGeneracionAutomatica(fechaCorte) {
 
       // Cargar tareas del plan a la OT
       let ordenTarea = 1;
-      const primerTecnico = plan.tecnicos[0]?.legajo ?? null;
 
       for (const t of plan.tareas) {
+        const tecnicoDeLaTarea = tecnicoParaTarea(plan.tecnicos, t)?.legajo ?? null;
         const { data: tareaCreada, error: errorT } = await supabase
           .from('tarea_ot')
           .insert({
@@ -724,11 +749,11 @@ export async function procesarGeneracionAutomatica(fechaCorte) {
           .select('tarea_id')
           .single();
 
-        if (!errorT && primerTecnico) {
+        if (!errorT && tecnicoDeLaTarea) {
           await supabase.from('tecnico_asignado_tarea_ot').insert({
             ot_id: nuevaOt.ot_id,
             tarea_id: ordenTarea,
-            tecnico_legajo: primerTecnico,
+            tecnico_legajo: tecnicoDeLaTarea,
             tec_asig_estado: ENUM_ESTADO_ASIGNACION_TECNICO.codigo('Asignada'),
             tec_asig_fecha_asig: new Date().toISOString(),
           });

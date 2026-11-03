@@ -64,12 +64,19 @@ Los tres cubren todo el sistema y no se superponen.
 ## El flujo preventivo
 
 ```
-Plan preventivo (tipo de activo + frecuencia + plantilla de tareas)
+Plan preventivo (tipo de activo + frecuencia + tareas estándar + técnicos autorizados)
         ↓  (automático, según la frecuencia)
 OT preventiva  →  mismas tareas y ejecución que el flujo correctivo
 ```
 
 Una OT viene **o de un ticket, o de un plan preventivo**. Nunca de los dos.
+
+**Tareas y especialidades (02/11/2026).** Cada tarea estándar es de una especialidad. Al
+asignar una tarea sólo se ofrecen los técnicos que la tienen, y el servidor lo exige. Al
+generar una OT preventiva, cada tarea va al primer técnico autorizado del plan con esa
+especialidad. Si alguna tarea no tiene técnico que la cubra, el plan se posterga igual que
+cuando no tiene técnicos. Las plantillas anteriores a esa fecha quedan sin especialidad hasta
+que alguien las complete en `/plantillas-tareas`; mientras tanto no restringen a nadie.
 
 ---
 
@@ -405,14 +412,14 @@ Agrupadas por tema, para tener el mapa general:
 | **Material** | Insumo que se consume al usarlo. Descuenta stock. |
 | **Orden de Trabajo (OT)** | Autorización de trabajo. Se genera al validar un ticket o desde un plan preventivo. |
 | **Plan de mantenimiento preventivo** | Define qué activos se intervienen, cada cuánto y con qué tareas. Genera OT automáticamente. |
-| **Plantilla de tareas** | Tarea modelo asociada a un tipo de activo. Sirve para precargar tareas estándar. |
+| **Plantilla de tareas** | Tarea modelo asociada a una **especialidad** (decisión del 02/11/2026, corrección de los profesores; antes era el tipo de activo). Sirve para precargar tareas estándar y para ofrecer sólo los técnicos de esa especialidad. |
 | **Prestador de servicio** | Empresa o profesional externo que hace trabajos que el equipo propio no puede cubrir. |
 | **Prioridad** | Nivel de importancia que el administrador le pone a la OT. |
 | **Proveedor** | Quien le vende materiales y herramientas a la facultad. |
 | **Remito** | Uno de los comprobantes del ingreso de materiales al depósito. El otro es la **factura**. |
 | **Stock** | Cantidad disponible de un material. |
 | **Stock mínimo** | Cantidad mínima que hay que tener. Al llegar, el sistema avisa. |
-| **Tarea (de OT)** | Actividad concreta dentro de una OT. Cuando todas están completas, la OT se finaliza. Siempre sale de una tarea estándar (plantilla) del tipo de activo; su descripción se puede ajustar (decisión del 26/09/2026). |
+| **Tarea (de OT)** | Actividad concreta dentro de una OT. Cuando todas están completas, la OT se finaliza. Siempre sale de una tarea estándar (plantilla); su descripción se puede ajustar (decisión del 26/09/2026). El técnico asignado tiene que tener la especialidad de la plantilla (02/11/2026). |
 | **Técnico** | Personal de la facultad que ejecuta las tareas. |
 | **Ticket** | Registro formal de una necesidad de mantenimiento. Es la puerta de entrada al sistema. |
 | **Tipo de activo** | Categoría de activos: aires acondicionados, mobiliario, luminarias. |

@@ -10,20 +10,35 @@ function limpiar(texto) {
 function mapear(fila) {
   return {
     idPlantilla: fila.tarea_plan_id,
-    idTipoActivo: fila.tipo_activo_id,
-    nombreTipo: fila.tipo_activo?.tipo_activo_nom,
+    idEspecialidad: fila.especialidad_id,
+    nombreEspecialidad: fila.especialidad?.especialidad_nom ?? null,
     // El frontend espera "descripcion", pero en la BD lo guardamos en "tarea_plan_nom"
     descripcion: fila.tarea_plan_nom,
   };
 }
 
-export async function obtenerTodas(idTipoActivo) {
-  let query = supabase.from('plantilla_de_tarea').select(`
-    *,
-    tipo_activo ( tipo_activo_nom )
-  `).order('tarea_plan_nom', { ascending: true });
-  if (idTipoActivo) {
-    query = query.eq('tipo_activo_id', idTipoActivo);
+const COLUMNAS = '*, especialidad ( especialidad_nom )';
+
+/** Corta el alta o la edición si la especialidad no es un id o no existe. */
+async function leerEspecialidad(valor) {
+  const idEspecialidad = Number(valor);
+  if (!valor || !Number.isInteger(idEspecialidad)) throw datoInvalido('La especialidad es obligatoria.');
+
+  const { data, error } = await supabase
+    .from('especialidad')
+    .select('especialidad_id')
+    .eq('especialidad_id', idEspecialidad)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw datoInvalido('La especialidad elegida no existe.');
+
+  return idEspecialidad;
+}
+
+export async function obtenerTodas(idEspecialidad) {
+  let query = supabase.from('plantilla_de_tarea').select(COLUMNAS).order('tarea_plan_nom', { ascending: true });
+  if (idEspecialidad) {
+    query = query.eq('especialidad_id', idEspecialidad);
   }
   const { data, error } = await query;
   if (error) throw new Error(error.message);
@@ -31,10 +46,7 @@ export async function obtenerTodas(idTipoActivo) {
 }
 
 export async function obtenerPorId(id) {
-  const { data, error } = await supabase.from('plantilla_de_tarea').select(`
-    *,
-    tipo_activo ( tipo_activo_nom )
-  `).eq('tarea_plan_id', id).maybeSingle();
+  const { data, error } = await supabase.from('plantilla_de_tarea').select(COLUMNAS).eq('tarea_plan_id', id).maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) throw noEncontrado(`No existe la plantilla de tarea ${id}.`);
   return mapear(data);
@@ -42,16 +54,15 @@ export async function obtenerPorId(id) {
 
 export async function crear(datos) {
   const descripcionLimpia = limpiar(datos.descripcion);
-  const idTipoActivo = Number(datos.idTipoActivo);
 
   if (!descripcionLimpia) throw datoInvalido('La descripción de la tarea es obligatoria.');
-  if (!Number.isInteger(idTipoActivo)) throw datoInvalido('El tipo de activo es obligatorio.');
+  const idEspecialidad = await leerEspecialidad(datos.idEspecialidad);
 
   const { data, error } = await supabase.from('plantilla_de_tarea').insert({
-    tipo_activo_id: idTipoActivo,
+    especialidad_id: idEspecialidad,
     tarea_plan_nom: descripcionLimpia, // El frontend manda esto como "descripcion"
     tarea_plan_desc: null
-  }).select('*, tipo_activo(tipo_activo_nom)').single();
+  }).select(COLUMNAS).single();
 
   if (error) throw new Error(error.message);
   return mapear(data);
@@ -59,16 +70,15 @@ export async function crear(datos) {
 
 export async function actualizar(id, datos) {
   const descripcionLimpia = limpiar(datos.descripcion);
-  const idTipoActivo = Number(datos.idTipoActivo);
 
   if (!descripcionLimpia) throw datoInvalido('La descripción de la tarea es obligatoria.');
-  if (!Number.isInteger(idTipoActivo)) throw datoInvalido('El tipo de activo es obligatorio.');
+  const idEspecialidad = await leerEspecialidad(datos.idEspecialidad);
 
   const { data, error } = await supabase.from('plantilla_de_tarea').update({
-    tipo_activo_id: idTipoActivo,
+    especialidad_id: idEspecialidad,
     tarea_plan_nom: descripcionLimpia,
     tarea_plan_desc: null
-  }).eq('tarea_plan_id', id).select('*, tipo_activo(tipo_activo_nom)').maybeSingle();
+  }).eq('tarea_plan_id', id).select(COLUMNAS).maybeSingle();
 
   if (error) throw new Error(error.message);
   if (!data) throw noEncontrado(`No existe la plantilla de tarea ${id}.`);

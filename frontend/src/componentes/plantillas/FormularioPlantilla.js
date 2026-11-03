@@ -3,9 +3,10 @@
 /**
  * Alta y edición de una plantilla de tareas (HU-12).
  *
- * Una plantilla es una tarea modelo que va pegada a un tipo de activo: "limpiar
- * los filtros" para los aires, "revisar el cableado" para las luminarias. Por
- * eso son sólo dos datos: de qué tipo de activo es, y qué hay que hacer.
+ * Una plantilla es una tarea modelo que va pegada a la especialidad que la
+ * hace: "limpiar los filtros" es de refrigeración, "revisar el cableado" de
+ * electricidad. Con eso se buscan los técnicos de esa especialidad al asignar.
+ * Son sólo dos datos: de qué especialidad es, y qué hay que hacer.
  *
  * Los campos usan <Campo>, así que las cajas miden lo que mide su contenido y
  * la validación marca cada campo en chico, sin pintar toda la caja de verde o
@@ -19,24 +20,26 @@ import Aviso from '@/componentes/Aviso.js';
 import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Campo from '@/componentes/formulario/Campo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
-import { listarTiposActivos } from '@/servicios/tiposActivos.js';
+import { listarEspecialidades } from '@/servicios/especialidades.js';
 
 export default function FormularioPlantilla({ plantilla = null, onGuardar }) {
   const router = useRouter();
   const { mostrarToast } = useToast();
   const editando = Boolean(plantilla);
 
-  const [idTipoActivo, setIdTipoActivo] = useState(plantilla?.idTipoActivo ?? '');
+  const [idEspecialidad, setIdEspecialidad] = useState(
+    plantilla?.idEspecialidad ? String(plantilla.idEspecialidad) : '',
+  );
   const [descripcion, setDescripcion] = useState(plantilla?.descripcion ?? '');
 
-  const [tipos, setTipos] = useState([]);
+  const [especialidades, setEspecialidades] = useState([]);
   const [revisado, setRevisado] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    listarTiposActivos()
-      .then(setTipos)
+    listarEspecialidades()
+      .then(setEspecialidades)
       .catch((fallo) => setError(fallo.message));
   }, []);
 
@@ -47,11 +50,11 @@ export default function FormularioPlantilla({ plantilla = null, onGuardar }) {
   const errores = useMemo(() => {
     const encontrados = {};
 
-    if (!idTipoActivo) encontrados.idTipoActivo = 'Elegí a qué tipo de activo pertenece.';
+    if (!idEspecialidad) encontrados.idEspecialidad = 'Elegí la especialidad que la hace.';
     if (!descripcion.trim()) encontrados.descripcion = 'Escribí qué hay que hacer.';
 
     return encontrados;
-  }, [idTipoActivo, descripcion]);
+  }, [idEspecialidad, descripcion]);
 
   const hayErrores = Object.keys(errores).length > 0;
 
@@ -64,7 +67,7 @@ export default function FormularioPlantilla({ plantilla = null, onGuardar }) {
     setGuardando(true);
     try {
       await onGuardar({
-        idTipoActivo: Number(idTipoActivo),
+        idEspecialidad: Number(idEspecialidad),
         descripcion: descripcion.trim(),
       });
 
@@ -80,9 +83,9 @@ export default function FormularioPlantilla({ plantilla = null, onGuardar }) {
     }
   }
 
-  const opcionesTipos = tipos.map((tipo) => ({
-    valor: tipo.idTipoActivo,
-    texto: tipo.nombre,
+  const opcionesEspecialidades = especialidades.map((una) => ({
+    valor: String(una.idEspecialidad),
+    texto: una.nombre,
   }));
 
   return (
@@ -93,17 +96,17 @@ export default function FormularioPlantilla({ plantilla = null, onGuardar }) {
         <form noValidate onSubmit={manejarEnvio}>
           <div className="sigma-campos mb-4">
             <Campo
-              id="idTipoActivo"
-              etiqueta="Tipo de activo"
+              id="idEspecialidad"
+              etiqueta="Especialidad"
               tipo="lista"
-              valor={idTipoActivo}
-              alCambiar={setIdTipoActivo}
-              opciones={opcionesTipos}
-              placeholder="Elegir tipo"
+              valor={idEspecialidad}
+              alCambiar={setIdEspecialidad}
+              opciones={opcionesEspecialidades}
+              placeholder="Elegir especialidad"
               obligatorio
               ancho={24}
               revisado={revisado}
-              error={errores.idTipoActivo}
+              error={errores.idEspecialidad}
             />
 
             <Campo

@@ -15,14 +15,14 @@ import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { eliminarPlantilla, listarPlantillas } from '@/servicios/plantillasTareas.js';
-import { listarTiposActivos } from '@/servicios/tiposActivos.js';
+import { listarEspecialidades } from '@/servicios/especialidades.js';
 
 export default function PantallaPlantillas() {
   const { mostrarToast } = useToast();
 
   const [plantillas, setPlantillas] = useState([]);
-  const [tipos, setTipos] = useState([]);
-  const [filtroTipo, setFiltroTipo] = useState('');
+  const [especialidades, setEspecialidades] = useState([]);
+  const [filtroEspecialidad, setFiltroEspecialidad] = useState('');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
@@ -31,15 +31,15 @@ export default function PantallaPlantillas() {
   const [recarga, setRecarga] = useState(0);
 
   useEffect(() => {
-    listarTiposActivos()
-      .then(setTipos)
+    listarEspecialidades()
+      .then(setEspecialidades)
       .catch((fallo) => setError(fallo.message));
   }, []);
 
   useEffect(() => {
     let vigente = true;
 
-    listarPlantillas(filtroTipo || null)
+    listarPlantillas(filtroEspecialidad || null)
       .then((filas) => {
         if (vigente) setPlantillas(filas);
       })
@@ -53,7 +53,7 @@ export default function PantallaPlantillas() {
     return () => {
       vigente = false;
     };
-  }, [filtroTipo, recarga]);
+  }, [filtroEspecialidad, recarga]);
 
   async function confirmarBaja() {
     setEliminando(true);
@@ -79,9 +79,11 @@ export default function PantallaPlantillas() {
       render: (plantilla) => <span className="fw-semibold">{plantilla.descripcion}</span>,
     },
     {
-      clave: 'nombreTipo',
-      encabezado: 'Tipo de activo',
-      render: (plantilla) => <span className="text-body-secondary">{plantilla.nombreTipo}</span>,
+      clave: 'nombreEspecialidad',
+      encabezado: 'Especialidad',
+      render: (plantilla) => (
+        <span className="text-body-secondary">{plantilla.nombreEspecialidad ?? 'Sin especialidad'}</span>
+      ),
     },
     {
       clave: 'acciones',
@@ -126,17 +128,17 @@ export default function PantallaPlantillas() {
             filas={plantillas}
             claveFila={(plantilla) => plantilla.idPlantilla}
             columnas={columnas}
-            buscarPor={['descripcion', 'nombreTipo']}
-            placeholderBusqueda="Buscar por tarea o tipo de activo"
+            buscarPor={['descripcion', 'nombreEspecialidad']}
+            placeholderBusqueda="Buscar por tarea o especialidad"
             filtros={[
               {
-                etiqueta: 'Activo',
-                valor: filtroTipo,
-                alCambiar: setFiltroTipo,
-                opciones: tipos.map((tipo) => ({ valor: tipo.idTipoActivo, texto: tipo.nombre })),
+                etiqueta: 'Especialidad',
+                valor: filtroEspecialidad,
+                alCambiar: setFiltroEspecialidad,
+                opciones: especialidades.map((una) => ({ valor: una.idEspecialidad, texto: una.nombre })),
               },
             ]}
-            alLimpiar={() => setFiltroTipo('')}
+            alLimpiar={() => setFiltroEspecialidad('')}
             cargando={cargando}
             textoVacio="Todavia no hay plantillas de tareas cargadas."
           />

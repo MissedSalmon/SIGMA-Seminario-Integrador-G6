@@ -4,7 +4,7 @@
  * /tecnicos - listado de tecnicos (HU-5).
  *
  * Se puede filtrar por especialidad y por disponibilidad, y los dos filtros
- * se combinan (AND): "Electricista" + "Disponible" trae solo los tecnicos
+ * se combinan (AND): "Electricidad" + "Disponible" trae solo los tecnicos
  * electricistas que ahora mismo pueden recibir tareas.
  */
 import { useEffect, useState } from 'react';

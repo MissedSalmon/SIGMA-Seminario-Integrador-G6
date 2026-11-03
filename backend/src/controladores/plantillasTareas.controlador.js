@@ -10,8 +10,8 @@ function leerId(req) {
 }
 
 export async function listar(req, res) {
-  const { idTipoActivo } = req.query;
-  const plantillas = await plantillasServicio.obtenerTodas(idTipoActivo);
+  const { idEspecialidad } = req.query;
+  const plantillas = await plantillasServicio.obtenerTodas(idEspecialidad);
   res.json({ ok: true, datos: plantillas });
 }
 
