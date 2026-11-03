@@ -103,6 +103,9 @@ resuelve el fin de mes y los bisiestos (31/08 + 6 meses = 28/02).
 - **Planes existentes:** quedaron con alta del plan = 03/11/2026, así los activos viejos no
   generan todas sus OT juntas. El tipo y la próxima ejecución anteriores quedaron respaldados
   en `plan_datos_previos`.
+- **Estado en pantalla (03/11/2026):** el estado del plan va con una etiqueta de color
+  (`EtiquetaEstadoPlan.js`). Verde = Activo, sigue generando OT. Gris = Dado de baja, ya no
+  genera.
 
 ---
 

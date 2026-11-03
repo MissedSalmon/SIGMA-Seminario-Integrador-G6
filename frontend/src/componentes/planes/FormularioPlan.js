@@ -10,12 +10,15 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CCard, CCardBody, CCol, CRow } from '@coreui/react';
+import { CButton, CCard, CCardBody, CCol, CRow } from '@coreui/react';
+import CIcon from '@coreui/icons-react';
+import { cilPlus } from '@coreui/icons';
 
 import Aviso from '@/componentes/Aviso.js';
 import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Campo from '@/componentes/formulario/Campo.js';
 import SeleccionConChips from '@/componentes/formulario/SeleccionConChips.js';
+import DialogoNuevaPlantilla from '@/componentes/plantillas/DialogoNuevaPlantilla.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarTiposActivos } from '@/servicios/tiposActivos.js';
 import { listarPlantillas } from '@/servicios/plantillasTareas.js';
@@ -66,6 +69,9 @@ export default function FormularioPlan({ plan = null, onGuardar }) {
   const [tiposActivos, setTiposActivos] = useState([]);
   const [plantillas, setPlantillas] = useState([]);
   const [tecnicos, setTecnicos] = useState([]);
+
+  // La ventana para crear una tarea estándar sin salir del plan.
+  const [nuevaVisible, setNuevaVisible] = useState(false);
 
   const [revisado, setRevisado] = useState(false);
   const [guardando, setGuardando] = useState(false);
@@ -130,6 +136,11 @@ export default function FormularioPlan({ plan = null, onGuardar }) {
     } finally {
       setGuardando(false);
     }
+  }
+
+  function usarPlantillaNueva(nueva) {
+    setPlantillas((anteriores) => [...anteriores, nueva]);
+    setIdsTareas((anteriores) => [...anteriores, nueva.idPlantilla]);
   }
 
   const opcionesTareas = plantillas.map((plantilla) => ({
@@ -246,6 +257,18 @@ export default function FormularioPlan({ plan = null, onGuardar }) {
                   obligatorio
                   revisado={revisado}
                   error={errores.tareas}
+                  accion={
+                    <CButton
+                      type="button"
+                      color="secondary"
+                      variant="outline"
+                      onClick={() => setNuevaVisible(true)}
+                      title="Crear una tarea estándar nueva y agregarla al plan"
+                    >
+                      <CIcon icon={cilPlus} size="sm" className="me-1" />
+                      Agregar
+                    </CButton>
+                  }
                 />
               </CCol>
 
@@ -268,6 +291,12 @@ export default function FormularioPlan({ plan = null, onGuardar }) {
           </form>
         </CCardBody>
       </CCard>
+
+      <DialogoNuevaPlantilla
+        visible={nuevaVisible}
+        alCrear={usarPlantillaNueva}
+        alCerrar={() => setNuevaVisible(false)}
+      />
     </>
   );
 }

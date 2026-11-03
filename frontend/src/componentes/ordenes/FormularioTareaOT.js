@@ -49,9 +49,9 @@ import Aviso from '@/componentes/Aviso.js';
 import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Campo from '@/componentes/formulario/Campo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
-import { listarEspecialidades } from '@/servicios/especialidades.js';
 import { listarPrioridades } from '@/servicios/ordenesTrabajo.js';
-import { crearPlantilla, listarPlantillas } from '@/servicios/plantillasTareas.js';
+import { listarPlantillas } from '@/servicios/plantillasTareas.js';
+import DialogoNuevaPlantilla from '@/componentes/plantillas/DialogoNuevaPlantilla.js';
 import { listarPrestadores } from '@/servicios/prestadores.js';
 import { listarTecnicos } from '@/servicios/tecnicos.js';
 import { aHorasDecimales, comoHoraMinuto, DURACION_INCOMPLETA } from '@/utils/duracion.js';
@@ -117,13 +117,8 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
   const [tecnicos, setTecnicos] = useState([]);
   const [prestadores, setPrestadores] = useState([]);
 
-  // La caja para agregar una tarea estándar nueva sin salir de la OT.
+  // La ventana para agregar una tarea estándar nueva sin salir de la OT.
   const [nuevaVisible, setNuevaVisible] = useState(false);
-  const [nuevaDescripcion, setNuevaDescripcion] = useState('');
-  const [nuevaEspecialidad, setNuevaEspecialidad] = useState('');
-  const [especialidades, setEspecialidades] = useState([]);
-  const [errorNueva, setErrorNueva] = useState('');
-  const [creandoPlantilla, setCreandoPlantilla] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -131,14 +126,12 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
       listarTecnicos(),
       listarPrestadores(),
       listarPlantillas(),
-      listarEspecialidades(),
     ])
-      .then(([listaPrioridades, listaTecnicos, listaPrestadores, listaPlantillas, listaEspecialidades]) => {
+      .then(([listaPrioridades, listaTecnicos, listaPrestadores, listaPlantillas]) => {
         setPrioridades(listaPrioridades);
         setTecnicos(listaTecnicos);
         setPrestadores(listaPrestadores);
         setPlantillas(listaPlantillas);
-        setEspecialidades(listaEspecialidades);
       })
       .catch((fallo) => setError(fallo.message));
   }, []);
@@ -202,49 +195,15 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
    * elegida (la misma que se ve en "Plantillas de tareas"), elegida en el
    * desplegable y copiada en la descripción.
    */
-  async function agregarPlantilla() {
-    const descripcion = nuevaDescripcion.trim();
-
-    if (!nuevaEspecialidad) {
-      setErrorNueva('Elegí la especialidad que la hace.');
-      return;
-    }
-
-    if (!descripcion) {
-      setErrorNueva('Escribí la tarea.');
-      return;
-    }
-
-    setCreandoPlantilla(true);
-    setErrorNueva('');
-
-    try {
-      const nueva = await crearPlantilla({ idEspecialidad: Number(nuevaEspecialidad), descripcion });
-
-      setPlantillas((anteriores) =>
-        [...anteriores, nueva].sort((a, b) => a.descripcion.localeCompare(b.descripcion)),
-      );
-      setValores((anteriores) => ({
-        ...anteriores,
-        idPlantilla: String(nueva.idPlantilla),
-        descripcion: nueva.descripcion,
-      }));
-      setNuevaVisible(false);
-      setNuevaDescripcion('');
-      setNuevaEspecialidad('');
-      mostrarToast({ tipo: 'exito', mensaje: 'Se agregó la tarea estándar.' });
-    } catch (fallo) {
-      setErrorNueva(fallo.message);
-    } finally {
-      setCreandoPlantilla(false);
-    }
-  }
-
-  function cancelarPlantilla() {
-    setNuevaVisible(false);
-    setNuevaDescripcion('');
-    setNuevaEspecialidad('');
-    setErrorNueva('');
+  function usarPlantillaNueva(nueva) {
+    setPlantillas((anteriores) =>
+      [...anteriores, nueva].sort((a, b) => a.descripcion.localeCompare(b.descripcion)),
+    );
+    setValores((anteriores) => ({
+      ...anteriores,
+      idPlantilla: String(nueva.idPlantilla),
+      descripcion: nueva.descripcion,
+    }));
   }
 
   /** Al cambiar quién se hace cargo, se limpia la elección anterior. */
@@ -544,49 +503,11 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
         </CModalFooter>
       </CModal>
 
-      <CModal
+      <DialogoNuevaPlantilla
         visible={nuevaVisible}
-        onClose={() => !creandoPlantilla && cancelarPlantilla()}
-        alignment="center"
-      >
-        <CModalHeader>
-          <CModalTitle>Nueva tarea estándar</CModalTitle>
-        </CModalHeader>
-        <CModalBody>
-          <Aviso mensaje={errorNueva} />
-          <Campo
-            id="nuevaEspecialidad"
-            etiqueta="Especialidad"
-            tipo="lista"
-            valor={nuevaEspecialidad}
-            alCambiar={setNuevaEspecialidad}
-            opciones={especialidades.map((una) => ({ valor: String(una.idEspecialidad), texto: una.nombre }))}
-            placeholder="Elegir especialidad"
-            obligatorio
-            ancho={24}
-          />
-          <Campo
-            id="nuevaTareaEstandar"
-            etiqueta="Descripción"
-            tipo="area"
-            filas={3}
-            valor={nuevaDescripcion}
-            alCambiar={setNuevaDescripcion}
-            placeholder="Ej: limpiar los filtros"
-            obligatorio
-            maxLength={200}
-            revisado={Boolean(errorNueva)}
-            error={errorNueva}
-          />
-        </CModalBody>
-        <CModalFooter>
-          <BotonesAccion
-            procesando={creandoPlantilla}
-            alAceptar={agregarPlantilla}
-            alCancelar={cancelarPlantilla}
-          />
-        </CModalFooter>
-      </CModal>
+        alCrear={usarPlantillaNueva}
+        alCerrar={() => setNuevaVisible(false)}
+      />
     </CCard>
   );
 }

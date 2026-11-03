@@ -4,7 +4,7 @@
  * /planes-mantenimiento - listado de planes de mantenimiento preventivo (Sprint 5).
  */
 import { useEffect, useState } from 'react';
-import { CBadge, CButtonGroup, CCard, CCardBody } from '@coreui/react';
+import { CButtonGroup, CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilDescription, cilPencil, cilTrash } from '@coreui/icons';
 
@@ -13,6 +13,7 @@ import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
 import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
+import EtiquetaEstadoPlan from '@/componentes/planes/EtiquetaEstadoPlan.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarPlanes, darDeBajaPlan } from '@/servicios/planesMantenimiento.js';
 import { listarTiposActivos } from '@/servicios/tiposActivos.js';
@@ -39,7 +40,6 @@ export default function PantallaPlanesMantenimiento() {
 
   useEffect(() => {
     let vigente = true;
-    setCargando(true);
 
     listarPlanes({
       tipoActivoId: filtroTipo || null,
@@ -117,26 +117,16 @@ export default function PantallaPlanesMantenimiento() {
     {
       clave: 'tecnicos',
       encabezado: 'Técnicos',
-      render: (plan) =>
-        plan.tieneTecnico ? (
-          <span className="text-body-secondary">
-            {plan.tecnicos.map((t) => t.nombre).join(', ')}
-          </span>
-        ) : (
-          <CBadge color="warning" className="text-dark">
-            Sin asignar
-          </CBadge>
-        ),
+      render: (plan) => (
+        <span className="text-body-secondary">
+          {plan.tieneTecnico ? plan.tecnicos.map((t) => t.nombre).join(', ') : 'Sin técnicos'}
+        </span>
+      ),
     },
     {
       clave: 'estado',
       encabezado: 'Estado',
-      render: (plan) =>
-        plan.activo ? (
-          <CBadge color="success">Activo</CBadge>
-        ) : (
-          <CBadge color="secondary">Dado de baja</CBadge>
-        ),
+      render: (plan) => <EtiquetaEstadoPlan activo={plan.activo} />,
     },
     {
       clave: 'acciones',

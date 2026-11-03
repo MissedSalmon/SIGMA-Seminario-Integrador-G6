@@ -17,7 +17,6 @@ export default function PantallaEditarPlan({ params }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    setCargando(true);
     obtenerPlan(id)
       .then(setPlan)
       .catch((fallo) => setError(fallo.message))

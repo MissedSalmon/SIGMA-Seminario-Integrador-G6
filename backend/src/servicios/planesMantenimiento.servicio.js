@@ -75,6 +75,7 @@ function formatearPlan(fila) {
         telefono: t.tecnico_tel ?? null,
         disponible: t.tecnico_disponibilidad !== false,
         idsEspecialidad: (t.tecnico_especialidad ?? []).map((e) => e.especialidad_id),
+        especialidades: (t.tecnico_especialidad ?? []).map((e) => e.especialidad?.especialidad_nom).filter(Boolean),
       };
     })
     .filter(Boolean);
@@ -151,7 +152,7 @@ const SELECT_PLAN = `
       tecnico_nom_ape,
       tecnico_tel,
       tecnico_disponibilidad,
-      tecnico_especialidad ( especialidad_id )
+      tecnico_especialidad ( especialidad_id, especialidad ( especialidad_nom ) )
     )
   ),
   orden_trabajo (
