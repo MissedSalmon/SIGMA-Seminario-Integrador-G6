@@ -7,8 +7,9 @@ import {
   ENUM_ESTADO_TAREA,
   ENUM_PRIORIDAD,
 } from '../utiles/enumerados.js';
+import { sumarPeriodo, UNIDADES_FRECUENCIA } from '../utiles/periodicidad.js';
 
-export const UNIDADES_FRECUENCIA = ['dias', 'semanas', 'meses', 'anios'];
+export { UNIDADES_FRECUENCIA };
 
 /**
  * Formatea una representación legible para la frecuencia del plan.
@@ -35,42 +36,10 @@ export function formatearFrecuencia(intervalo, unidad) {
   return `Cada ${i} ${plurales[u] || u}`;
 }
 
-/**
- * Calcula la próxima fecha de ejecución de un plan a partir de una fecha base,
- * manejando correctamente fines de mes y años bisiestos.
- */
+/** La fecha base más la periodicidad del plan (ver utiles/periodicidad.js). */
 export function calcularProximaFecha(fechaBase, intervalo = 1, unidad = 'meses') {
   if (!fechaBase) return null;
-
-  const fechaStr = String(fechaBase).slice(0, 10);
-  const [anio, mes, dia] = fechaStr.split('-').map(Number);
-  const numIntervalo = Number(intervalo) || 1;
-  const u = (unidad || 'meses').toLowerCase();
-
-  if (u === 'dias') {
-    const f = new Date(Date.UTC(anio, mes - 1, dia + numIntervalo));
-    return f.toISOString().slice(0, 10);
-  }
-
-  if (u === 'semanas') {
-    const f = new Date(Date.UTC(anio, mes - 1, dia + numIntervalo * 7));
-    return f.toISOString().slice(0, 10);
-  }
-
-  if (u === 'anios') {
-    const nuevoAnio = anio + numIntervalo;
-    const maxDia = new Date(Date.UTC(nuevoAnio, mes, 0)).getUTCDate();
-    const f = new Date(Date.UTC(nuevoAnio, mes - 1, Math.min(dia, maxDia)));
-    return f.toISOString().slice(0, 10);
-  }
-
-  // Por defecto: 'meses'
-  const mesObjetivo = mes - 1 + numIntervalo;
-  const nuevoAnio = anio + Math.floor(mesObjetivo / 12);
-  const nuevoMes = ((mesObjetivo % 12) + 12) % 12;
-  const maxDiaEnNuevoMes = new Date(Date.UTC(nuevoAnio, nuevoMes + 1, 0)).getUTCDate();
-  const f = new Date(Date.UTC(nuevoAnio, nuevoMes, Math.min(dia, maxDiaEnNuevoMes)));
-  return f.toISOString().slice(0, 10);
+  return sumarPeriodo(fechaBase, Number(intervalo) || 1, (unidad || 'meses').toLowerCase());
 }
 
 function limpiarTexto(t) {
