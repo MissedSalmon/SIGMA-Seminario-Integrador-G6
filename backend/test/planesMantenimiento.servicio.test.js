@@ -53,7 +53,9 @@ describe('Planes de Mantenimiento Preventivo - Servicio', () => {
       expect(formatearFrecuencia(1, 'semanas')).toBe('Semanal');
       expect(formatearFrecuencia(1, 'dias')).toBe('Diario');
       expect(formatearFrecuencia(15, 'dias')).toBe('Cada 15 días');
-      expect(formatearFrecuencia(4, 'meses')).toBe('Cada 4 meses');
+      expect(formatearFrecuencia(4, 'meses')).toBe('Cuatrimestral');
+      expect(formatearFrecuencia(2, 'semanas')).toBe('Quincenal');
+      expect(formatearFrecuencia(5, 'meses')).toBe('Cada 5 meses');
     });
 
     test('calcula próxima fecha sumando días, semanas, meses y años', () => {
@@ -75,11 +77,9 @@ describe('Planes de Mantenimiento Preventivo - Servicio', () => {
     const DATOS_VALIDOS = {
       nombre: 'Mantenimiento Semestral Aires',
       descripcion: 'Revisión periódica de gas y filtros',
-      tipoMantenimiento: 'Preventivo',
       tipoActivoId: 1,
       intervalo: 6,
       unidadFrecuencia: 'meses',
-      fechaProximaGeneracion: '2026-11-01',
       tareasIds: [10],
       tecnicosLegajos: ['TEC-001'],
     };
@@ -89,11 +89,10 @@ describe('Planes de Mantenimiento Preventivo - Servicio', () => {
         mant_prev_id: 5,
         mant_prev_nom: 'Mantenimiento Semestral Aires',
         mant_prev_desc: 'Revisión periódica de gas y filtros',
-        mant_prev_tipo_mant: 'Preventivo',
         mant_prev_intervalo: 6,
         mant_prev_unidad_frec: 'meses',
         mant_prev_frec: 'Semestral',
-        mant_prev_fecha_prox_gen: '2026-11-01',
+        mant_prev_fecha_alta: '2026-11-03',
         mant_prev_activo: true,
         tipo_activo: { tipo_activo_id: 1, tipo_activo_nom: 'Aire Acondicionado' },
         mant_prev_tarea: [{ plantilla_de_tarea: { tarea_plan_id: 10, tarea_plan_nom: 'Limpieza' } }],
@@ -134,6 +133,24 @@ describe('Planes de Mantenimiento Preventivo - Servicio', () => {
       expect(resultado.frecuencia).toBe('Semestral');
       expect(resultado.tieneTecnico).toBe(true);
       expect(resultado.tareas).toHaveLength(1);
+    });
+
+    test('guarda desde cuándo aplica el plan y no pide tipo ni próxima ejecución', async () => {
+      const insercion = consultaQueDevuelve({ mant_prev_id: 8 });
+      supabase.from
+        .mockReturnValueOnce(consultaQueDevuelve(null)) // Unicidad
+        .mockReturnValueOnce(consultaQueDevuelve({ tipo_activo_id: 1 })) // Tipo activo
+        .mockReturnValueOnce(consultaQueDevuelve([{ tarea_plan_id: 10 }])) // Tareas
+        .mockReturnValueOnce(insercion) // Insert plan
+        .mockReturnValueOnce(consultaQueDevuelve(null)) // Insert tareas
+        .mockReturnValueOnce(consultaQueDevuelve({ mant_prev_id: 8, mant_prev_nom: 'X' })); // Detalle final
+
+      await crearPlan({ ...DATOS_VALIDOS, tecnicosLegajos: [] });
+
+      const fila = insercion.insert.mock.calls[0][0];
+      expect(fila.mant_prev_fecha_alta).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(fila).not.toHaveProperty('mant_prev_tipo_mant');
+      expect(fila).not.toHaveProperty('mant_prev_fecha_prox_gen');
     });
 
     test('crea plan sin técnicos correctamente (C5)', async () => {

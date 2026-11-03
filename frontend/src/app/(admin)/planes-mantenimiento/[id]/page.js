@@ -29,7 +29,7 @@ import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
 import EtiquetaEstadoOT from '@/componentes/ordenes/EtiquetaEstadoOT.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
-import { obtenerPlan, darDeBajaPlan } from '@/servicios/planesMantenimiento.js';
+import { obtenerPlan, obtenerProgramacion, darDeBajaPlan } from '@/servicios/planesMantenimiento.js';
 import { formatearFechaHora } from '@/utils/fechas.js';
 
 function soloFechaLegible(iso) {
@@ -52,6 +52,7 @@ export default function PantallaDetallePlanMantenimiento({ params }) {
   const { mostrarToast } = useToast();
 
   const [plan, setPlan] = useState(null);
+  const [programacion, setProgramacion] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
@@ -60,8 +61,11 @@ export default function PantallaDetallePlanMantenimiento({ params }) {
 
   useEffect(() => {
     setCargando(true);
-    obtenerPlan(id)
-      .then(setPlan)
+    Promise.all([obtenerPlan(id), obtenerProgramacion(id)])
+      .then(([datosPlan, datosProgramacion]) => {
+        setPlan(datosPlan);
+        setProgramacion(datosProgramacion);
+      })
       .catch((fallo) => setError(fallo.message))
       .finally(() => setCargando(false));
   }, [id]);
@@ -124,13 +128,8 @@ export default function PantallaDetallePlanMantenimiento({ params }) {
             <CCardBody>
               <Dato etiqueta="Nombre">{plan.nombre}</Dato>
               <Dato etiqueta="Tipo de activo">{plan.tipoActivo?.nombre ?? '-'}</Dato>
-              <Dato etiqueta="Tipo de mantenimiento">{plan.tipoMantenimiento}</Dato>
               <Dato etiqueta="Frecuencia">{plan.frecuencia}</Dato>
-              <Dato etiqueta="Próxima fecha de generación">
-                <span className={plan.activo ? 'fw-bold text-primary' : 'text-body-tertiary'}>
-                  {soloFechaLegible(plan.fechaProximaGeneracion)}
-                </span>
-              </Dato>
+              <Dato etiqueta="Aplica desde">{soloFechaLegible(plan.fechaAlta)}</Dato>
               <Dato etiqueta="Estado">
                 {plan.activo ? (
                   <CBadge color="success">Activo</CBadge>
@@ -161,7 +160,12 @@ export default function PantallaDetallePlanMantenimiento({ params }) {
                 <ul className="list-group list-group-flush">
                   {plan.tareas.map((tarea) => (
                     <li key={tarea.id} className="list-group-item px-0">
-                      <div className="fw-medium">{tarea.nombre}</div>
+                      <div className="fw-medium">
+                        {tarea.nombre}
+                        <span className="text-body-secondary fw-normal">
+                          {' '}({tarea.nombreEspecialidad ?? 'sin especialidad'})
+                        </span>
+                      </div>
                       {tarea.descripcion && (
                         <div className="text-body-secondary small">{tarea.descripcion}</div>
                       )}
@@ -179,9 +183,8 @@ export default function PantallaDetallePlanMantenimiento({ params }) {
             <CCardBody>
               {plan.tecnicos.length === 0 ? (
                 <div className="alert alert-warning py-2 mb-0 small">
-                  <strong>Sin técnicos asignados:</strong> El plan no generará órdenes de
-                  trabajo automáticas al cumplirse el período mientras no cuente con un técnico
-                  autorizado responsable.
+                  <strong>Sin técnicos autorizados:</strong> las órdenes de trabajo se generan
+                  igual, pero sus tareas quedan sin asignar.
                 </div>
               ) : (
                 <ul className="list-group list-group-flush">
@@ -199,6 +202,51 @@ export default function PantallaDetallePlanMantenimiento({ params }) {
                     </li>
                   ))}
                 </ul>
+              )}
+            </CCardBody>
+          </CCard>
+        </CCol>
+
+        {/* Programación por activo (03/11/2026): cada activo lleva su propio ciclo */}
+        <CCol xs={12}>
+          <CCard>
+            <CCardHeader className="fw-semibold">Programación por activo ({programacion.length})</CCardHeader>
+            <CCardBody>
+              {programacion.length === 0 ? (
+                <div className="text-body-secondary fst-italic">
+                  No hay activos de este tipo en servicio.
+                </div>
+              ) : (
+                <CTable responsive hover className="align-middle mb-0">
+                  <CTableHead>
+                    <CTableRow>
+                      <CTableHeaderCell>Activo</CTableHeaderCell>
+                      <CTableHeaderCell>Último mantenimiento</CTableHeaderCell>
+                      <CTableHeaderCell>Próximo mantenimiento</CTableHeaderCell>
+                      <CTableHeaderCell>Orden en curso</CTableHeaderCell>
+                    </CTableRow>
+                  </CTableHead>
+                  <CTableBody>
+                    {programacion.map((fila) => (
+                      <CTableRow key={fila.codigoActivo}>
+                        <CTableDataCell className="fw-semibold">{fila.codigoActivo}</CTableDataCell>
+                        <CTableDataCell>{soloFechaLegible(fila.ultimaRealizada)}</CTableDataCell>
+                        <CTableDataCell>
+                          {fila.otAbierta ? 'Al cerrar la orden en curso' : soloFechaLegible(fila.proxima)}
+                        </CTableDataCell>
+                        <CTableDataCell>
+                          {fila.otAbierta ? (
+                            <BotonEnlace href={`/ordenes-trabajo/${fila.otAbierta.id}`} variante="ghost" className="px-0">
+                              #{fila.otAbierta.id} · {fila.otAbierta.estado}
+                            </BotonEnlace>
+                          ) : (
+                            '-'
+                          )}
+                        </CTableDataCell>
+                      </CTableRow>
+                    ))}
+                  </CTableBody>
+                </CTable>
               )}
             </CCardBody>
           </CCard>
@@ -222,6 +270,7 @@ export default function PantallaDetallePlanMantenimiento({ params }) {
                       <CTableHeaderCell>#</CTableHeaderCell>
                       <CTableHeaderCell>Activo</CTableHeaderCell>
                       <CTableHeaderCell>Estado</CTableHeaderCell>
+                      <CTableHeaderCell>Ciclo</CTableHeaderCell>
                       <CTableHeaderCell>Fecha de alta</CTableHeaderCell>
                       <CTableHeaderCell className="text-end">Acción</CTableHeaderCell>
                     </CTableRow>
@@ -234,6 +283,7 @@ export default function PantallaDetallePlanMantenimiento({ params }) {
                         <CTableDataCell>
                           <EtiquetaEstadoOT estado={ot.estado} />
                         </CTableDataCell>
+                        <CTableDataCell>{soloFechaLegible(ot.fechaProgramada)}</CTableDataCell>
                         <CTableDataCell className="text-body-secondary">
                           {formatearFechaHora(ot.fechaAlta)}
                         </CTableDataCell>

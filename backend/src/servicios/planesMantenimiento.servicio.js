@@ -1,7 +1,7 @@
 import { supabase } from '../config/supabase.js';
 import { datoInvalido, noEncontrado, conflicto, errorDeBase } from '../utiles/errores.js';
 import { ENUM_ESTADO_OT } from '../utiles/enumerados.js';
-import { sumarPeriodo, UNIDADES_FRECUENCIA } from '../utiles/periodicidad.js';
+import { hoyArgentina, soloDia, sumarPeriodo, UNIDADES_FRECUENCIA } from '../utiles/periodicidad.js';
 import { generarOtsPreventivas, listarPorVencer, listarProgramacion } from './programacionPreventiva.servicio.js';
 
 export { UNIDADES_FRECUENCIA };
@@ -14,9 +14,11 @@ export function formatearFrecuencia(intervalo, unidad) {
   const i = Number(intervalo) || 1;
   const u = (unidad || 'meses').toLowerCase();
 
+  if (i === 2 && u === 'semanas') return 'Quincenal';
   if (i === 1 && u === 'meses') return 'Mensual';
   if (i === 2 && u === 'meses') return 'Bimestral';
   if (i === 3 && u === 'meses') return 'Trimestral';
+  if (i === 4 && u === 'meses') return 'Cuatrimestral';
   if (i === 6 && u === 'meses') return 'Semestral';
   if (i === 1 && u === 'anios') return 'Anual';
   if (i === 1 && u === 'semanas') return 'Semanal';
@@ -83,6 +85,7 @@ function formatearPlan(fila) {
     estado: ENUM_ESTADO_OT.texto(ot.ot_estado) ?? 'Creada',
     descripcion: ot.ot_desc ?? null,
     fechaAlta: ot.ot_fecha_alta ?? null,
+    fechaProgramada: soloDia(ot.ot_fecha_programada),
     fechaCierre: ot.ot_fecha_cierre ?? null,
   }));
 
@@ -93,7 +96,6 @@ function formatearPlan(fila) {
     id: fila.mant_prev_id,
     nombre: fila.mant_prev_nom,
     descripcion: fila.mant_prev_desc ?? null,
-    tipoMantenimiento: fila.mant_prev_tipo_mant ?? 'Preventivo',
     tipoActivo: tipoActivo
       ? {
           id: tipoActivo.tipo_activo_id,
@@ -104,9 +106,7 @@ function formatearPlan(fila) {
     intervalo,
     unidadFrecuencia,
     frecuencia: fila.mant_prev_frec || formatearFrecuencia(intervalo, unidadFrecuencia),
-    fechaProximaGeneracion: fila.mant_prev_fecha_prox_gen
-      ? String(fila.mant_prev_fecha_prox_gen).slice(0, 10)
-      : null,
+    fechaAlta: soloDia(fila.mant_prev_fecha_alta),
     activo: fila.mant_prev_activo !== false,
     fechaBaja: fila.mant_prev_fecha_baja ?? null,
     tareas,
@@ -125,10 +125,9 @@ const SELECT_PLAN = `
   mant_prev_nom,
   mant_prev_desc,
   mant_prev_frec,
-  mant_prev_tipo_mant,
   mant_prev_activo,
+  mant_prev_fecha_alta,
   mant_prev_fecha_baja,
-  mant_prev_fecha_prox_gen,
   mant_prev_intervalo,
   mant_prev_unidad_frec,
   tipo_activo (
@@ -161,6 +160,7 @@ const SELECT_PLAN = `
     ot_estado,
     ot_desc,
     ot_fecha_alta,
+    ot_fecha_programada,
     ot_fecha_cierre
   )
 `;
@@ -258,13 +258,6 @@ export async function crearPlan(datos = {}) {
     throw datoInvalido(`La unidad de frecuencia debe ser una de: ${UNIDADES_FRECUENCIA.join(', ')}.`);
   }
 
-  const fechaProximaGeneracion = datos.fechaProximaGeneracion
-    ? String(datos.fechaProximaGeneracion).slice(0, 10)
-    : null;
-  if (!fechaProximaGeneracion || isNaN(Date.parse(fechaProximaGeneracion))) {
-    throw datoInvalido('La fecha de próxima generación es obligatoria y debe ser una fecha válida.');
-  }
-
   // Tareas obligatorias (al menos 1)
   const tareasIds = Array.isArray(datos.tareasIds) ? datos.tareasIds.map(Number).filter(Boolean) : [];
   if (tareasIds.length === 0) {
@@ -301,7 +294,6 @@ export async function crearPlan(datos = {}) {
   }
 
   const descripcion = limpiarTexto(datos.descripcion);
-  const tipoMantenimiento = limpiarTexto(datos.tipoMantenimiento) || 'Preventivo';
   const frecuenciaTexto = formatearFrecuencia(intervalo, unidadFrecuencia);
 
   // Inserción del plan
@@ -312,11 +304,11 @@ export async function crearPlan(datos = {}) {
       activo_codigo: datos.activoCodigo ? limpiarTexto(datos.activoCodigo) : null,
       mant_prev_nom: nombre,
       mant_prev_desc: descripcion,
-      mant_prev_tipo_mant: tipoMantenimiento,
       mant_prev_intervalo: intervalo,
       mant_prev_unidad_frec: unidadFrecuencia,
       mant_prev_frec: frecuenciaTexto,
-      mant_prev_fecha_prox_gen: fechaProximaGeneracion,
+      // Desde hoy aplica: los activos más viejos que el plan cuentan su primer ciclo desde esta fecha.
+      mant_prev_fecha_alta: hoyArgentina(),
       mant_prev_activo: true,
     })
     .select('mant_prev_id')
@@ -386,10 +378,6 @@ export async function actualizarPlan(id, datos = {}) {
     cambios.mant_prev_desc = limpiarTexto(datos.descripcion);
   }
 
-  if ('tipoMantenimiento' in datos) {
-    cambios.mant_prev_tipo_mant = limpiarTexto(datos.tipoMantenimiento) || 'Preventivo';
-  }
-
   let nuevoIntervalo = planActual.intervalo;
   let nuevaUnidad = planActual.unidadFrecuencia;
   let recalcularFrecuencia = false;
@@ -416,14 +404,6 @@ export async function actualizarPlan(id, datos = {}) {
 
   if (recalcularFrecuencia) {
     cambios.mant_prev_frec = formatearFrecuencia(nuevoIntervalo, nuevaUnidad);
-  }
-
-  if ('fechaProximaGeneracion' in datos && datos.fechaProximaGeneracion) {
-    const fecha = String(datos.fechaProximaGeneracion).slice(0, 10);
-    if (isNaN(Date.parse(fecha))) {
-      throw datoInvalido('La fecha de próxima generación no es válida.');
-    }
-    cambios.mant_prev_fecha_prox_gen = fecha;
   }
 
   // Aplicar actualización de atributos básicos si hay cambios

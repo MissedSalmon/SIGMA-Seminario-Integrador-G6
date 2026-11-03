@@ -1,8 +1,9 @@
 'use client';
 
 /**
- * Componente que muestra los planes de mantenimiento preventivo por vencer
- * en los próximos 7 días (CA5, Sprint 5).
+ * Los mantenimientos preventivos que se generan en los próximos 7 días (CA5).
+ * Desde el 03/11/2026 la programación es por activo: cada renglón es un plan
+ * para un activo, con su fecha.
  */
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -58,7 +59,7 @@ export default function AvisoPlanesPorVencer() {
       const res = await procesarGeneracionAutomatica();
       mostrarToast({
         tipo: 'exito',
-        mensaje: `Generación completada: ${res.otsGeneradas} OT(s) generadas. Planes postergados: ${res.planesPostergadosSinTecnico}.`,
+        mensaje: `Generación completada: ${res.otsGeneradas} OT generadas.`,
       });
       await cargarPlanes();
     } catch (fallo) {
@@ -77,7 +78,7 @@ export default function AvisoPlanesPorVencer() {
       <CCardHeader className="bg-warning-subtle text-warning-emphasis d-flex justify-content-between align-items-center">
         <div className="d-flex align-items-center gap-2 fw-semibold">
           <CIcon icon={cilCalendar} />
-          <span>Planes de Mantenimiento Preventivo por Vencer (Próximos 7 días)</span>
+          <span>Mantenimientos preventivos a generar (próximos 7 días)</span>
           <CBadge color="warning" className="text-dark">
             {planes.length}
           </CBadge>
@@ -98,23 +99,21 @@ export default function AvisoPlanesPorVencer() {
         <ul className="list-group list-group-flush">
           {planes.map((plan) => (
             <li
-              key={plan.id}
+              key={`${plan.idPlan}-${plan.codigoActivo}`}
               className="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 p-3"
             >
               <div>
                 <div className="d-flex align-items-center gap-2">
                   <Link
-                    href={`/planes-mantenimiento/${plan.id}`}
+                    href={`/planes-mantenimiento/${plan.idPlan}`}
                     className="fw-semibold text-decoration-none text-body"
                   >
                     {plan.nombre}
                   </Link>
-                  {plan.tipoActivo?.nombre && (
-                    <CBadge color="info" className="text-dark">
-                      {plan.tipoActivo.nombre}
-                    </CBadge>
-                  )}
-                  {plan.diasRestantes === 0 ? (
+                  <span className="text-body-secondary">· {plan.codigoActivo}</span>
+                  {plan.diasRestantes < 0 ? (
+                    <CBadge color="danger">Vencido</CBadge>
+                  ) : plan.diasRestantes === 0 ? (
                     <CBadge color="danger">Vence hoy</CBadge>
                   ) : (
                     <CBadge color="primary">En {plan.diasRestantes} días</CBadge>
@@ -122,22 +121,20 @@ export default function AvisoPlanesPorVencer() {
                 </div>
 
                 <div className="text-body-secondary small mt-1">
-                  Fecha programada: <strong>{soloFechaLegible(plan.fechaProximaGeneracion)}</strong>
+                  Fecha programada: <strong>{soloFechaLegible(plan.fecha)}</strong>
                 </div>
 
-                {/* Advertencia destacada si falta técnico (C7 / CA5) */}
-                {!plan.tieneTecnico && (
+                {plan.advertencia && (
                   <div className="text-danger small mt-1 d-flex align-items-center gap-1">
                     <CIcon icon={cilWarning} size="sm" />
-                    <strong>Advertencia:</strong> No tiene técnicos asignados. El sistema no
-                    generará las órdenes de trabajo automáticas hasta que se le asigne uno.
+                    {plan.advertencia}
                   </div>
                 )}
               </div>
 
               <div className="text-end">
                 <Link
-                  href={`/planes-mantenimiento/${plan.id}`}
+                  href={`/planes-mantenimiento/${plan.idPlan}`}
                   className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
                 >
                   <span>Ver plan</span>

@@ -65,18 +65,44 @@ Los tres cubren todo el sistema y no se superponen.
 
 ```
 Plan preventivo (tipo de activo + frecuencia + tareas estándar + técnicos autorizados)
-        ↓  (automático, según la frecuencia)
+        ↓  (automático: cada activo del tipo lleva su propio ciclo)
 OT preventiva  →  mismas tareas y ejecución que el flujo correctivo
 ```
 
 Una OT viene **o de un ticket, o de un plan preventivo**. Nunca de los dos.
 
 **Tareas y especialidades (02/11/2026).** Cada tarea estándar es de una especialidad. Al
-asignar una tarea sólo se ofrecen los técnicos que la tienen, y el servidor lo exige. Al
-generar una OT preventiva, cada tarea va al primer técnico autorizado del plan con esa
-especialidad. Si alguna tarea no tiene técnico que la cubra, el plan se posterga igual que
-cuando no tiene técnicos. Las plantillas anteriores a esa fecha quedan sin especialidad hasta
-que alguien las complete en `/plantillas-tareas`; mientras tanto no restringen a nadie.
+asignar una tarea sólo se ofrecen los técnicos que la tienen, y el servidor lo exige. Las
+plantillas anteriores a esa fecha quedan sin especialidad hasta que alguien las complete en
+`/plantillas-tareas`; mientras tanto no restringen a nadie.
+
+**Programación por activo (03/11/2026, correcciones del Sprint 5).** El plan define sólo la
+periodicidad; no tiene "próxima ejecución" ni "tipo" (todos son preventivos). Cada activo del
+tipo del plan tiene su propia fecha, que se calcula, no se guarda:
+
+| Situación del par activo–plan | Próximo mantenimiento |
+|---|---|
+| Sin OT previa | La más nueva entre la alta del activo y la alta del plan, + periodicidad |
+| Con OT finalizada | El cierre de la última OT finalizada, + periodicidad |
+| Última OT cancelada | Su fecha programada + periodicidad (el ciclo se saltea) |
+| OT abierta | No hay: se recalcula al cerrarla |
+| Activo retirado | No genera |
+
+Ejemplo: aire A dado de alta el 13/06/2026, aire B el 20/08/2026, plan cada 6 meses → OT de A
+el 13/12/2026 y de B el 20/02/2027. Las fechas se suman con `@internationalized/date`, que
+resuelve el fin de mes y los bisiestos (31/08 + 6 meses = 28/02).
+
+- **Generación:** un job diario dentro del backend (hora `PLANES_HORA_GENERACION`, por defecto
+  6) genera la OT de cada par cuya fecha entra en los próximos `PLANES_DIAS_ANTICIPACION` días
+  (por defecto 7). También corre al levantar la API, al dar de alta o importar activos, y a
+  mano con `POST /api/planes-mantenimiento/procesar-generacion`. Es idempotente: la OT guarda
+  la fecha del ciclo (`ot_fecha_programada`) y un índice único impide dos OT del mismo ciclo.
+- **Asignación:** cada tarea va al técnico autorizado del plan que tiene su especialidad, está
+  disponible y tiene menos tareas pendientes (empate: legajo menor). Si nadie la cubre, la
+  tarea queda sin asignar y la OT en "Creada". Ya no se posterga el plan (reemplaza C7/D4).
+- **Planes existentes:** quedaron con alta del plan = 03/11/2026, así los activos viejos no
+  generan todas sus OT juntas. El tipo y la próxima ejecución anteriores quedaron respaldados
+  en `plan_datos_previos`.
 
 ---
 
@@ -411,7 +437,7 @@ Agrupadas por tema, para tener el mapa general:
 | **Mantenimiento preventivo** | Se hace antes de que falle. Nace de un plan. |
 | **Material** | Insumo que se consume al usarlo. Descuenta stock. |
 | **Orden de Trabajo (OT)** | Autorización de trabajo. Se genera al validar un ticket o desde un plan preventivo. |
-| **Plan de mantenimiento preventivo** | Define qué activos se intervienen, cada cuánto y con qué tareas. Genera OT automáticamente. |
+| **Plan de mantenimiento preventivo** | Define a qué tipo de activo aplica, cada cuánto y con qué tareas y técnicos. Genera una OT por activo cuando le toca a cada uno (03/11/2026). |
 | **Plantilla de tareas** | Tarea modelo asociada a una **especialidad** (decisión del 02/11/2026, corrección de los profesores; antes era el tipo de activo). Sirve para precargar tareas estándar y para ofrecer sólo los técnicos de esa especialidad. |
 | **Prestador de servicio** | Empresa o profesional externo que hace trabajos que el equipo propio no puede cubrir. |
 | **Prioridad** | Nivel de importancia que el administrador le pone a la OT. |
