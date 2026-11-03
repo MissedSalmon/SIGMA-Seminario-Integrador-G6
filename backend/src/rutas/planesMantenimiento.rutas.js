@@ -15,6 +15,7 @@ router.post('/procesar-generacion', ctrl.procesarGeneracion);
 router.get('/', ctrl.listar);
 router.post('/', ctrl.crear);
 router.get('/:id', ctrl.obtener);
+router.get('/:id/programacion', ctrl.programacion);
 router.put('/:id', ctrl.actualizar);
 router.delete('/:id', ctrl.darDeBaja);
 

@@ -39,6 +39,9 @@ export const env = {
     .split(',')
     .map((origen) => origen.trim())
     .filter(Boolean),
+  // Planes preventivos: cuántos días antes de la fecha se genera la OT, y a qué hora (de Argentina) corre la generación diaria.
+  planesDiasAnticipacion: Number(process.env.PLANES_DIAS_ANTICIPACION ?? 7),
+  planesHoraGeneracion: Number(process.env.PLANES_HORA_GENERACION ?? 6),
 };
 
 export const esProduccion = env.entorno === 'production';

@@ -1,13 +1,8 @@
 import { supabase } from '../config/supabase.js';
 import { datoInvalido, noEncontrado, conflicto, errorDeBase } from '../utiles/errores.js';
-import {
-  ENUM_ESTADO_ACTIVO,
-  ENUM_ESTADO_ASIGNACION_TECNICO,
-  ENUM_ESTADO_OT,
-  ENUM_ESTADO_TAREA,
-  ENUM_PRIORIDAD,
-} from '../utiles/enumerados.js';
+import { ENUM_ESTADO_OT } from '../utiles/enumerados.js';
 import { sumarPeriodo, UNIDADES_FRECUENCIA } from '../utiles/periodicidad.js';
+import { generarOtsPreventivas, listarPorVencer, listarProgramacion } from './programacionPreventiva.servicio.js';
 
 export { UNIDADES_FRECUENCIA };
 
@@ -121,15 +116,6 @@ function formatearPlan(fila) {
     cantidadTecnicos: tecnicos.length,
     ordenes,
   };
-}
-
-/**
- * El técnico autorizado del plan que puede hacer la tarea: el primero que tenga
- * su especialidad. Una tarea sin especialidad la puede hacer cualquiera.
- */
-function tecnicoParaTarea(tecnicos, tarea) {
-  if (!tarea.idEspecialidad) return tecnicos[0] ?? null;
-  return tecnicos.find((t) => t.idsEspecialidad.includes(tarea.idEspecialidad)) ?? null;
 }
 
 const SELECT_PLAN = `
@@ -538,224 +524,23 @@ export async function darDeBajaPlan(id) {
 }
 
 /**
- * Obtener aviso de planes por vencer dentro de los próximos N días (CA5, por defecto 7 días).
+ * Pares plan–activo que se generan en los próximos N días (CA5, por defecto 7).
+ * La programación es por activo (03/11/2026): ver programacionPreventiva.servicio.js.
  */
 export async function obtenerPlanesPorVencer(dias = 7, fechaReferencia) {
-  const fechaHoy = fechaReferencia
-    ? String(fechaReferencia).slice(0, 10)
-    : new Date().toISOString().slice(0, 10);
-
-  const fechaTope = calcularProximaFecha(fechaHoy, dias, 'dias');
-
-  const { data, error } = await supabase
-    .from('mantenimiento_preventivo')
-    .select(SELECT_PLAN)
-    .eq('mant_prev_activo', true)
-    .gte('mant_prev_fecha_prox_gen', fechaHoy)
-    .lte('mant_prev_fecha_prox_gen', fechaTope)
-    .order('mant_prev_fecha_prox_gen', { ascending: true });
-
-  if (error) throw errorDeBase(error, 'al consultar planes por vencer');
-
-  return (data ?? []).map((fila) => {
-    const plan = formatearPlan(fila);
-    const msPorDia = 1000 * 60 * 60 * 24;
-    const diffMs = new Date(plan.fechaProximaGeneracion) - new Date(fechaHoy);
-    const diasRestantes = Math.max(0, Math.round(diffMs / msPorDia));
-
-    return {
-      id: plan.id,
-      nombre: plan.nombre,
-      tipoMantenimiento: plan.tipoMantenimiento,
-      tipoActivo: plan.tipoActivo,
-      fechaProximaGeneracion: plan.fechaProximaGeneracion,
-      diasRestantes,
-      tieneTecnico: plan.tieneTecnico,
-      tecnicos: plan.tecnicos,
-      advertencia: !plan.tieneTecnico
-        ? 'No tiene técnicos asignados: la orden de trabajo no se generará automáticamente hasta asignar uno.'
-        : null,
-    };
-  });
+  return listarPorVencer(dias, fechaReferencia);
 }
 
 /**
- * Procesa la generación automática de órdenes de trabajo preventivas (CA3, CA4, C7, D4, C8).
- * Endpoint protegido invocado periódicamente.
- *
- * Reglas:
- * - Solo planes activos cuya fechaProximaGeneracion llegó (<= fechaCorte).
- * - Si no tiene técnico autorizado asignado, SE POSTERGA (D4) y se reporta en el log.
- * - Si tiene técnico, genera 1 OT por cada activo del tipo de activo con ticket_id nulo.
- * - Idempotencia: no duplica OTs generadas para el mismo activo y período.
- * - Avanza la próxima fecha de generación del plan.
+ * Genera las OT preventivas que tocan (CA3, CA4, C8). La corre el job diario
+ * (tareasProgramadas/generacionPreventiva.js) y también se puede pedir a mano.
  */
 export async function procesarGeneracionAutomatica(fechaCorte) {
-  const corte = fechaCorte
-    ? String(fechaCorte).slice(0, 10)
-    : new Date().toISOString().slice(0, 10);
+  return generarOtsPreventivas({ fechaCorte });
+}
 
-  const { data: planes, error: errorPlanes } = await supabase
-    .from('mantenimiento_preventivo')
-    .select(SELECT_PLAN)
-    .eq('mant_prev_activo', true)
-    .lte('mant_prev_fecha_prox_gen', corte);
-
-  if (errorPlanes) throw errorDeBase(errorPlanes, 'al buscar planes a generar');
-
-  const resultado = {
-    fechaCorte: corte,
-    planesEvaluados: (planes ?? []).length,
-    planesGenerados: 0,
-    planesPostergadosSinTecnico: 0,
-    otsGeneradas: 0,
-    detalles: [],
-  };
-
-  for (const fila of planes ?? []) {
-    const plan = formatearPlan(fila);
-
-    // C7 / D4: Sin técnico autorizado, se posterga la generación
-    if (!plan.tieneTecnico) {
-      resultado.planesPostergadosSinTecnico++;
-      resultado.detalles.push({
-        idPlan: plan.id,
-        nombre: plan.nombre,
-        estado: 'postergado',
-        motivo: 'El plan no tiene técnico autorizado asignado. Se posterga la generación.',
-      });
-      continue;
-    }
-
-    // Una tarea que ningún técnico autorizado puede hacer también posterga el plan
-    const tareasSinTecnico = plan.tareas.filter((t) => !tecnicoParaTarea(plan.tecnicos, t));
-    if (tareasSinTecnico.length > 0) {
-      resultado.planesPostergadosSinTecnico++;
-      resultado.detalles.push({
-        idPlan: plan.id,
-        nombre: plan.nombre,
-        estado: 'postergado',
-        motivo: `Ningún técnico autorizado tiene la especialidad de: ${tareasSinTecnico.map((t) => t.nombre).join(', ')}. Se posterga la generación.`,
-      });
-      continue;
-    }
-
-    // Buscar activos del tipo de activo del plan que no estén retirados
-    const { data: activos, error: errorActivos } = await supabase
-      .from('activo')
-      .select('activo_codigo, activo_estado')
-      .eq('tipo_activo_id', plan.tipoActivo.id)
-      .neq('activo_estado', ENUM_ESTADO_ACTIVO.codigo('Retirado'));
-
-    if (errorActivos) {
-      resultado.detalles.push({
-        idPlan: plan.id,
-        nombre: plan.nombre,
-        estado: 'error',
-        motivo: errorActivos.message,
-      });
-      continue;
-    }
-
-    const activosDisponibles = activos ?? [];
-    let otsCreadasParaPlan = 0;
-
-    for (const activo of activosDisponibles) {
-      // Idempotencia: verificar si ya existe OT para este plan, activo y fecha
-      const { data: yaExiste } = await supabase
-        .from('orden_trabajo')
-        .select('ot_id')
-        .eq('mant_prev_id', plan.id)
-        .eq('activo_codigo', activo.activo_codigo)
-        .eq('ot_desc', plan.nombre)
-        .in('ot_estado', [
-          ENUM_ESTADO_OT.codigo('Creada'),
-          ENUM_ESTADO_OT.codigo('Asignada'),
-          ENUM_ESTADO_OT.codigo('En ejecución'),
-        ])
-        .maybeSingle();
-
-      if (yaExiste) {
-        // Ya existe una OT vigente para este activo y plan: no duplicar (idempotencia)
-        continue;
-      }
-
-      // Crear Orden de Trabajo Preventiva (CA4: ticket nulo)
-      const { data: nuevaOt, error: errorOt } = await supabase
-        .from('orden_trabajo')
-        .insert({
-          mant_prev_id: plan.id,
-          activo_codigo: activo.activo_codigo,
-          ticket_id: null,
-          ot_desc: plan.nombre,
-          ot_estado: ENUM_ESTADO_OT.codigo('Asignada'),
-          ot_fecha_alta: new Date().toISOString(),
-        })
-        .select('ot_id')
-        .single();
-
-      if (errorOt) {
-        console.error(`Error al crear OT para activo ${activo.activo_codigo}:`, errorOt);
-        continue;
-      }
-
-      // Cargar tareas del plan a la OT
-      let ordenTarea = 1;
-
-      for (const t of plan.tareas) {
-        const tecnicoDeLaTarea = tecnicoParaTarea(plan.tecnicos, t)?.legajo ?? null;
-        const { data: tareaCreada, error: errorT } = await supabase
-          .from('tarea_ot')
-          .insert({
-            ot_id: nuevaOt.ot_id,
-            tarea_id: ordenTarea,
-            tarea_plan_id: t.id,
-            tarea_desc: t.descripcion || t.nombre,
-            tarea_estado: ENUM_ESTADO_TAREA.codigo('Asignada'),
-            tarea_prioridad: ENUM_PRIORIDAD.codigo('Media'),
-            tarea_fecha_ini: plan.fechaProximaGeneracion,
-          })
-          .select('tarea_id')
-          .single();
-
-        if (!errorT && tecnicoDeLaTarea) {
-          await supabase.from('tecnico_asignado_tarea_ot').insert({
-            ot_id: nuevaOt.ot_id,
-            tarea_id: ordenTarea,
-            tecnico_legajo: tecnicoDeLaTarea,
-            tec_asig_estado: ENUM_ESTADO_ASIGNACION_TECNICO.codigo('Asignada'),
-            tec_asig_fecha_asig: new Date().toISOString(),
-          });
-        }
-        ordenTarea++;
-      }
-
-      otsCreadasParaPlan++;
-      resultado.otsGeneradas++;
-    }
-
-    // Avanzar la próxima fecha de generación del plan
-    const nuevaFecha = calcularProximaFecha(
-      plan.fechaProximaGeneracion,
-      plan.intervalo,
-      plan.unidadFrecuencia
-    );
-
-    await supabase
-      .from('mantenimiento_preventivo')
-      .update({ mant_prev_fecha_prox_gen: nuevaFecha })
-      .eq('mant_prev_id', plan.id);
-
-    resultado.planesGenerados++;
-    resultado.detalles.push({
-      idPlan: plan.id,
-      nombre: plan.nombre,
-      estado: 'generado',
-      otsCreadas: otsCreadasParaPlan,
-      fechaAnterior: plan.fechaProximaGeneracion,
-      proximaFecha: nuevaFecha,
-    });
-  }
-
-  return resultado;
+/** La programación del plan, activo por activo. */
+export async function obtenerProgramacion(id) {
+  const plan = await obtenerPlanPorId(id);
+  return listarProgramacion(plan.id);
 }
