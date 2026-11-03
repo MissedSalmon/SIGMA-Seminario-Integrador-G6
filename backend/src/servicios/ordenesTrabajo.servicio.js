@@ -191,6 +191,7 @@ const COLUMNAS = `
   ),
   mantenimiento_preventivo (
     mant_prev_id,
+    mant_prev_nom,
     activo_codigo,
     activo (
       activo_codigo,
@@ -371,6 +372,7 @@ function aOrden(fila, asignaciones = []) {
     origen: fila.ticket_id ? 'Ticket' : 'Mantenimiento preventivo',
     idTicket: fila.ticket_id,
     idMantenimientoPreventivo: fila.mant_prev_id,
+    nombrePlan: mantenimientoPreventivo?.mant_prev_nom ?? null,
     ticket: ticket
       ? {
           id: ticket.ticket_id,
