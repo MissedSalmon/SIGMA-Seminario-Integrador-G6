@@ -9,11 +9,12 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CCard, CCardBody, CFormCheck, CFormLabel } from '@coreui/react';
+import { CCard, CCardBody } from '@coreui/react';
 
 import Aviso from '@/componentes/Aviso.js';
 import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Campo from '@/componentes/formulario/Campo.js';
+import SeleccionMultiple from '@/componentes/formulario/SeleccionMultiple.js';
 import CampoCuil from '@/componentes/formulario/CampoCuil.js';
 import CampoTelefono from '@/componentes/formulario/CampoTelefono.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
@@ -70,12 +71,6 @@ export default function FormularioPrestador({ prestador = null, onGuardar }) {
   }, [nombre, cuil, telefono, email, tiposElegidos]);
 
   const hayErrores = Object.keys(errores).length > 0;
-
-  function alternarTipo(idTipo) {
-    setTiposElegidos((actuales) =>
-      actuales.includes(idTipo) ? actuales.filter((id) => id !== idTipo) : [...actuales, idTipo]
-    );
-  }
 
   async function manejarEnvio(evento) {
     evento.preventDefault();
@@ -188,38 +183,26 @@ export default function FormularioPrestador({ prestador = null, onGuardar }) {
           <h2 className="sigma-seccion-titulo">Trabajos que realiza</h2>
 
           <div className="sigma-campos mb-4">
-            {/*
-              Los tipos son varias casillas y no una caja, asi que no entran en
-              <Campo>. Se arman a mano con las mismas clases, igual que las
-              especialidades del tecnico.
-            */}
-            <div className={`sigma-campo sigma-campo--ancho${errorTipos ? ' sigma-campo--error' : ''}`}>
-              <CFormLabel className="sigma-obligatorio">Tipos de prestador</CFormLabel>
-
-              {tipos.length === 0 ? (
-                <Aviso
-                  color="warning"
-                  mensaje="Todavía no hay tipos de prestador cargados: hace falta al menos uno para poder dar de alta un prestador."
-                />
-              ) : (
-                <>
-                  <div className="sigma-campo-opciones">
-                    {tipos.map((tipo) => (
-                      <CFormCheck
-                        key={tipo.idTipoPrestador}
-                        id={`tipo-${tipo.idTipoPrestador}`}
-                        label={tipo.nombre}
-                        checked={tiposElegidos.includes(tipo.idTipoPrestador)}
-                        onChange={() => alternarTipo(tipo.idTipoPrestador)}
-                      />
-                    ))}
-                  </div>
-                  {errorTipos && (
-                    <p className="sigma-campo-mensaje sigma-campo-mensaje--error">{errorTipos}</p>
-                  )}
-                </>
-              )}
-            </div>
+            {tipos.length === 0 ? (
+              <Aviso
+                color="warning"
+                mensaje="Todavía no hay tipos de prestador cargados: hace falta al menos uno para poder dar de alta un prestador."
+              />
+            ) : (
+              <SeleccionMultiple
+                id="tipos"
+                etiqueta="Tipos de prestador"
+                opciones={tipos.map((tipo) => ({ valor: tipo.idTipoPrestador, texto: tipo.nombre }))}
+                elegidos={tiposElegidos}
+                alCambiar={setTiposElegidos}
+                textoTodas="Todos los tipos"
+                textoCantidad={(cantidad) => `${cantidad} tipos`}
+                placeholder="Elegir tipos"
+                obligatorio
+                revisado={revisado}
+                error={errorTipos}
+              />
+            )}
           </div>
 
           {revisado && hayErrores && (

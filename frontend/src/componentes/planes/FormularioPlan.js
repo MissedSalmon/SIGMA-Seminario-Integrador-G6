@@ -17,7 +17,7 @@ import { cilPlus } from '@coreui/icons';
 import Aviso from '@/componentes/Aviso.js';
 import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Campo from '@/componentes/formulario/Campo.js';
-import SeleccionConChips from '@/componentes/formulario/SeleccionConChips.js';
+import SeleccionMultiple from '@/componentes/formulario/SeleccionMultiple.js';
 import DialogoNuevaPlantilla from '@/componentes/plantillas/DialogoNuevaPlantilla.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarTiposActivos } from '@/servicios/tiposActivos.js';
@@ -245,15 +245,17 @@ export default function FormularioPlan({ plan = null, onGuardar }) {
                 />
               </CCol>
 
-              <CCol lg={6}>
-                <SeleccionConChips
+              <CCol xs={12}>
+                <SeleccionMultiple
                   id="tareas"
                   etiqueta="Tareas"
                   opciones={opcionesTareas}
                   elegidos={idsTareas}
                   alCambiar={setIdsTareas}
-                  placeholder="Buscar tarea para agregar"
-                  textoSinElegir="Todavía no agregaste tareas."
+                  textoTodas="Todas las tareas"
+                  textoCantidad={(cantidad) => `${cantidad} tareas`}
+                  placeholder="Elegir tareas"
+                  ancho={40}
                   obligatorio
                   revisado={revisado}
                   error={errores.tareas}
@@ -272,15 +274,17 @@ export default function FormularioPlan({ plan = null, onGuardar }) {
                 />
               </CCol>
 
-              <CCol lg={6}>
-                <SeleccionConChips
+              <CCol xs={12}>
+                <SeleccionMultiple
                   id="tecnicos"
                   etiqueta="Técnicos autorizados"
                   opciones={opcionesTecnicos}
                   elegidos={legajos}
                   alCambiar={setLegajos}
-                  placeholder="Buscar técnico para agregar"
-                  textoSinElegir="Sin técnicos: las tareas de las OT van a quedar sin asignar."
+                  textoTodas="Todos los técnicos"
+                  textoCantidad={(cantidad) => `${cantidad} técnicos`}
+                  placeholder="Elegir técnicos"
+                  ancho={40}
                 />
               </CCol>
 
