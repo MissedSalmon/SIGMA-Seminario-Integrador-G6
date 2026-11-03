@@ -127,6 +127,10 @@ un **número** (el de la tabla). La traducción a texto está en un solo lugar:
 | **Herramienta** | 1 Disponible ⇄ 2 En uso · 3 Fuera de servicio |
 | **Rol de usuario** | 1 administrador · 2 tecnico · 3 autorizado |
 
+En pantalla, el estado del activo va con una etiqueta de color (03/11/2026,
+`EtiquetaEstadoActivo.js`): verde = Operativo (funciona), celeste = En mantenimiento (tiene
+una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (dado de baja).
+
 > **Decisiones del 12/10/2026 (Rol de usuario como dato enumerado):**
 > - El atributo `rol` de la tabla `usuario` migró de `VARCHAR(50)` a número entero (`INT`)
 >   con restricción `CHECK (rol BETWEEN 1 AND 3)`. La migración es
@@ -338,8 +342,13 @@ un **número** (el de la tabla). La traducción a texto está en un solo lugar:
 >   no la escribe nadie y el historial no la usa.
 > - El historial está en la ficha del activo (`/activos/[codigo]`), a la que se llega con el
 >   ícono de la ficha (la hoja, el mismo que en materiales y herramientas) del listado de
->   activos. Cada intervención es un renglón; «Ver más» abre el detalle de sus tareas. La API es
->   `GET /api/activos/:codigo/historial` y es sólo para el administrador.
+>   activos. La API es `GET /api/activos/:codigo/historial` y es sólo para el administrador.
+> - **Cambio del 03/11/2026:** cada intervención es un renglón con su origen («Ticket #32» o
+>   «Plan #6») y su OT («#25»), que llevan a su detalle; ya no hay «Ver más». Las columnas van
+>   origen, OT, fecha, mantenimiento, falla, estado y ejecutó. El orden por defecto es de la
+>   más reciente a la más antigua; un clic en el encabezado «Fecha» lo da vuelta. Una OT preventiva se
+>   busca por su propio activo (programación por activo) o, si es vieja y no lo tiene, por el
+>   activo del plan.
 
 ---
 

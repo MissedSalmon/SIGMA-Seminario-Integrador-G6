@@ -1602,3 +1602,25 @@ body {
   line-height: 1;
   pointer-events: none;
 }
+
+/*
+  Encabezado de columna que ordena la tabla al hacerle clic (la fecha del
+  historial de un activo). Se ve igual que los demas encabezados; la flechita
+  dice hacia donde esta ordenada.
+*/
+.sigma-orden-columna {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+
+.sigma-orden-columna:hover {
+  color: var(--cui-body-color);
+}
