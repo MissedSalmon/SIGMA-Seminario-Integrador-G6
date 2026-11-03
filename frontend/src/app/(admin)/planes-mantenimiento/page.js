@@ -17,12 +17,6 @@ import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarPlanes, darDeBajaPlan } from '@/servicios/planesMantenimiento.js';
 import { listarTiposActivos } from '@/servicios/tiposActivos.js';
 
-function soloFechaLegible(iso) {
-  if (!iso) return '-';
-  const [anio, mes, dia] = String(iso).slice(0, 10).split('-');
-  return dia && mes && anio ? `${dia}/${mes}/${anio}` : '-';
-}
-
 export default function PantallaPlanesMantenimiento() {
   const { mostrarToast } = useToast();
 
@@ -121,24 +115,6 @@ export default function PantallaPlanesMantenimiento() {
       render: (plan) => <span className="text-body-secondary">{plan.frecuencia}</span>,
     },
     {
-      clave: 'proximaGeneracion',
-      encabezado: 'Próxima ejecución',
-      render: (plan) => (
-        <span className={plan.activo ? 'fw-semibold' : 'text-body-tertiary'}>
-          {soloFechaLegible(plan.fechaProximaGeneracion)}
-        </span>
-      ),
-    },
-    {
-      clave: 'tareas',
-      encabezado: 'Tareas',
-      render: (plan) => (
-        <span className="text-body-secondary">
-          {plan.cantidadTareas} {plan.cantidadTareas === 1 ? 'tarea' : 'tareas'}
-        </span>
-      ),
-    },
-    {
       clave: 'tecnicos',
       encabezado: 'Técnicos',
       render: (plan) =>
@@ -216,7 +192,7 @@ export default function PantallaPlanesMantenimiento() {
             filas={planes}
             claveFila={(plan) => plan.id}
             columnas={columnas}
-            buscarPor={['nombre', 'descripcion', 'tipoMantenimiento']}
+            buscarPor={['nombre', 'descripcion']}
             placeholderBusqueda="Buscar plan..."
             filtros={[
               {
@@ -236,14 +212,13 @@ export default function PantallaPlanesMantenimiento() {
                 opciones: [
                   { valor: 'activo', texto: 'Activos' },
                   { valor: 'baja', texto: 'Dados de baja' },
-                  { valor: 'todos', texto: 'Todos' },
                 ],
                 textoTodos: 'Todos',
               },
             ]}
             alLimpiar={() => {
               setFiltroTipo('');
-              setFiltroEstado('activo');
+              setFiltroEstado('');
             }}
             cargando={cargando}
             textoVacio="No se encontraron planes de mantenimiento preventivo."
