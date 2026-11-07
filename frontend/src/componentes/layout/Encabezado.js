@@ -23,6 +23,7 @@
  * (como un <Link> de Next) y no recargue la pantalla entera: los enlaces de
  * react-aria son <a> comunes hasta que se les dice como navegar.
  */
+import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Breadcrumbs, RouterProvider } from '@heroui/react';
@@ -42,6 +43,7 @@ import { useLayout } from './ContextoLayout.js';
 import { useSesion } from './ContextoSesion.js';
 import CampanaNotificaciones, { olvidarAvisadas, ROLES_CON_NOTIFICACIONES } from './CampanaNotificaciones.js';
 import { logout } from '@/servicios/auth.js';
+import DialogoCambiarContrasena from '@/componentes/usuarios/CambioContrasena.js';
 
 /**
  * Como se muestra cada pantalla en las migas.
@@ -78,7 +80,6 @@ const NOMBRES = {
   '/prestadores': 'Listado de prestadores',
   '/prestadores/tipos': 'Tipos de prestador',
   '/autorizados': 'Usuarios autorizados',
-  '/usuarios': 'Usuarios',
   '/notificaciones': 'Notificaciones',
   '/perfil': 'Mi Perfil',
   '/configuracion': 'Configuración',
@@ -104,6 +105,7 @@ const MODULOS_CON_CODIGO = [
   '/inventario/materiales',
   '/inventario/herramientas',
   '/tecnicos',
+  '/autorizados',
 ];
 
 /**
@@ -190,6 +192,7 @@ export default function Encabezado() {
   const router = useRouter();
   const { usuario } = useSesion();
   const migas = armarMigas(direccionActual);
+  const [cambiandoContrasena, setCambiandoContrasena] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -202,69 +205,77 @@ export default function Encabezado() {
   };
 
   return (
-    <CHeader position="sticky" className="mb-4 p-0">
-      <CContainer className="border-bottom px-4 py-3 d-flex align-items-center justify-content-between" fluid>
-        <div className="d-flex align-items-center flex-grow-1">
-          <button
-            className="btn btn-link text-body p-0 d-md-none me-3"
-            onClick={() => setBarraVisible(!barraVisible)}
-            aria-label="Alternar menú"
-          >
-            <CIcon icon={cilMenu} size="lg" />
-          </button>
-          <RouterProvider navigate={router.push}>
-            <Breadcrumbs className="sigma-migas">
-              {/* En la pantalla de inicio, "Inicio" es la unica miga y es la actual. */}
-              <Breadcrumbs.Item href={migas.length > 0 ? '/' : undefined}>Inicio</Breadcrumbs.Item>
-
-              {migas.map((miga) => (
-                <Breadcrumbs.Item
-                  key={miga.direccion ?? miga.texto}
-                  href={miga.ultima || !miga.direccion ? undefined : miga.direccion}
-                >
-                  {miga.texto}
-                </Breadcrumbs.Item>
-              ))}
-            </Breadcrumbs>
-          </RouterProvider>
-        </div>
-
-        <div className="d-flex align-items-center gap-1">
-          {ROLES_CON_NOTIFICACIONES.includes(usuario?.rol) && <CampanaNotificaciones />}
-          <CDropdown variant="nav-item" placement="bottom-end">
-            <CDropdownToggle
-              className="py-0 px-2 d-flex align-items-center btn btn-ghost-primary rounded-circle"
-              caret={false}
-              aria-label="Perfil y opciones de cuenta"
-              style={{ width: '2.4rem', height: '2.4rem', justifyContent: 'center' }}
+    <>
+      <CHeader position="sticky" className="mb-4 p-0">
+        <CContainer className="border-bottom px-4 py-3 d-flex align-items-center justify-content-between" fluid>
+          <div className="d-flex align-items-center flex-grow-1">
+            <button
+              className="btn btn-link text-body p-0 d-md-none me-3"
+              onClick={() => setBarraVisible(!barraVisible)}
+              aria-label="Alternar menú"
             >
-              <CIcon icon={cilUser} size="lg" />
-            </CDropdownToggle>
-            <CDropdownMenu className="pt-0 shadow-sm border" style={{ minWidth: '13rem', borderRadius: 'var(--sigma-radio-md)' }}>
-              <CDropdownHeader className="bg-light fw-semibold py-2 text-secondary" style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Mi Cuenta
-              </CDropdownHeader>
-              <CDropdownItem as={Link} href="/perfil" className="d-flex align-items-center gap-2 py-2">
-                <CIcon icon={cilUser} />
-                <span>Mi Perfil</span>
-              </CDropdownItem>
-              <CDropdownItem as={Link} href="/configuracion/cambiar-password" className="d-flex align-items-center gap-2 py-2">
-                <CIcon icon={cilLockLocked} />
-                <span>Cambiar contraseña</span>
-              </CDropdownItem>
-              <CDropdownDivider className="my-1" />
-              <CDropdownItem
-                as="button"
-                onClick={handleLogout}
-                className="d-flex align-items-center gap-2 py-2 text-danger"
+              <CIcon icon={cilMenu} size="lg" />
+            </button>
+            <RouterProvider navigate={router.push}>
+              <Breadcrumbs className="sigma-migas">
+                {/* En la pantalla de inicio, "Inicio" es la unica miga y es la actual. */}
+                <Breadcrumbs.Item href={migas.length > 0 ? '/' : undefined}>Inicio</Breadcrumbs.Item>
+
+                {migas.map((miga) => (
+                  <Breadcrumbs.Item
+                    key={miga.direccion ?? miga.texto}
+                    href={miga.ultima || !miga.direccion ? undefined : miga.direccion}
+                  >
+                    {miga.texto}
+                  </Breadcrumbs.Item>
+                ))}
+              </Breadcrumbs>
+            </RouterProvider>
+          </div>
+
+          <div className="d-flex align-items-center gap-1">
+            {ROLES_CON_NOTIFICACIONES.includes(usuario?.rol) && <CampanaNotificaciones />}
+            <CDropdown variant="nav-item" placement="bottom-end">
+              <CDropdownToggle
+                className="py-0 px-2 d-flex align-items-center btn btn-ghost-primary rounded-circle"
+                caret={false}
+                aria-label="Perfil y opciones de cuenta"
+                style={{ width: '2.4rem', height: '2.4rem', justifyContent: 'center' }}
               >
-                <CIcon icon={cilAccountLogout} />
-                <span>Cerrar sesión</span>
-              </CDropdownItem>
-            </CDropdownMenu>
-          </CDropdown>
-        </div>
-      </CContainer>
-    </CHeader>
+                <CIcon icon={cilUser} size="lg" />
+              </CDropdownToggle>
+              <CDropdownMenu className="pt-0 shadow-sm border" style={{ minWidth: '13rem', borderRadius: 'var(--sigma-radio-md)' }}>
+                <CDropdownHeader className="bg-light fw-semibold py-2 text-secondary" style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Mi Cuenta
+                </CDropdownHeader>
+                <CDropdownItem as={Link} href="/perfil" className="d-flex align-items-center gap-2 py-2">
+                  <CIcon icon={cilUser} />
+                  <span>Mi Perfil</span>
+                </CDropdownItem>
+                <CDropdownItem
+                  as="button"
+                  onClick={() => setCambiandoContrasena(true)}
+                  className="d-flex align-items-center gap-2 py-2"
+                >
+                  <CIcon icon={cilLockLocked} />
+                  <span>Cambiar contraseña</span>
+                </CDropdownItem>
+                <CDropdownDivider className="my-1" />
+                <CDropdownItem
+                  as="button"
+                  onClick={handleLogout}
+                  className="d-flex align-items-center gap-2 py-2 text-danger"
+                >
+                  <CIcon icon={cilAccountLogout} />
+                  <span>Cerrar sesión</span>
+                </CDropdownItem>
+              </CDropdownMenu>
+            </CDropdown>
+          </div>
+        </CContainer>
+      </CHeader>
+
+      {cambiandoContrasena && <DialogoCambiarContrasena onCerrar={() => setCambiandoContrasena(false)} />}
+    </>
   );
 }
