@@ -350,6 +350,38 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 >   busca por su propio activo (programación por activo) o, si es vieja y no lo tiene, por el
 >   activo del plan.
 
+> **Decisiones del 07/11/2026 (HU-34, áreas con mayor incidencia, issue #29):**
+> - Está en el **panel del administrador** (`/`), abajo de los totales. No tiene pantalla
+>   propia. La API es `GET /api/estadisticas/areas-incidencia` y es sólo para el administrador.
+> - Es un **ranking de áreas por cantidad de fallas**, de mayor a menor. Empate: más tickets
+>   primero; después, por nombre.
+> - **Se calcula, no se guarda:** sale de las fallas que registran los técnicos en las tareas.
+>   Las fallas viejas que sólo estaban asociadas a la OT (sin tarea ni activo) no cuentan,
+>   porque no se sabe de qué área son.
+> - **El área de una falla es la del espacio de su activo**, igual que la de un ticket. Si el
+>   espacio no tiene área, la falla va a **«Sin área»**, que se muestra siempre al final. Si
+>   dos áreas comparten el espacio, la falla cuenta para las dos.
+> - Cuentan las fallas de OT **correctivas y preventivas**. La columna «Tickets» es la cantidad
+>   de tickets distintos: una falla preventiva no tiene ticket, y un ticket con dos tareas
+>   diagnosticadas suma dos fallas pero un ticket.
+> - Filtros: **Período** (último mes, 3 meses, semestre, año o todo), que se aplica sobre la
+>   fecha en que se registró la falla, y **Falla** (el tipo). El buscador busca por área o edificio.
+> - Se muestra como estadística: arriba cuatro cifras (fallas registradas, tickets con fallas,
+>   áreas afectadas y el área con más fallas); abajo un gráfico de barras con el ranking, cada
+>   barra dividida por tipo de falla, y al costado cuántas fallas hubo de cada tipo, de mayor a
+>   menor (empate: por nombre), con su porcentaje con un decimal. Un botón
+>   pasa a vista de **tabla**.
+> - Aparecen **todas las áreas que tuvieron al menos una falla** en el período, sin corte.
+>   Un área sin fallas no se muestra.
+> - **Porcentaje:** cada área muestra qué parte del total de fallas del período tiene, con un
+>   decimal («62,5 %»). Si dos áreas comparten un espacio, la suma puede pasar el 100 %.
+> - **Colores:** cada color es un tipo de falla, y la **referencia** arriba del gráfico dice
+>   cuál es cada uno. El color sale del lugar del tipo en el catálogo, no del ranking, así que
+>   un filtro no lo cambia. Si el catálogo pasa de 8 tipos, los siguientes van en gris.
+> - Clic en un área (o el ícono de la hoja en la tabla) abre una ventana con sus fallas:
+>   origen («Ticket #31» o «Plan #6», que llevan a su detalle), fecha, falla, activo y estado
+>   del ticket.
+
 ---
 
 ## Automatismos

@@ -116,6 +116,9 @@ en los **issues de GitHub**, y el modelo de datos en `supabase/migrations/`.
   arriba (sólo administrador) con los materiales por debajo de su mínimo, y la lista
   completa en `/notificaciones` (`GET /inventario/alertas`). La alerta se calcula del
   stock, no se guarda (ver [dominio.md](.claude/contexto/dominio.md)).
+- **HU-34 (áreas con mayor incidencia, issue #29) está hecha (07/11/2026):** ranking de áreas
+  por cantidad de fallas en el panel (`/`), con filtros por período y tipo de falla
+  (`GET /api/estadisticas/areas-incidencia`). Ver [dominio.md](.claude/contexto/dominio.md).
 - **El proyecto en Supabase** y la conexión con **Vercel** en producción.
 
 *(Nota: La base de datos ya fue refactorizada e integrada con Supabase CLI en la carpeta `supabase/migrations/`)*
