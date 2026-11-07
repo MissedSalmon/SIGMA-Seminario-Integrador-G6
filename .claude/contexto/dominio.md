@@ -64,7 +64,7 @@ Los tres cubren todo el sistema y no se superponen.
 ## El flujo preventivo
 
 ```
-Plan preventivo (tipo de activo + frecuencia + tareas estándar + técnicos autorizados)
+Plan preventivo (tipo de activo + frecuencia + tareas estándar)
         ↓  (automático: cada activo del tipo lleva su propio ciclo)
 OT preventiva  →  mismas tareas y ejecución que el flujo correctivo
 ```
@@ -94,12 +94,15 @@ resuelve el fin de mes y los bisiestos (31/08 + 6 meses = 28/02).
 
 - **Generación:** un job diario dentro del backend (hora `PLANES_HORA_GENERACION`, por defecto
   6) genera la OT de cada par cuya fecha entra en los próximos `PLANES_DIAS_ANTICIPACION` días
-  (por defecto 7). También corre al levantar la API, al dar de alta o importar activos, y a
+  (por defecto 1: **la OT se crea el día anterior**, decisión del 04/11/2026; con 7 días un plan
+  semanal no tendría sentido). También corre al levantar la API, al dar de alta o importar activos, y a
   mano con `POST /api/planes-mantenimiento/procesar-generacion`. Es idempotente: la OT guarda
   la fecha del ciclo (`ot_fecha_programada`) y un índice único impide dos OT del mismo ciclo.
-- **Asignación:** cada tarea va al técnico autorizado del plan que tiene su especialidad, está
-  disponible y tiene menos tareas pendientes (empate: legajo menor). Si nadie la cubre, la
-  tarea queda sin asignar y la OT en "Creada". Ya no se posterga el plan (reemplaza C7/D4).
+- **Asignación (04/11/2026):** el plan **no tiene técnicos**. La OT nace en "Creada" con las
+  tareas del plan sin responsable, y el administrador las asigna después, como en cualquier
+  OT (la lista de técnicos de cada tarea ya viene filtrada por su especialidad). Ya no se
+  posterga el plan (reemplaza C7/D4). Los técnicos que tenían los planes quedaron respaldados
+  en `plan_tecnicos_previos`.
 - **Planes existentes:** quedaron con alta del plan = 03/11/2026, así los activos viejos no
   generan todas sus OT juntas. El tipo y la próxima ejecución anteriores quedaron respaldados
   en `plan_datos_previos`.

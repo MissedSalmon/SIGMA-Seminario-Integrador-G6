@@ -13,7 +13,6 @@ import CIcon from '@coreui/icons-react';
 import { cilBuilding, cilRoom, cilSitemap, cilCalendar } from '@coreui/icons';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
-import AvisoPlanesPorVencer from '@/componentes/planes/AvisoPlanesPorVencer.js';
 import { listarEdificios } from '@/servicios/edificios.js';
 import { listarEspacios } from '@/servicios/espacios.js';
 import { listarAreas } from '@/servicios/areas.js';
@@ -72,8 +71,6 @@ export default function PantallaInicio() {
   return (
     <>
       <EncabezadoPagina titulo="Panel" />
-
-      <AvisoPlanesPorVencer />
 
       <CRow className="g-4">
         {MODULOS.map((modulo) => (

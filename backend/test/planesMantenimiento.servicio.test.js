@@ -81,10 +81,9 @@ describe('Planes de Mantenimiento Preventivo - Servicio', () => {
       intervalo: 6,
       unidadFrecuencia: 'meses',
       tareasIds: [10],
-      tecnicosLegajos: ['TEC-001'],
     };
 
-    test('crea plan válido con tareas y técnicos', async () => {
+    test('crea plan válido con sus tareas', async () => {
       const planCreadoFila = {
         mant_prev_id: 5,
         mant_prev_nom: 'Mantenimiento Semestral Aires',
@@ -96,7 +95,6 @@ describe('Planes de Mantenimiento Preventivo - Servicio', () => {
         mant_prev_activo: true,
         tipo_activo: { tipo_activo_id: 1, tipo_activo_nom: 'Aire Acondicionado' },
         mant_prev_tarea: [{ plantilla_de_tarea: { tarea_plan_id: 10, tarea_plan_nom: 'Limpieza' } }],
-        mant_prev_tecnico: [{ tecnico: { tecnico_legajo: 'TEC-001', tecnico_nom_ape: 'Juan Pérez' } }],
       };
 
       supabase.from.mockImplementation((tabla) => {
@@ -109,9 +107,6 @@ describe('Planes de Mantenimiento Preventivo - Servicio', () => {
         if (tabla === 'plantilla_de_tarea') {
           return consultaQueDevuelve([{ tarea_plan_id: 10 }]);
         }
-        if (tabla === 'tecnico') {
-          return consultaQueDevuelve([{ tecnico_legajo: 'TEC-001', tecnico_disponibilidad: true }]);
-        }
         return consultaQueDevuelve(null);
       });
 
@@ -120,10 +115,8 @@ describe('Planes de Mantenimiento Preventivo - Servicio', () => {
         .mockReturnValueOnce(consultaQueDevuelve(null)) // Unicidad
         .mockReturnValueOnce(consultaQueDevuelve({ tipo_activo_id: 1 })) // Tipo activo
         .mockReturnValueOnce(consultaQueDevuelve([{ tarea_plan_id: 10 }])) // Tareas
-        .mockReturnValueOnce(consultaQueDevuelve([{ tecnico_legajo: 'TEC-001' }])) // Técnicos
         .mockReturnValueOnce(consultaQueDevuelve({ mant_prev_id: 5 })) // Insert plan
         .mockReturnValueOnce(consultaQueDevuelve(null)) // Insert tareas
-        .mockReturnValueOnce(consultaQueDevuelve(null)) // Insert técnicos
         .mockReturnValueOnce(consultaQueDevuelve(planCreadoFila)); // Detalle final
 
       const resultado = await crearPlan(DATOS_VALIDOS);
@@ -131,7 +124,6 @@ describe('Planes de Mantenimiento Preventivo - Servicio', () => {
       expect(resultado.id).toBe(5);
       expect(resultado.nombre).toBe('Mantenimiento Semestral Aires');
       expect(resultado.frecuencia).toBe('Semestral');
-      expect(resultado.tieneTecnico).toBe(true);
       expect(resultado.tareas).toHaveLength(1);
     });
 
@@ -145,7 +137,7 @@ describe('Planes de Mantenimiento Preventivo - Servicio', () => {
         .mockReturnValueOnce(consultaQueDevuelve(null)) // Insert tareas
         .mockReturnValueOnce(consultaQueDevuelve({ mant_prev_id: 8, mant_prev_nom: 'X' })); // Detalle final
 
-      await crearPlan({ ...DATOS_VALIDOS, tecnicosLegajos: [] });
+      await crearPlan(DATOS_VALIDOS);
 
       const fila = insercion.insert.mock.calls[0][0];
       expect(fila.mant_prev_fecha_alta).toMatch(/^\d{4}-\d{2}-\d{2}$/);
@@ -153,30 +145,19 @@ describe('Planes de Mantenimiento Preventivo - Servicio', () => {
       expect(fila).not.toHaveProperty('mant_prev_fecha_prox_gen');
     });
 
-    test('crea plan sin técnicos correctamente (C5)', async () => {
-      const planSinTecnicoFila = {
-        mant_prev_id: 6,
-        mant_prev_nom: 'Mantenimiento Semestral Aires',
-        mant_prev_intervalo: 6,
-        mant_prev_unidad_frec: 'meses',
-        mant_prev_activo: true,
-        tipo_activo: { tipo_activo_id: 1, tipo_activo_nom: 'Aire Acondicionado' },
-        mant_prev_tarea: [{ plantilla_de_tarea: { tarea_plan_id: 10, tarea_plan_nom: 'Limpieza' } }],
-        mant_prev_tecnico: [],
-      };
 
+    test('no guarda técnicos: se asignan después en cada OT', async () => {
       supabase.from
         .mockReturnValueOnce(consultaQueDevuelve(null)) // Unicidad
         .mockReturnValueOnce(consultaQueDevuelve({ tipo_activo_id: 1 })) // Tipo activo
         .mockReturnValueOnce(consultaQueDevuelve([{ tarea_plan_id: 10 }])) // Tareas
-        .mockReturnValueOnce(consultaQueDevuelve({ mant_prev_id: 6 })) // Insert plan
+        .mockReturnValueOnce(consultaQueDevuelve({ mant_prev_id: 9 })) // Insert plan
         .mockReturnValueOnce(consultaQueDevuelve(null)) // Insert tareas
-        .mockReturnValueOnce(consultaQueDevuelve(planSinTecnicoFila)); // Detalle final
+        .mockReturnValueOnce(consultaQueDevuelve({ mant_prev_id: 9, mant_prev_nom: 'X' })); // Detalle final
 
-      const resultado = await crearPlan({ ...DATOS_VALIDOS, tecnicosLegajos: [] });
-      expect(resultado.id).toBe(6);
-      expect(resultado.tieneTecnico).toBe(false);
-      expect(resultado.tecnicos).toEqual([]);
+      await crearPlan({ ...DATOS_VALIDOS, tecnicosLegajos: ['TEC-001'] });
+
+      expect(supabase.from.mock.calls.map(([tabla]) => tabla)).not.toContain('mant_prev_tecnico');
     });
 
     test('rechaza si el nombre está vacío', async () => {
@@ -222,17 +203,6 @@ describe('Planes de Mantenimiento Preventivo - Servicio', () => {
       await expect(crearPlan(DATOS_VALIDOS)).rejects.toThrow('Una o más tareas seleccionadas no existen.');
     });
 
-    test('rechaza si se indica un técnico que no existe', async () => {
-      supabase.from
-        .mockReturnValueOnce(consultaQueDevuelve(null))
-        .mockReturnValueOnce(consultaQueDevuelve({ tipo_activo_id: 1 }))
-        .mockReturnValueOnce(consultaQueDevuelve([{ tarea_plan_id: 10 }]))
-        .mockReturnValueOnce(consultaQueDevuelve([])); // Técnicos vacíos
-
-      await expect(crearPlan(DATOS_VALIDOS)).rejects.toThrow(
-        'Uno o más técnicos indicados no existen.'
-      );
-    });
   });
 
   describe('Modificación y baja lógica (CA6)', () => {
@@ -245,7 +215,6 @@ describe('Planes de Mantenimiento Preventivo - Servicio', () => {
         mant_prev_activo: true,
         tipo_activo: { tipo_activo_id: 1, tipo_activo_nom: 'Mobiliario' },
         mant_prev_tarea: [],
-        mant_prev_tecnico: [],
         orden_trabajo: [{ ot_id: 101, ot_desc: 'Plan Original' }],
       };
 
@@ -280,7 +249,6 @@ describe('Planes de Mantenimiento Preventivo - Servicio', () => {
         mant_prev_activo: true,
         tipo_activo: { tipo_activo_id: 1 },
         mant_prev_tarea: [],
-        mant_prev_tecnico: [],
         orden_trabajo: [{ ot_id: 201 }],
       };
 
@@ -301,7 +269,6 @@ describe('Planes de Mantenimiento Preventivo - Servicio', () => {
         mant_prev_activo: false,
         tipo_activo: { tipo_activo_id: 1 },
         mant_prev_tarea: [],
-        mant_prev_tecnico: [],
       };
 
       supabase.from.mockReturnValueOnce(consultaQueDevuelve(planInactivo));
