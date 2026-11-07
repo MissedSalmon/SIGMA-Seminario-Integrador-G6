@@ -1,6 +1,8 @@
 import { supabase } from '../config/supabase.js';
 import bcrypt from 'bcryptjs';
 import { ENUM_ROL } from '../utiles/enumerados.js';
+import { validarPasswordNueva } from '../utiles/contrasenas.js';
+import { datoInvalido, errorDeBase, noEncontrado, prohibido } from '../utiles/errores.js';
 
 /**
  * Valida credenciales contra la base de datos.
@@ -91,35 +93,45 @@ export async function obtenerPerfil(identificador, rol) {
 }
 
 /**
- * Cambia la contraseña
+ * Cambia la contraseña del usuario de la sesion: la obligatoria del primer
+ * ingreso (HU-30) y la que cualquiera puede hacer desde su perfil.
+ *
+ * Pide la actual aunque la sesion este abierta, para que nadie la cambie desde
+ * una computadora que quedo con la sesion de otro. La nueva tiene que ser
+ * distinta: si no, el cambio obligatorio se podria saltear.
  */
 export async function cambiarPassword(identificador, passwordActual, passwordNueva) {
-  if (!identificador || !passwordActual || !passwordNueva || typeof passwordNueva !== 'string' || passwordNueva.length < 6) {
-    return false;
+  if (typeof passwordActual !== 'string' || !passwordActual) {
+    throw datoInvalido('Falta la contraseña actual.');
   }
 
-  const idLimpio = identificador.trim();
+  const problema = validarPasswordNueva(passwordNueva);
+  if (problema) throw datoInvalido(problema);
 
   const { data: usuario, error } = await supabase
     .from('usuario')
-    .select('usuario_id, password_hash')
-    .eq('identificador', idLimpio)
-    .single();
+    .select('usuario_id, password_hash, activo')
+    .eq('identificador', String(identificador ?? '').trim())
+    .maybeSingle();
 
-  if (error || !usuario) return false;
+  if (error) throw errorDeBase(error, 'de usuarios');
+  if (!usuario) throw noEncontrado('El usuario de la sesión no existe.');
+  // El token dura 30 minutos: si en ese tiempo lo desactivaron, ya no puede cambiar nada.
+  if (usuario.activo !== true) throw prohibido('El usuario está desactivado.');
 
   const passwordValida = await bcrypt.compare(passwordActual, usuario.password_hash);
-  if (!passwordValida) return false;
+  if (!passwordValida) throw datoInvalido('La contraseña actual no es correcta.');
+
+  if (passwordNueva === passwordActual) {
+    throw datoInvalido('La contraseña nueva tiene que ser distinta de la actual.');
+  }
 
   const nuevoHash = await bcrypt.hash(passwordNueva, 10);
 
-  const { error: updateError } = await supabase
+  const { error: errorCambio } = await supabase
     .from('usuario')
-    .update({ 
-      password_hash: nuevoHash, 
-      require_password_change: false,
-    })
+    .update({ password_hash: nuevoHash, require_password_change: false })
     .eq('usuario_id', usuario.usuario_id);
 
-  return !updateError;
+  if (errorCambio) throw errorDeBase(errorCambio, 'de usuarios');
 }

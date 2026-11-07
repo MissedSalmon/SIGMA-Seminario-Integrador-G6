@@ -17,6 +17,7 @@
  */
 import { supabase } from '../config/supabase.js';
 import { datoInvalido, noEncontrado, conflicto } from '../utiles/errores.js';
+import { contarObservacionesDe, controlarNombreLibre, crearUsuarioDePersona, cuentaDe } from './usuarios.servicio.js';
 import {
   normalizarCuil,
   normalizarDni,
@@ -35,7 +36,8 @@ const COLUMNAS_CON_AREA = `*,
   area (
     area_id,
     area_nom
-  )
+  ),
+  usuario ( usuario_id, activo )
 `;
 
 function limpiar(texto) {
@@ -65,6 +67,7 @@ function aAutorizado(fila) {
     fechaNacimiento: fila.autorizado_fecha_nac,
     idArea: area ? area.area_id : null,
     nombreArea: area ? area.area_nom : '',
+    ...cuentaDe(fila),
   };
 }
 
@@ -192,6 +195,17 @@ export async function obtenerPorId(legajo) {
   return aAutorizado(data);
 }
 
+/** Lo que deja un alta a medias: el area tomada y la persona (si tenia usuario, se borra en cascada). */
+async function deshacerAlta(legajo) {
+  await supabase.from('area').update({ autorizado_legajo: null }).eq('autorizado_legajo', legajo);
+  await supabase.from('autorizado').delete().eq('autorizado_legajo', legajo);
+}
+
+/**
+ * Alta de un usuario autorizado con su usuario para entrar al sistema (ver
+ * crearUsuarioDePersona). Es todo o nada: si el usuario no se puede crear, la
+ * persona tampoco queda guardada y el area queda libre.
+ */
 export async function crear(datos) {
   const legajo = limpiar(datos.legajo);
   if (!legajo) throw datoInvalido('El legajo es obligatorio.');
@@ -207,6 +221,7 @@ export async function crear(datos) {
   if (existente) throw conflicto(`El legajo ${legajo} ya pertenece a otro usuario autorizado.`);
 
   await validarAreaLibre(limpio.idArea, legajo);
+  await controlarNombreLibre(legajo);
 
   const { error } = await supabase.from('autorizado').insert({
     autorizado_legajo: legajo,
@@ -220,7 +235,14 @@ export async function crear(datos) {
 
   if (error) throw new Error(error.message);
 
-  await asignarArea(legajo, limpio.idArea);
+  try {
+    await asignarArea(legajo, limpio.idArea);
+    await crearUsuarioDePersona('autorizado', legajo);
+  } catch (fallo) {
+    await deshacerAlta(legajo);
+    fallo.message = `No se guardó el usuario autorizado: ${fallo.message}`;
+    throw fallo;
+  }
 
   return obtenerPorId(legajo);
 }
@@ -253,10 +275,10 @@ export async function actualizar(legajo, datos) {
 }
 
 /**
- * Baja de un usuario autorizado.
+ * Eliminar es para un autorizado cargado por error: sólo si nunca registró nada.
  *
  * Si cargo algun ticket no se borra: el ticket tiene que seguir diciendo quien
- * lo reporto. Si no cargo ninguno, primero se le suelta el area (el area lo
+ * lo reporto, y lo que corresponde es desactivar su usuario. Si no cargo ninguno, primero se le suelta el area (el area lo
  * apunta con una clave ajena, y si no se suelta la base rechaza el borrado).
  */
 export async function eliminar(legajo) {
@@ -270,8 +292,11 @@ export async function eliminar(legajo) {
 
   if (tickets && tickets.length > 0) {
     throw conflicto(
-      'No se puede eliminar: el usuario ya cargo tickets y hay que poder ver quien los reporto.'
+      'No se puede eliminar: ya cargó tickets y hay que poder ver quién los reportó. Desactivalo para que no pueda entrar.'
     );
+  }
+  if ((await contarObservacionesDe('autorizado_legajo', legajo)) > 0) {
+    throw conflicto('No se puede eliminar: ya escribió observaciones. Desactivalo para que no pueda entrar.');
   }
 
   const { error: errorSoltar } = await supabase

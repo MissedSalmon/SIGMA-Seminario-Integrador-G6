@@ -1,6 +1,5 @@
 import { supabase } from '../config/supabase.js';
-import bcrypt from 'bcryptjs';
-import { ENUM_ROL } from '../utiles/enumerados.js';
+import { contarObservacionesDe, controlarNombreLibre, crearUsuarioDePersona, cuentaDe } from './usuarios.servicio.js';
 import { datoInvalido, noEncontrado, conflicto } from '../utiles/errores.js';
 import { normalizarTelefono, validarTelefono } from '../utiles/validaciones.js';
 
@@ -12,7 +11,8 @@ const COLUMNAS_CON_ESPECIALIDADES = `*,
     especialidad (
       especialidad_nom
     )
-  )
+  ),
+  usuario ( usuario_id, activo )
 `;
 
 function limpiar(texto) {
@@ -33,6 +33,7 @@ function mapearTecnico(fila) {
       idEspecialidad: relacion.especialidad_id,
       nombre: relacion.especialidad ? relacion.especialidad.especialidad_nom : '(especialidad eliminada)',
     })),
+    ...cuentaDe(fila),
   };
 }
 
@@ -124,6 +125,16 @@ export async function obtenerPorId(legajo) {
   return mapearTecnico(data);
 }
 
+/** Lo que deja un alta a medias: las especialidades y el tecnico (si tenia usuario, se borra en cascada). */
+async function deshacerAlta(legajo) {
+  await supabase.from('tecnico_especialidad').delete().eq('tecnico_legajo', legajo);
+  await supabase.from('tecnico').delete().eq('tecnico_legajo', legajo);
+}
+
+/**
+ * Alta de un tecnico con su usuario (ver crearUsuarioDePersona). Es todo o
+ * nada: si el usuario no se puede crear, el tecnico tampoco queda guardado.
+ */
 export async function crear(datos) {
   const legajo = Number(datos.legajo);
   if (!Number.isInteger(legajo) || legajo <= 0) {
@@ -136,6 +147,8 @@ export async function crear(datos) {
   const { data: legajoExistente } = await supabase.from('tecnico').select('tecnico_legajo').eq('tecnico_legajo', legajo).maybeSingle();
   if (legajoExistente) throw conflicto('El legajo ingresado ya pertenece a otro técnico.');
 
+  await controlarNombreLibre(String(legajo));
+
   const { error } = await supabase.from('tecnico').insert({
     tecnico_legajo: legajo,
     tecnico_nom_ape: limpio.nombreCompleto,
@@ -145,24 +158,13 @@ export async function crear(datos) {
 
   if (error) throw new Error(error.message);
 
-  await asignarEspecialidades(legajo, limpio.especialidades);
-
-  // Crear usuario asociado en la tabla usuario (HU-30)
-  const passwordHash = await bcrypt.hash(String(legajo), 10);
-  const { error: errorUsuario } = await supabase.from('usuario').insert({
-    identificador: String(legajo),
-    password_hash: passwordHash,
-    rol: ENUM_ROL.codigo('tecnico'),
-    require_password_change: true,
-    activo: true,
-    tecnico_legajo: String(legajo),
-  });
-
-  if (errorUsuario) {
-    // Si falla la inserción del usuario, hacemos rollback
-    await supabase.from('tecnico_especialidad').delete().eq('tecnico_legajo', legajo);
-    await supabase.from('tecnico').delete().eq('tecnico_legajo', legajo);
-    throw new Error(`Error al crear las credenciales de usuario: ${errorUsuario.message}`);
+  try {
+    await asignarEspecialidades(legajo, limpio.especialidades);
+    await crearUsuarioDePersona('tecnico', legajo);
+  } catch (fallo) {
+    await deshacerAlta(legajo);
+    fallo.message = `No se guardó el técnico: ${fallo.message}`;
+    throw fallo;
   }
 
   return obtenerPorId(legajo);
@@ -190,9 +192,24 @@ export async function actualizar(legajo, datos) {
   return obtenerPorId(legajo);
 }
 
+/**
+ * Eliminar es para un tecnico cargado por error: sólo si nunca registró nada.
+ * Si ya tiene historial (tareas, herramientas, observaciones) se desactiva su usuario.
+ */
 export async function eliminar(legajo) {
-  // Las herramientas que tiene o que tuvo asignadas (sus prestamos) frenan el
-  // borrado: si no, la base lo rechaza con un error que no se entiende.
+  const { count: tareas, error: errorTareas } = await supabase
+    .from('tecnico_asignado_tarea_ot')
+    .select('tecnico_legajo', { count: 'exact', head: true })
+    .eq('tecnico_legajo', legajo);
+  if (errorTareas) throw new Error(errorTareas.message);
+  if (tareas > 0) {
+    throw conflicto('No se puede eliminar: el técnico ya tiene tareas asignadas. Desactivalo para que no pueda entrar.');
+  }
+  if ((await contarObservacionesDe('tecnico_legajo', legajo)) > 0) {
+    throw conflicto('No se puede eliminar: el técnico ya escribió observaciones. Desactivalo para que no pueda entrar.');
+  }
+
+  // Las herramientas que tiene o que tuvo asignadas (sus prestamos) tambien frenan el borrado.
   const { data: prestamos, error: errorPrestamos } = await supabase
     .from('tecnico_utiliza_herramienta')
     .select('tec_herr_fecha_dev')
@@ -202,7 +219,7 @@ export async function eliminar(legajo) {
     throw conflicto('El técnico tiene herramientas asignadas. Primero hay que registrar la devolución.');
   }
   if (prestamos.length > 0) {
-    throw conflicto('No se puede eliminar un técnico que tuvo herramientas asignadas: se perdería ese historial.');
+    throw conflicto('No se puede eliminar: el técnico ya usó herramientas. Desactivalo para que no pueda entrar.');
   }
 
   // Limpiamos sus relaciones primero

@@ -46,7 +46,8 @@ export default function DialogoAsignacion({ herramienta, onCerrar, onGuardado })
   useEffect(() => {
     if (devolviendo) return;
     listarTecnicos()
-      .then(setTecnicos)
+      // A un técnico desactivado no se le prestan herramientas.
+      .then((lista) => setTecnicos(lista.filter((tecnico) => tecnico.activo !== false)))
       .catch((fallo) => setError(fallo.message))
       .finally(() => setCargandoTecnicos(false));
   }, [devolviendo]);

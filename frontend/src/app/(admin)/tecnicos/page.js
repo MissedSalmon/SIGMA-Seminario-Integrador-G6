@@ -6,38 +6,36 @@
  * Se puede filtrar por especialidad y por disponibilidad, y los dos filtros
  * se combinan (AND): "Electricidad" + "Disponible" trae solo los tecnicos
  * electricistas que ahora mismo pueden recibir tareas.
+ *
+ * Cada fila tiene «Ver detalle» y «Editar»; el resto de las acciones está en la
+ * ficha, igual que en autorizados
+ * (ver componentes/usuarios/AccionesUsuario.js).
  */
-import { useEffect, useState } from 'react';
-import { CButton, CButtonGroup, CCard, CCardBody } from '@coreui/react';
-import CIcon from '@coreui/icons-react';
-import { cilPencil, cilTrash } from '@coreui/icons';
+import { useEffect, useMemo, useState } from 'react';
+import { CCard, CCardBody } from '@coreui/react';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
-import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
-import DialogoEliminar from '@/componentes/DialogoEliminar.js';
-import DialogoRestablecerContrasena, {
-  AccionRestablecerContrasena,
-} from '@/componentes/usuarios/RestablecerContrasena.js';
+import {
+  AccionesFila,
+  COLUMNA_ESTADO,
+  OPCIONES_ESTADO,
+  filtrarPorEstado,
+} from '@/componentes/usuarios/AccionesUsuario.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
-import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarEspecialidades } from '@/servicios/especialidades.js';
 import { listarTecnicos, eliminarTecnico } from '@/servicios/tecnicos.js';
 
 export default function PantallaTecnicos() {
-  const { mostrarToast } = useToast();
-
   const [tecnicos, setTecnicos] = useState([]);
   const [especialidades, setEspecialidades] = useState([]);
   const [filtroEspecialidad, setFiltroEspecialidad] = useState('');
   const [filtroDisponibilidad, setFiltroDisponibilidad] = useState('');
+  const [filtroEstado, setFiltroEstado] = useState('');
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
-  const [aEliminar, setAEliminar] = useState(null);
-  const [eliminando, setEliminando] = useState(false);
-  const [aRestablecer, setARestablecer] = useState(null);
 
   // Las especialidades se cargan una sola vez: son las del desplegable del filtro.
   useEffect(() => {
@@ -45,9 +43,6 @@ export default function PantallaTecnicos() {
       .then(setEspecialidades)
       .catch((fallo) => setError(fallo.message));
   }, []);
-
-  // Se suma 1 para volver a pedir la lista (por ejemplo, despues de una baja).
-  const [recarga, setRecarga] = useState(0);
 
   useEffect(() => {
     let vigente = true;
@@ -73,24 +68,9 @@ export default function PantallaTecnicos() {
     return () => {
       vigente = false;
     };
-  }, [filtroEspecialidad, filtroDisponibilidad, recarga]);
+  }, [filtroEspecialidad, filtroDisponibilidad]);
 
-  async function confirmarBaja() {
-    setEliminando(true);
-    setError('');
-
-    try {
-      await eliminarTecnico(aEliminar.legajo);
-      mostrarToast({ tipo: 'exito', mensaje: `Se eliminó al técnico "${aEliminar.nombre} ".` });
-      setAEliminar(null);
-      setRecarga((numero) => numero + 1);
-    } catch (fallo) {
-      setError(fallo.message);
-      setAEliminar(null);
-    } finally {
-      setEliminando(false);
-    }
-  }
+  const filtrados = useMemo(() => filtrarPorEstado(tecnicos, filtroEstado), [tecnicos, filtroEstado]);
 
   const columnas = [
     {
@@ -125,39 +105,17 @@ export default function PantallaTecnicos() {
         <span className="text-body-secondary">{tecnico.disponibilidad}</span>
       ),
     },
+    COLUMNA_ESTADO,
     {
       clave: 'acciones',
       encabezado: 'Acciones',
       alinearDerecha: true,
       render: (tecnico) => (
-        <CButtonGroup size="sm">
-          <BotonEnlace
-            href={`/tecnicos/${tecnico.legajo}/editar`}
-            variante="ghost"
-            className="btn-icono"
-            title="Editar"
-          >
-            <CIcon icon={cilPencil} />
-          </BotonEnlace>
-          <AccionRestablecerContrasena
-            nombre={tecnico.nombre}
-            onClick={() =>
-              setARestablecer({
-                identificador: String(tecnico.legajo),
-                nombre: tecnico.nombre,
-              })
-            }
-          />
-          <CButton
-            variant="ghost"
-            color="danger"
-            className="btn-icono"
-            onClick={() => setAEliminar(tecnico)}
-            title="Eliminar"
-          >
-            <CIcon icon={cilTrash} />
-          </CButton>
-        </CButtonGroup>
+        <AccionesFila
+          nombre={tecnico.nombre}
+          hrefDetalle={`/tecnicos/${tecnico.legajo}`}
+          hrefEditar={`/tecnicos/${tecnico.legajo}/editar`}
+        />
       ),
     },
   ];
@@ -174,7 +132,7 @@ export default function PantallaTecnicos() {
       <CCard>
         <CCardBody>
           <TablaDatos
-            filas={tecnicos}
+            filas={filtrados}
             claveFila={(tecnico) => tecnico.legajo}
             columnas={columnas}
             buscarPor={['nombre', 'legajo']}
@@ -200,41 +158,27 @@ export default function PantallaTecnicos() {
                   { valor: 'No disponible', texto: 'No disponible' },
                 ],
               },
+              {
+                etiqueta: 'Estado',
+                valor: filtroEstado,
+                alCambiar: setFiltroEstado,
+                opciones: OPCIONES_ESTADO,
+              },
             ]}
-            alLimpiar={() => { setFiltroEspecialidad(''); setFiltroDisponibilidad(''); }}
+            alLimpiar={() => {
+              setFiltroEspecialidad('');
+              setFiltroDisponibilidad('');
+              setFiltroEstado('');
+            }}
             cargando={cargando}
             textoVacio={
-              filtroEspecialidad || filtroDisponibilidad
+              filtroEspecialidad || filtroDisponibilidad || filtroEstado
                 ? 'No hay tecnicos que cumplan con ese filtro.'
                 : 'Todavia no hay tecnicos cargados.'
             }
           />
         </CCardBody>
       </CCard>
-
-      <DialogoEliminar
-        visible={Boolean(aEliminar)}
-        eliminando={eliminando}
-        onConfirmar={confirmarBaja}
-        onCancelar={() => setAEliminar(null)}
-      >
-        <p className="mb-0">
-          Se va a eliminar al tecnico{' '}
-          <strong>
-            {aEliminar?.nombre} 
-          </strong>
-          .
-        </p>
-        <p className="text-body-secondary mt-2 mb-0">
-          Solo se puede eliminar si no tiene tareas asignadas. Si el técnico ya no trabaja pero tiene
-          historial, marcalo como &quot;No disponible&quot; en vez de eliminarlo.
-        </p>
-      </DialogoEliminar>
-
-      <DialogoRestablecerContrasena
-        usuario={aRestablecer}
-        onCerrar={() => setARestablecer(null)}
-      />
     </>
   );
 }
