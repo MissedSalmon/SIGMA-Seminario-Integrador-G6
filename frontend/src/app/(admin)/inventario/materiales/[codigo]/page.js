@@ -9,9 +9,13 @@
  *
  * La tarjeta Consumos (HU-35, 23/10/2026) dice en que tarea se uso: una fila
  * por tarea, con la cantidad sumada si se registro mas de una vez.
+ *
+ * «Modificar stock» (06/11/2026) suma o descuenta a mano lo que no viene de un
+ * remito ni de una tarea; queda en el historial como Ingreso manual o Egreso manual.
  */
 import { use, useEffect, useState } from 'react';
 import {
+  CButton,
   CCard,
   CCardBody,
   CCardHeader,
@@ -25,12 +29,13 @@ import {
   CTableRow,
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilArrowLeft, cilPencil } from '@coreui/icons';
+import { cilArrowLeft, cilPencil, cilSwapVertical } from '@coreui/icons';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import { Cargando, SinDatos } from '@/componentes/EstadoTabla.js';
+import DialogoAjusteStock from '@/componentes/inventario/DialogoAjusteStock.js';
 import { listarConsumos, listarMovimientos, obtenerItem } from '@/servicios/inventario.js';
 import { soloFechaLegible } from '@/utils/fechas.js';
 
@@ -43,6 +48,9 @@ function Dato({ etiqueta, children }) {
     </div>
   );
 }
+
+/** Los tipos de movimiento que suben el stock; el resto lo bajan. */
+const ENTRADAS = ['Ingreso', 'Ingreso manual'];
 
 /** Texto en gris e itálica para decir que algo no está. */
 function SinDato({ children }) {
@@ -60,6 +68,17 @@ export default function PantallaFichaItem({ params }) {
   const [consumos, setConsumos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  const [ajustando, setAjustando] = useState(false);
+
+  async function alAjustar(actualizado) {
+    setAjustando(false);
+    setItem(actualizado);
+    try {
+      setMovimientos(await listarMovimientos(codigoItem));
+    } catch (fallo) {
+      setError(fallo.message);
+    }
+  }
 
   useEffect(() => {
     Promise.all([obtenerItem(codigoItem), listarMovimientos(codigoItem), listarConsumos(codigoItem)])
@@ -81,6 +100,10 @@ export default function PantallaFichaItem({ params }) {
         accionesExtra={
           item && (
             <>
+              <CButton color="secondary" variant="outline" onClick={() => setAjustando(true)}>
+                <CIcon icon={cilSwapVertical} className="me-2" />
+                Modificar stock
+              </CButton>
               <BotonEnlace
                 href={`/inventario/materiales/${encodeURIComponent(item.codigo)}/editar`}
                 color="secondary"
@@ -197,7 +220,7 @@ export default function PantallaFichaItem({ params }) {
               <CCardHeader className="fw-semibold">Historial de movimientos</CCardHeader>
               <CCardBody>
                 {movimientos.length === 0 ? (
-                  <SinDatos texto="Todavía no hay ingresos ni consumos registrados para este ítem." />
+                  <SinDatos texto="Todavía no hay movimientos registrados para este ítem." />
                 ) : (
                   <div className="table-responsive">
                     <CTable hover align="middle" className="mb-0">
@@ -228,7 +251,7 @@ export default function PantallaFichaItem({ params }) {
                                 color: es el mismo texto gris que el resto.
                               */}
                               <span className="text-body-secondary">
-                                {movimiento.tipo === 'Ingreso' ? '+' : '−'}
+                                {ENTRADAS.includes(movimiento.tipo) ? '+' : '−'}
                                 {movimiento.cantidad}
                               </span>
                             </CTableDataCell>
@@ -244,8 +267,10 @@ export default function PantallaFichaItem({ params }) {
                                   Remito #{movimiento.idRemito}
                                   {movimiento.proveedor && ` — ${movimiento.proveedor}`}
                                 </BotonEnlace>
-                              ) : (
+                              ) : movimiento.tipo === 'Consumo' ? (
                                 <SinDato>Consumo en una tarea</SinDato>
+                              ) : (
+                                movimiento.observacion ?? <SinDato>Sin observación</SinDato>
                               )}
                             </CTableDataCell>
                             <CTableDataCell>
@@ -261,6 +286,15 @@ export default function PantallaFichaItem({ params }) {
             </CCard>
           </>
         )
+      )}
+
+      {ajustando && (
+        <DialogoAjusteStock
+          material={item}
+          ultimaFecha={movimientos[0]?.fecha ?? null}
+          onCerrar={() => setAjustando(false)}
+          onGuardado={alAjustar}
+        />
       )}
 
       <div className="d-flex flex-wrap gap-2 mt-2 mb-4">
