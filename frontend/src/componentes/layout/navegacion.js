@@ -242,6 +242,13 @@ export const navegacion = [
     roles: ['administrador'],
   },
   {
+    tipo: 'item',
+    texto: 'Carga de trabajo',
+    direccion: '/tecnicos/carga-trabajo',
+    icono: cilTask,
+    roles: ['administrador'],
+  },
+  {
     // Los tipos (HU-24) van antes que los prestadores (HU-25), porque para
     // cargar un prestador hay que elegir sus tipos.
     tipo: 'grupo',
