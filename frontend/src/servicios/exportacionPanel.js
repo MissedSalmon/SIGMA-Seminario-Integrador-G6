@@ -164,24 +164,24 @@ export async function generarBytesLibroPanel(payloadPanel) {
         {
           idx: 0,
           order: 0,
-          val: { formula: `Evolucion_Tickets!$B$2:$B$${topFila}` },
-          cat: { formula: `Evolucion_Tickets!$A$2:$A$${topFila}` },
-          tx: 'Tickets Creados',
+          val: { ref: `Evolucion_Tickets!$B$2:$B$${topFila}` },
+          cat: { ref: `Evolucion_Tickets!$A$2:$A$${topFila}` },
+          tx: { kind: 'literal', value: 'Tickets Creados' },
         },
         {
           idx: 1,
           order: 1,
-          val: { formula: `Evolucion_Tickets!$C$2:$C$${topFila}` },
-          cat: { formula: `Evolucion_Tickets!$A$2:$A$${topFila}` },
-          tx: 'Tickets Cerrados',
+          val: { ref: `Evolucion_Tickets!$C$2:$C$${topFila}` },
+          cat: { ref: `Evolucion_Tickets!$A$2:$A$${topFila}` },
+          tx: { kind: 'literal', value: 'Tickets Cerrados' },
         },
       ],
     });
     const spaceEvolucion = makeChartSpace({
       title: 'Evolución de Tickets: Creados vs. Cerrados',
-      plotArea: { charts: [chartEvolucion] },
+      plotArea: { chart: chartEvolucion },
     });
-    addChartAt(wsEvolucion, 'E2', spaceEvolucion, { widthPx: 640, heightPx: 360 });
+    addChartAt(wsEvolucion, 'E2', { space: spaceEvolucion }, { widthPx: 640, heightPx: 360 });
   }
 
   // ─── HOJA 4: INCIDENCIAS POR ÁREA (M-04) ──────────────────────────────────────
@@ -209,17 +209,17 @@ export async function generarBytesLibroPanel(payloadPanel) {
         {
           idx: 0,
           order: 0,
-          val: { formula: `Incidencias_Areas!$B$2:$B$${topFila}` },
-          cat: { formula: `Incidencias_Areas!$A$2:$A$${topFila}` },
-          tx: 'Fallas por Área',
+          val: { ref: `Incidencias_Areas!$B$2:$B$${topFila}` },
+          cat: { ref: `Incidencias_Areas!$A$2:$A$${topFila}` },
+          tx: { kind: 'literal', value: 'Fallas por Área' },
         },
       ],
     });
     const spaceIncidencias = makeChartSpace({
       title: 'Ranking de Incidencias por Área',
-      plotArea: { charts: [chartIncidencias] },
+      plotArea: { chart: chartIncidencias },
     });
-    addChartAt(wsIncidencias, 'F2', spaceIncidencias, { widthPx: 640, heightPx: 360 });
+    addChartAt(wsIncidencias, 'F2', { space: spaceIncidencias }, { widthPx: 640, heightPx: 360 });
   }
 
   // ─── HOJA 5: ÓRDENES DE TRABAJO (M-08, M-09, M-10) ───────────────────────────
@@ -241,17 +241,17 @@ export async function generarBytesLibroPanel(payloadPanel) {
       {
         idx: 0,
         order: 0,
-        val: { formula: 'OT_Distribucion!$B$2:$B$3' },
-        cat: { formula: 'OT_Distribucion!$A$2:$A$3' },
-        tx: 'OTs por Origen',
+        val: { ref: 'OT_Distribucion!$B$2:$B$3' },
+        cat: { ref: 'OT_Distribucion!$A$2:$A$3' },
+        tx: { kind: 'literal', value: 'OTs por Origen' },
       },
     ],
   });
   const spaceOrigen = makeChartSpace({
     title: 'Órdenes de Trabajo por Origen',
-    plotArea: { charts: [chartOrigen] },
+    plotArea: { chart: chartOrigen },
   });
-  addChartAt(wsOt, 'E2', spaceOrigen, { widthPx: 480, heightPx: 300 });
+  addChartAt(wsOt, 'E2', { space: spaceOrigen }, { widthPx: 480, heightPx: 300 });
 
   // Tabla B: Prioridad
   setCellByCoord(wsOt, 'A8', 'Prioridad');
@@ -272,17 +272,17 @@ export async function generarBytesLibroPanel(payloadPanel) {
         {
           idx: 0,
           order: 0,
-          val: { formula: `OT_Distribucion!$B$9:$B$${topFilaPrioridad}` },
-          cat: { formula: `OT_Distribucion!$A$9:$A$${topFilaPrioridad}` },
-          tx: 'OTs por Prioridad',
+          val: { ref: `OT_Distribucion!$B$9:$B$${topFilaPrioridad}` },
+          cat: { ref: `OT_Distribucion!$A$9:$A$${topFilaPrioridad}` },
+          tx: { kind: 'literal', value: 'OTs por Prioridad' },
         },
       ],
     });
     const spacePrioridad = makeChartSpace({
       title: 'Órdenes de Trabajo por Prioridad',
-      plotArea: { charts: [chartPrioridad] },
+      plotArea: { chart: chartPrioridad },
     });
-    addChartAt(wsOt, 'E14', spacePrioridad, { widthPx: 480, heightPx: 300 });
+    addChartAt(wsOt, 'E14', { space: spacePrioridad }, { widthPx: 480, heightPx: 300 });
   }
 
   // ─── HOJA 6: ACTIVOS POR EDIFICIO (M-03) ──────────────────────────────────────
@@ -307,17 +307,17 @@ export async function generarBytesLibroPanel(payloadPanel) {
         {
           idx: 0,
           order: 0,
-          val: { formula: `Activos_Edificios!$B$2:$B$${topFilaEd}` },
-          cat: { formula: `Activos_Edificios!$A$2:$A$${topFilaEd}` },
-          tx: 'Activos en Servicio',
+          val: { ref: `Activos_Edificios!$B$2:$B$${topFilaEd}` },
+          cat: { ref: `Activos_Edificios!$A$2:$A$${topFilaEd}` },
+          tx: { kind: 'literal', value: 'Activos en Servicio' },
         },
       ],
     });
     const spaceEdificios = makeChartSpace({
       title: 'Distribución de Activos por Edificio',
-      plotArea: { charts: [chartEdificios] },
+      plotArea: { chart: chartEdificios },
     });
-    addChartAt(wsEdificios, 'E2', spaceEdificios, { widthPx: 640, heightPx: 360 });
+    addChartAt(wsEdificios, 'E2', { space: spaceEdificios }, { widthPx: 640, heightPx: 360 });
   }
 
   // ─── HOJA 7: CARGA TÉCNICA (M-14) ─────────────────────────────────────────────
@@ -344,17 +344,17 @@ export async function generarBytesLibroPanel(payloadPanel) {
         {
           idx: 0,
           order: 0,
-          val: { formula: `Tecnicos_Carga!$B$2:$B$${topFilaTec}` },
-          cat: { formula: `Tecnicos_Carga!$A$2:$A$${topFilaTec}` },
-          tx: 'Tareas Activas',
+          val: { ref: `Tecnicos_Carga!$B$2:$B$${topFilaTec}` },
+          cat: { ref: `Tecnicos_Carga!$A$2:$A$${topFilaTec}` },
+          tx: { kind: 'literal', value: 'Tareas Activas' },
         },
       ],
     });
     const spaceTecnicos = makeChartSpace({
       title: 'Carga de Trabajo Activa por Técnico',
-      plotArea: { charts: [chartTecnicos] },
+      plotArea: { chart: chartTecnicos },
     });
-    addChartAt(wsTecnicos, 'F2', spaceTecnicos, { widthPx: 640, heightPx: 360 });
+    addChartAt(wsTecnicos, 'F2', { space: spaceTecnicos }, { widthPx: 640, heightPx: 360 });
   }
 
   // ─── HOJA 8: MATERIALES CRÍTICOS (M-16) ───────────────────────────────────────
