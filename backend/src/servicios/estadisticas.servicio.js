@@ -321,3 +321,136 @@ export async function obtenerTiemposResolucion(filtros = {}) {
     porTecnico: desglose(data?.por_tecnico, SIN_DATO.tecnico),
   };
 }
+
+/**
+ * Catálogo formal de definiciones de métricas (S3, S15).
+ * Se serializa en metadatos para que la UI y el archivo .xlsx lean la misma fuente de verdad.
+ */
+export const DEFINICIONES_METRICAS = [
+  { id: 'M-01', nombre: 'Tasa de operatividad de activos', formula: '(Activos operativos / Activos en servicio) * 100', origen: 'activo.activo_estado', tipoGrafico: 'KPI' },
+  { id: 'M-02', nombre: 'Distribución de activos por estado', formula: 'Conteo de activos por estado', origen: 'activo.activo_estado', tipoGrafico: 'Dona' },
+  { id: 'M-03', nombre: 'Activos inventariados por edificio', formula: 'Conteo de activos en servicio por edificio', origen: 'activo.espacio_id -> espacio.edificio_id', tipoGrafico: 'Barras horizontales' },
+  { id: 'M-04', nombre: 'Ranking de áreas con mayor incidencia de fallas', formula: 'Conteo de fallas de activos por área', origen: 'falla.falla_id', tipoGrafico: 'Barras apiladas' },
+  { id: 'M-05', nombre: 'Distribución de tickets por estado', formula: 'Conteo de tickets dados de alta por estado', origen: 'ticket.ticket_estado', tipoGrafico: 'Barras verticales' },
+  { id: 'M-06', nombre: 'Tiempo promedio de resolución de tickets', formula: 'AVG(ticket_fecha_cierre - ticket_fecha_alta)', origen: 'ticket.ticket_fecha_alta, ticket.ticket_fecha_cierre', tipoGrafico: 'KPI / Barras horizontales' },
+  { id: 'M-07', nombre: 'Cobertura de planes de mantenimiento preventivo', formula: '(Tipos con plan activo / Total tipos) * 100', origen: 'mantenimiento_preventivo.tipo_activo_id', tipoGrafico: 'KPI' },
+  { id: 'M-08', nombre: 'Órdenes de trabajo por origen', formula: 'Correctivas (con ticket) vs. Preventivas (con plan)', origen: 'orden_trabajo.ticket_id, orden_trabajo.mant_prev_id', tipoGrafico: 'Dona' },
+  { id: 'M-09', nombre: 'Estado operativo de órdenes de trabajo', formula: 'Conteo de OTs del período por estado', origen: 'orden_trabajo.ot_estado', tipoGrafico: 'Barras verticales' },
+  { id: 'M-10', nombre: 'Órdenes de trabajo por prioridad', formula: 'Conteo de OTs no canceladas por prioridad', origen: 'orden_trabajo.ot_prioridad', tipoGrafico: 'Dona' },
+  { id: 'M-11', nombre: 'Evolución temporal de generación y cierre de tickets', formula: 'Tickets creados y tickets cerrados agrupados por mes', origen: 'ticket.ticket_fecha_alta, ticket.ticket_fecha_cierre', tipoGrafico: 'Línea' },
+  { id: 'M-12', nombre: 'Tasa de cumplimiento y estado de tareas', formula: 'Conteo de tareas de OTs por estado', origen: 'tarea_ot.tarea_estado', tipoGrafico: 'Barras horizontales' },
+  { id: 'M-13', nombre: 'Distribución de fallas por tipo', formula: 'Conteo de fallas por categoría', origen: 'falla.falla_tipo', tipoGrafico: 'Barras horizontales / Dona' },
+  { id: 'M-14', nombre: 'Carga de trabajo activa por técnico', formula: 'Tareas asignadas no concluidas por técnico', origen: 'tecnico_asignado_tarea_ot', tipoGrafico: 'Barras horizontales' },
+  { id: 'M-15', nombre: 'Índice de disponibilidad del plantel técnico', formula: '(Técnicos disponibles / Total de técnicos) * 100', origen: 'tecnico.tecnico_disponibilidad', tipoGrafico: 'KPI' },
+  { id: 'M-16', nombre: 'Materiales críticos bajo stock mínimo', formula: 'Materiales con stock_actual <= stock_minimo', origen: 'material.mat_stock_actual, material.mat_stock_min', tipoGrafico: 'KPI / Tabla' },
+];
+
+/**
+ * Resumen general de KPIs instantáneos (M-01, M-07, M-15, M-16).
+ */
+export async function obtenerResumenGeneral() {
+  const { data, error } = await supabase.rpc('estadistica_resumen_general');
+  if (error) throw errorDeBase(error, 'del resumen general del panel');
+  return data;
+}
+
+/**
+ * Distribución de activos por estado (M-02) y por edificio (M-03).
+ */
+export async function obtenerDistribucionActivos() {
+  const { data, error } = await supabase.rpc('estadistica_distribucion_activos');
+  if (error) throw errorDeBase(error, 'de la distribución de activos');
+  return data;
+}
+
+/**
+ * Distribución de órdenes de trabajo por origen, estado, prioridad y cumplimiento (M-08, M-09, M-10, M-12).
+ */
+export async function obtenerOrdenesTrabajo(filtros = {}) {
+  const desde = extremoDelPeriodo(filtros.desde, 'desde', false);
+  const hasta = extremoDelPeriodo(filtros.hasta, 'hasta', true);
+  if (desde && hasta && desde > hasta) {
+    throw datoInvalido('La fecha "desde" no puede ser posterior a la fecha "hasta".');
+  }
+
+  const { data, error } = await supabase.rpc('estadistica_ordenes_trabajo', {
+    p_desde: desde,
+    p_hasta: hasta,
+  });
+  if (error) throw errorDeBase(error, 'de las órdenes de trabajo');
+  return data;
+}
+
+/**
+ * Evolución mensual de tickets (M-11) y distribución por estado en el período (M-05).
+ */
+export async function obtenerEvolucionTickets(filtros = {}) {
+  const desde = extremoDelPeriodo(filtros.desde, 'desde', false);
+  const hasta = extremoDelPeriodo(filtros.hasta, 'hasta', true);
+  if (desde && hasta && desde > hasta) {
+    throw datoInvalido('La fecha "desde" no puede ser posterior a la fecha "hasta".');
+  }
+
+  const { data, error } = await supabase.rpc('estadistica_evolucion_tickets', {
+    p_desde: desde,
+    p_hasta: hasta,
+  });
+  if (error) throw errorDeBase(error, 'de la evolución de tickets');
+  return data;
+}
+
+/**
+ * Distribución de carga de trabajo activa por técnico (M-14).
+ */
+export async function obtenerCargaTecnicos() {
+  const { data, error } = await supabase.rpc('estadistica_carga_tecnicos');
+  if (error) throw errorDeBase(error, 'de la carga de trabajo técnica');
+  return data;
+}
+
+/**
+ * Payload consolidado del panel completo para visualización y exportación .xlsx (S13, S14, S15).
+ */
+export async function obtenerPanelCompleto(filtros = {}) {
+  const desde = extremoDelPeriodo(filtros.desde, 'desde', false);
+  const hasta = extremoDelPeriodo(filtros.hasta, 'hasta', true);
+  if (desde && hasta && desde > hasta) {
+    throw datoInvalido('La fecha "desde" no puede ser posterior a la fecha "hasta".');
+  }
+
+  const [resumenGeneral, distribucionActivos, ordenesTrabajo, evolucionTickets, cargaTecnicos, areasIncidencia, tiemposResolucion] =
+    await Promise.all([
+      obtenerResumenGeneral(),
+      obtenerDistribucionActivos(),
+      obtenerOrdenesTrabajo({ desde, hasta }),
+      obtenerEvolucionTickets({ desde, hasta }),
+      obtenerCargaTecnicos(),
+      obtenerAreasConMayorIncidencia({ desde, hasta, tipoFalla: filtros.tipoFalla }),
+      obtenerTiemposResolucion({ desde, hasta }),
+    ]);
+
+  return {
+    datos: {
+      resumenGeneral,
+      activos: distribucionActivos,
+      ordenesTrabajo,
+      evolucionTickets,
+      cargaTecnicos,
+      areasIncidencia,
+      tiemposResolucion,
+    },
+    metadatos: {
+      alcance: 'Todo el sistema',
+      zonaHoraria: 'America/Argentina/Buenos_Aires',
+      generadoEn: new Date().toISOString(),
+      versionSistema: '0.1.0',
+      commit: '899b562d0c76832de809bf99f3e5875703e503e7',
+      filtros: {
+        desde: desde ? desde.slice(0, 10) : null,
+        hasta: hasta ? hasta.slice(0, 10) : null,
+        tipoFalla: filtros.tipoFalla ?? null,
+      },
+      definiciones: DEFINICIONES_METRICAS,
+    },
+  };
+}
