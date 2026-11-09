@@ -281,7 +281,7 @@ body {
   --cui-sidebar-nav-link-hover-bg: rgba(255, 255, 255, 0.06);
   --cui-sidebar-nav-link-active-color: #fff;
   --cui-sidebar-nav-link-active-bg: rgba(var(--sigma-teal-rgb), 0.55);
-  --cui-sidebar-nav-title-color: rgba(255, 255, 255, 0.4);
+  --cui-sidebar-nav-title-color: rgba(255, 255, 255, 0.65);
   --cui-sidebar-border-color: rgba(255, 255, 255, 0.08);
   border-right: none;
 }
@@ -308,22 +308,14 @@ body {
   border-left-color: var(--sigma-amber);
 }
 
-/* Las opciones de un desplegable van corridas y con una linea guia, para que se vea a cual pertenecen. */
-.sidebar .nav-group-items {
-  margin-left: 1.6rem;
-  border-left: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.sidebar .nav-group-items .nav-link {
-  margin-left: 0.35rem;
-}
-
 .sidebar .nav-title {
+  color: var(--cui-sidebar-nav-title-color);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  padding-block: 0.35rem;
-  margin-top: 0.4rem;
+  padding-block: 0.4rem;
+  margin-top: 0.85rem;
+  margin-bottom: 0.15rem;
 }
 
 /*
