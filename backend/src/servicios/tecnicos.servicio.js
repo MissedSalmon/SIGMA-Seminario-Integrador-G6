@@ -1,9 +1,34 @@
 import { supabase } from '../config/supabase.js';
 import { contarObservacionesDe, controlarNombreLibre, crearUsuarioDePersona, cuentaDe } from './usuarios.servicio.js';
+import {
+  ENUM_ESTADO_ASIGNACION_TECNICO,
+  ENUM_ESTADO_TAREA,
+  ENUM_PRIORIDAD,
+} from '../utiles/enumerados.js';
 import { datoInvalido, noEncontrado, conflicto } from '../utiles/errores.js';
 import { normalizarTelefono, validarTelefono } from '../utiles/validaciones.js';
 
 const DISPONIBILIDADES_VALIDAS = ['Disponible', 'No disponible'];
+const ASIGNACION_CANCELADA = ENUM_ESTADO_ASIGNACION_TECNICO.codigo('Cancelada');
+const ESTADOS_PENDIENTES = ['Creada', 'Asignada', 'Pendiente'];
+
+const COLUMNAS_TAREAS_ASIGNADAS = `
+  tecnico_legajo,
+  ot_id,
+  tarea_id,
+  tec_asig_estado,
+  tarea_ot!inner (
+    tarea_desc,
+    tarea_estado,
+    tarea_prioridad,
+    tarea_fecha_ini,
+    tarea_fecha_fin,
+    orden_trabajo (
+      ot_id,
+      ot_desc
+    )
+  )
+`;
 
 const COLUMNAS_CON_ESPECIALIDADES = `*,
   tecnico_especialidad (
@@ -35,6 +60,103 @@ function mapearTecnico(fila) {
     })),
     ...cuentaDe(fila),
   };
+}
+
+function soloElDia(valor) {
+  return valor ? String(valor).slice(0, 10) : null;
+}
+
+function mapearTareaAsignada(fila) {
+  const tarea = fila.tarea_ot;
+  const estado = ENUM_ESTADO_TAREA.texto(tarea.tarea_estado);
+
+  if (!estado || estado === 'Cancelada') return null;
+
+  return {
+    idOt: fila.ot_id,
+    idTarea: fila.tarea_id,
+    descripcion: tarea.tarea_desc,
+    estado,
+    prioridad: ENUM_PRIORIDAD.texto(tarea.tarea_prioridad) ?? 'Media',
+    fechaInicio: soloElDia(tarea.tarea_fecha_ini),
+    fechaFin: soloElDia(tarea.tarea_fecha_fin),
+    orden: tarea.orden_trabajo
+      ? { id: tarea.orden_trabajo.ot_id, descripcion: tarea.orden_trabajo.ot_desc }
+      : null,
+  };
+}
+
+function cumplePeriodo(tarea, { desde, hasta }) {
+  if ((desde || hasta) && !tarea.fechaInicio) return false;
+  if (desde && tarea.fechaInicio < desde) return false;
+  if (hasta && tarea.fechaInicio > hasta) return false;
+  return true;
+}
+
+async function obtenerTareasAsignadas(legajo, filtros = {}) {
+  let consulta = supabase
+    .from('tecnico_asignado_tarea_ot')
+    .select(COLUMNAS_TAREAS_ASIGNADAS)
+    .neq('tec_asig_estado', ASIGNACION_CANCELADA);
+
+  if (legajo) consulta = consulta.eq('tecnico_legajo', legajo);
+
+  const { data, error } = await consulta;
+  if (error) throw new Error(error.message);
+
+  return (data ?? [])
+    .map((fila) => {
+      const tarea = mapearTareaAsignada(fila);
+      return tarea ? { legajo: fila.tecnico_legajo, tarea } : null;
+    })
+    .filter((fila) => fila && cumplePeriodo(fila.tarea, filtros))
+    .sort((una, otra) =>
+      una.tarea.idOt - otra.tarea.idOt || una.tarea.idTarea - otra.tarea.idTarea
+    );
+}
+
+/**
+ * Carga de trabajo por técnico. El período se aplica a la fecha prevista de
+ * inicio; las tareas sin esa fecha solo aparecen cuando no hay filtro temporal.
+ */
+export async function obtenerCargaTrabajo(filtros = {}) {
+  const tecnicos = await obtenerTodos({ especialidad_id: filtros.especialidad_id });
+  const tareas = await obtenerTareasAsignadas(null, filtros);
+  const porTecnico = new Map(tecnicos.map((tecnico) => [String(tecnico.legajo), []]));
+
+  for (const asignacion of tareas) {
+    if (porTecnico.has(String(asignacion.legajo))) {
+      porTecnico.get(String(asignacion.legajo)).push(asignacion.tarea);
+    }
+  }
+
+  return tecnicos
+    .map((tecnico) => {
+      const tareasTecnico = porTecnico.get(String(tecnico.legajo)) ?? [];
+      const pendientes = tareasTecnico.filter((tarea) => ESTADOS_PENDIENTES.includes(tarea.estado)).length;
+      const enEjecucion = tareasTecnico.filter((tarea) => tarea.estado === 'En ejecución').length;
+      const completadas = tareasTecnico.filter((tarea) => tarea.estado === 'Finalizada').length;
+
+      return {
+        ...tecnico,
+        pendientes,
+        enEjecucion,
+        completadas,
+        cargaActiva: pendientes + enEjecucion,
+      };
+    })
+    .sort((una, otra) =>
+      otra.cargaActiva - una.cargaActiva ||
+      otra.pendientes - una.pendientes ||
+      una.nombre.localeCompare(otra.nombre, 'es')
+    );
+}
+
+/** Tareas vigentes de un técnico para el detalle de carga. */
+export async function obtenerTareasDeCarga(legajo, filtros = {}) {
+  await obtenerPorId(legajo);
+  const filas = await obtenerTareasAsignadas(legajo, filtros);
+  return filas.map((fila) => fila.tarea);
 }
 
 /** Valida y normaliza los datos personales. No valida el legajo: eso lo hace `crear`, que es el unico que lo puede tocar. */
@@ -230,4 +352,3 @@ export async function eliminar(legajo) {
 
   return { legajo: data.tecnico_legajo, nombre: data.tecnico_nom_ape, apellido: '' };
 }
-

@@ -437,6 +437,71 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 >   busca por su propio activo (programación por activo) o, si es vieja y no lo tiene, por el
 >   activo del plan.
 
+> **Decisiones del 07/11/2026 (HU-34, áreas con mayor incidencia, issue #29):**
+> - Está en el **panel del administrador** (`/`), abajo de los totales. No tiene pantalla
+>   propia. La API es `GET /api/estadisticas/areas-incidencia` y es sólo para el administrador.
+> - Es un **ranking de áreas por cantidad de fallas**, de mayor a menor. Empate: más tickets
+>   primero; después, por nombre.
+> - **Se calcula, no se guarda:** sale de las fallas que registran los técnicos en las tareas.
+>   Las fallas viejas que sólo estaban asociadas a la OT (sin tarea ni activo) no cuentan,
+>   porque no se sabe de qué área son.
+> - **El área de una falla es la del espacio de su activo**, igual que la de un ticket. Si el
+>   espacio no tiene área, la falla va a **«Sin área»**, que se muestra siempre al final. Si
+>   dos áreas comparten el espacio, la falla cuenta para las dos.
+> - Cuentan las fallas de OT **correctivas y preventivas**. La columna «Tickets» es la cantidad
+>   de tickets distintos: una falla preventiva no tiene ticket, y un ticket con dos tareas
+>   diagnosticadas suma dos fallas pero un ticket.
+> - Filtros: **Período** (último mes, 3 meses, semestre, año o todo), que se aplica sobre la
+>   fecha en que se registró la falla, y **Falla** (el tipo). El buscador busca por área o edificio.
+> - Se muestra como estadística: arriba cuatro cifras (fallas registradas, tickets con fallas,
+>   áreas afectadas y el área con más fallas); abajo un gráfico de barras con el ranking, cada
+>   barra dividida por tipo de falla, y al costado cuántas fallas hubo de cada tipo, de mayor a
+>   menor (empate: por nombre), con su porcentaje con un decimal. Un botón
+>   pasa a vista de **tabla**.
+> - Aparecen **todas las áreas que tuvieron al menos una falla** en el período, sin corte.
+>   Un área sin fallas no se muestra.
+> - **Porcentaje:** cada área muestra qué parte del total de fallas del período tiene, con un
+>   decimal («62,5 %»). Si dos áreas comparten un espacio, la suma puede pasar el 100 %.
+> - **Colores:** cada color es un tipo de falla, y la **referencia** arriba del gráfico dice
+>   cuál es cada uno. El color sale del lugar del tipo en el catálogo, no del ranking, así que
+>   un filtro no lo cambia. Si el catálogo pasa de 8 tipos, los siguientes van en gris.
+> - Clic en un área (o el ícono de la hoja en la tabla) abre una ventana con sus fallas:
+>   origen («Ticket #31» o «Plan #6», que llevan a su detalle), fecha, falla, activo y estado
+>   del ticket.
+
+> **Decisiones del 09/11/2026 (tiempos promedio de resolución, Sprint 7):**
+> - Está en el **panel del administrador** (`/`), abajo de las áreas con mayor incidencia.
+>   La API es `GET /api/estadisticas/tiempos-resolucion?desde=&hasta=` y es sólo para el
+>   administrador (otro rol: 403; sin sesión: 401).
+> - **Tiempo de resolución = fecha de cierre − fecha de alta del ticket**
+>   (`ticket_fecha_cierre − ticket_fecha_alta`). La fecha de cierre ya existía: la pone sola
+>   la HU-26 al finalizar la OT.
+> - **Sólo cuentan los tickets Cerrados** (estado 6) con fecha de alta, fecha de cierre y un
+>   cierre igual o posterior al alta. Los demás estados no se promedian. Un ticket cerrado sin
+>   fecha de cierre (por ejemplo, uno cerrado antes de la migración del 10/10/2026) queda afuera.
+> - **Reabrir:** hoy ningún camino saca un ticket de «Cerrado» y no hay historial de estados.
+>   Si alguna vez se cierra dos veces, `ticket_fecha_cierre` guarda el último cierre, que es el
+>   que se usa.
+> - **El período se aplica sobre la fecha de cierre**, con los dos días incluidos. La pantalla
+>   manda el día entero en la hora de quien mira; si a la API le llega una fecha sola
+>   («2026-11-09»), la toma como ese día en la hora de Argentina (UTC-3).
+> - **Se calcula en la base**, con AVG y GROUP BY, en la función
+>   `estadistica_tiempos_resolucion` (migración `20261109120000`). Se guarda en segundos y la
+>   pantalla lo escribe con las dos unidades más grandes: «2 d 4 h», «3 h 30 min», «25 min»,
+>   y al lado en horas con un decimal.
+> - **Promedio general:** cada ticket cuenta una vez.
+> - **Por área:** el área del espacio del activo, como en la HU-34. Si dos áreas comparten el
+>   espacio, el ticket cuenta para las dos. Sin espacio o sin área: **«Sin área»**.
+> - **Por tipo de activo:** el tipo del activo del ticket.
+> - **Por técnico:** el ticket cuenta para **cada técnico** que tuvo una asignación no
+>   cancelada en una tarea no cancelada de su OT (un técnico con dos tareas cuenta una vez).
+>   Si no hay ninguno (por ejemplo, sólo trabajó un prestador), va a **«Sin asignar»**. Estos
+>   tickets sí entran en el promedio general.
+> - Cada fila muestra nombre, promedio y cantidad de tickets cerrados. Orden: de mayor a menor
+>   tiempo; las filas «Sin área» / «Sin asignar» siempre al final.
+> - Sin tickets cerrados en el período se muestra un cartel («No hay tickets cerrados en el
+>   período elegido»), nunca 0 ni NaN.
+
 ---
 
 ## Automatismos

@@ -93,6 +93,10 @@ router.use('/prestadores', rutasPrestadores);
 import rutasTiposPrestador from './tiposPrestador.rutas.js';
 router.use('/tipos-prestador', rutasTiposPrestador);
 
+// Estadisticas del panel: areas con mayor incidencia (HU-34)
+import rutasEstadisticas from './estadisticas.rutas.js';
+router.use('/estadisticas', rutasEstadisticas);
+
 // Sirve para verificar que la API esta viva. No consulta la base de datos.
 router.get('/salud', (req, res) => {
   res.json({

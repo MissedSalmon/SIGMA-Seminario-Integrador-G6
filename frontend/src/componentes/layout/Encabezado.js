@@ -76,6 +76,7 @@ const NOMBRES = {
   '/inventario/materiales': 'Materiales',
   '/inventario/herramientas': 'Herramientas',
   '/tecnicos': 'Técnicos',
+  '/tecnicos/carga-trabajo': 'Carga de trabajo',
   '/especialidades': 'Especialidades',
   '/prestadores': 'Listado de prestadores',
   '/prestadores/tipos': 'Tipos de prestador',

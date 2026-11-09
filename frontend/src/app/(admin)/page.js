@@ -13,6 +13,8 @@ import CIcon from '@coreui/icons-react';
 import { cilBuilding, cilRoom, cilSitemap, cilCalendar } from '@coreui/icons';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
+import RankingAreasIncidencia from '@/componentes/estadisticas/RankingAreasIncidencia.js';
+import TiemposResolucion from '@/componentes/estadisticas/TiemposResolucion.js';
 import { listarEdificios } from '@/servicios/edificios.js';
 import { listarEspacios } from '@/servicios/espacios.js';
 import { listarAreas } from '@/servicios/areas.js';
@@ -94,6 +96,10 @@ export default function PantallaInicio() {
           </CCol>
         ))}
       </CRow>
+
+      <RankingAreasIncidencia />
+
+      <TiemposResolucion />
     </>
   );
 }
