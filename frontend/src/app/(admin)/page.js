@@ -362,25 +362,14 @@ export default function PantallaPanelAdministrador() {
                     {
                       label: 'Tickets creados',
                       data: evolucion.evolucion?.map((e) => e.ticketsCreados) ?? [],
-                      borderColor: '#000000',
-                      backgroundColor: 'transparent',
-                      borderWidth: 1.5,
-                      tension: 0.25,
-                      pointStyle: 'circle',
-                      pointRadius: 3,
-                      pointHoverRadius: 5,
+                      borderColor: '#321fdb',
+                      backgroundColor: 'rgba(50, 31, 219, 0.1)',
                     },
                     {
                       label: 'Tickets cerrados',
                       data: evolucion.evolucion?.map((e) => e.ticketsCerrados) ?? [],
-                      borderColor: '#495057',
-                      backgroundColor: 'transparent',
-                      borderWidth: 1.5,
-                      borderDash: [4, 4],
-                      tension: 0.25,
-                      pointStyle: 'rect',
-                      pointRadius: 3,
-                      pointHoverRadius: 5,
+                      borderColor: '#2eb85c',
+                      backgroundColor: 'rgba(46, 184, 92, 0.1)',
                     },
                   ],
                 }}
@@ -399,9 +388,7 @@ export default function PantallaPanelAdministrador() {
                     {
                       label: 'Cantidad de tickets',
                       data: evolucion.porEstado?.map((e) => e.cantidad) ?? [],
-                      backgroundColor: '#212529',
-                      borderColor: '#000000',
-                      borderWidth: 1,
+                      backgroundColor: '#39f',
                     },
                   ],
                 }}
@@ -424,9 +411,7 @@ export default function PantallaPanelAdministrador() {
                     {
                       label: 'Fallas registradas',
                       data: areas.ranking?.slice(0, 8).map((a) => a.cantidadFallas ?? a.fallas) ?? [],
-                      backgroundColor: '#212529',
-                      borderColor: '#000000',
-                      borderWidth: 1,
+                      backgroundColor: '#e55353',
                     },
                   ],
                 }}
@@ -447,9 +432,6 @@ export default function PantallaPanelAdministrador() {
                         ordenes.porOrigen?.correctivas ?? 0,
                         ordenes.porOrigen?.preventivas ?? 0,
                       ],
-                      backgroundColor: ['#000000', '#6c757d'],
-                      borderColor: '#ffffff',
-                      borderWidth: 1.5,
                     },
                   ],
                 }}
@@ -467,9 +449,6 @@ export default function PantallaPanelAdministrador() {
                   datasets: [
                     {
                       data: ordenes.porPrioridad?.map((p) => p.cantidad) ?? [],
-                      backgroundColor: ['#000000', '#495057', '#adb5bd', '#ced4da'],
-                      borderColor: '#ffffff',
-                      borderWidth: 1.5,
                     },
                   ],
                 }}
@@ -492,9 +471,7 @@ export default function PantallaPanelAdministrador() {
                     {
                       label: 'Tareas activas',
                       data: cargaTec.porTecnico?.map((t) => t.tareasActivas) ?? [],
-                      backgroundColor: '#212529',
-                      borderColor: '#000000',
-                      borderWidth: 1,
+                      backgroundColor: '#f9b115',
                     },
                   ],
                 }}
@@ -514,9 +491,7 @@ export default function PantallaPanelAdministrador() {
                     {
                       label: 'Activos',
                       data: activos.porEdificio?.map((e) => e.cantidad) ?? [],
-                      backgroundColor: '#495057',
-                      borderColor: '#000000',
-                      borderWidth: 1,
+                      backgroundColor: '#321fdb',
                     },
                   ],
                 }}
@@ -534,9 +509,6 @@ export default function PantallaPanelAdministrador() {
                   datasets: [
                     {
                       data: activos.porEstado?.map((e) => e.cantidad) ?? [],
-                      backgroundColor: ['#000000', '#495057', '#6c757d', '#adb5bd', '#dee2e6'],
-                      borderColor: '#ffffff',
-                      borderWidth: 1.5,
                     },
                   ],
                 }}
