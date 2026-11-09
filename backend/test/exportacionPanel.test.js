@@ -14,6 +14,7 @@ import {
 } from '../../frontend/src/servicios/exportacionPanel.js';
 import { loadWorkbook, fromArrayBuffer } from '@office-kit/xlsx/io';
 import { sheetNames } from '@office-kit/xlsx/workbook';
+import { unzipSync } from 'fflate';
 
 const MOCK_DATOS_PANEL = {
   datos: {
@@ -136,7 +137,7 @@ describe('Módulo de Exportación a Excel (FE-04, Suite C)', () => {
     expect(sanitizarTextoExcel(undefined)).toBe('');
   });
 
-  test('generarBytesLibroPanel genera un Uint8Array válido de hoja de cálculo OpenXML', async () => {
+  test('generarBytesLibroPanel genera un Uint8Array válido de hoja de cálculo OpenXML con gráficos nativos', async () => {
     const bytes = await generarBytesLibroPanel(MOCK_DATOS_PANEL);
     expect(bytes).toBeInstanceOf(Uint8Array);
     expect(bytes.length).toBeGreaterThan(5000);
@@ -157,6 +158,11 @@ describe('Módulo de Exportación a Excel (FE-04, Suite C)', () => {
       'Tecnicos_Carga',
       'Materiales_Criticos',
     ]);
+
+    // Verificar que los 6 gráficos OpenXML nativos estén empaquetados en el archivo .xlsx
+    const entradasZip = unzipSync(bytes);
+    const archivosGraficos = Object.keys(entradasZip).filter((k) => k.startsWith('xl/charts/chart'));
+    expect(archivosGraficos.length).toBe(6);
   });
 
   test('límite de seguridad de filas declarado', () => {

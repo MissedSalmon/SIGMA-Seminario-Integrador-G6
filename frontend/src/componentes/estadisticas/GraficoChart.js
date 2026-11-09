@@ -65,88 +65,166 @@ export default function GraficoChart({
 }) {
   const [modoTabla, setModoTabla] = useState(false);
 
-  // Paleta estándar tomada de las variables CSS de CoreUI
-  const PALETA_COREUI = [
-    '#321fdb', // Primary
-    '#39f',    // Info
-    '#2eb85c', // Success
-    '#f9b115', // Warning
-    '#e55353', // Danger
-    '#636f83', // Secondary
-    '#4f5d73', // Dark
+  // Paleta minimalista, técnica y corporativa de alto contraste y sobriedad
+  const PALETA_CORPORATIVA = [
+    '#000000', // Negro puro
+    '#495057', // Gris carbón de alto contraste
+    '#6c757d', // Gris pizarra medio
+    '#adb5bd', // Gris claro técnico
+    '#ced4da', // Gris suave
+    '#212529', // Grafito oscuro
+    '#343a40', // Antracita
   ];
 
-  // Configuración de escalas honestas (S11)
+  // Configuración de ejes finos negros (#000000) sin cuadrícula interna y tipografía sans-serif
+  const estiloEje = {
+    border: {
+      display: true,
+      color: '#000000',
+      width: 1,
+    },
+    grid: {
+      display: false,
+      drawBorder: false,
+      drawTicks: true,
+      tickColor: '#000000',
+      tickWidth: 1,
+      tickLength: 4,
+    },
+    ticks: {
+      color: '#212529',
+      font: {
+        family: 'Arial, Roboto, sans-serif',
+        size: 11,
+        weight: 'normal',
+      },
+      precision: 0,
+    },
+  };
+
+  // Configuración de escalas honestas (S11) con ejes finos sin cuadrícula
   const esCartesiano = tipo === 'bar' || tipo === 'line';
   const opcionesEscalas = esCartesiano
     ? horizontal
       ? {
           x: {
             beginAtZero: true,
-            ticks: { precision: 0 },
             stacked,
+            ...estiloEje,
           },
           y: {
             stacked,
+            ...estiloEje,
           },
         }
       : {
           y: {
             beginAtZero: true,
-            ticks: { precision: 0 },
             stacked,
+            ...estiloEje,
           },
           x: {
             stacked,
+            ...estiloEje,
           },
         }
     : {};
 
-  // Opciones combinadas con principios anti-sesgo
+  // Opciones combinadas: estética limpia, técnica y profesional
   const opcionesFinales = {
     animation: false,
     responsive: true,
     maintainAspectRatio: false,
     indexAxis: horizontal ? 'y' : 'x',
+    cutout: tipo === 'doughnut' ? '65%' : undefined,
     plugins: {
       legend: {
         display: (data?.datasets?.length ?? 0) > 1 || tipo === 'doughnut' || tipo === 'pie',
         position: 'top',
+        align: 'center',
         labels: {
-          boxWidth: 12,
+          boxWidth: 8,
+          boxHeight: 8,
           usePointStyle: tipo === 'line',
+          color: '#212529',
+          font: {
+            family: 'Arial, Roboto, sans-serif',
+            size: 11,
+            weight: 'normal',
+          },
+          padding: 12,
         },
       },
       tooltip: {
         enabled: true,
+        backgroundColor: '#212529',
+        titleColor: '#ffffff',
+        bodyColor: '#ffffff',
+        borderColor: '#000000',
+        borderWidth: 1,
+        cornerRadius: 2,
         boxPadding: 4,
+        titleFont: {
+          family: 'Arial, Roboto, sans-serif',
+          size: 12,
+          weight: 'normal',
+        },
+        bodyFont: {
+          family: 'Arial, Roboto, sans-serif',
+          size: 11,
+          weight: 'normal',
+        },
       },
     },
     scales: opcionesEscalas,
     ...options,
   };
 
-  // Normalización de datasets con colores y estilos multisensoriales
+  // Normalización de datasets con líneas finas (1 a 1.5 px), curvas suavizadas y marcadores geométricos
   const datasetsNormalizados = (data?.datasets ?? []).map((ds, idx) => {
-    const color = ds.backgroundColor ?? PALETA_COREUI[idx % PALETA_COREUI.length];
-    const borderColor = ds.borderColor ?? color;
+    const colorPorDefecto = PALETA_CORPORATIVA[idx % PALETA_CORPORATIVA.length];
 
-    // Diferenciación multisensorial en líneas (trazos y marcadores)
+    // Estilo de líneas: fino (1.5 px), curvas suavizadas (tension: 0.25) y pequeños marcadores
     const estilosLinea =
       tipo === 'line'
         ? {
-            borderDash: idx === 1 ? [5, 5] : idx === 2 ? [2, 2] : undefined,
+            borderColor: ds.borderColor ?? (idx === 0 ? '#000000' : idx === 1 ? '#495057' : '#212529'),
+            backgroundColor: 'transparent',
+            borderWidth: ds.borderWidth ?? 1.5,
+            tension: ds.tension ?? 0.25,
+            borderDash: idx === 1 ? [4, 4] : idx === 2 ? [2, 2] : undefined,
             pointStyle: idx === 0 ? 'circle' : idx === 1 ? 'rect' : 'triangle',
-            pointRadius: 4,
-            pointHoverRadius: 6,
+            pointRadius: ds.pointRadius ?? 3,
+            pointHoverRadius: ds.pointHoverRadius ?? 5,
+            pointBackgroundColor: ds.borderColor ?? (idx === 0 ? '#000000' : idx === 1 ? '#495057' : '#212529'),
+            pointBorderColor: ds.borderColor ?? (idx === 0 ? '#000000' : idx === 1 ? '#495057' : '#212529'),
+            fill: false,
+          }
+        : {};
+
+    const estilosBarra =
+      tipo === 'bar'
+        ? {
+            backgroundColor: ds.backgroundColor ?? (horizontal ? '#212529' : colorPorDefecto),
+            borderColor: ds.borderColor ?? '#000000',
+            borderWidth: ds.borderWidth ?? 1,
+          }
+        : {};
+
+    const estilosDoughnut =
+      tipo === 'doughnut' || tipo === 'pie'
+        ? {
+            backgroundColor: ds.backgroundColor ?? PALETA_CORPORATIVA,
+            borderColor: '#ffffff',
+            borderWidth: 1.5,
+            hoverOffset: 2,
           }
         : {};
 
     return {
       ...ds,
-      backgroundColor: ds.backgroundColor ?? (tipo === 'doughnut' || tipo === 'pie' ? PALETA_COREUI : color),
-      borderColor: tipo === 'doughnut' || tipo === 'pie' ? '#fff' : borderColor,
-      borderWidth: ds.borderWidth ?? (tipo === 'doughnut' || tipo === 'pie' ? 2 : 1.5),
+      ...estilosBarra,
+      ...estilosDoughnut,
       ...estilosLinea,
     };
   });
@@ -157,27 +235,41 @@ export default function GraficoChart({
   };
 
   return (
-    <CCard className="mb-4 shadow-sm h-100">
-      <CCardHeader className="d-flex justify-content-between align-items-center py-2">
-        <div>
-          <span className="fw-semibold text-body">{titulo}</span>
-          {subtitulo && <div className="text-body-secondary small">{subtitulo}</div>}
+    <CCard className="mb-4 bg-white border border-light-subtle shadow-none h-100">
+      <CCardHeader className="bg-white border-bottom border-light-subtle py-2 px-3 position-relative d-flex align-items-center justify-content-center">
+        <div className="text-center px-4">
+          <div
+            className="fs-6 fw-normal text-dark"
+            style={{ fontFamily: 'Arial, Roboto, sans-serif' }}
+          >
+            {titulo}
+          </div>
+          {subtitulo && (
+            <div
+              className="text-secondary small mt-0"
+              style={{ fontFamily: 'Arial, Roboto, sans-serif', fontSize: '0.75rem' }}
+            >
+              {subtitulo}
+            </div>
+          )}
         </div>
-        <CButton
-          color="secondary"
-          variant="ghost"
-          size="sm"
-          onClick={() => setModoTabla((prev) => !prev)}
-          title={modoTabla ? 'Ver como gráfico' : 'Ver como tabla (accesibilidad)'}
-          aria-label={modoTabla ? 'Ver como gráfico' : 'Ver como tabla'}
-          className="d-flex align-items-center gap-1"
-        >
-          <CIcon icon={modoTabla ? cilChartLine : cilSpreadsheet} size="sm" />
-          <span className="small">{modoTabla ? 'Gráfico' : 'Tabla'}</span>
-        </CButton>
+        <div className="position-absolute end-0 me-3">
+          <CButton
+            color="secondary"
+            variant="ghost"
+            size="sm"
+            onClick={() => setModoTabla((prev) => !prev)}
+            title={modoTabla ? 'Ver como gráfico' : 'Ver como tabla (accesibilidad)'}
+            aria-label={modoTabla ? 'Ver como gráfico' : 'Ver como tabla'}
+            className="d-flex align-items-center gap-1 text-secondary"
+          >
+            <CIcon icon={modoTabla ? cilChartLine : cilSpreadsheet} size="sm" />
+            <span className="small">{modoTabla ? 'Gráfico' : 'Tabla'}</span>
+          </CButton>
+        </div>
       </CCardHeader>
 
-      <CCardBody style={{ minHeight: `${altura}px` }} className="p-3">
+      <CCardBody style={{ minHeight: `${altura}px` }} className="p-3 bg-white">
         {modoTabla ? (
           <div className="table-responsive" style={{ maxHeight: `${altura}px` }}>
             <CTable striped hover small className="mb-0 text-center">

@@ -17,12 +17,51 @@ import {
   makeBarChart,
   makeDoughnutChart,
 } from '@office-kit/xlsx/chart';
-import { addChartAt } from '@office-kit/xlsx/drawing';
+import {
+  addChartAt,
+  makeSrgbColor,
+  makeColor,
+  makeSolidFill,
+  makeLine,
+} from '@office-kit/xlsx/drawing';
 import { workbookToBytes } from '@office-kit/xlsx/io';
 import fileSaver from 'file-saver';
 const saveAs = fileSaver?.saveAs || fileSaver;
 
 export const LIMITE_FILAS_SEGURIDAD = 50000;
+
+// Paleta corporativa de alto contraste y sobriedad técnica (DrawingML)
+const COLOR_NEGRO = makeColor(makeSrgbColor('000000'));
+const COLOR_CHARCOAL = makeColor(makeSrgbColor('495057'));
+const COLOR_GRIS_MEDIO = makeColor(makeSrgbColor('6C757D'));
+const COLOR_GRIS_CLARO = makeColor(makeSrgbColor('ADB5BD'));
+const COLOR_GRIS_SUAVE = makeColor(makeSrgbColor('CED4DA'));
+const COLOR_GRIS_OSCURO = makeColor(makeSrgbColor('212529'));
+
+const PALETA_EXCEL = [
+  COLOR_NEGRO,
+  COLOR_CHARCOAL,
+  COLOR_GRIS_MEDIO,
+  COLOR_GRIS_CLARO,
+  COLOR_GRIS_SUAVE,
+];
+
+// Estilos de trazo fino (1 a 1.5 pt ≈ 12700 - 19050 EMU)
+const LINEA_FINA_NEGRA = makeLine({
+  w: 19050, // 1.5 pt
+  fill: makeSolidFill(COLOR_NEGRO),
+});
+
+const LINEA_FINA_CHARCOAL = makeLine({
+  w: 19050, // 1.5 pt
+  fill: makeSolidFill(COLOR_CHARCOAL),
+  dash: { kind: 'preset', val: 'dash' },
+});
+
+const BORDE_FINO_BARRA = makeLine({
+  w: 12700, // 1 pt
+  fill: makeSolidFill(COLOR_NEGRO),
+});
 
 /**
  * Sanitiza valores de texto para prevenir inyección de fórmulas (Formula Injection).
@@ -160,6 +199,7 @@ export async function generarBytesLibroPanel(payloadPanel) {
   if (filasEvolucion.length > 0) {
     const topFila = filasEvolucion.length + 1;
     const chartEvolucion = makeLineChart({
+      smooth: true,
       series: [
         {
           idx: 0,
@@ -167,6 +207,18 @@ export async function generarBytesLibroPanel(payloadPanel) {
           val: { ref: `Evolucion_Tickets!$B$2:$B$${topFila}` },
           cat: { ref: `Evolucion_Tickets!$A$2:$A$${topFila}` },
           tx: { kind: 'literal', value: 'Tickets Creados' },
+          smooth: true,
+          marker: {
+            symbol: 'circle',
+            size: 5,
+            spPr: {
+              fill: makeSolidFill(COLOR_NEGRO),
+              ln: LINEA_FINA_NEGRA,
+            },
+          },
+          spPr: {
+            ln: LINEA_FINA_NEGRA,
+          },
         },
         {
           idx: 1,
@@ -174,11 +226,23 @@ export async function generarBytesLibroPanel(payloadPanel) {
           val: { ref: `Evolucion_Tickets!$C$2:$C$${topFila}` },
           cat: { ref: `Evolucion_Tickets!$A$2:$A$${topFila}` },
           tx: { kind: 'literal', value: 'Tickets Cerrados' },
+          smooth: true,
+          marker: {
+            symbol: 'square',
+            size: 5,
+            spPr: {
+              fill: makeSolidFill(COLOR_CHARCOAL),
+              ln: LINEA_FINA_CHARCOAL,
+            },
+          },
+          spPr: {
+            ln: LINEA_FINA_CHARCOAL,
+          },
         },
       ],
     });
     const spaceEvolucion = makeChartSpace({
-      title: 'Evolución de Tickets: Creados vs. Cerrados',
+      title: 'Evolución mensual de tickets: Creados vs. Cerrados',
       plotArea: { chart: chartEvolucion },
     });
     addChartAt(wsEvolucion, 'E2', { space: spaceEvolucion }, { widthPx: 640, heightPx: 360 });
@@ -212,11 +276,15 @@ export async function generarBytesLibroPanel(payloadPanel) {
           val: { ref: `Incidencias_Areas!$B$2:$B$${topFila}` },
           cat: { ref: `Incidencias_Areas!$A$2:$A$${topFila}` },
           tx: { kind: 'literal', value: 'Fallas por Área' },
+          spPr: {
+            fill: makeSolidFill(COLOR_GRIS_OSCURO),
+            ln: BORDE_FINO_BARRA,
+          },
         },
       ],
     });
     const spaceIncidencias = makeChartSpace({
-      title: 'Ranking de Incidencias por Área',
+      title: 'Ranking de áreas con mayor incidencia de fallas',
       plotArea: { chart: chartIncidencias },
     });
     addChartAt(wsIncidencias, 'F2', { space: spaceIncidencias }, { widthPx: 640, heightPx: 360 });
@@ -237,18 +305,23 @@ export async function generarBytesLibroPanel(payloadPanel) {
   setCellByCoord(wsOt, 'C3', Number(otOrigen.porcentajePreventivas ?? 0));
 
   const chartOrigen = makeDoughnutChart({
+    holeSize: 60,
     series: [
       {
         idx: 0,
         order: 0,
         val: { ref: 'OT_Distribucion!$B$2:$B$3' },
         cat: { ref: 'OT_Distribucion!$A$2:$A$3' },
-        tx: { kind: 'literal', value: 'OTs por Origen' },
+        tx: { kind: 'literal', value: 'Órdenes de trabajo por origen' },
+        dPt: [
+          { idx: 0, spPr: { fill: makeSolidFill(COLOR_NEGRO) } },
+          { idx: 1, spPr: { fill: makeSolidFill(COLOR_GRIS_MEDIO) } },
+        ],
       },
     ],
   });
   const spaceOrigen = makeChartSpace({
-    title: 'Órdenes de Trabajo por Origen',
+    title: 'Órdenes de trabajo por origen',
     plotArea: { chart: chartOrigen },
   });
   addChartAt(wsOt, 'E2', { space: spaceOrigen }, { widthPx: 480, heightPx: 300 });
@@ -267,19 +340,26 @@ export async function generarBytesLibroPanel(payloadPanel) {
 
   if (otPrioridad.length > 0) {
     const topFilaPrioridad = 8 + otPrioridad.length;
+    const dPtPrioridad = otPrioridad.map((_, idx) => ({
+      idx,
+      spPr: { fill: makeSolidFill(PALETA_EXCEL[idx % PALETA_EXCEL.length]) },
+    }));
+
     const chartPrioridad = makeDoughnutChart({
+      holeSize: 60,
       series: [
         {
           idx: 0,
           order: 0,
           val: { ref: `OT_Distribucion!$B$9:$B$${topFilaPrioridad}` },
           cat: { ref: `OT_Distribucion!$A$9:$A$${topFilaPrioridad}` },
-          tx: { kind: 'literal', value: 'OTs por Prioridad' },
+          tx: { kind: 'literal', value: 'Órdenes de trabajo por prioridad' },
+          dPt: dPtPrioridad,
         },
       ],
     });
     const spacePrioridad = makeChartSpace({
-      title: 'Órdenes de Trabajo por Prioridad',
+      title: 'Órdenes de trabajo por prioridad',
       plotArea: { chart: chartPrioridad },
     });
     addChartAt(wsOt, 'E14', { space: spacePrioridad }, { widthPx: 480, heightPx: 300 });
@@ -310,11 +390,15 @@ export async function generarBytesLibroPanel(payloadPanel) {
           val: { ref: `Activos_Edificios!$B$2:$B$${topFilaEd}` },
           cat: { ref: `Activos_Edificios!$A$2:$A$${topFilaEd}` },
           tx: { kind: 'literal', value: 'Activos en Servicio' },
+          spPr: {
+            fill: makeSolidFill(COLOR_CHARCOAL),
+            ln: BORDE_FINO_BARRA,
+          },
         },
       ],
     });
     const spaceEdificios = makeChartSpace({
-      title: 'Distribución de Activos por Edificio',
+      title: 'Activos inventariados por edificio',
       plotArea: { chart: chartEdificios },
     });
     addChartAt(wsEdificios, 'E2', { space: spaceEdificios }, { widthPx: 640, heightPx: 360 });
@@ -347,11 +431,15 @@ export async function generarBytesLibroPanel(payloadPanel) {
           val: { ref: `Tecnicos_Carga!$B$2:$B$${topFilaTec}` },
           cat: { ref: `Tecnicos_Carga!$A$2:$A$${topFilaTec}` },
           tx: { kind: 'literal', value: 'Tareas Activas' },
+          spPr: {
+            fill: makeSolidFill(COLOR_GRIS_OSCURO),
+            ln: BORDE_FINO_BARRA,
+          },
         },
       ],
     });
     const spaceTecnicos = makeChartSpace({
-      title: 'Carga de Trabajo Activa por Técnico',
+      title: 'Carga de trabajo activa por técnico',
       plotArea: { chart: chartTecnicos },
     });
     addChartAt(wsTecnicos, 'F2', { space: spaceTecnicos }, { widthPx: 640, heightPx: 360 });
