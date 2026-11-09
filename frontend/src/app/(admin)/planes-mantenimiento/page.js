@@ -4,7 +4,7 @@
  * /planes-mantenimiento - listado de planes de mantenimiento preventivo (Sprint 5).
  */
 import { useEffect, useState } from 'react';
-import { CBadge, CButtonGroup, CCard, CCardBody } from '@coreui/react';
+import { CButtonGroup, CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilDescription, cilPencil, cilTrash } from '@coreui/icons';
 
@@ -13,15 +13,10 @@ import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
 import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
+import EtiquetaEstadoPlan from '@/componentes/planes/EtiquetaEstadoPlan.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarPlanes, darDeBajaPlan } from '@/servicios/planesMantenimiento.js';
 import { listarTiposActivos } from '@/servicios/tiposActivos.js';
-
-function soloFechaLegible(iso) {
-  if (!iso) return '-';
-  const [anio, mes, dia] = String(iso).slice(0, 10).split('-');
-  return dia && mes && anio ? `${dia}/${mes}/${anio}` : '-';
-}
 
 export default function PantallaPlanesMantenimiento() {
   const { mostrarToast } = useToast();
@@ -45,7 +40,6 @@ export default function PantallaPlanesMantenimiento() {
 
   useEffect(() => {
     let vigente = true;
-    setCargando(true);
 
     listarPlanes({
       tipoActivoId: filtroTipo || null,
@@ -121,46 +115,18 @@ export default function PantallaPlanesMantenimiento() {
       render: (plan) => <span className="text-body-secondary">{plan.frecuencia}</span>,
     },
     {
-      clave: 'proximaGeneracion',
-      encabezado: 'Próxima ejecución',
-      render: (plan) => (
-        <span className={plan.activo ? 'fw-semibold' : 'text-body-tertiary'}>
-          {soloFechaLegible(plan.fechaProximaGeneracion)}
-        </span>
-      ),
-    },
-    {
-      clave: 'tareas',
-      encabezado: 'Tareas',
-      render: (plan) => (
-        <span className="text-body-secondary">
-          {plan.cantidadTareas} {plan.cantidadTareas === 1 ? 'tarea' : 'tareas'}
-        </span>
-      ),
-    },
-    {
       clave: 'tecnicos',
       encabezado: 'Técnicos',
-      render: (plan) =>
-        plan.tieneTecnico ? (
-          <span className="text-body-secondary">
-            {plan.tecnicos.map((t) => t.nombre).join(', ')}
-          </span>
-        ) : (
-          <CBadge color="warning" className="text-dark">
-            Sin asignar
-          </CBadge>
-        ),
+      render: (plan) => (
+        <span className="text-body-secondary">
+          {plan.tieneTecnico ? plan.tecnicos.map((t) => t.nombre).join(', ') : 'Sin técnicos'}
+        </span>
+      ),
     },
     {
       clave: 'estado',
       encabezado: 'Estado',
-      render: (plan) =>
-        plan.activo ? (
-          <CBadge color="success">Activo</CBadge>
-        ) : (
-          <CBadge color="secondary">Dado de baja</CBadge>
-        ),
+      render: (plan) => <EtiquetaEstadoPlan activo={plan.activo} />,
     },
     {
       clave: 'acciones',
@@ -216,7 +182,7 @@ export default function PantallaPlanesMantenimiento() {
             filas={planes}
             claveFila={(plan) => plan.id}
             columnas={columnas}
-            buscarPor={['nombre', 'descripcion', 'tipoMantenimiento']}
+            buscarPor={['nombre', 'descripcion']}
             placeholderBusqueda="Buscar plan..."
             filtros={[
               {
@@ -236,14 +202,13 @@ export default function PantallaPlanesMantenimiento() {
                 opciones: [
                   { valor: 'activo', texto: 'Activos' },
                   { valor: 'baja', texto: 'Dados de baja' },
-                  { valor: 'todos', texto: 'Todos' },
                 ],
                 textoTodos: 'Todos',
               },
             ]}
             alLimpiar={() => {
               setFiltroTipo('');
-              setFiltroEstado('activo');
+              setFiltroEstado('');
             }}
             cargando={cargando}
             textoVacio="No se encontraron planes de mantenimiento preventivo."

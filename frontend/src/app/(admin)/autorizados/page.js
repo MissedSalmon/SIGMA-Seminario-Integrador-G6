@@ -20,9 +20,6 @@ import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
 import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
-import DialogoRestablecerContrasena, {
-  AccionRestablecerContrasena,
-} from '@/componentes/usuarios/RestablecerContrasena.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarAreas } from '@/servicios/areas.js';
 import { listarAutorizados, eliminarAutorizado } from '@/servicios/autorizados.js';
@@ -39,7 +36,6 @@ export default function PantallaAutorizados() {
 
   const [aEliminar, setAEliminar] = useState(null);
   const [eliminando, setEliminando] = useState(false);
-  const [aRestablecer, setARestablecer] = useState(null);
 
   // Las areas se cargan una sola vez: son las del desplegable del filtro.
   useEffect(() => {
@@ -141,15 +137,6 @@ export default function PantallaAutorizados() {
           >
             <CIcon icon={cilPencil} />
           </BotonEnlace>
-          <AccionRestablecerContrasena
-            nombre={autorizado.nombre}
-            onClick={() =>
-              setARestablecer({
-                identificador: String(autorizado.legajo),
-                nombre: autorizado.nombre,
-              })
-            }
-          />
           <CButton
             variant="ghost"
             color="danger"
@@ -220,11 +207,6 @@ export default function PantallaAutorizados() {
           reportó. El área que tenía a cargo queda sin responsable.
         </p>
       </DialogoEliminar>
-
-      <DialogoRestablecerContrasena
-        usuario={aRestablecer}
-        onCerrar={() => setARestablecer(null)}
-      />
     </>
   );
 }

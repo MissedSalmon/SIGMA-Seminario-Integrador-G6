@@ -64,12 +64,48 @@ Los tres cubren todo el sistema y no se superponen.
 ## El flujo preventivo
 
 ```
-Plan preventivo (tipo de activo + frecuencia + plantilla de tareas)
-        ↓  (automático, según la frecuencia)
+Plan preventivo (tipo de activo + frecuencia + tareas estándar + técnicos autorizados)
+        ↓  (automático: cada activo del tipo lleva su propio ciclo)
 OT preventiva  →  mismas tareas y ejecución que el flujo correctivo
 ```
 
 Una OT viene **o de un ticket, o de un plan preventivo**. Nunca de los dos.
+
+**Tareas y especialidades (02/11/2026).** Cada tarea estándar es de una especialidad. Al
+asignar una tarea sólo se ofrecen los técnicos que la tienen, y el servidor lo exige. Las
+plantillas anteriores a esa fecha quedan sin especialidad hasta que alguien las complete en
+`/plantillas-tareas`; mientras tanto no restringen a nadie.
+
+**Programación por activo (03/11/2026, correcciones del Sprint 5).** El plan define sólo la
+periodicidad; no tiene "próxima ejecución" ni "tipo" (todos son preventivos). Cada activo del
+tipo del plan tiene su propia fecha, que se calcula, no se guarda:
+
+| Situación del par activo–plan | Próximo mantenimiento |
+|---|---|
+| Sin OT previa | La más nueva entre la alta del activo y la alta del plan, + periodicidad |
+| Con OT finalizada | El cierre de la última OT finalizada, + periodicidad |
+| Última OT cancelada | Su fecha programada + periodicidad (el ciclo se saltea) |
+| OT abierta | No hay: se recalcula al cerrarla |
+| Activo retirado | No genera |
+
+Ejemplo: aire A dado de alta el 13/06/2026, aire B el 20/08/2026, plan cada 6 meses → OT de A
+el 13/12/2026 y de B el 20/02/2027. Las fechas se suman con `@internationalized/date`, que
+resuelve el fin de mes y los bisiestos (31/08 + 6 meses = 28/02).
+
+- **Generación:** un job diario dentro del backend (hora `PLANES_HORA_GENERACION`, por defecto
+  6) genera la OT de cada par cuya fecha entra en los próximos `PLANES_DIAS_ANTICIPACION` días
+  (por defecto 7). También corre al levantar la API, al dar de alta o importar activos, y a
+  mano con `POST /api/planes-mantenimiento/procesar-generacion`. Es idempotente: la OT guarda
+  la fecha del ciclo (`ot_fecha_programada`) y un índice único impide dos OT del mismo ciclo.
+- **Asignación:** cada tarea va al técnico autorizado del plan que tiene su especialidad, está
+  disponible y tiene menos tareas pendientes (empate: legajo menor). Si nadie la cubre, la
+  tarea queda sin asignar y la OT en "Creada". Ya no se posterga el plan (reemplaza C7/D4).
+- **Planes existentes:** quedaron con alta del plan = 03/11/2026, así los activos viejos no
+  generan todas sus OT juntas. El tipo y la próxima ejecución anteriores quedaron respaldados
+  en `plan_datos_previos`.
+- **Estado en pantalla (03/11/2026):** el estado del plan va con una etiqueta de color
+  (`EtiquetaEstadoPlan.js`). Verde = Activo, sigue generando OT. Gris = Dado de baja, ya no
+  genera.
 
 ---
 
@@ -90,6 +126,10 @@ un **número** (el de la tabla). La traducción a texto está en un solo lugar:
 | **Activo** | 1 Operativo → 2 En mantenimiento → 3 Fuera de servicio → 4 Retirado |
 | **Herramienta** | 1 Disponible ⇄ 2 En uso · 3 Fuera de servicio |
 | **Rol de usuario** | 1 administrador · 2 tecnico · 3 autorizado |
+
+En pantalla, el estado del activo va con una etiqueta de color (03/11/2026,
+`EtiquetaEstadoActivo.js`): verde = Operativo (funciona), celeste = En mantenimiento (tiene
+una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (dado de baja).
 
 > **Decisiones del 12/10/2026 (Rol de usuario como dato enumerado):**
 > - El atributo `rol` de la tabla `usuario` migró de `VARCHAR(50)` a número entero (`INT`)
@@ -302,8 +342,45 @@ un **número** (el de la tabla). La traducción a texto está en un solo lugar:
 >   no la escribe nadie y el historial no la usa.
 > - El historial está en la ficha del activo (`/activos/[codigo]`), a la que se llega con el
 >   ícono de la ficha (la hoja, el mismo que en materiales y herramientas) del listado de
->   activos. Cada intervención es un renglón; «Ver más» abre el detalle de sus tareas. La API es
->   `GET /api/activos/:codigo/historial` y es sólo para el administrador.
+>   activos. La API es `GET /api/activos/:codigo/historial` y es sólo para el administrador.
+> - **Cambio del 03/11/2026:** cada intervención es un renglón con su origen («Ticket #32» o
+>   «Plan #6») y su OT («#25»), que llevan a su detalle; ya no hay «Ver más». Las columnas van
+>   origen, OT, fecha, mantenimiento, falla, estado y ejecutó. El orden por defecto es de la
+>   más reciente a la más antigua; un clic en el encabezado «Fecha» lo da vuelta. Una OT preventiva se
+>   busca por su propio activo (programación por activo) o, si es vieja y no lo tiene, por el
+>   activo del plan.
+
+> **Decisiones del 07/11/2026 (HU-34, áreas con mayor incidencia, issue #29):**
+> - Está en el **panel del administrador** (`/`), abajo de los totales. No tiene pantalla
+>   propia. La API es `GET /api/estadisticas/areas-incidencia` y es sólo para el administrador.
+> - Es un **ranking de áreas por cantidad de fallas**, de mayor a menor. Empate: más tickets
+>   primero; después, por nombre.
+> - **Se calcula, no se guarda:** sale de las fallas que registran los técnicos en las tareas.
+>   Las fallas viejas que sólo estaban asociadas a la OT (sin tarea ni activo) no cuentan,
+>   porque no se sabe de qué área son.
+> - **El área de una falla es la del espacio de su activo**, igual que la de un ticket. Si el
+>   espacio no tiene área, la falla va a **«Sin área»**, que se muestra siempre al final. Si
+>   dos áreas comparten el espacio, la falla cuenta para las dos.
+> - Cuentan las fallas de OT **correctivas y preventivas**. La columna «Tickets» es la cantidad
+>   de tickets distintos: una falla preventiva no tiene ticket, y un ticket con dos tareas
+>   diagnosticadas suma dos fallas pero un ticket.
+> - Filtros: **Período** (último mes, 3 meses, semestre, año o todo), que se aplica sobre la
+>   fecha en que se registró la falla, y **Falla** (el tipo). El buscador busca por área o edificio.
+> - Se muestra como estadística: arriba cuatro cifras (fallas registradas, tickets con fallas,
+>   áreas afectadas y el área con más fallas); abajo un gráfico de barras con el ranking, cada
+>   barra dividida por tipo de falla, y al costado cuántas fallas hubo de cada tipo, de mayor a
+>   menor (empate: por nombre), con su porcentaje con un decimal. Un botón
+>   pasa a vista de **tabla**.
+> - Aparecen **todas las áreas que tuvieron al menos una falla** en el período, sin corte.
+>   Un área sin fallas no se muestra.
+> - **Porcentaje:** cada área muestra qué parte del total de fallas del período tiene, con un
+>   decimal («62,5 %»). Si dos áreas comparten un espacio, la suma puede pasar el 100 %.
+> - **Colores:** cada color es un tipo de falla, y la **referencia** arriba del gráfico dice
+>   cuál es cada uno. El color sale del lugar del tipo en el catálogo, no del ranking, así que
+>   un filtro no lo cambia. Si el catálogo pasa de 8 tipos, los siguientes van en gris.
+> - Clic en un área (o el ícono de la hoja en la tabla) abre una ventana con sus fallas:
+>   origen («Ticket #31» o «Plan #6», que llevan a su detalle), fecha, falla, activo y estado
+>   del ticket.
 
 ---
 
@@ -404,15 +481,15 @@ Agrupadas por tema, para tener el mapa general:
 | **Mantenimiento preventivo** | Se hace antes de que falle. Nace de un plan. |
 | **Material** | Insumo que se consume al usarlo. Descuenta stock. |
 | **Orden de Trabajo (OT)** | Autorización de trabajo. Se genera al validar un ticket o desde un plan preventivo. |
-| **Plan de mantenimiento preventivo** | Define qué activos se intervienen, cada cuánto y con qué tareas. Genera OT automáticamente. |
-| **Plantilla de tareas** | Tarea modelo asociada a un tipo de activo. Sirve para precargar tareas estándar. |
+| **Plan de mantenimiento preventivo** | Define a qué tipo de activo aplica, cada cuánto y con qué tareas y técnicos. Genera una OT por activo cuando le toca a cada uno (03/11/2026). |
+| **Plantilla de tareas** | Tarea modelo asociada a una **especialidad** (decisión del 02/11/2026, corrección de los profesores; antes era el tipo de activo). Sirve para precargar tareas estándar y para ofrecer sólo los técnicos de esa especialidad. |
 | **Prestador de servicio** | Empresa o profesional externo que hace trabajos que el equipo propio no puede cubrir. |
 | **Prioridad** | Nivel de importancia que el administrador le pone a la OT. |
 | **Proveedor** | Quien le vende materiales y herramientas a la facultad. |
 | **Remito** | Uno de los comprobantes del ingreso de materiales al depósito. El otro es la **factura**. |
 | **Stock** | Cantidad disponible de un material. |
 | **Stock mínimo** | Cantidad mínima que hay que tener. Al llegar, el sistema avisa. |
-| **Tarea (de OT)** | Actividad concreta dentro de una OT. Cuando todas están completas, la OT se finaliza. Siempre sale de una tarea estándar (plantilla) del tipo de activo; su descripción se puede ajustar (decisión del 26/09/2026). |
+| **Tarea (de OT)** | Actividad concreta dentro de una OT. Cuando todas están completas, la OT se finaliza. Siempre sale de una tarea estándar (plantilla); su descripción se puede ajustar (decisión del 26/09/2026). El técnico asignado tiene que tener la especialidad de la plantilla (02/11/2026). |
 | **Técnico** | Personal de la facultad que ejecuta las tareas. |
 | **Ticket** | Registro formal de una necesidad de mantenimiento. Es la puerta de entrada al sistema. |
 | **Tipo de activo** | Categoría de activos: aires acondicionados, mobiliario, luminarias. |

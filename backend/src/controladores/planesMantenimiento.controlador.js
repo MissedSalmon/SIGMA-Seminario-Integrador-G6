@@ -38,6 +38,11 @@ export async function darDeBaja(req, res) {
   res.json({ ok: true, datos: resultado, mensaje: resultado.mensaje });
 }
 
+export async function programacion(req, res) {
+  const lista = await planesServicio.obtenerProgramacion(leerId(req));
+  res.json({ ok: true, datos: lista });
+}
+
 export async function planesPorVencer(req, res) {
   const dias = req.query.dias ? Number(req.query.dias) : 7;
   const lista = await planesServicio.obtenerPlanesPorVencer(dias, req.query.fechaReferencia);

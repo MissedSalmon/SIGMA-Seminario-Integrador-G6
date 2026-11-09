@@ -26,6 +26,7 @@ Ticket → Validación → Orden de Trabajo (OT) → Tareas → Ejecución → C
 
 - Ya se entregó la **Primera Carpeta** (17/07/2026). Nota: **76/100 — APROBADO**.
 - **Sprint 5 — HU-22 (Planes de Mantenimiento Preventivo) completada (26/10/2026):** Gestión completa de planes preventivos por tipo de activo, asignación de tareas y técnicos autorizados, cálculo de periodicidad determinista, aviso de planes por vencer (7 días) en panel de administración, baja lógica sin afectar OTs generadas, generación automática idempotente mediante endpoint protegido con postergación si falta técnico (C7/D4), y concurrencia verificada entre preventivo y correctivo (C8/D6). Suite completa de pruebas backend (142/142 passed) y frontend compilando sin errores.
+- **Correcciones del Sprint 5 en planes preventivos (03/11/2026):** las tareas estándar son de una especialidad (no de un tipo de activo) y la programación es por activo: cada activo tiene su ciclo según su alta o su última OT finalizada, un job diario genera las OT con 7 días de anticipación y asigna cada tarea al técnico autorizado de su especialidad con menos carga. El detalle está en [dominio.md](.claude/contexto/dominio.md).
 - **HU-30 (Autenticación y Sesiones) completada (10/10/2026) y refactorizada a enumerados (12/10/2026):** Login propio con JWT, middleware `validarSesion` y `soloAdministrador` con JWT real, vista `/tareas` para técnicos, menú lateral filtrado dinámicamente por rol y cambio de contraseña obligatorio en el primer inicio de sesión. El atributo `rol` de `usuario` migró de `VARCHAR` a dato enumerado entero (`INT`: 1=administrador, 2=tecnico, 3=autorizado) mediante `supabase/migrations/20261012120000_usuario_rol_enumerado.sql` y `ENUM_ROL` en `backend/src/utiles/enumerados.js`. Pruebas backend (107/107 passed).
 - **Sprint 0 hecho:** estructura del repositorio armada y funcionando
   (Next.js 16 + Express 5 + Supabase, monorepo with npm workspaces).
@@ -115,6 +116,9 @@ en los **issues de GitHub**, y el modelo de datos en `supabase/migrations/`.
   arriba (sólo administrador) con los materiales por debajo de su mínimo, y la lista
   completa en `/notificaciones` (`GET /inventario/alertas`). La alerta se calcula del
   stock, no se guarda (ver [dominio.md](.claude/contexto/dominio.md)).
+- **HU-34 (áreas con mayor incidencia, issue #29) está hecha (07/11/2026):** ranking de áreas
+  por cantidad de fallas en el panel (`/`), con filtros por período y tipo de falla
+  (`GET /api/estadisticas/areas-incidencia`). Ver [dominio.md](.claude/contexto/dominio.md).
 - **El proyecto en Supabase** y la conexión con **Vercel** en producción.
 
 *(Nota: La base de datos ya fue refactorizada e integrada con Supabase CLI en la carpeta `supabase/migrations/`)*
@@ -139,3 +143,4 @@ Al trabajar en la interfaz gráfica, se deben seguir estrictamente estas reglas:
 10. **Ruta de migas:** el "Inicio › ..." de arriba lo dibuja el `Breadcrumbs` de HeroUI desde `frontend/src/componentes/layout/Encabezado.js`, una sola vez para todas las pantallas. **Cada pantalla nueva se agrega al mapa `NOMBRES` de ese archivo**, con el mismo texto que su título; si no, la miga muestra el tramo de la dirección en crudo.
 11. **Cantidades:** un campo de cantidad va con `<Campo tipo="numero">`, que dibuja el `NumberField` de HeroUI con los botones **- número +** (ver `frontend/src/componentes/formulario/CampoNumero.js`). Los botones respetan el `min` y el `max`. **No es para todo número:** un legajo o cualquier número que sea un identificador sigue siendo un campo de texto, porque no tiene sentido subirlo de a uno.
 12. **Guardar y Cancelar:** todo formulario y toda ventana se cierran con **«Guardar»** y **«Cancelar»**, en ese orden: la acción principal primero y «Cancelar» a su derecha. Vale igual para agregar y para editar (nada de «Guardar cambios», «Registrar», «Confirmar» ni «Volver a revisar»). Sólo cambia el verbo cuando la acción no es guardar datos sino algo puntual («Eliminar», «Dar de baja», «Validar», «Rechazar»), y aun así va primero. **No se arman a mano:** se usa `<BotonesAccion>` (ver `frontend/src/componentes/BotonesAccion.js`). El detalle está en [arquitectura.md](.claude/contexto/arquitectura.md).
+13. **Elegir varias opciones:** se usa `<SeleccionMultiple>` (ver `frontend/src/componentes/formulario/SeleccionMultiple.js`): un desplegable con casillas, una casilla para marcar todas y buscador cuando hay muchas opciones. **No usar grillas de casillas a la vista ni fichas.**

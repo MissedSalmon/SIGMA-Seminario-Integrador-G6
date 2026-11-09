@@ -36,9 +36,16 @@ const TAREAS = `
 
 const COLUMNAS_OT = 'ot_id, ot_estado, ot_fecha_alta, ot_fecha_cierre, ot_desc';
 
-/** Las OT del activo que cuentan como intervencion, las de ticket y las de plan. */
+/**
+ * Las OT del activo que cuentan como intervencion: las de ticket y las de plan.
+ *
+ * Una OT preventiva se encuentra por su propio activo (programacion por
+ * activo, 03/11/2026) o, si es de antes y no lo tiene, por el activo del plan.
+ */
 async function ordenesDelActivo(codigo) {
-  const [porTicket, porPlan] = await Promise.all([
+  const COLUMNAS_PLAN = `${COLUMNAS_OT}, mantenimiento_preventivo!inner ( mant_prev_id, mant_prev_nom, activo_codigo ), ${TAREAS}`;
+
+  const [porTicket, porActivoDeLaOt, porActivoDelPlan] = await Promise.all([
     supabase
       .from('orden_trabajo')
       .select(`${COLUMNAS_OT}, ticket!inner ( ticket_id, ticket_desc, activo_codigo ), ${TAREAS}`)
@@ -46,15 +53,26 @@ async function ordenesDelActivo(codigo) {
       .in('ot_estado', ESTADOS_INTERVENCION),
     supabase
       .from('orden_trabajo')
-      .select(`${COLUMNAS_OT}, mantenimiento_preventivo!inner ( mant_prev_id, mant_prev_nom, activo_codigo ), ${TAREAS}`)
+      .select(COLUMNAS_PLAN)
+      .eq('activo_codigo', codigo)
+      .in('ot_estado', ESTADOS_INTERVENCION),
+    supabase
+      .from('orden_trabajo')
+      .select(COLUMNAS_PLAN)
       .eq('mantenimiento_preventivo.activo_codigo', codigo)
+      .is('activo_codigo', null)
       .in('ot_estado', ESTADOS_INTERVENCION),
   ]);
 
-  if (porTicket.error) throw errorDeBase(porTicket.error, 'de las órdenes de trabajo');
-  if (porPlan.error) throw errorDeBase(porPlan.error, 'de las órdenes de trabajo');
+  for (const consulta of [porTicket, porActivoDeLaOt, porActivoDelPlan]) {
+    if (consulta.error) throw errorDeBase(consulta.error, 'de las órdenes de trabajo');
+  }
 
-  return [...(porTicket.data ?? []), ...(porPlan.data ?? [])];
+  const preventivas = [...(porActivoDeLaOt.data ?? []), ...(porActivoDelPlan.data ?? [])].filter(
+    (orden, indice, todas) => todas.findIndex((otra) => otra.ot_id === orden.ot_id) === indice
+  );
+
+  return [...(porTicket.data ?? []), ...preventivas];
 }
 
 async function asignacionesDe(idsOt) {
@@ -131,6 +149,7 @@ function aIntervencion(fila, asignaciones, materiales, observaciones) {
     descripcion: fila.ot_desc,
     idTicket: fila.ticket?.ticket_id ?? null,
     problemaReportado: fila.ticket?.ticket_desc ?? null,
+    idPlan: plan?.mant_prev_id ?? null,
     planPreventivo: plan?.mant_prev_nom ?? null,
     tareas,
   };

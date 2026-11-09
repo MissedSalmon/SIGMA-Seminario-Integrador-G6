@@ -2,39 +2,54 @@
 
 /**
  * Alta y edición de un plan de mantenimiento preventivo (Sprint 5).
+ *
+ * Desde el 03/11/2026 el plan sólo dice a qué tipo de activo aplica, cada
+ * cuánto y con qué tareas y técnicos. No tiene "próxima ejecución": la fecha
+ * se calcula para cada activo (ver el detalle del plan). Tampoco tiene "tipo":
+ * todos los planes son preventivos.
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  CAlert,
-  CCard,
-  CCardBody,
-  CCol,
-  CFormCheck,
-  CRow,
-} from '@coreui/react';
+import { CButton, CCard, CCardBody, CCol, CRow } from '@coreui/react';
+import CIcon from '@coreui/icons-react';
+import { cilPlus } from '@coreui/icons';
 
 import Aviso from '@/componentes/Aviso.js';
 import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Campo from '@/componentes/formulario/Campo.js';
+import SeleccionMultiple from '@/componentes/formulario/SeleccionMultiple.js';
+import DialogoNuevaPlantilla from '@/componentes/plantillas/DialogoNuevaPlantilla.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarTiposActivos } from '@/servicios/tiposActivos.js';
 import { listarPlantillas } from '@/servicios/plantillasTareas.js';
 import { listarTecnicos } from '@/servicios/tecnicos.js';
 
-const OPCIONES_TIPO_MANT = [
-  { valor: 'Preventivo', texto: 'Preventivo' },
-  { valor: 'Predictivo', texto: 'Predictivo' },
-  { valor: 'Rutinario', texto: 'Rutinario' },
-  { valor: 'Inspección', texto: 'Inspección' },
+/** Las frecuencias de siempre. Cualquier otra se carga con "Otra…". */
+const FRECUENCIAS = [
+  { valor: 'semanas-1', texto: 'Semanal', intervalo: 1, unidad: 'semanas' },
+  { valor: 'semanas-2', texto: 'Quincenal', intervalo: 2, unidad: 'semanas' },
+  { valor: 'meses-1', texto: 'Mensual', intervalo: 1, unidad: 'meses' },
+  { valor: 'meses-2', texto: 'Bimestral', intervalo: 2, unidad: 'meses' },
+  { valor: 'meses-3', texto: 'Trimestral', intervalo: 3, unidad: 'meses' },
+  { valor: 'meses-4', texto: 'Cuatrimestral', intervalo: 4, unidad: 'meses' },
+  { valor: 'meses-6', texto: 'Semestral', intervalo: 6, unidad: 'meses' },
+  { valor: 'anios-1', texto: 'Anual', intervalo: 1, unidad: 'anios' },
 ];
+const OTRA = 'otra';
 
-const OPCIONES_UNIDAD = [
+const UNIDADES = [
   { valor: 'dias', texto: 'Días' },
   { valor: 'semanas', texto: 'Semanas' },
   { valor: 'meses', texto: 'Meses' },
   { valor: 'anios', texto: 'Años' },
 ];
+
+/** La opción de la lista que corresponde al plan, u "Otra…" si no es una de las de siempre. */
+function frecuenciaDelPlan(plan) {
+  if (!plan) return 'meses-6';
+  const fija = FRECUENCIAS.find((una) => una.intervalo === plan.intervalo && una.unidad === plan.unidadFrecuencia);
+  return fija ? fija.valor : OTRA;
+}
 
 export default function FormularioPlan({ plan = null, onGuardar }) {
   const router = useRouter();
@@ -43,127 +58,77 @@ export default function FormularioPlan({ plan = null, onGuardar }) {
 
   const [nombre, setNombre] = useState(plan?.nombre ?? '');
   const [descripcion, setDescripcion] = useState(plan?.descripcion ?? '');
-  const [tipoMantenimiento, setTipoMantenimiento] = useState(plan?.tipoMantenimiento ?? 'Preventivo');
   const [idTipoActivo, setIdTipoActivo] = useState(plan?.tipoActivo?.id ? String(plan.tipoActivo.id) : '');
-  const [intervalo, setIntervalo] = useState(plan?.intervalo ? String(plan.intervalo) : '6');
-  const [unidadFrecuencia, setUnidadFrecuencia] = useState(plan?.unidadFrecuencia ?? 'meses');
-  const [fechaProximaGeneracion, setFechaProximaGeneracion] = useState(
-    plan?.fechaProximaGeneracion ?? ''
-  );
+  const [frecuencia, setFrecuencia] = useState(() => frecuenciaDelPlan(plan));
+  const [intervaloOtro, setIntervaloOtro] = useState(plan?.intervalo ? String(plan.intervalo) : '1');
+  const [unidadOtra, setUnidadOtra] = useState(plan?.unidadFrecuencia ?? 'meses');
 
-  const [tareasSeleccionadas, setTareasSeleccionadas] = useState(
-    plan?.tareas ? plan.tareas.map((t) => t.id) : []
-  );
-  const [tecnicosSeleccionados, setTecnicosSeleccionados] = useState(
-    plan?.tecnicos ? plan.tecnicos.map((t) => t.legajo) : []
-  );
+  const [idsTareas, setIdsTareas] = useState(plan?.tareas?.map((tarea) => tarea.id) ?? []);
+  const [legajos, setLegajos] = useState(plan?.tecnicos?.map((tecnico) => tecnico.legajo) ?? []);
 
   const [tiposActivos, setTiposActivos] = useState([]);
-  const [plantillasDisponibles, setPlantillasDisponibles] = useState([]);
-  const [tecnicosDisponibles, setTecnicosDisponibles] = useState([]);
+  const [plantillas, setPlantillas] = useState([]);
+  const [tecnicos, setTecnicos] = useState([]);
 
-  const [cargandoPlantillas, setCargandoPlantillas] = useState(false);
+  // La ventana para crear una tarea estándar sin salir del plan.
+  const [nuevaVisible, setNuevaVisible] = useState(false);
+
   const [revisado, setRevisado] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
-  // Carga inicial de tipos de activo y técnicos
   useEffect(() => {
-    Promise.all([listarTiposActivos(), listarTecnicos()])
-      .then(([tipos, tecnicos]) => {
+    Promise.all([listarTiposActivos(), listarTecnicos(), listarPlantillas()])
+      .then(([tipos, listaTecnicos, listaPlantillas]) => {
         setTiposActivos(tipos);
-        setTecnicosDisponibles(tecnicos);
+        setTecnicos(listaTecnicos);
+        setPlantillas(listaPlantillas);
       })
       .catch((fallo) => setError(fallo.message));
   }, []);
 
-  // Cargar plantillas de tareas cuando cambia el tipo de activo seleccionado
-  useEffect(() => {
-    if (!idTipoActivo) {
-      setPlantillasDisponibles([]);
-      if (!editando) setTareasSeleccionadas([]);
-      return;
-    }
-
-    setCargandoPlantillas(true);
-    listarPlantillas(idTipoActivo)
-      .then((plantillas) => {
-        setPlantillasDisponibles(plantillas);
-        // Si no estamos editando o si cambió el tipo de activo, seleccionamos por defecto
-        if (!editando) {
-          setTareasSeleccionadas(plantillas.map((p) => p.idPlantilla));
-        }
-      })
-      .catch((fallo) => setError(fallo.message))
-      .finally(() => setCargandoPlantillas(false));
-  }, [idTipoActivo, editando]);
-
-  // Si no hay fecha cargada, poner hoy por defecto
-  useEffect(() => {
-    if (!fechaProximaGeneracion) {
-      const hoy = new Date().toISOString().slice(0, 10);
-      setFechaProximaGeneracion(hoy);
-    }
-  }, [fechaProximaGeneracion]);
+  const esOtra = frecuencia === OTRA;
+  const fija = FRECUENCIAS.find((una) => una.valor === frecuencia);
+  const intervalo = esOtra ? Number(intervaloOtro) : fija?.intervalo;
+  const unidad = esOtra ? unidadOtra : fija?.unidad;
 
   const errores = useMemo(() => {
     const encontrados = {};
 
-    if (!nombre.trim()) encontrados.nombre = 'El nombre del plan es obligatorio.';
+    if (!nombre.trim()) encontrados.nombre = 'Escribí el nombre del plan.';
     if (!idTipoActivo) encontrados.idTipoActivo = 'Elegí a qué tipo de activo se aplica.';
-    if (!intervalo || Number(intervalo) <= 0) {
-      encontrados.intervalo = 'El intervalo debe ser un número entero mayor a 0.';
+    if (!frecuencia) encontrados.frecuencia = 'Elegí cada cuánto se hace.';
+    if (esOtra && (!Number.isInteger(intervalo) || intervalo <= 0)) {
+      encontrados.intervaloOtro = 'Tiene que ser un número entero mayor que 0.';
     }
-    if (!fechaProximaGeneracion) {
-      encontrados.fechaProximaGeneracion = 'Elegí la fecha de próxima ejecución.';
-    }
-    if (tareasSeleccionadas.length === 0) {
-      encontrados.tareas = 'El plan debe incluir al menos una tarea.';
-    }
+    if (idsTareas.length === 0) encontrados.tareas = 'Agregá al menos una tarea.';
 
     return encontrados;
-  }, [nombre, idTipoActivo, intervalo, fechaProximaGeneracion, tareasSeleccionadas]);
+  }, [nombre, idTipoActivo, frecuencia, esOtra, intervalo, idsTareas]);
 
   const hayErrores = Object.keys(errores).length > 0;
-
-  function alternarTarea(idTarea) {
-    setTareasSeleccionadas((previas) =>
-      previas.includes(idTarea) ? previas.filter((id) => id !== idTarea) : [...previas, idTarea]
-    );
-  }
-
-  function alternarTecnico(legajo) {
-    setTecnicosSeleccionados((previos) =>
-      previos.includes(legajo) ? previos.filter((l) => l !== legajo) : [...previos, legajo]
-    );
-  }
 
   async function manejarEnvio(evento) {
     evento.preventDefault();
     setRevisado(true);
-
     if (hayErrores) return;
 
     setGuardando(true);
     setError('');
 
     try {
-      const payload = {
+      await onGuardar({
         nombre: nombre.trim(),
         descripcion: descripcion.trim() || null,
-        tipoMantenimiento: tipoMantenimiento || 'Preventivo',
         tipoActivoId: Number(idTipoActivo),
-        intervalo: Number(intervalo),
-        unidadFrecuencia,
-        fechaProximaGeneracion,
-        tareasIds: tareasSeleccionadas,
-        tecnicosLegajos: tecnicosSeleccionados,
-      };
-
-      await onGuardar(payload);
+        intervalo,
+        unidadFrecuencia: unidad,
+        tareasIds: idsTareas,
+        tecnicosLegajos: legajos,
+      });
       mostrarToast({
         tipo: 'exito',
-        mensaje: editando ? 'Se guardaron los cambios del plan.' : 'Se dio de alta el plan.',
+        mensaje: editando ? 'Se guardaron los cambios del plan.' : 'Se agregó el plan.',
       });
       router.push('/planes-mantenimiento');
     } catch (fallo) {
@@ -172,6 +137,21 @@ export default function FormularioPlan({ plan = null, onGuardar }) {
       setGuardando(false);
     }
   }
+
+  function usarPlantillaNueva(nueva) {
+    setPlantillas((anteriores) => [...anteriores, nueva]);
+    setIdsTareas((anteriores) => [...anteriores, nueva.idPlantilla]);
+  }
+
+  const opcionesTareas = plantillas.map((plantilla) => ({
+    valor: plantilla.idPlantilla,
+    texto: `${plantilla.descripcion} (${plantilla.nombreEspecialidad ?? 'sin especialidad'})`,
+  }));
+
+  const opcionesTecnicos = tecnicos.map((tecnico) => {
+    const especialidades = (tecnico.especialidades ?? []).map((una) => una.nombre).join(', ');
+    return { valor: tecnico.legajo, texto: especialidades ? `${tecnico.nombre} (${especialidades})` : tecnico.nombre };
+  });
 
   return (
     <>
@@ -194,18 +174,6 @@ export default function FormularioPlan({ plan = null, onGuardar }) {
                 />
               </CCol>
 
-              <CCol md={3}>
-                <Campo
-                  id="tipoMantenimiento"
-                  etiqueta="Tipo"
-                  tipo="lista"
-                  valor={tipoMantenimiento}
-                  alCambiar={setTipoMantenimiento}
-                  opciones={OPCIONES_TIPO_MANT}
-                  revisado={revisado}
-                />
-              </CCol>
-
               <CCol md={6}>
                 <Campo
                   id="tipoActivo"
@@ -213,60 +181,61 @@ export default function FormularioPlan({ plan = null, onGuardar }) {
                   tipo="lista"
                   valor={idTipoActivo}
                   alCambiar={setIdTipoActivo}
-                  opciones={tiposActivos.map((t) => ({
-                    valor: String(t.idTipoActivo),
-                    texto: t.nombre,
-                  }))}
+                  opciones={tiposActivos.map((tipo) => ({ valor: String(tipo.idTipoActivo), texto: tipo.nombre }))}
                   obligatorio
                   revisado={revisado}
                   error={errores.idTipoActivo}
                   deshabilitado={editando}
+                  ancho={24}
                 />
               </CCol>
 
-              <CCol md={2}>
-                <Campo
-                  id="intervalo"
-                  etiqueta="Intervalo"
-                  tipo="numero"
-                  min="1"
-                  max="99"
-                  ancho={2}
-                  valor={intervalo}
-                  alCambiar={setIntervalo}
-                  obligatorio
-                  revisado={revisado}
-                  error={errores.intervalo}
-                />
+              <CCol xs={12}>
+                <div className="d-flex flex-wrap gap-3 align-items-start">
+                  <Campo
+                    id="frecuencia"
+                    etiqueta="Frecuencia"
+                    tipo="lista"
+                    valor={frecuencia}
+                    alCambiar={setFrecuencia}
+                    opciones={[...FRECUENCIAS, { valor: OTRA, texto: 'Otra…' }]}
+                    obligatorio
+                    revisado={revisado}
+                    error={errores.frecuencia}
+                    ancho={14}
+                  />
+
+                  {esOtra && (
+                    <>
+                      <Campo
+                        id="intervaloOtro"
+                        etiqueta="Cada"
+                        tipo="numero"
+                        min="1"
+                        max="99"
+                        valor={intervaloOtro}
+                        alCambiar={setIntervaloOtro}
+                        obligatorio
+                        revisado={revisado}
+                        error={errores.intervaloOtro}
+                        ancho={3}
+                      />
+                      <Campo
+                        id="unidadOtra"
+                        etiqueta="Unidad"
+                        tipo="lista"
+                        valor={unidadOtra}
+                        alCambiar={setUnidadOtra}
+                        opciones={UNIDADES}
+                        obligatorio
+                        ancho={8}
+                      />
+                    </>
+                  )}
+                </div>
               </CCol>
 
-              <CCol md={2}>
-                <Campo
-                  id="unidadFrecuencia"
-                  etiqueta="Frecuencia"
-                  tipo="lista"
-                  valor={unidadFrecuencia}
-                  alCambiar={setUnidadFrecuencia}
-                  opciones={OPCIONES_UNIDAD}
-                  revisado={revisado}
-                />
-              </CCol>
-
-              <CCol md={6}>
-                <Campo
-                  id="fechaProximaGeneracion"
-                  etiqueta="Próxima ejecución"
-                  tipoHtml="date"
-                  min={new Date().toISOString().slice(0, 10)}
-                  valor={fechaProximaGeneracion}
-                  alCambiar={setFechaProximaGeneracion}
-                  obligatorio
-                  revisado={revisado}
-                  error={errores.fechaProximaGeneracion}
-                />
-              </CCol>
-
-              <CCol md={12}>
+              <CCol xs={12}>
                 <Campo
                   id="descripcion"
                   etiqueta="Descripción"
@@ -276,85 +245,62 @@ export default function FormularioPlan({ plan = null, onGuardar }) {
                 />
               </CCol>
 
-              {/* Tareas que incluye el plan (CA1) */}
-              <CCol md={12} className="mt-4">
-                <div className="fw-semibold mb-2">Tareas incluidas *</div>
-                {!idTipoActivo ? (
-                  <div className="text-body-tertiary small fst-italic">
-                    Elegí primero un tipo de activo para ver sus tareas modelo disponibles.
-                  </div>
-                ) : cargandoPlantillas ? (
-                  <div className="text-body-secondary small">Cargando tareas modelo...</div>
-                ) : plantillasDisponibles.length === 0 ? (
-                  <div className="text-body-tertiary small fst-italic">
-                    No hay plantillas de tareas creadas para este tipo de activo.
-                  </div>
-                ) : (
-                  <div className="border rounded p-3 bg-light">
-                    {plantillasDisponibles.map((plantilla) => {
-                      const tildada = tareasSeleccionadas.includes(plantilla.idPlantilla);
-                      return (
-                        <CFormCheck
-                          key={plantilla.idPlantilla}
-                          id={`tarea-${plantilla.idPlantilla}`}
-                          label={
-                            <div>
-                              <span className="fw-medium">{plantilla.descripcion}</span>
-                            </div>
-                          }
-                          checked={tildada}
-                          onChange={() => alternarTarea(plantilla.idPlantilla)}
-                          className="mb-2"
-                        />
-                      );
-                    })}
-                  </div>
-                )}
-                {revisado && errores.tareas && (
-                  <div className="text-danger small mt-1">{errores.tareas}</div>
-                )}
-              </CCol>
-
-              {/* Técnicos responsables del plan (CA2, C4, C5) */}
-              <CCol md={12} className="mt-4">
-                <div className="fw-semibold mb-1">Técnicos asignados (opcional)</div>
-                {tecnicosDisponibles.length === 0 ? (
-                  <div className="text-body-tertiary small fst-italic">
-                    No hay técnicos registrados en el sistema.
-                  </div>
-                ) : (
-                  <div className="border rounded p-3 bg-light">
-                    {tecnicosDisponibles.map((tecnico) => {
-                      const tildado = tecnicosSeleccionados.includes(tecnico.legajo);
-                      return (
-                        <CFormCheck
-                          key={tecnico.legajo}
-                          id={`tecnico-${tecnico.legajo}`}
-                          label={
-                            <span>
-                              <strong>{tecnico.nombre}</strong> (Legajo {tecnico.legajo})
-                            </span>
-                          }
-                          checked={tildado}
-                          onChange={() => alternarTecnico(tecnico.legajo)}
-                          className="mb-2"
-                        />
-                      );
-                    })}
-                  </div>
-                )}
-              </CCol>
-
-              <CCol md={12} className="mt-4">
-                <BotonesAccion
-                  procesando={guardando}
-                  hrefCancelar="/planes-mantenimiento"
+              <CCol xs={12}>
+                <SeleccionMultiple
+                  id="tareas"
+                  etiqueta="Tareas"
+                  opciones={opcionesTareas}
+                  elegidos={idsTareas}
+                  alCambiar={setIdsTareas}
+                  textoTodas="Todas las tareas"
+                  textoCantidad={(cantidad) => `${cantidad} tareas`}
+                  placeholder="Elegir tareas"
+                  ancho={40}
+                  obligatorio
+                  revisado={revisado}
+                  error={errores.tareas}
+                  accion={
+                    <CButton
+                      type="button"
+                      color="secondary"
+                      variant="outline"
+                      onClick={() => setNuevaVisible(true)}
+                      title="Crear una tarea estándar nueva y agregarla al plan"
+                    >
+                      <CIcon icon={cilPlus} size="sm" className="me-1" />
+                      Agregar
+                    </CButton>
+                  }
                 />
+              </CCol>
+
+              <CCol xs={12}>
+                <SeleccionMultiple
+                  id="tecnicos"
+                  etiqueta="Técnicos autorizados"
+                  opciones={opcionesTecnicos}
+                  elegidos={legajos}
+                  alCambiar={setLegajos}
+                  textoTodas="Todos los técnicos"
+                  textoCantidad={(cantidad) => `${cantidad} técnicos`}
+                  placeholder="Elegir técnicos"
+                  ancho={40}
+                />
+              </CCol>
+
+              <CCol xs={12} className="mt-4">
+                <BotonesAccion procesando={guardando} hrefCancelar="/planes-mantenimiento" />
               </CCol>
             </CRow>
           </form>
         </CCardBody>
       </CCard>
+
+      <DialogoNuevaPlantilla
+        visible={nuevaVisible}
+        alCrear={usarPlantillaNueva}
+        alCerrar={() => setNuevaVisible(false)}
+      />
     </>
   );
 }

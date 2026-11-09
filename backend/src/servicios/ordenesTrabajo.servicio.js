@@ -191,6 +191,7 @@ const COLUMNAS = `
   ),
   mantenimiento_preventivo (
     mant_prev_id,
+    mant_prev_nom,
     activo_codigo,
     activo (
       activo_codigo,
@@ -371,6 +372,7 @@ function aOrden(fila, asignaciones = []) {
     origen: fila.ticket_id ? 'Ticket' : 'Mantenimiento preventivo',
     idTicket: fila.ticket_id,
     idMantenimientoPreventivo: fila.mant_prev_id,
+    nombrePlan: mantenimientoPreventivo?.mant_prev_nom ?? null,
     ticket: ticket
       ? {
           id: ticket.ticket_id,
@@ -607,6 +609,35 @@ async function ordenPlanificable(idOt, incluirActivo = false) {
 }
 
 /**
+ * El técnico tiene que tener la especialidad que pide la tarea estándar. Una
+ * plantilla sin especialidad (anterior al 02/11/2026) no restringe a nadie.
+ */
+async function validarEspecialidadDelTecnico(legajoTecnico, idPlantilla) {
+  const { data: plantilla, error: errorPlantilla } = await supabase
+    .from('plantilla_de_tarea')
+    .select('especialidad_id, especialidad(especialidad_nom)')
+    .eq('tarea_plan_id', idPlantilla)
+    .maybeSingle();
+
+  if (errorPlantilla) throw new Error(errorPlantilla.message);
+  if (!plantilla) throw datoInvalido(`No existe la tarea estándar ${idPlantilla}.`);
+  if (!plantilla.especialidad_id) return;
+
+  const { data, error } = await supabase
+    .from('tecnico_especialidad')
+    .select('especialidad_id')
+    .eq('tecnico_legajo', legajoTecnico)
+    .eq('especialidad_id', plantilla.especialidad_id)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data) {
+    const nombre = plantilla.especialidad?.especialidad_nom ?? 'la de la tarea';
+    throw datoInvalido(`El técnico no tiene la especialidad ${nombre}, que pide esta tarea.`);
+  }
+}
+
+/**
  * Revisa y acomoda los datos de una tarea.
  *
  * El responsable es uno solo: un tecnico propio O un prestador externo, nunca
@@ -668,6 +699,8 @@ async function validarTarea(datos, fechasActuales = {}) {
   if (!Number.isInteger(idPlantilla)) {
     throw datoInvalido('La plantilla elegida no es válida.');
   }
+
+  if (legajoTecnico) await validarEspecialidadDelTecnico(legajoTecnico, idPlantilla);
 
   const fechaInicio = limpiar(datos.fechaInicio);
   const fechaFin = limpiar(datos.fechaFin);

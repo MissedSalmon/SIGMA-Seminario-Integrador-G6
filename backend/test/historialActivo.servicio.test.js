@@ -155,16 +155,26 @@ describe('obtenerHistorial', () => {
     }
   });
 
-  test('busca las OT del activo por su ticket y por su plan preventivo', async () => {
+  test('busca las OT del activo por su ticket, por el activo de la OT y por el del plan', async () => {
     await obtenerHistorial('LUM-001');
 
     const condiciones = operacionesDe('orden_trabajo').flat().filter(([op]) => op === 'eq');
     expect(condiciones).toEqual(
       expect.arrayContaining([
         ['eq', 'ticket.activo_codigo', 'LUM-001'],
+        ['eq', 'activo_codigo', 'LUM-001'],
         ['eq', 'mantenimiento_preventivo.activo_codigo', 'LUM-001'],
       ])
     );
+  });
+
+  test('una OT preventiva que aparece por las dos búsquedas se cuenta una sola vez', async () => {
+    respuestas.porPlan = { data: [OT_PREVENTIVA], error: null };
+
+    const { intervenciones } = await obtenerHistorial('LUM-001');
+
+    expect(intervenciones.map((intervencion) => intervencion.idOt)).toEqual([30]);
+    expect(intervenciones[0]).toMatchObject({ idPlan: 2 });
   });
 
   test('cada tarea trae su falla y quién la hizo, sin las canceladas', async () => {

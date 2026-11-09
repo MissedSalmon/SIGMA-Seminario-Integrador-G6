@@ -484,9 +484,12 @@ fuera de las capas) en lugar de tapar el síntoma.
 opción es una casilla para tildar, con una casilla arriba de todo que marca y desmarca
 todas juntas.
 
-⬜ **Hoy no lo usa ninguna pantalla** (comprobado el 23/09/2026). El formulario de técnicos
-terminó mostrando las especialidades como una grilla de casillas a la vista, sin
-desplegable. Queda para decidir si se borra o si se vuelve a usar.
+**Decisión del 03/11/2026: es el único control para elegir varias opciones.** La grilla de
+casillas a la vista y las fichas con buscador no sirven cuando hay muchas opciones. Lo usan
+las especialidades del técnico, los tipos del prestador y las tareas y técnicos del plan
+preventivo. Con más de 8 opciones, el menú trae un buscador (sin mayúsculas ni tildes) y la
+casilla de "todas" marca sólo las que se ven. `accion` pone un botón al lado, alineado con la
+caja (el plan lo usa para crear una tarea estándar nueva).
 
 Se armó a mano porque el `CMultiSelect` de CoreUI **es de la versión paga**: está hecho
 con `CDropdown` y `CFormCheck`. El menú no se cierra al tildar (`autoClose="outside"`).

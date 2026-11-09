@@ -14,6 +14,7 @@ import { cilBuilding, cilRoom, cilSitemap, cilCalendar } from '@coreui/icons';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import AvisoPlanesPorVencer from '@/componentes/planes/AvisoPlanesPorVencer.js';
+import RankingAreasIncidencia from '@/componentes/estadisticas/RankingAreasIncidencia.js';
 import { listarEdificios } from '@/servicios/edificios.js';
 import { listarEspacios } from '@/servicios/espacios.js';
 import { listarAreas } from '@/servicios/areas.js';
@@ -97,6 +98,8 @@ export default function PantallaInicio() {
           </CCol>
         ))}
       </CRow>
+
+      <RankingAreasIncidencia />
     </>
   );
 }
