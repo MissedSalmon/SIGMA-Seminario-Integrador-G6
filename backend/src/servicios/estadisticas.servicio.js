@@ -1,5 +1,5 @@
 import { supabase } from '../config/supabase.js';
-import { datoInvalido } from '../utiles/errores.js';
+import { datoInvalido, errorDeBase } from '../utiles/errores.js';
 import { ENUM_ESTADO_TICKET } from '../utiles/enumerados.js';
 
 /**
@@ -190,4 +190,134 @@ export async function obtenerAreasConMayorIncidencia(filtros = {}) {
   ranking.sort(compararRanking);
 
   return ranking.map((area, indice) => ({ posicion: indice + 1, ...area }));
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * Tiempos promedio de resolución (Sprint 7, 09/11/2026)
+ *
+ * Cuánto se tarda en resolver un ticket: desde que se registra hasta que se
+ * cierra. La cuenta (AVG + GROUP BY) la hace la base, en la función
+ * estadistica_tiempos_resolucion (supabase/migrations/20261109120000_...).
+ * Acá sólo se validan las fechas, se llama a la función y se ordena la
+ * respuesta. Las reglas están en .claude/contexto/dominio.md.
+ *
+ * Los tiempos viajan en segundos. El formato legible ("2 d 4 h") lo arma la
+ * pantalla.
+ * ---------------------------------------------------------------------------
+ */
+
+/**
+ * Una fecha sola ("2026-11-09") es un día de la facultad, que está en la hora
+ * de Argentina (UTC-3, sin horario de verano). Una fecha con hora tiene que
+ * traer su zona ("Z" o "-03:00"): sin zona, el servidor la leería en la suya y
+ * el resultado dependería de dónde corre la API.
+ */
+const ZONA_FACULTAD = '-03:00';
+const SOLO_FECHA = /^\d{4}-\d{2}-\d{2}$/;
+const FECHA_CON_HORA = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?(Z|[+-]\d{2}:\d{2})$/;
+
+/** El día existe de verdad (no es un 31/02). */
+function diaExiste(texto) {
+  const [anio, mes, dia] = texto.slice(0, 10).split('-').map(Number);
+  const fecha = new Date(Date.UTC(anio, mes - 1, dia));
+  return fecha.getUTCFullYear() === anio && fecha.getUTCMonth() === mes - 1 && fecha.getUTCDate() === dia;
+}
+
+/**
+ * Un extremo del período como instante ISO, o null si no vino.
+ * Una fecha sola se toma entera: "desde" a las 00:00 y "hasta" a las
+ * 23:59:59.999, así los dos bordes quedan incluidos.
+ */
+function extremoDelPeriodo(valor, nombre, esFinal) {
+  if (valor == null || valor === '') return null;
+
+  const texto = String(valor).trim();
+  const invalida = datoInvalido(
+    `La fecha "${nombre}" no es válida. Usá el formato AAAA-MM-DD (por ejemplo, 2026-11-09).`
+  );
+
+  if (SOLO_FECHA.test(texto)) {
+    if (!diaExiste(texto)) throw invalida;
+    const hora = esFinal ? 'T23:59:59.999' : 'T00:00:00.000';
+    return new Date(`${texto}${hora}${ZONA_FACULTAD}`).toISOString();
+  }
+
+  if (FECHA_CON_HORA.test(texto) && diaExiste(texto)) {
+    const fecha = new Date(texto);
+    if (!Number.isNaN(fecha.getTime())) return fecha.toISOString();
+  }
+
+  throw invalida;
+}
+
+/** Los textos de las filas que no son un área, un tipo o un técnico de verdad. */
+const SIN_DATO = {
+  area: 'Sin área',
+  tipoActivo: 'Sin tipo',
+  tecnico: 'Sin asignar',
+};
+
+function aFila(fila, textoSinDato) {
+  const sinDato = fila.id == null;
+  return {
+    id: sinDato ? null : fila.id,
+    nombre: sinDato ? textoSinDato : fila.nombre,
+    ...(fila.edificio !== undefined ? { edificio: fila.edificio ?? '' } : {}),
+    promedioSegundos: Number(fila.promedio_segundos),
+    cantidadTickets: Number(fila.cantidad_tickets),
+  };
+}
+
+/** De mayor a menor tiempo; las filas "Sin ..." siempre al final. */
+function compararPorPromedio(a, b) {
+  if ((a.id === null) !== (b.id === null)) return a.id === null ? 1 : -1;
+  return (
+    b.promedioSegundos - a.promedioSegundos ||
+    b.cantidadTickets - a.cantidadTickets ||
+    a.nombre.localeCompare(b.nombre, 'es')
+  );
+}
+
+function desglose(filas, textoSinDato) {
+  return (filas ?? []).map((fila) => aFila(fila, textoSinDato)).sort(compararPorPromedio);
+}
+
+/**
+ * El tiempo promedio de resolución de los tickets cerrados en el período,
+ * general y desglosado por área, por tipo de activo y por técnico.
+ *
+ * Si no hay tickets cerrados en el período, el promedio general es null (no
+ * 0) y los desgloses vienen vacíos.
+ *
+ * @param {object} [filtros]
+ * @param {string} [filtros.desde] - "2026-11-01" o un ISO con zona: cerrados desde ese momento (inclusive)
+ * @param {string} [filtros.hasta] - "2026-11-30" o un ISO con zona: cerrados hasta ese momento (inclusive)
+ */
+export async function obtenerTiemposResolucion(filtros = {}) {
+  const desde = extremoDelPeriodo(filtros.desde, 'desde', false);
+  const hasta = extremoDelPeriodo(filtros.hasta, 'hasta', true);
+  if (desde && hasta && desde > hasta) {
+    throw datoInvalido('La fecha "desde" no puede ser posterior a la fecha "hasta".');
+  }
+
+  const { data, error } = await supabase.rpc('estadistica_tiempos_resolucion', {
+    p_desde: desde,
+    p_hasta: hasta,
+  });
+  if (error) throw errorDeBase(error, 'de los tiempos de resolución');
+
+  const cantidad = Number(data?.general?.cantidad_tickets ?? 0);
+
+  return {
+    desde,
+    hasta,
+    general: {
+      promedioSegundos: cantidad > 0 ? Number(data.general.promedio_segundos) : null,
+      cantidadTickets: cantidad,
+    },
+    porArea: desglose(data?.por_area, SIN_DATO.area),
+    porTipoActivo: desglose(data?.por_tipo_activo, SIN_DATO.tipoActivo),
+    porTecnico: desglose(data?.por_tecnico, SIN_DATO.tecnico),
+  };
 }

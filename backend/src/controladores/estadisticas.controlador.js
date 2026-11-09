@@ -11,3 +11,12 @@ export async function areasConMayorIncidencia(req, res) {
     datos: await servicio.obtenerAreasConMayorIncidencia({ desde, hasta, tipoFalla }),
   });
 }
+
+/** GET /api/estadisticas/tiempos-resolucion?desde=&hasta= (tiempos promedio de resolución) */
+export async function tiemposResolucion(req, res) {
+  const { desde, hasta } = req.query;
+  res.json({
+    ok: true,
+    datos: await servicio.obtenerTiemposResolucion({ desde, hasta }),
+  });
+}

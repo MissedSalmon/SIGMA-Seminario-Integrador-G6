@@ -382,6 +382,39 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 >   origen («Ticket #31» o «Plan #6», que llevan a su detalle), fecha, falla, activo y estado
 >   del ticket.
 
+> **Decisiones del 09/11/2026 (tiempos promedio de resolución, Sprint 7):**
+> - Está en el **panel del administrador** (`/`), abajo de las áreas con mayor incidencia.
+>   La API es `GET /api/estadisticas/tiempos-resolucion?desde=&hasta=` y es sólo para el
+>   administrador (otro rol: 403; sin sesión: 401).
+> - **Tiempo de resolución = fecha de cierre − fecha de alta del ticket**
+>   (`ticket_fecha_cierre − ticket_fecha_alta`). La fecha de cierre ya existía: la pone sola
+>   la HU-26 al finalizar la OT.
+> - **Sólo cuentan los tickets Cerrados** (estado 6) con fecha de alta, fecha de cierre y un
+>   cierre igual o posterior al alta. Los demás estados no se promedian. Un ticket cerrado sin
+>   fecha de cierre (por ejemplo, uno cerrado antes de la migración del 10/10/2026) queda afuera.
+> - **Reabrir:** hoy ningún camino saca un ticket de «Cerrado» y no hay historial de estados.
+>   Si alguna vez se cierra dos veces, `ticket_fecha_cierre` guarda el último cierre, que es el
+>   que se usa.
+> - **El período se aplica sobre la fecha de cierre**, con los dos días incluidos. La pantalla
+>   manda el día entero en la hora de quien mira; si a la API le llega una fecha sola
+>   («2026-11-09»), la toma como ese día en la hora de Argentina (UTC-3).
+> - **Se calcula en la base**, con AVG y GROUP BY, en la función
+>   `estadistica_tiempos_resolucion` (migración `20261109120000`). Se guarda en segundos y la
+>   pantalla lo escribe con las dos unidades más grandes: «2 d 4 h», «3 h 30 min», «25 min»,
+>   y al lado en horas con un decimal.
+> - **Promedio general:** cada ticket cuenta una vez.
+> - **Por área:** el área del espacio del activo, como en la HU-34. Si dos áreas comparten el
+>   espacio, el ticket cuenta para las dos. Sin espacio o sin área: **«Sin área»**.
+> - **Por tipo de activo:** el tipo del activo del ticket.
+> - **Por técnico:** el ticket cuenta para **cada técnico** que tuvo una asignación no
+>   cancelada en una tarea no cancelada de su OT (un técnico con dos tareas cuenta una vez).
+>   Si no hay ninguno (por ejemplo, sólo trabajó un prestador), va a **«Sin asignar»**. Estos
+>   tickets sí entran en el promedio general.
+> - Cada fila muestra nombre, promedio y cantidad de tickets cerrados. Orden: de mayor a menor
+>   tiempo; las filas «Sin área» / «Sin asignar» siempre al final.
+> - Sin tickets cerrados en el período se muestra un cartel («No hay tickets cerrados en el
+>   período elegido»), nunca 0 ni NaN.
+
 ---
 
 ## Automatismos
