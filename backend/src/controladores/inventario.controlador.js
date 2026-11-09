@@ -29,4 +29,5 @@ export async function eliminarItem(req, res) { res.json({ ok: true, datos: await
 export async function asignarHerramienta(req, res) { res.json({ ok: true, datos: await servicio.asignarHerramienta(leerCodigo(req), req.body) }); }
 export async function devolverHerramienta(req, res) { res.json({ ok: true, datos: await servicio.devolverHerramienta(leerCodigo(req)) }); }
 export async function listarAsignaciones(req, res) { res.json({ ok: true, datos: await servicio.obtenerAsignaciones(leerCodigo(req)) }); }
-export async function ponerEnServicio(req, res) { res.json({ ok: true, datos: await servicio.ponerEnServicio(leerCodigo(req)) }); }
+export async function ponerEnServicio(req, res) { res.json({ ok: true, datos: await servicio.ponerEnServicio(leerCodigo(req)) }); }// Quien hizo el ajuste sale de la sesion, no del pedido.
+export async function registrarAjuste(req, res) { res.status(201).json({ ok: true, datos: await servicio.registrarAjuste(leerCodigo(req), req.body, req.usuario?.identificador) }); }

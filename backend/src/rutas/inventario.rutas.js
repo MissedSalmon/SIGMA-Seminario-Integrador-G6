@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as inventario from '../controladores/inventario.controlador.js';
+import { soloAdministrador } from '../middlewares/soloAdministrador.js';
 
 const router = Router();
 
@@ -20,6 +21,8 @@ router.get('/:codigo/movimientos', inventario.listarMovimientos);
 // En que tareas se consumio el material (HU-35).
 router.get('/:codigo/consumos', inventario.listarConsumos);
 router.put('/:codigo', inventario.actualizarItem);
+// Ajuste de stock de un material que no viene de un remito ni de una tarea (06/11/2026).
+router.post('/:codigo/ajustes', soloAdministrador, inventario.registrarAjuste);
 // Asignar una herramienta a un tecnico, registrar que la devolvio y ver quien la tuvo.
 router.get('/:codigo/asignaciones', inventario.listarAsignaciones);
 router.post('/:codigo/asignacion', inventario.asignarHerramienta);

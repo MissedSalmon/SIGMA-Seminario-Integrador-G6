@@ -32,8 +32,62 @@ Los tres cubren todo el sistema y no se superponen.
 >   iniciar sesión, pero se conserva todo lo que registró. Se puede volver a activar.
 > - Un administrador **no se puede desactivar a sí mismo**, y siempre tiene que quedar **al menos un
 >   administrador activo**.
-> - La gestión de usuarios (`/usuarios`) es sólo para un administrador **activo según la base**, no
->   sólo según el token.
+> - La gestión de usuarios es sólo para un administrador **activo según la base**, no sólo según
+>   el token. (Desde el 06/11/2026 ya no hay una pantalla `/usuarios`: ver más abajo.)
+
+> **Decisiones del 06/11/2026 (corrección del sprint: cambiar la contraseña desde el perfil):**
+> - **Cualquier usuario** (administrador, técnico o autorizado) cambia su propia contraseña desde
+>   **Mi Perfil**, en una ventana, sin pedírselo al administrador. El menú de la cuenta abre la misma
+>   ventana. Pide la contraseña actual y la nueva dos veces.
+> - `/configuracion/cambiar-password` queda **sólo para el cambio obligatorio** del primer ingreso
+>   (o después de un restablecimiento, HU-31). Si no hay cambio pendiente, lleva al perfil. Ahí
+>   «Cancelar» cierra la sesión, porque sin cambiarla no se puede usar el sistema.
+> - **Regla de la contraseña nueva** al cambiarla: **de 6 a 72 caracteres** (bcrypt no mira más
+>   allá) y **distinta de la actual**. Está escrita una vez en cada lado:
+>   `backend/src/utiles/contrasenas.js` y `frontend/src/utils/contrasenas.js`.
+> - Un usuario **desactivado** no puede cambiarla aunque su sesión siga abierta.
+
+> **Decisiones del 06/11/2026 (corrección del sprint: usuario al dar de alta una persona):**
+> - **Al dar de alta un técnico o un usuario autorizado se le crea su usuario** en el mismo
+>   momento. Antes sólo pasaba con el técnico; el autorizado quedaba sin acceso.
+> - **El nombre de usuario es siempre el legajo.** Las tareas del técnico y los tickets del
+>   autorizado se buscan por el nombre de usuario de la sesión, por eso no puede ser otro.
+> - **La contraseña provisoria es siempre el legajo**, y se cambia obligatoriamente en el primer
+>   ingreso. El aviso del alta se lo recuerda al administrador. (El restablecimiento de HU-31 sigue
+>   generando una contraseña al azar.)
+> - **El alta es todo o nada.** Antes de guardar se controla que el legajo no sea ya el nombre de
+>   otro usuario (por ejemplo, un técnico y un autorizado con el mismo legajo). Si después falla la
+>   creación del usuario, se borra la persona (y el autorizado devuelve su área) y se muestra el error.
+>   Todo esto vive en `crearUsuarioDePersona` (`backend/src/servicios/usuarios.servicio.js`).
+> - Los autorizados cargados antes **sin usuario** reciben uno con la migración
+>   `20261106130000_usuario_autorizados_sin_usuario.sql`, con las mismas reglas. Al 06/11/2026 no
+>   había ninguno en la base: todos tenían usuario.
+
+> **Decisiones del 06/11/2026 (organización de los usuarios):**
+> - Para quien administra, **persona y usuario son lo mismo**: cada alta crea su usuario y el nombre
+>   de usuario es el legajo. Por eso **no hay una lista aparte de usuarios**: se sacó «Listado de
+>   usuarios» (`/usuarios`) y su alta manual.
+> - El grupo **Usuarios** del menú tiene **dos listas: Técnicos y Usuarios autorizados**, que se
+>   manejan igual (07/11/2026):
+>   - La lista tiene la columna y el filtro **Estado**, y en cada fila sólo **Ver detalle** y
+>     **Editar**, como los planes de mantenimiento.
+>   - La **ficha** (`/tecnicos/:legajo`, `/autorizados/:legajo`) muestra los datos y tiene todas las
+>     acciones: **Editar · Restablecer contraseña · Desactivar/Activar · Eliminar**.
+>   - El estado es una etiqueta con punto de color, con el mismo criterio que los planes:
+>     **verde = Activo** (puede iniciar sesión), **gris = Inactivo** (no puede entrar; se conserva lo
+>     que registró) o **Sin usuario**.
+>   - Todo sale de un solo componente
+>   (`frontend/src/componentes/usuarios/AccionesUsuario.js`) para que no se vuelvan a desparejar.
+> - **Desactivar es la baja normal**: la persona no puede entrar, pero queda todo lo que registró.
+>   **Eliminar es para alguien cargado por error**: sólo si nunca registró nada (un técnico: tareas
+>   asignadas, herramientas u observaciones; un autorizado: tickets u observaciones). Si tiene
+>   historial, la API no lo borra y sugiere desactivarlo.
+> - **Los administradores no tienen pestaña** (07/11/2026): no se listan ni se gestionan desde la
+>   pantalla. Cada uno cambia su contraseña desde Mi Perfil.
+> - **El legajo no se edita** en ningún lado: además es el nombre de usuario.
+> - **Un técnico desactivado no recibe asignaciones nuevas**: no aparece para elegirlo en una tarea
+>   de OT ni para prestarle una herramienta, y la API lo rechaza. Lo que ya tenía asignado queda
+>   como está, y al editar una tarea se puede dejar al técnico que ya tenía.
 
 ---
 
@@ -64,7 +118,7 @@ Los tres cubren todo el sistema y no se superponen.
 ## El flujo preventivo
 
 ```
-Plan preventivo (tipo de activo + frecuencia + tareas estándar + técnicos autorizados)
+Plan preventivo (tipo de activo + frecuencia + tareas estándar)
         ↓  (automático: cada activo del tipo lleva su propio ciclo)
 OT preventiva  →  mismas tareas y ejecución que el flujo correctivo
 ```
@@ -82,27 +136,40 @@ tipo del plan tiene su propia fecha, que se calcula, no se guarda:
 
 | Situación del par activo–plan | Próximo mantenimiento |
 |---|---|
-| Sin OT previa | La más nueva entre la alta del activo y la alta del plan, + periodicidad |
+| Sin OT previa | La alta del activo + periodicidad |
 | Con OT finalizada | El cierre de la última OT finalizada, + periodicidad |
 | Última OT cancelada | Su fecha programada + periodicidad (el ciclo se saltea) |
 | OT abierta | No hay: se recalcula al cerrarla |
 | Activo retirado | No genera |
+| La fecha ya pasó | Sólo el último vencimiento atrasado: una OT, no una por cada ciclo |
 
 Ejemplo: aire A dado de alta el 13/06/2026, aire B el 20/08/2026, plan cada 6 meses → OT de A
 el 13/12/2026 y de B el 20/02/2027. Las fechas se suman con `@internationalized/date`, que
 resuelve el fin de mes y los bisiestos (31/08 + 6 meses = 28/02).
 
+**La alta del plan no cuenta (06/11/2026).** El próximo mantenimiento sale siempre de la alta
+del activo o de su último mantenimiento, nunca de cuándo se creó el plan. Si el activo es viejo
+y ya se le pasaron varios vencimientos, no se genera una OT por cada uno: queda sólo el último
+que ya llegó. Ejemplo: PC dada de alta el 20/11/2024, plan cada 3 meses, hoy 06/11/2026 → una
+sola OT con fecha 20/08/2026. Cuando se cierra, el siguiente es el cierre + 3 meses.
+
 - **Generación:** un job diario dentro del backend (hora `PLANES_HORA_GENERACION`, por defecto
   6) genera la OT de cada par cuya fecha entra en los próximos `PLANES_DIAS_ANTICIPACION` días
-  (por defecto 7). También corre al levantar la API, al dar de alta o importar activos, y a
+  (por defecto 1: **la OT se crea el día anterior**, decisión del 04/11/2026; con 7 días un plan
+  semanal no tendría sentido). También corre al levantar la API, al dar de alta o importar activos, y a
   mano con `POST /api/planes-mantenimiento/procesar-generacion`. Es idempotente: la OT guarda
   la fecha del ciclo (`ot_fecha_programada`) y un índice único impide dos OT del mismo ciclo.
-- **Asignación:** cada tarea va al técnico autorizado del plan que tiene su especialidad, está
-  disponible y tiene menos tareas pendientes (empate: legajo menor). Si nadie la cubre, la
-  tarea queda sin asignar y la OT en "Creada". Ya no se posterga el plan (reemplaza C7/D4).
-- **Planes existentes:** quedaron con alta del plan = 03/11/2026, así los activos viejos no
-  generan todas sus OT juntas. El tipo y la próxima ejecución anteriores quedaron respaldados
-  en `plan_datos_previos`.
+- **Aviso en el panel (06/11/2026):** se sacó del panel por ahora porque confundía. El
+  componente `AvisoPlanesPorVencer.js` y el endpoint `GET /planes-mantenimiento/por-vencer`
+  quedan armados (fecha programada y día en que se genera la OT), sin botón para generar.
+- **Asignación (04/11/2026):** el plan **no tiene técnicos**. La OT nace en "Creada" con las
+  tareas del plan sin responsable, y el administrador las asigna después, como en cualquier
+  OT (la lista de técnicos de cada tarea ya viene filtrada por su especialidad). Ya no se
+  posterga el plan (reemplaza C7/D4). Los técnicos que tenían los planes quedaron respaldados
+  en `plan_tecnicos_previos`.
+- **Planes existentes:** quedaron con alta del plan = 03/11/2026. Desde el 06/11/2026 esa
+  fecha ya no interviene en el cálculo. El tipo y la próxima ejecución anteriores quedaron
+  respaldados en `plan_datos_previos`.
 - **Estado en pantalla (03/11/2026):** el estado del plan va con una etiqueta de color
   (`EtiquetaEstadoPlan.js`). Verde = Activo, sigue generando OT. Gris = Dado de baja, ya no
   genera.
@@ -242,6 +309,26 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 >   ninguno: primero se registra la devolución.
 > - Un técnico que tiene o tuvo herramientas asignadas no se puede eliminar, para no perder
 >   ese historial.
+
+> **Decisiones del 06/11/2026 (corrección del sprint anterior: ajustes de stock):**
+> - **El stock de un material se puede ajustar a mano**, sin remito y sin tarea: un
+>   **ingreso** suma unidades que no vienen de una compra y un **egreso** descuenta las que no
+>   se usaron en una tarea. Lo hace sólo el administrador, con «Modificar stock» en la ficha del
+>   material (`POST /api/inventario/:codigo/ajustes`).
+> - **El ajuste no lleva motivo.** Se carga ingreso o egreso, cantidad, fecha y una observación
+>   opcional (hasta 500 caracteres). Queda quién lo registró, tomado de la sesión.
+> - **La fecha puede ser de hoy o anterior**, pero no anterior al último movimiento del
+>   material, para que el historial no quede con el stock en negativo en el medio.
+> - **El stock nunca queda negativo.** Un egreso tiene como tope el stock actual; la base lo
+>   vuelve a controlar al guardar (`registrar_ajuste_stock`) y la tabla `material` tiene la regla
+>   `mat_stock_actual >= 0`.
+> - **El ajuste es un movimiento más del historial**: "Ingreso manual" (+) o "Egreso
+>   manual" (−), con la observación en la columna Origen. No hay tabla nueva: se guarda en
+>   `inventariomovimiento`. La alerta de stock mínimo se recalcula sola, como con un remito o
+>   un consumo.
+> - **Las herramientas no se ajustan.** Siguen siendo una unidad por código: si se rompe o se
+>   pierde, se da de baja y queda fuera de servicio. Si la tiene un técnico, primero se
+>   registra la devolución.
 
 > **Decisiones del 10/10/2026 (HU-21, consultar mis tareas):**
 > - **El técnico ve sólo sus tareas.** La API (`GET /api/tareas/mias`) toma el legajo de la
@@ -424,7 +511,7 @@ No son historias de usuario aparte: son reglas dentro de historias existentes.
 | Automatismo | Cuándo pasa |
 |---|---|
 | Se crea la OT | Al validar un ticket. |
-| Baja de stock | Al registrar el consumo de un material en una tarea. |
+| Baja de stock | Al registrar el consumo de un material en una tarea, o con un ajuste de salida (06/11/2026). |
 | Activo → En mantenimiento | Cuando la OT pasa a En ejecución. |
 | Activo → Operativo | Cuando la OT se finaliza. |
 | OT → Finalizada | Cuando se completa la última tarea. |
@@ -495,6 +582,7 @@ Agrupadas por tema, para tener el mapa general:
 | Término | Qué es |
 |---|---|
 | **Activo** | Elemento físico de la facultad que requiere mantenimiento: mobiliario, aires, luminarias, equipos. |
+| **Ajuste de stock** | Entrada o salida de un material cargada a mano por el administrador, que no viene de un remito ni de una tarea. No lleva motivo (06/11/2026). |
 | **Área** | Unidad organizacional de la facultad. Tiene un responsable (el usuario autorizado). |
 | **Cancelación de OT** | Terminar una OT antes de tiempo. Motivos: ticket inválido o duplicado, activo dado de baja, reparación innecesaria, o se terceriza. |
 | **Compra** | Registro de una adquisición de materiales o herramientas. Tiene líneas de compra y un proveedor. |

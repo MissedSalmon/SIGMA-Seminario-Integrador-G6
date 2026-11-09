@@ -5,25 +5,20 @@
  * El plan sólo dice cada cuánto. Cada activo del tipo del plan lleva su propio
  * ciclo, así las OT no salen todas juntas:
  *
- *   sin OT previa   -> la más nueva entre la alta del activo y la del plan, + periodicidad
+ *   sin OT previa   -> la alta del activo + periodicidad (la alta del plan no cuenta)
  *   con OT previa   -> el cierre de la última OT finalizada del par, + periodicidad
  *   OT cancelada    -> cuenta como ciclo salteado: se suma desde su fecha programada
  *   OT abierta      -> no hay próxima hasta que se cierre
+ *   fecha ya pasada -> sólo el último vencimiento atrasado: una OT, no una por ciclo
  *
- * Al generar, cada tarea va al técnico autorizado del plan que tiene su
- * especialidad, está disponible y tiene menos tareas pendientes. Si no hay
- * ninguno, la tarea queda sin asignar y la OT en "Creada".
+ * La OT se genera el día anterior a la fecha (04/11/2026), con las tareas del
+ * plan sin responsable y en estado "Creada": los técnicos se asignan después,
+ * como en cualquier OT.
  */
 import { supabase } from '../config/supabase.js';
 import { env } from '../config/env.js';
 import { errorDeBase } from '../utiles/errores.js';
-import {
-  ENUM_ESTADO_ACTIVO,
-  ENUM_ESTADO_ASIGNACION_TECNICO,
-  ENUM_ESTADO_OT,
-  ENUM_ESTADO_TAREA,
-  ENUM_PRIORIDAD,
-} from '../utiles/enumerados.js';
+import { ENUM_ESTADO_ACTIVO, ENUM_ESTADO_OT, ENUM_ESTADO_TAREA, ENUM_PRIORIDAD } from '../utiles/enumerados.js';
 import { diasEntre, hoyArgentina, soloDia, sumarDias, sumarPeriodo } from '../utiles/periodicidad.js';
 
 const ESTADOS_OT_ABIERTOS = ['Creada', 'Asignada', 'En ejecución'];
@@ -43,13 +38,13 @@ const VIOLA_UNICIDAD = '23505';
  *
  * @param {object}   datos
  * @param {string}   datos.altaActivo  - "2026-06-13" (o con hora)
- * @param {string}   datos.altaPlan    - desde cuándo aplica el plan
  * @param {object[]} datos.ordenes     - OT del par: { id, estado, fechaProgramada, fechaAlta, fechaCierre }
  * @param {number}   datos.intervalo
  * @param {string}   datos.unidad      - dias | semanas | meses | anios
+ * @param {string}   [datos.hoy]       - por defecto, hoy en Argentina
  * @returns {{ fecha: string|null, ultimaRealizada: string|null, otAbierta: object|null }}
  */
-export function proximoMantenimiento({ altaActivo, altaPlan, ordenes = [], intervalo, unidad }) {
+export function proximoMantenimiento({ altaActivo, ordenes = [], intervalo, unidad, hoy = hoyArgentina() }) {
   const finalizadas = ordenes.filter((ot) => ot.estado === 'Finalizada' && ot.fechaCierre);
   const ultimaRealizada = finalizadas.map((ot) => soloDia(ot.fechaCierre)).sort().at(-1) ?? null;
 
@@ -62,38 +57,32 @@ export function proximoMantenimiento({ altaActivo, altaPlan, ordenes = [], inter
     .filter(Boolean);
 
   const desdeOrdenes = [ultimaRealizada, ...salteadas].filter(Boolean).sort().at(-1);
-  const desdeAlta = [soloDia(altaActivo), soloDia(altaPlan)].filter(Boolean).sort().at(-1);
-  const base = desdeOrdenes ?? desdeAlta;
+  const base = desdeOrdenes ?? soloDia(altaActivo);
 
   return {
-    fecha: base ? sumarPeriodo(base, intervalo, unidad) : null,
+    fecha: base ? vencimientoPendiente(base, intervalo, unidad, soloDia(hoy)) : null,
     ultimaRealizada,
     otAbierta: null,
   };
 }
 
 /**
- * El técnico para una tarea: entre los autorizados del plan, los disponibles
- * con la especialidad de la tarea; gana el de menos tareas pendientes y, si
- * empatan, el de legajo menor (así el resultado no depende del orden).
- * Una tarea sin especialidad la puede hacer cualquiera de ellos.
+ * La base más un período. Si ya pasó (un activo dado de alta hace dos años con
+ * un plan trimestral), no se arrastran todos los atrasados: queda sólo el último
+ * vencimiento del ciclo que ya llegó, y de ahí sale una única OT.
  *
- * @returns {string|null} el legajo, o null si nadie la cubre
+ * Se suma siempre desde la base (+ 3, + 6, + 9 meses...) y no desde el
+ * vencimiento anterior, para que un 31/08 no quede corrido al 28 para siempre.
  */
-export function elegirTecnico(tarea, tecnicos, cargaPorLegajo = new Map()) {
-  const aptos = tecnicos.filter(
-    (tecnico) =>
-      tecnico.disponible &&
-      (!tarea.idEspecialidad || tecnico.idsEspecialidad.includes(tarea.idEspecialidad))
-  );
-
-  aptos.sort(
-    (a, b) =>
-      (cargaPorLegajo.get(a.legajo) ?? 0) - (cargaPorLegajo.get(b.legajo) ?? 0) ||
-      a.legajo.localeCompare(b.legajo)
-  );
-
-  return aptos[0]?.legajo ?? null;
+function vencimientoPendiente(base, intervalo, unidad, hoy) {
+  let vueltas = 1;
+  let fecha = sumarPeriodo(base, intervalo, unidad);
+  for (;;) {
+    const siguiente = sumarPeriodo(base, intervalo * (vueltas + 1), unidad);
+    if (siguiente > hoy) return fecha;
+    vueltas++;
+    fecha = siguiente;
+  }
 }
 
 /* ------------------------------------------------------------------ *
@@ -111,9 +100,6 @@ const SELECT_PLAN = `
   mant_prev_activo,
   mant_prev_tarea (
     plantilla_de_tarea ( tarea_plan_id, tarea_plan_nom, tarea_plan_desc, especialidad_id )
-  ),
-  mant_prev_tecnico (
-    tecnico ( tecnico_legajo, tecnico_nom_ape, tecnico_disponibilidad, tecnico_especialidad ( especialidad_id ) )
   )
 `;
 
@@ -135,15 +121,6 @@ function aPlan(fila) {
         nombre: p.tarea_plan_nom,
         descripcion: p.tarea_plan_desc ?? null,
         idEspecialidad: p.especialidad_id ?? null,
-      })),
-    tecnicos: (fila.mant_prev_tecnico ?? [])
-      .map((item) => item.tecnico)
-      .filter(Boolean)
-      .map((t) => ({
-        legajo: t.tecnico_legajo,
-        nombre: t.tecnico_nom_ape,
-        disponible: t.tecnico_disponibilidad !== false,
-        idsEspecialidad: (t.tecnico_especialidad ?? []).map((e) => e.especialidad_id),
       })),
   };
 }
@@ -195,7 +172,7 @@ async function leerDatos({ idPlan = null, codigoActivo = null, incluirInactivos 
 }
 
 /** Un renglón por cada par plan–activo, con su próxima fecha. */
-function armarProgramacion({ planes, activos, ordenes }) {
+function armarProgramacion({ planes, activos, ordenes }, hoy) {
   const pares = [];
 
   for (const plan of planes) {
@@ -210,7 +187,7 @@ function armarProgramacion({ planes, activos, ordenes }) {
       const delPar = ordenes.filter((ot) => ot.idPlan === plan.id && ot.codigoActivo === activo.activo_codigo);
       const calculo = proximoMantenimiento({
         altaActivo: activo.activo_fecha_alta,
-        altaPlan: plan.fechaAlta,
+        hoy,
         ordenes: delPar,
         intervalo: plan.intervalo,
         unidad: plan.unidad,
@@ -223,36 +200,12 @@ function armarProgramacion({ planes, activos, ordenes }) {
   return pares;
 }
 
-/** Tareas pendientes de cada técnico, para repartir la carga. */
-async function leerCargaDeTecnicos() {
-  const { data, error } = await supabase
-    .from('tecnico_asignado_tarea_ot')
-    .select('tecnico_legajo')
-    .in('tec_asig_estado', ASIGNACIONES_PENDIENTES.map((estado) => ENUM_ESTADO_ASIGNACION_TECNICO.codigo(estado)));
-  if (error) throw errorDeBase(error, 'de asignaciones de técnicos');
-
-  const carga = new Map();
-  for (const fila of data ?? []) carga.set(fila.tecnico_legajo, (carga.get(fila.tecnico_legajo) ?? 0) + 1);
-  return carga;
-}
-
 /* ------------------------------------------------------------------ *
  *  Generación
  * ------------------------------------------------------------------ */
 
-/**
- * Crea la OT de un par con sus tareas y técnicos. `carga` se actualiza en el
- * momento, así la OT siguiente de la misma corrida ya la tiene en cuenta.
- */
-async function crearOtPreventiva({ plan, activo, fecha }, carga) {
-  const tareas = plan.tareas.map((tarea, indice) => {
-    const legajo = elegirTecnico(tarea, plan.tecnicos, carga);
-    if (legajo) carga.set(legajo, (carga.get(legajo) ?? 0) + 1);
-    return { ...tarea, numero: indice + 1, legajo };
-  });
-
-  const todasAsignadas = tareas.length > 0 && tareas.every((tarea) => tarea.legajo);
-
+/** Crea la OT de un par con las tareas del plan, todavía sin responsable. */
+async function crearOtPreventiva({ plan, activo, fecha }) {
   const { data: orden, error: errorOrden } = await supabase
     .from('orden_trabajo')
     .insert({
@@ -260,7 +213,7 @@ async function crearOtPreventiva({ plan, activo, fecha }, carga) {
       activo_codigo: activo.activo_codigo,
       ticket_id: null,
       ot_desc: plan.nombre,
-      ot_estado: ENUM_ESTADO_OT.codigo(todasAsignadas ? 'Asignada' : 'Creada'),
+      ot_estado: ENUM_ESTADO_OT.codigo('Creada'),
       ot_fecha_alta: new Date().toISOString(),
       ot_fecha_programada: fecha,
     })
@@ -270,45 +223,27 @@ async function crearOtPreventiva({ plan, activo, fecha }, carga) {
   if (errorOrden?.code === VIOLA_UNICIDAD) return { yaExistia: true };
   if (errorOrden) throw errorDeBase(errorOrden, 'al crear la orden de trabajo preventiva');
 
-  try {
-    if (tareas.length > 0) {
-      const { error: errorTareas } = await supabase.from('tarea_ot').insert(
-        tareas.map((tarea) => ({
-          ot_id: orden.ot_id,
-          tarea_id: tarea.numero,
-          tarea_plan_id: tarea.id,
-          tarea_desc: tarea.descripcion || tarea.nombre,
-          tarea_estado: ENUM_ESTADO_TAREA.codigo(tarea.legajo ? 'Asignada' : 'Creada'),
-          tarea_prioridad: ENUM_PRIORIDAD.codigo('Media'),
-          tarea_fecha_ini: fecha,
-        }))
-      );
-      if (errorTareas) throw errorDeBase(errorTareas, 'al cargar las tareas de la OT preventiva');
-    }
+  if (plan.tareas.length > 0) {
+    const { error: errorTareas } = await supabase.from('tarea_ot').insert(
+      plan.tareas.map((tarea, indice) => ({
+        ot_id: orden.ot_id,
+        tarea_id: indice + 1,
+        tarea_plan_id: tarea.id,
+        tarea_desc: tarea.descripcion || tarea.nombre,
+        tarea_estado: ENUM_ESTADO_TAREA.codigo('Creada'),
+        tarea_prioridad: ENUM_PRIORIDAD.codigo('Media'),
+        tarea_fecha_ini: fecha,
+      }))
+    );
 
-    const asignadas = tareas.filter((tarea) => tarea.legajo);
-    if (asignadas.length > 0) {
-      const { error: errorAsignacion } = await supabase.from('tecnico_asignado_tarea_ot').insert(
-        asignadas.map((tarea) => ({
-          ot_id: orden.ot_id,
-          tarea_id: tarea.numero,
-          tecnico_legajo: tarea.legajo,
-          tec_asig_estado: ENUM_ESTADO_ASIGNACION_TECNICO.codigo('Asignada'),
-          tec_asig_fecha_asig: new Date().toISOString(),
-        }))
-      );
-      if (errorAsignacion) throw errorDeBase(errorAsignacion, 'al asignar los técnicos de la OT preventiva');
+    if (errorTareas) {
+      // Supabase no da transacciones desde el cliente: si fallan las tareas, se borra la OT.
+      await supabase.from('orden_trabajo').delete().eq('ot_id', orden.ot_id);
+      throw errorDeBase(errorTareas, 'al cargar las tareas de la OT preventiva');
     }
-  } catch (fallo) {
-    // Supabase no da transacciones desde el cliente: si falla a mitad, se borra la OT (sus tareas caen en cascada).
-    await supabase.from('orden_trabajo').delete().eq('ot_id', orden.ot_id);
-    throw fallo;
   }
 
-  return {
-    idOt: orden.ot_id,
-    tareasSinTecnico: tareas.filter((tarea) => !tarea.legajo).map((tarea) => tarea.nombre),
-  };
+  return { idOt: orden.ot_id };
 }
 
 /**
@@ -330,7 +265,7 @@ export async function generarOtsPreventivas({
   const corte = soloDia(fechaCorte) ?? hoyArgentina();
   const limite = sumarDias(corte, diasAnticipacion);
 
-  const pares = armarProgramacion(await leerDatos({ codigoActivo }));
+  const pares = armarProgramacion(await leerDatos({ codigoActivo }), corte);
   const vencidos = pares.filter((par) => par.fecha && par.fecha <= limite);
 
   const resultado = {
@@ -343,13 +278,11 @@ export async function generarOtsPreventivas({
   };
   if (vencidos.length === 0) return resultado;
 
-  const carga = await leerCargaDeTecnicos();
-
   for (const par of vencidos) {
     const base = { idPlan: par.plan.id, plan: par.plan.nombre, codigoActivo: par.activo.activo_codigo, fecha: par.fecha };
 
     try {
-      const creada = await crearOtPreventiva(par, carga);
+      const creada = await crearOtPreventiva(par);
 
       if (creada.yaExistia) {
         resultado.yaExistian++;
@@ -357,7 +290,7 @@ export async function generarOtsPreventivas({
       }
 
       resultado.otsGeneradas++;
-      resultado.detalles.push({ ...base, estado: 'generada', idOt: creada.idOt, tareasSinTecnico: creada.tareasSinTecnico });
+      resultado.detalles.push({ ...base, estado: 'generada', idOt: creada.idOt });
     } catch (fallo) {
       resultado.detalles.push({ ...base, estado: 'error', motivo: fallo.message });
     }
@@ -371,8 +304,9 @@ export async function generarOtsPreventivas({
  * ------------------------------------------------------------------ */
 
 /** La programación de un plan, activo por activo, de la fecha más cercana a la más lejana. */
-export async function listarProgramacion(idPlan) {
-  const pares = armarProgramacion(await leerDatos({ idPlan, incluirInactivos: true }));
+export async function listarProgramacion(idPlan, fechaReferencia) {
+  const hoy = soloDia(fechaReferencia) ?? hoyArgentina();
+  const pares = armarProgramacion(await leerDatos({ idPlan, incluirInactivos: true }), hoy);
 
   return pares
     .map((par) => ({
@@ -386,33 +320,24 @@ export async function listarProgramacion(idPlan) {
 }
 
 /**
- * Pares plan–activo que se van a generar en los próximos `dias` (contando la
- * anticipación) y todavía no tienen OT. Avisa qué tareas quedarían sin técnico.
+ * Pares plan–activo con mantenimiento en los próximos `dias` que todavía no
+ * tienen OT, con el día en que el job la va a generar.
  */
 export async function listarPorVencer(dias = 7, fechaReferencia) {
   const hoy = soloDia(fechaReferencia) ?? hoyArgentina();
-  const tope = sumarDias(hoy, dias + env.planesDiasAnticipacion);
+  const tope = sumarDias(hoy, dias);
 
-  const pares = armarProgramacion(await leerDatos());
+  const pares = armarProgramacion(await leerDatos(), hoy);
 
   return pares
     .filter((par) => par.fecha && par.fecha <= tope)
     .sort((a, b) => a.fecha.localeCompare(b.fecha))
-    .map((par) => {
-      const sinTecnico = par.plan.tareas.filter((tarea) => !elegirTecnico(tarea, par.plan.tecnicos)).map((tarea) => tarea.nombre);
-
-      return {
-        idPlan: par.plan.id,
-        nombre: par.plan.nombre,
-        codigoActivo: par.activo.activo_codigo,
-        fecha: par.fecha,
-        diasRestantes: diasEntre(hoy, par.fecha),
-        tecnicos: par.plan.tecnicos.map((tecnico) => ({ legajo: tecnico.legajo, nombre: tecnico.nombre })),
-        tareasSinTecnico: sinTecnico,
-        advertencia:
-          sinTecnico.length > 0
-            ? `Ningún técnico autorizado disponible cubre: ${sinTecnico.join(', ')}. Esas tareas van a quedar sin asignar.`
-            : null,
-      };
-    });
+    .map((par) => ({
+      idPlan: par.plan.id,
+      nombre: par.plan.nombre,
+      codigoActivo: par.activo.activo_codigo,
+      fecha: par.fecha,
+      fechaGeneracion: sumarDias(par.fecha, -env.planesDiasAnticipacion),
+      diasRestantes: diasEntre(hoy, par.fecha),
+    }));
 }

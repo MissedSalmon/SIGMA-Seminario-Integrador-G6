@@ -23,7 +23,7 @@ import { LARGO_TELEFONO, digitosDelTelefono, limpiarTelefono } from '@/utils/tel
 
 const DISPONIBILIDADES = ['Disponible', 'No disponible'];
 
-export default function FormularioTecnico({ tecnico = null, onGuardar }) {
+export default function FormularioTecnico({ tecnico = null, onGuardar, volverA = '/tecnicos' }) {
   const router = useRouter();
   const { mostrarToast } = useToast();
   const editando = Boolean(tecnico);
@@ -98,9 +98,9 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
         tipo: 'exito',
         mensaje: editando
           ? `Se guardaron los cambios de "${nombre}".`
-          : `Se agrego el tecnico "${nombre}".`,
+          : `Se agregó el técnico "${nombre}". Su usuario y su contraseña provisoria son el legajo.`,
       });
-      router.push('/tecnicos');
+      router.push(volverA);
       router.refresh();
     } catch (fallo) {
       setError(fallo.message);
@@ -222,7 +222,7 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
           <BotonesAccion
             procesando={guardando}
             deshabilitado={especialidades.length === 0}
-            hrefCancelar="/tecnicos"
+            hrefCancelar={volverA}
             className="mt-4"
           />
         </form>

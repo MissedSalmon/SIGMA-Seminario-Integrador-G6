@@ -76,20 +76,11 @@ export async function perfil(req, res, next) {
 
 export async function cambiarPassword(req, res, next) {
   try {
-    const { passwordActual, passwordNueva } = req.body;
-    
-    if (!passwordActual || !passwordNueva) {
-      return res.status(400).json({ ok: false, mensaje: 'Datos incompletos' });
-    }
+    const { passwordActual, passwordNueva } = req.body ?? {};
 
-    const exito = await authServicio.cambiarPassword(req.usuario.identificador, passwordActual, passwordNueva);
-    
-    if (!exito) {
-      // Como dice HU-30, para evitar enumeration mejor un mensaje generico o en este caso "Contraseña actual incorrecta"
-      return res.status(400).json({ ok: false, mensaje: 'Contraseña actual incorrecta' });
-    }
+    await authServicio.cambiarPassword(req.usuario.identificador, passwordActual, passwordNueva);
 
-    // Al cambiar exitosamente, hay que emitir un nuevo token con requirePasswordChange = false
+    // El token viejo todavia dice requirePasswordChange = true: se emite uno nuevo.
     const token = jwt.sign(
       { 
         usuarioId: req.usuario.usuarioId, 

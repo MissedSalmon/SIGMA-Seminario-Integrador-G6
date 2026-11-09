@@ -4,9 +4,10 @@
  * Alta y edición de un plan de mantenimiento preventivo (Sprint 5).
  *
  * Desde el 03/11/2026 el plan sólo dice a qué tipo de activo aplica, cada
- * cuánto y con qué tareas y técnicos. No tiene "próxima ejecución": la fecha
- * se calcula para cada activo (ver el detalle del plan). Tampoco tiene "tipo":
- * todos los planes son preventivos.
+ * cuánto y con qué tareas. No tiene "próxima ejecución": la fecha se calcula
+ * para cada activo (ver el detalle del plan). Tampoco tiene "tipo": todos los
+ * planes son preventivos. Desde el 04/11/2026 tampoco tiene técnicos: a las OT
+ * que genera se les asignan después, como a cualquier OT.
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -22,7 +23,6 @@ import DialogoNuevaPlantilla from '@/componentes/plantillas/DialogoNuevaPlantill
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarTiposActivos } from '@/servicios/tiposActivos.js';
 import { listarPlantillas } from '@/servicios/plantillasTareas.js';
-import { listarTecnicos } from '@/servicios/tecnicos.js';
 
 /** Las frecuencias de siempre. Cualquier otra se carga con "Otra…". */
 const FRECUENCIAS = [
@@ -64,11 +64,9 @@ export default function FormularioPlan({ plan = null, onGuardar }) {
   const [unidadOtra, setUnidadOtra] = useState(plan?.unidadFrecuencia ?? 'meses');
 
   const [idsTareas, setIdsTareas] = useState(plan?.tareas?.map((tarea) => tarea.id) ?? []);
-  const [legajos, setLegajos] = useState(plan?.tecnicos?.map((tecnico) => tecnico.legajo) ?? []);
 
   const [tiposActivos, setTiposActivos] = useState([]);
   const [plantillas, setPlantillas] = useState([]);
-  const [tecnicos, setTecnicos] = useState([]);
 
   // La ventana para crear una tarea estándar sin salir del plan.
   const [nuevaVisible, setNuevaVisible] = useState(false);
@@ -78,10 +76,9 @@ export default function FormularioPlan({ plan = null, onGuardar }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    Promise.all([listarTiposActivos(), listarTecnicos(), listarPlantillas()])
-      .then(([tipos, listaTecnicos, listaPlantillas]) => {
+    Promise.all([listarTiposActivos(), listarPlantillas()])
+      .then(([tipos, listaPlantillas]) => {
         setTiposActivos(tipos);
-        setTecnicos(listaTecnicos);
         setPlantillas(listaPlantillas);
       })
       .catch((fallo) => setError(fallo.message));
@@ -124,7 +121,6 @@ export default function FormularioPlan({ plan = null, onGuardar }) {
         intervalo,
         unidadFrecuencia: unidad,
         tareasIds: idsTareas,
-        tecnicosLegajos: legajos,
       });
       mostrarToast({
         tipo: 'exito',
@@ -147,11 +143,6 @@ export default function FormularioPlan({ plan = null, onGuardar }) {
     valor: plantilla.idPlantilla,
     texto: `${plantilla.descripcion} (${plantilla.nombreEspecialidad ?? 'sin especialidad'})`,
   }));
-
-  const opcionesTecnicos = tecnicos.map((tecnico) => {
-    const especialidades = (tecnico.especialidades ?? []).map((una) => una.nombre).join(', ');
-    return { valor: tecnico.legajo, texto: especialidades ? `${tecnico.nombre} (${especialidades})` : tecnico.nombre };
-  });
 
   return (
     <>
@@ -271,20 +262,6 @@ export default function FormularioPlan({ plan = null, onGuardar }) {
                       Agregar
                     </CButton>
                   }
-                />
-              </CCol>
-
-              <CCol xs={12}>
-                <SeleccionMultiple
-                  id="tecnicos"
-                  etiqueta="Técnicos autorizados"
-                  opciones={opcionesTecnicos}
-                  elegidos={legajos}
-                  alCambiar={setLegajos}
-                  textoTodas="Todos los técnicos"
-                  textoCantidad={(cantidad) => `${cantidad} técnicos`}
-                  placeholder="Elegir técnicos"
-                  ancho={40}
                 />
               </CCol>
 

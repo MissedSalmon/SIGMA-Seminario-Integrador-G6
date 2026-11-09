@@ -48,7 +48,6 @@ function limpiarTexto(t) {
 function formatearPlan(fila) {
   const tipoActivo = fila.tipo_activo ?? null;
   const tareasRel = fila.mant_prev_tarea ?? [];
-  const tecnicosRel = fila.mant_prev_tecnico ?? [];
   const ordenesRel = fila.orden_trabajo ?? [];
 
   const tareas = tareasRel
@@ -61,21 +60,6 @@ function formatearPlan(fila) {
         descripcion: p.tarea_plan_desc ?? null,
         idEspecialidad: p.especialidad_id ?? null,
         nombreEspecialidad: p.especialidad?.especialidad_nom ?? null,
-      };
-    })
-    .filter(Boolean);
-
-  const tecnicos = tecnicosRel
-    .map((item) => {
-      const t = item.tecnico;
-      if (!t) return null;
-      return {
-        legajo: t.tecnico_legajo,
-        nombre: t.tecnico_nom_ape,
-        telefono: t.tecnico_tel ?? null,
-        disponible: t.tecnico_disponibilidad !== false,
-        idsEspecialidad: (t.tecnico_especialidad ?? []).map((e) => e.especialidad_id),
-        especialidades: (t.tecnico_especialidad ?? []).map((e) => e.especialidad?.especialidad_nom).filter(Boolean),
       };
     })
     .filter(Boolean);
@@ -111,10 +95,7 @@ function formatearPlan(fila) {
     activo: fila.mant_prev_activo !== false,
     fechaBaja: fila.mant_prev_fecha_baja ?? null,
     tareas,
-    tecnicos,
-    tieneTecnico: tecnicos.length > 0,
     cantidadTareas: tareas.length,
-    cantidadTecnicos: tecnicos.length,
     ordenes,
   };
 }
@@ -143,16 +124,6 @@ const SELECT_PLAN = `
       tarea_plan_desc,
       especialidad_id,
       especialidad ( especialidad_nom )
-    )
-  ),
-  mant_prev_tecnico (
-    tecnico_legajo,
-    tecnico (
-      tecnico_legajo,
-      tecnico_nom_ape,
-      tecnico_tel,
-      tecnico_disponibilidad,
-      tecnico_especialidad ( especialidad_id, especialidad ( especialidad_nom ) )
     )
   ),
   orden_trabajo (
@@ -276,24 +247,6 @@ export async function crearPlan(datos = {}) {
     throw datoInvalido('Una o más tareas seleccionadas no existen.');
   }
 
-  // Técnicos opcionales (C5)
-  const tecnicosLegajos = Array.isArray(datos.tecnicosLegajos)
-    ? [...new Set(datos.tecnicosLegajos.map(limpiarTexto).filter(Boolean))]
-    : [];
-
-  if (tecnicosLegajos.length > 0) {
-    const { data: tecnicosValidos, error: errorTec } = await supabase
-      .from('tecnico')
-      .select('tecnico_legajo, tecnico_disponibilidad')
-      .in('tecnico_legajo', tecnicosLegajos);
-
-    if (errorTec) throw errorDeBase(errorTec, 'de técnicos');
-
-    if ((tecnicosValidos ?? []).length !== tecnicosLegajos.length) {
-      throw datoInvalido('Uno o más técnicos indicados no existen.');
-    }
-  }
-
   const descripcion = limpiarTexto(datos.descripcion);
   const frecuenciaTexto = formatearFrecuencia(intervalo, unidadFrecuencia);
 
@@ -327,16 +280,6 @@ export async function crearPlan(datos = {}) {
 
   const { error: errorTareas } = await supabase.from('mant_prev_tarea').insert(filasTareas);
   if (errorTareas) throw errorDeBase(errorTareas, 'al asignar tareas al plan');
-
-  // Inserción de técnicos (si fueron informados)
-  if (tecnicosLegajos.length > 0) {
-    const filasTecnicos = tecnicosLegajos.map((legajo) => ({
-      mant_prev_id: idPlan,
-      tecnico_legajo: legajo,
-    }));
-    const { error: errorTecnicos } = await supabase.from('mant_prev_tecnico').insert(filasTecnicos);
-    if (errorTecnicos) throw errorDeBase(errorTecnicos, 'al asignar técnicos al plan');
-  }
 
   return obtenerPlanPorId(idPlan);
 }
@@ -443,34 +386,6 @@ export async function actualizarPlan(id, datos = {}) {
       tarea_plan_id: tareaId,
     }));
     await supabase.from('mant_prev_tarea').insert(filasTareas);
-  }
-
-  // Actualizar técnicos si vienen especificados
-  if ('tecnicosLegajos' in datos) {
-    const legajos = Array.isArray(datos.tecnicosLegajos)
-      ? [...new Set(datos.tecnicosLegajos.map(limpiarTexto).filter(Boolean))]
-      : [];
-
-    if (legajos.length > 0) {
-      const { data: validos } = await supabase
-        .from('tecnico')
-        .select('tecnico_legajo')
-        .in('tecnico_legajo', legajos);
-
-      if ((validos ?? []).length !== legajos.length) {
-        throw datoInvalido('Uno o más técnicos indicados no existen.');
-      }
-    }
-
-    // Reemplazar asignación de técnicos
-    await supabase.from('mant_prev_tecnico').delete().eq('mant_prev_id', idNum);
-    if (legajos.length > 0) {
-      const filasTecnicos = legajos.map((legajo) => ({
-        mant_prev_id: idNum,
-        tecnico_legajo: legajo,
-      }));
-      await supabase.from('mant_prev_tecnico').insert(filasTecnicos);
-    }
   }
 
   return obtenerPlanPorId(idNum);
