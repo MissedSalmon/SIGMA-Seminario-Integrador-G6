@@ -38,7 +38,7 @@ function soloDigitos(texto) {
 /** Los anios que hay que tener cumplidos para quedar registrado. */
 const EDAD_MINIMA = 18;
 
-export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
+export default function FormularioAutorizado({ autorizado = null, onGuardar, volverA = '/autorizados' }) {
   const router = useRouter();
   const { mostrarToast } = useToast();
   const editando = Boolean(autorizado);
@@ -155,10 +155,10 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
         tipo: 'exito',
         mensaje: editando
           ? `Se guardaron los cambios de "${nombre}".`
-          : `Se agrego el usuario autorizado "${nombre}".`,
+          : `Se agregó el usuario autorizado "${nombre}". Su usuario y su contraseña provisoria son el legajo.`,
       });
 
-      router.push('/autorizados');
+      router.push(volverA);
       router.refresh();
     } catch (fallo) {
       setError(fallo.message);
@@ -301,7 +301,7 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar }) {
             </p>
           )}
 
-          <BotonesAccion procesando={guardando} hrefCancelar="/autorizados" className="mt-4" />
+          <BotonesAccion procesando={guardando} hrefCancelar={volverA} className="mt-4" />
         </form>
       </CCardBody>
     </CCard>

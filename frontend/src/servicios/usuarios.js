@@ -1,28 +1,11 @@
 /**
- * Llamadas a la API de gestion de usuarios (Sprint 6).
- *
- * Cada usuario llega como
- * { idUsuario, nombreUsuario, rol, legajo, persona, activo, fechaCreacion, fechaActualizacion }.
+ * Llamadas a la API sobre el usuario de una persona: activarlo, desactivarlo y
+ * restablecer su contraseña. Las usan las listas de técnicos y autorizados
+ * (ver componentes/usuarios/AccionesUsuario.js).
  *
  * Solo las puede usar un administrador activo: el resto recibe 403.
  */
 import { api } from './api.js';
-
-export async function listarUsuarios() {
-  const { data } = await api.get('/usuarios');
-  return data.datos;
-}
-
-/** Las personas registradas que todavia no tienen usuario: { rol, legajo, nombre }. */
-export async function listarPersonasSinUsuario() {
-  const { data } = await api.get('/usuarios/personas-sin-usuario');
-  return data.datos;
-}
-
-export async function crearUsuario(usuario) {
-  const { data } = await api.post('/usuarios', usuario);
-  return data.datos;
-}
 
 export async function desactivarUsuario(idUsuario) {
   const { data } = await api.put(`/usuarios/${idUsuario}/desactivar`);

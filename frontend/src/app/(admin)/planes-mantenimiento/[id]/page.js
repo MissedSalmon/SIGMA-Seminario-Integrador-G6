@@ -128,7 +128,7 @@ export default function PantallaDetallePlanMantenimiento({ params }) {
                     <Dato etiqueta="Frecuencia">{plan.frecuencia}</Dato>
                   </CCol>
                   <CCol sm={6} lg={3}>
-                    <Dato etiqueta="Aplica desde">{soloFechaLegible(plan.fechaAlta)}</Dato>
+                    <Dato etiqueta="Fecha de creación">{soloFechaLegible(plan.fechaAlta)}</Dato>
                   </CCol>
                   <CCol sm={6} lg={3}>
                     <Dato etiqueta="Estado">
@@ -149,52 +149,25 @@ export default function PantallaDetallePlanMantenimiento({ params }) {
               </CCardBody>
             </CCard>
 
-            <CRow className="g-4 mb-4">
-              <CCol lg={6}>
-                <CCard className="h-100">
-                  <CCardHeader className="fw-semibold">Tareas ({plan.tareas.length})</CCardHeader>
-                  <CCardBody>
-                    {plan.tareas.length === 0 ? (
-                      <SinDato>Sin tareas.</SinDato>
-                    ) : (
-                      <ul className="list-unstyled mb-0">
-                        {plan.tareas.map((tarea) => (
-                          <li key={tarea.id} className="mb-2">
-                            {tarea.nombre}
-                            <span className="text-body-secondary">
-                              {' '}— {tarea.nombreEspecialidad ?? 'sin especialidad'}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </CCardBody>
-                </CCard>
-              </CCol>
-
-              <CCol lg={6}>
-                <CCard className="h-100">
-                  <CCardHeader className="fw-semibold">Técnicos autorizados ({plan.tecnicos.length})</CCardHeader>
-                  <CCardBody>
-                    {plan.tecnicos.length === 0 ? (
-                      <SinDato>Sin técnicos: las tareas de las OT quedan sin asignar.</SinDato>
-                    ) : (
-                      <ul className="list-unstyled mb-0">
-                        {plan.tecnicos.map((tecnico) => (
-                          <li key={tecnico.legajo} className="mb-2">
-                            {tecnico.nombre}
-                            <span className="text-body-secondary">
-                              {' '}— {tecnico.especialidades?.join(', ') || 'sin especialidad'}
-                              {!tecnico.disponible && ' (no disponible)'}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </CCardBody>
-                </CCard>
-              </CCol>
-            </CRow>
+            <CCard className="mb-4">
+              <CCardHeader className="fw-semibold">Tareas ({plan.tareas.length})</CCardHeader>
+              <CCardBody>
+                {plan.tareas.length === 0 ? (
+                  <SinDato>Sin tareas.</SinDato>
+                ) : (
+                  <ul className="list-unstyled mb-0">
+                    {plan.tareas.map((tarea) => (
+                      <li key={tarea.id} className="mb-2">
+                        {tarea.nombre}
+                        <span className="text-body-secondary">
+                          {' '}— {tarea.nombreEspecialidad ?? 'sin especialidad'}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CCardBody>
+            </CCard>
 
             {/* Cada activo del tipo lleva su propio ciclo (03/11/2026). */}
             <CCard className="mb-4">

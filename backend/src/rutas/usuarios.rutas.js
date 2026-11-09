@@ -1,6 +1,6 @@
 /**
- * Direcciones de gestion de usuarios (HU Gestion de usuarios, Sprint 6).
- * Se montan bajo /api/usuarios (ver rutas/index.js).
+ * Direcciones sobre el usuario de una persona: desactivarlo, activarlo y
+ * restablecer su contraseña. Se montan bajo /api/usuarios (ver rutas/index.js).
  *
  * Todas son solo para un administrador activo. El resto recibe 403.
  */
@@ -11,10 +11,6 @@ import { soloAdministradorActivo } from '../middlewares/soloAdministradorActivo.
 const router = Router();
 
 router.use(soloAdministradorActivo);
-
-router.get('/', usuarios.listar);
-router.get('/personas-sin-usuario', usuarios.personasSinUsuario);
-router.post('/', usuarios.crear);
 
 // Baja logica y su vuelta atras. Nunca se borra un usuario.
 router.put('/:id/desactivar', usuarios.desactivar);

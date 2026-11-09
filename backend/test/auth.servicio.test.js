@@ -4,7 +4,7 @@
  * Cubre:
  * 1. Validación de credenciales (usuario correcto, contraseña errónea, usuario inexistente, usuario inactivo).
  * 2. Obtención de perfil según rol (administrador, técnico, autorizado).
- * 3. Cambio de contraseña (actualización de hash y flag require_password_change).
+ * 3. Cambio de contraseña: el obligatorio del primer ingreso y el que se hace desde el perfil.
  */
 import { jest } from '@jest/globals';
 import bcrypt from 'bcryptjs';
@@ -223,49 +223,97 @@ describe('obtenerPerfil', () => {
 });
 
 describe('cambiarPassword', () => {
-  test('cambia la contraseña con éxito cuando la contraseña actual es correcta', async () => {
-    const hashViejo = await bcrypt.hash('claveVieja', 10);
-    const usuarioMock = {
-      usuario_id: 'usr-001',
-      password_hash: hashViejo,
+  // Las pruebas de arriba dejan un mockReturnValue fijo, que clearAllMocks no borra.
+  beforeEach(() => supabase.from.mockReset());
+
+  /** La busqueda del usuario: select().eq().maybeSingle(). */
+  function busquedaQueDevuelve(data, error = null) {
+    const cadena = {
+      select: jest.fn(() => cadena),
+      eq: jest.fn(() => cadena),
+      maybeSingle: jest.fn().mockResolvedValue({ data, error }),
     };
+    return cadena;
+  }
 
-    const cadenaUpdate = consultaQueDevuelve(null);
+  /** El cambio: update().eq(). */
+  function cambioQueDevuelve(error = null) {
+    const cadena = {
+      update: jest.fn(() => cadena),
+      eq: jest.fn().mockResolvedValue({ error }),
+    };
+    return cadena;
+  }
 
+  async function usuarioConClave(clave, activo = true) {
+    return { usuario_id: 'usr-001', password_hash: await bcrypt.hash(clave, 10), activo };
+  }
+
+  test('guarda el hash de la nueva y saca el cambio obligatorio', async () => {
+    const cambio = cambioQueDevuelve();
     supabase.from
-      .mockReturnValueOnce(consultaQueDevuelve(usuarioMock)) // select
-      .mockReturnValueOnce(cadenaUpdate); // update
+      .mockReturnValueOnce(busquedaQueDevuelve(await usuarioConClave('claveVieja')))
+      .mockReturnValueOnce(cambio);
 
-    const resultado = await cambiarPassword('12345', 'claveVieja', 'claveNuevaSegura');
+    await cambiarPassword('12345', 'claveVieja', 'claveNuevaSegura');
 
-    expect(resultado).toBe(true);
-    expect(cadenaUpdate.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        require_password_change: false,
-        password_hash: expect.any(String),
-      })
-    );
+    const guardado = cambio.update.mock.calls[0][0];
+    expect(guardado.require_password_change).toBe(false);
+    expect(await bcrypt.compare('claveNuevaSegura', guardado.password_hash)).toBe(true);
+    expect(cambio.eq).toHaveBeenCalledWith('usuario_id', 'usr-001');
   });
 
-  test('no permite cambiar la contraseña si la contraseña actual es incorrecta', async () => {
-    const hashViejo = await bcrypt.hash('claveCorrecta', 10);
-    const usuarioMock = {
-      usuario_id: 'usr-001',
-      password_hash: hashViejo,
-    };
+  test('rechaza la contraseña actual incorrecta y no cambia nada', async () => {
+    supabase.from.mockReturnValueOnce(busquedaQueDevuelve(await usuarioConClave('claveCorrecta')));
 
-    supabase.from.mockReturnValue(consultaQueDevuelve(usuarioMock));
-
-    const resultado = await cambiarPassword('12345', 'claveIncorrecta', 'claveNueva');
-
-    expect(resultado).toBe(false);
+    await expect(cambiarPassword('12345', 'claveIncorrecta', 'claveNueva')).rejects.toMatchObject({
+      estado: 400,
+      message: 'La contraseña actual no es correcta.',
+    });
+    expect(supabase.from).toHaveBeenCalledTimes(1);
   });
 
-  test('devuelve false si el usuario no existe', async () => {
-    supabase.from.mockReturnValue(consultaQueDevuelve(null, { message: 'Not found' }));
+  test('rechaza una nueva igual a la actual', async () => {
+    supabase.from.mockReturnValueOnce(busquedaQueDevuelve(await usuarioConClave('123456')));
 
-    const resultado = await cambiarPassword('inexistente', 'clave', 'claveNueva');
+    await expect(cambiarPassword('123456', '123456', '123456')).rejects.toMatchObject({
+      estado: 400,
+      message: 'La contraseña nueva tiene que ser distinta de la actual.',
+    });
+    expect(supabase.from).toHaveBeenCalledTimes(1);
+  });
 
-    expect(resultado).toBe(false);
+  test('rechaza una nueva de menos de 6 caracteres sin consultar la base', async () => {
+    await expect(cambiarPassword('12345', 'claveVieja', '12345')).rejects.toMatchObject({
+      estado: 400,
+      message: 'La contraseña tiene que tener al menos 6 caracteres.',
+    });
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  test('pide la contraseña actual', async () => {
+    await expect(cambiarPassword('12345', '', 'claveNueva')).rejects.toMatchObject({ estado: 400 });
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  test('no deja cambiarla a un usuario desactivado aunque su sesión siga abierta', async () => {
+    supabase.from.mockReturnValueOnce(busquedaQueDevuelve(await usuarioConClave('claveVieja', false)));
+
+    await expect(cambiarPassword('12345', 'claveVieja', 'claveNueva')).rejects.toMatchObject({ estado: 403 });
+    expect(supabase.from).toHaveBeenCalledTimes(1);
+  });
+
+  test('avisa si el usuario de la sesión ya no existe', async () => {
+    supabase.from.mockReturnValueOnce(busquedaQueDevuelve(null));
+
+    await expect(cambiarPassword('inexistente', 'clave1', 'claveNueva')).rejects.toMatchObject({ estado: 404 });
+  });
+
+  test('si la base falla al guardar, no lo da por cambiado', async () => {
+    supabase.from
+      .mockReturnValueOnce(busquedaQueDevuelve(await usuarioConClave('claveVieja')))
+      .mockReturnValueOnce(cambioQueDevuelve({ message: 'se cayó la conexión' }));
+
+    await expect(cambiarPassword('12345', 'claveVieja', 'claveNueva')).rejects.toThrow('se cayó la conexión');
   });
 });

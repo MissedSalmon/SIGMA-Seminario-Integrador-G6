@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabase.js';
 import { datoInvalido, noEncontrado, conflicto } from '../utiles/errores.js';
+import { controlarTecnicoActivo } from './usuarios.servicio.js';
 import {
   ENUM_ESTADO_ACTIVO,
   ENUM_ESTADO_ASIGNACION_TECNICO,
@@ -646,8 +647,8 @@ async function validarEspecialidadDelTecnico(legajoTecnico, idPlantilla) {
  * tarea sin responsable la OT sigue en "Creada".
  *
  * @param {object} datos             - lo que mando la pantalla
- * @param {object} [fechasActuales]  - las fechas que la tarea ya tenia guardadas
- *                                     (`inicio` y `fin`), al editar una tarea vieja
+ * @param {object} [fechasActuales]  - lo que la tarea ya tenia guardado (`inicio`, `fin`
+ *                                     y `legajoTecnico`), al editar una tarea vieja
  */
 async function validarTarea(datos, fechasActuales = {}) {
   const descripcion = limpiar(datos.descripcion);
@@ -678,6 +679,9 @@ async function validarTarea(datos, fechasActuales = {}) {
 
     if (error) throw new Error(error.message);
     if (!data) throw datoInvalido(`No existe el técnico con legajo ${legajoTecnico}.`);
+
+    // Al editar una tarea se puede dejar al técnico que ya tenía aunque lo hayan desactivado.
+    if (legajoTecnico !== fechasActuales.legajoTecnico) await controlarTecnicoActivo(legajoTecnico);
   }
 
   if (idPrestador) {
@@ -936,9 +940,18 @@ export async function actualizarTarea(idOt, idTarea, datos) {
     throw conflicto(`La tarea ${idTarea} ya está finalizada: no se puede modificar.`);
   }
 
+  const { data: asignado, error: errorAsignado } = await supabase
+    .from('tecnico_asignado_tarea_ot')
+    .select('tecnico_legajo')
+    .eq('ot_id', idOt)
+    .eq('tarea_id', idTarea)
+    .maybeSingle();
+  if (errorAsignado) throw new Error(errorAsignado.message);
+
   const tarea = await validarTarea(datos, {
     inicio: existente.tarea_fecha_ini,
     fin: existente.tarea_fecha_fin,
+    legajoTecnico: asignado ? String(asignado.tecnico_legajo) : null,
   });
 
   const estado = estadoSegunResponsable(tarea, normalizarEstadoTarea(existente.tarea_estado));

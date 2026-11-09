@@ -115,15 +115,6 @@ export default function PantallaPlanesMantenimiento() {
       render: (plan) => <span className="text-body-secondary">{plan.frecuencia}</span>,
     },
     {
-      clave: 'tecnicos',
-      encabezado: 'Técnicos',
-      render: (plan) => (
-        <span className="text-body-secondary">
-          {plan.tieneTecnico ? plan.tecnicos.map((t) => t.nombre).join(', ') : 'Sin técnicos'}
-        </span>
-      ),
-    },
-    {
       clave: 'estado',
       encabezado: 'Estado',
       render: (plan) => <EtiquetaEstadoPlan activo={plan.activo} />,

@@ -10,35 +10,11 @@ import {
   CModalHeader,
   CModalTitle,
 } from '@coreui/react';
-import CIcon from '@coreui/icons-react';
-import { cilLockLocked } from '@coreui/icons';
 
 import Aviso from '@/componentes/Aviso.js';
 import BotonesAccion from '@/componentes/BotonesAccion.js';
-import { useSesion } from '@/componentes/layout/ContextoSesion.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { restablecerContrasenaUsuario } from '@/servicios/usuarios.js';
-
-export function AccionRestablecerContrasena({ onClick, nombre }) {
-  const { usuario } = useSesion();
-
-  if (usuario?.rol !== 'administrador') return null;
-
-  return (
-    <CButton
-      type="button"
-      size="sm"
-      variant="ghost"
-      color="primary"
-      className="btn-icono"
-      onClick={onClick}
-      title="Restablecer contraseña"
-      aria-label={`Restablecer contraseña de ${nombre}`}
-    >
-      <CIcon icon={cilLockLocked} />
-    </CButton>
-  );
-}
 
 export default function DialogoRestablecerContrasena({ usuario, onCerrar }) {
   const { mostrarToast } = useToast();

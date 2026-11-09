@@ -27,6 +27,12 @@ export async function middleware(request) {
       return NextResponse.redirect(url);
     }
 
+    // Esa pantalla es sólo para el cambio obligatorio; el voluntario es la ventana del perfil.
+    if (!payload.requirePasswordChange && url.pathname === '/configuracion/cambiar-password') {
+      url.pathname = '/perfil';
+      return NextResponse.redirect(url);
+    }
+
     // Reglas de negocio de acceso según rol
     const rol = payload.rol;
     

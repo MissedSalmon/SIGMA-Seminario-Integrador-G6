@@ -1,16 +1,17 @@
 /**
  * Gestion de usuarios (HU Gestion de usuarios, Sprint 6).
  *
- * Un usuario es la cuenta con la que una persona ya registrada (administrador,
- * tecnico o usuario autorizado) entra al sistema. Vive en la tabla `usuario`
- * (la misma que usa el login de HU-30) y tiene un unico rol, que es el tipo de
- * persona a la que pertenece.
+ * Un usuario es la cuenta con la que una persona (administrador, tecnico o
+ * usuario autorizado) entra al sistema. Vive en la tabla `usuario` (la misma
+ * que usa el login de HU-30) y tiene un unico rol, que es el tipo de persona.
+ * Se crea junto con la persona (crearUsuarioDePersona) y se gestiona desde la
+ * lista de cada tipo: /tecnicos y /autorizados (06/11/2026).
  *
  * La baja es logica: desactivar pone `activo = false` y nada mas. La fila no se
  * borra, asi que todo lo que la persona registro queda como estaba. Un usuario
  * desactivado no puede iniciar sesion (ver validarCredenciales en auth.servicio.js).
  *
- * Cada usuario llega a la API como
+ * Al activar o desactivar, el usuario vuelve como
  * { idUsuario, nombreUsuario, rol, legajo, persona, activo, fechaCreacion, fechaActualizacion }.
  * La contraseña (ni siquiera cifrada) nunca sale de aca.
  */
@@ -33,14 +34,6 @@ const COLUMNAS =
   'admin_legajo, tecnico_legajo, autorizado_legajo, ' +
   'administrador(admin_nom_ape), tecnico(tecnico_nom_ape), autorizado(autorizado_nom_ape)';
 
-/** Lo minimo que tiene que tener la contraseña inicial (igual que al cambiarla, HU-30). */
-export const LARGO_MINIMO_PASSWORD = 6;
-const LARGO_MAXIMO_NOMBRE = 50;
-
-function limpiar(valor) {
-  return typeof valor === 'string' ? valor.trim() : String(valor ?? '').trim();
-}
-
 function aUsuario(fila) {
   const rol = ENUM_ROL.texto(fila.rol);
   const persona = PERSONAS[rol];
@@ -57,32 +50,6 @@ function aUsuario(fila) {
   };
 }
 
-function validarDatos(datos = {}) {
-  const rol = limpiar(datos.rol);
-  if (!rol) throw datoInvalido('El rol es obligatorio.');
-  if (!ENUM_ROL.incluye(rol)) {
-    throw datoInvalido(`"${rol}" no es un rol válido. Son: ${ENUM_ROL.textos.join(', ')}.`);
-  }
-
-  const legajo = limpiar(datos.legajo);
-  if (!legajo) throw datoInvalido('Hay que elegir la persona.');
-
-  const nombreUsuario = limpiar(datos.nombreUsuario);
-  if (!nombreUsuario) throw datoInvalido('El nombre de usuario es obligatorio.');
-  if (/\s/.test(nombreUsuario)) throw datoInvalido('El nombre de usuario no puede tener espacios.');
-  if (nombreUsuario.length > LARGO_MAXIMO_NOMBRE) {
-    throw datoInvalido(`El nombre de usuario no puede tener más de ${LARGO_MAXIMO_NOMBRE} caracteres.`);
-  }
-
-  // La contraseña no se recorta: un espacio al final tambien es parte de ella.
-  const password = typeof datos.password === 'string' ? datos.password : '';
-  if (password.length < LARGO_MINIMO_PASSWORD) {
-    throw datoInvalido(`La contraseña tiene que tener al menos ${LARGO_MINIMO_PASSWORD} caracteres.`);
-  }
-
-  return { rol, legajo, nombreUsuario, password };
-}
-
 async function obtenerFila(idUsuario) {
   const { data, error } = await supabase
     .from('usuario')
@@ -96,117 +63,94 @@ async function obtenerFila(idUsuario) {
   return data;
 }
 
-/** GET /api/usuarios. Filtros opcionales: rol ('tecnico') y activo ('true' / 'false'). */
-export async function obtenerTodos({ rol, activo } = {}) {
-  const { data, error } = await supabase.from('usuario').select(COLUMNAS).order('identificador');
-  if (error) throw errorDeBase(error, 'de usuarios');
-
-  let usuarios = data.map(aUsuario);
-
-  if (rol) usuarios = usuarios.filter((usuario) => usuario.rol === rol);
-  if (activo === 'true' || activo === 'false') {
-    usuarios = usuarios.filter((usuario) => usuario.activo === (activo === 'true'));
-  }
-
-  return usuarios;
-}
-
-export async function obtenerPorId(idUsuario) {
-  return aUsuario(await obtenerFila(idUsuario));
-}
-
 /**
- * Las personas registradas que todavia no tienen usuario. Son las que se
- * pueden elegir al dar de alta uno. Llegan como { rol, legajo, nombre }.
+ * El estado del usuario de una persona, leido de su fila con `usuario(usuario_id, activo)`.
+ * PostgREST lo manda como objeto (la clave es UNIQUE) o como lista, segun la version.
+ * Sin usuario, `activo` es null.
  */
-export async function obtenerPersonasSinUsuario() {
-  const { data: usuarios, error } = await supabase
+export function cuentaDe(fila) {
+  const cuenta = Array.isArray(fila?.usuario) ? fila.usuario[0] : fila?.usuario;
+  return { idUsuario: cuenta?.usuario_id ?? null, activo: cuenta ? cuenta.activo === true : null };
+}
+
+/** Corta una asignacion nueva (tarea o herramienta) a un tecnico cuyo usuario esta desactivado. */
+export async function controlarTecnicoActivo(legajo) {
+  const { data, error } = await supabase
     .from('usuario')
-    .select('admin_legajo, tecnico_legajo, autorizado_legajo');
+    .select('activo')
+    .eq('tecnico_legajo', String(legajo))
+    .maybeSingle();
   if (error) throw errorDeBase(error, 'de usuarios');
-
-  const personas = [];
-
-  for (const [rol, persona] of Object.entries(PERSONAS)) {
-    const conUsuario = new Set(usuarios.map((usuario) => usuario[persona.legajo]).filter(Boolean));
-
-    const { data: filas, error: errorPersonas } = await supabase
-      .from(persona.tabla)
-      .select(`${persona.legajo}, ${persona.nombre}`)
-      .order(persona.nombre);
-    if (errorPersonas) throw errorDeBase(errorPersonas);
-
-    for (const fila of filas) {
-      const legajo = String(fila[persona.legajo]);
-      if (!conUsuario.has(legajo)) personas.push({ rol, legajo, nombre: fila[persona.nombre] ?? legajo });
-    }
+  if (data && data.activo !== true) {
+    throw conflicto(`El técnico ${legajo} está desactivado: no se le pueden asignar tareas ni herramientas nuevas.`);
   }
+}
 
-  return personas;
+/** Cuantas observaciones de tareas escribio la persona con su usuario. Frenan su eliminacion. */
+export async function contarObservacionesDe(columnaLegajo, legajo) {
+  const { data: cuenta, error } = await supabase
+    .from('usuario')
+    .select('usuario_id')
+    .eq(columnaLegajo, String(legajo))
+    .maybeSingle();
+  if (error) throw errorDeBase(error, 'de usuarios');
+  if (!cuenta) return 0;
+
+  const { count, error: errorConteo } = await supabase
+    .from('tarea_observacion')
+    .select('usuario_id', { count: 'exact', head: true })
+    .eq('usuario_id', cuenta.usuario_id);
+  if (errorConteo) throw errorDeBase(errorConteo);
+  return count ?? 0;
 }
 
 /**
- * Alta de un usuario para una persona ya registrada.
- *
- * Controla, en este orden: que los datos esten bien, que la persona exista,
- * que no tenga ya un usuario y que el nombre de usuario no este en uso. La
- * base repite los dos ultimos controles (UNIQUE), por si dos altas llegan a la vez.
- *
- * La contraseña inicial se guarda cifrada con bcrypt y el usuario tiene que
- * cambiarla la primera vez que entra (igual que los que se crean con HU-30).
+ * Corta un alta si el legajo ya es el nombre de otro usuario. Pasa si un
+ * tecnico y un autorizado comparten legajo: el login no sabria a quien dejar entrar.
  */
-export async function crear(datos) {
-  const { rol, legajo, nombreUsuario, password } = validarDatos(datos);
+export async function controlarNombreLibre(legajo) {
+  const { data, error } = await supabase
+    .from('usuario')
+    .select('usuario_id')
+    .eq('identificador', legajo)
+    .maybeSingle();
+  if (error) throw errorDeBase(error, 'de usuarios');
+  if (data) throw conflicto(`Ya hay un usuario con el nombre "${legajo}" (el legajo de otra persona).`);
+}
+
+/**
+ * El unico lugar donde se crea un usuario (decision del 06/11/2026): lo usan el
+ * alta de tecnicos, la de autorizados y la de /usuarios.
+ *
+ * El nombre de usuario es el legajo, y la contraseña provisoria tambien: la
+ * persona la tiene que cambiar la primera vez que entra. Las tareas del tecnico
+ * y los tickets del autorizado se buscan por el nombre de usuario de la sesion,
+ * por eso no puede ser otro.
+ */
+export async function crearUsuarioDePersona(rol, legajo) {
   const persona = PERSONAS[rol];
+  const nombreUsuario = String(legajo);
 
-  const { data: registrada, error: errorPersona } = await supabase
-    .from(persona.tabla)
-    .select(`${persona.legajo}, ${persona.nombre}`)
-    .eq(persona.legajo, legajo)
-    .maybeSingle();
-  if (errorPersona) throw errorDeBase(errorPersona);
-  if (!registrada) throw noEncontrado(`No hay ningún ${rol} registrado con el legajo ${legajo}.`);
-
-  const { data: usuarioDeLaPersona, error: errorUsuario } = await supabase
-    .from('usuario')
-    .select('usuario_id')
-    .eq(persona.legajo, legajo)
-    .maybeSingle();
-  if (errorUsuario) throw errorDeBase(errorUsuario, 'de usuarios');
-  if (usuarioDeLaPersona) {
-    throw conflicto(`${registrada[persona.nombre] ?? `El legajo ${legajo}`} ya tiene un usuario.`);
-  }
-
-  const { data: mismoNombre, error: errorNombre } = await supabase
-    .from('usuario')
-    .select('usuario_id')
-    .eq('identificador', nombreUsuario)
-    .maybeSingle();
-  if (errorNombre) throw errorDeBase(errorNombre, 'de usuarios');
-  if (mismoNombre) throw conflicto(`El nombre de usuario "${nombreUsuario}" ya está en uso.`);
-
-  const passwordHash = await bcrypt.hash(password, 10);
-
-  const { data: nuevo, error } = await supabase
+  const { data, error } = await supabase
     .from('usuario')
     .insert({
       identificador: nombreUsuario,
-      password_hash: passwordHash,
+      password_hash: await bcrypt.hash(nombreUsuario, 10),
       rol: ENUM_ROL.codigo(rol),
       require_password_change: true,
       activo: true,
-      [persona.legajo]: legajo,
+      [persona.legajo]: nombreUsuario,
     })
     .select('usuario_id')
     .single();
 
   if (error) {
     // 23505: otro pedido gano la carrera y la base freno el duplicado.
-    if (error.code === '23505') throw conflicto('La persona ya tiene un usuario o el nombre de usuario ya está en uso.');
+    if (error.code === '23505') throw conflicto('La persona ya tiene un usuario o su legajo ya es el nombre de otro usuario.');
     throw errorDeBase(error, 'de usuarios');
   }
 
-  return obtenerPorId(nuevo.usuario_id);
+  return data.usuario_id;
 }
 
 async function cambiarActivo(idUsuario, activo) {

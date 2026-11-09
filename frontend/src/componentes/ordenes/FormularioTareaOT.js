@@ -139,15 +139,19 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
   const plantillaElegida = plantillas.find((una) => String(una.idPlantilla) === String(valores.idPlantilla));
   const idEspecialidad = plantillaElegida?.idEspecialidad ?? null;
 
-  // Los técnicos que pueden hacer la tarea elegida: todos si ella no pide especialidad.
+  // Al editar se puede dejar al técnico que ya tenía la tarea aunque lo hayan desactivado.
+  const legajoAsignado = tarea?.responsable?.tipo === 'Técnico' ? String(tarea.responsable.legajo) : null;
+
+  // Los técnicos que pueden hacer la tarea elegida: los activos, y de esos, los de su especialidad si la pide.
   const tecnicosAptos = useMemo(
     () =>
-      idEspecialidad
-        ? tecnicos.filter((tecnico) =>
-            (tecnico.especialidades ?? []).some((una) => una.idEspecialidad === idEspecialidad),
-          )
-        : tecnicos,
-    [tecnicos, idEspecialidad],
+      tecnicos.filter(
+        (tecnico) =>
+          (tecnico.activo !== false || String(tecnico.legajo) === legajoAsignado) &&
+          (!idEspecialidad ||
+            (tecnico.especialidades ?? []).some((una) => una.idEspecialidad === idEspecialidad)),
+      ),
+    [tecnicos, idEspecialidad, legajoAsignado],
   );
 
   /*

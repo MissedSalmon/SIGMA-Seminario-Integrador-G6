@@ -38,6 +38,15 @@ export async function listarConsumos(codigo) {
   return data.datos;
 }
 
+/**
+ * Ajuste de stock de un material: { tipo: 'Entrada' | 'Salida', cantidad, fecha, observacion }.
+ * Devuelve el material como queda.
+ */
+export async function registrarAjuste(codigo, ajuste) {
+  const { data } = await api.post(`/inventario/${encodeURIComponent(codigo)}/ajustes`, ajuste);
+  return data.datos;
+}
+
 /** Le asigna la herramienta a un técnico. Si ya la tiene otro, la API lo rechaza. */
 export async function asignarHerramienta(codigo, legajo) {
   const { data } = await api.post(`/inventario/${encodeURIComponent(codigo)}/asignacion`, { legajo });
