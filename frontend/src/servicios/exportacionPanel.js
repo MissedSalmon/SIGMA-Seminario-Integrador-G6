@@ -85,31 +85,31 @@ export async function generarBytesLibroPanel(payloadPanel) {
 
   const kpis = [
     [
-      'Tasa de operatividad de activos (M-01)',
+      'Tasa de operatividad de activos',
       `${resumen.operatividad?.porcentaje ?? 0} %`,
       `${resumen.operatividad?.operativos ?? 0} de ${resumen.operatividad?.enServicio ?? 0} en servicio`,
       `${resumen.operatividad?.retirados ?? 0} retirados (Total: ${resumen.operatividad?.totalActivos ?? 0})`,
     ],
     [
-      'Tiempo promedio de resolución (M-06)',
+      'Tiempo promedio de resolución',
       tiempos.promedioSegundos ? `${Math.round(tiempos.promedioSegundos / 3600)} horas` : 'Sin datos',
       `${tiempos.cantidadTickets ?? 0} tickets cerrados`,
       'Período seleccionado',
     ],
     [
-      'Cobertura preventiva (M-07)',
+      'Cobertura preventiva',
       `${resumen.coberturaPreventiva?.porcentajeTipos ?? 0} % tipos`,
       `${resumen.coberturaPreventiva?.tiposConPlan ?? 0} de ${resumen.coberturaPreventiva?.totalTipos ?? 0} tipos`,
       `${resumen.coberturaPreventiva?.activosCubiertos ?? 0} activos amparados (${resumen.coberturaPreventiva?.porcentajeActivos ?? 0} %)`,
     ],
     [
-      'Disponibilidad técnica (M-15)',
+      'Disponibilidad técnica',
       `${resumen.disponibilidadTecnicos?.porcentaje ?? 0} %`,
       `${resumen.disponibilidadTecnicos?.disponibles ?? 0} de ${resumen.disponibilidadTecnicos?.totalTecnicos ?? 0} técnicos`,
       'Plantel operativo activo',
     ],
     [
-      'Materiales bajo stock mínimo (M-16)',
+      'Materiales bajo stock mínimo',
       `${resumen.materialesBajoMinimo?.bajoMinimo ?? 0} críticos`,
       `${resumen.materialesBajoMinimo?.bajoMinimo ?? 0} de ${resumen.materialesBajoMinimo?.totalMateriales ?? 0} materiales`,
       `${resumen.materialesBajoMinimo?.porcentaje ?? 0} % del inventario`,

@@ -159,12 +159,8 @@ export default function PantallaPanelAdministrador() {
     <>
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-3">
         <div>
-          <EncabezadoPagina titulo="Panel de Control y Estadísticas" />
-          <div className="d-flex flex-wrap align-items-center gap-2 small text-body-secondary mt-n2 mb-2">
-            <CBadge color="primary" shape="rounded-pill" className="px-2 py-1">
-              Alcance: {metadatos.alcance ?? 'Todo el sistema'}
-            </CBadge>
-            <span>•</span>
+          <EncabezadoPagina titulo="Panel de Control" />
+          <div className="small text-body-secondary mt-n2 mb-2">
             <span>Actualizado: <strong>{fechaFrescura}</strong> (UTC-3)</span>
           </div>
         </div>
@@ -353,13 +349,13 @@ export default function PantallaPanelAdministrador() {
             </CCol>
           </CRow>
 
-          {/* ─── FILA 2: MANTENIMIENTO CORRECTIVO (M-11, M-05) ──────────────────── */}
+          {/* ─── FILA 2: MANTENIMIENTO CORRECTIVO ─────────────────────────────── */}
           <CRow className="g-3 mb-4">
             <CCol lg={8}>
               <GraficoChart
                 tipo="line"
-                titulo="Evolución mensual de tickets: Creados vs. Cerrados (M-11)"
-                subtitulo="Series cronológicas completas; períodos sin actividad en 0 (S6)"
+                titulo="Evolución mensual de tickets: Creados vs. Cerrados"
+                subtitulo="Series cronológicas completas; períodos sin actividad en 0"
                 data={{
                   labels: evolucion.evolucion?.map((e) => e.mesRotulo ?? e.periodo) ?? [],
                   datasets: [
@@ -384,7 +380,7 @@ export default function PantallaPanelAdministrador() {
             <CCol lg={4}>
               <GraficoChart
                 tipo="bar"
-                titulo="Distribución de tickets por estado (M-05)"
+                titulo="Distribución de tickets por estado"
                 subtitulo="Tickets dados de alta en el período"
                 data={{
                   labels: evolucion.porEstado?.map((e) => e.nombre) ?? [],
@@ -401,14 +397,14 @@ export default function PantallaPanelAdministrador() {
             </CCol>
           </CRow>
 
-          {/* ─── FILA 3: ÓRDENES DE TRABAJO E INCIDENCIAS (M-04, M-08, M-10) ────── */}
+          {/* ─── FILA 3: ÓRDENES DE TRABAJO E INCIDENCIAS ───────────────────────── */}
           <CRow className="g-3 mb-4">
             <CCol lg={6}>
               <GraficoChart
                 tipo="bar"
                 horizontal={true}
-                titulo="Ranking de áreas con mayor incidencia de fallas (M-04)"
-                subtitulo="Top áreas con fallas registradas en activos (HU-34)"
+                titulo="Ranking de áreas con mayor incidencia de fallas"
+                subtitulo="Top áreas con fallas registradas en activos"
                 data={{
                   labels: areas.ranking?.slice(0, 8).map((a) => a.nombreArea ?? a.nombre) ?? [],
                   datasets: [
@@ -426,7 +422,7 @@ export default function PantallaPanelAdministrador() {
             <CCol lg={3}>
               <GraficoChart
                 tipo="doughnut"
-                titulo="OTs por Origen (M-08)"
+                titulo="Órdenes de trabajo por origen"
                 subtitulo="Correctivas vs. Preventivas"
                 data={{
                   labels: ['Correctivas', 'Preventivas'],
@@ -446,7 +442,7 @@ export default function PantallaPanelAdministrador() {
             <CCol lg={3}>
               <GraficoChart
                 tipo="doughnut"
-                titulo="OTs por Prioridad (M-10)"
+                titulo="Órdenes de trabajo por prioridad"
                 subtitulo="OTs no canceladas en el período"
                 data={{
                   labels: ordenes.porPrioridad?.map((p) => p.nombre) ?? [],
@@ -461,13 +457,13 @@ export default function PantallaPanelAdministrador() {
             </CCol>
           </CRow>
 
-          {/* ─── FILA 4: RECURSOS Y PLANTA FÍSICA (M-14, M-03, M-02) ────────────── */}
+          {/* ─── FILA 4: RECURSOS Y PLANTA FÍSICA ───────────────────────────────── */}
           <CRow className="g-3 mb-4">
             <CCol lg={5}>
               <GraficoChart
                 tipo="bar"
                 horizontal={true}
-                titulo="Carga de trabajo activa por técnico (M-14)"
+                titulo="Carga de trabajo activa por técnico"
                 subtitulo="Tareas asignadas pendientes de conclusión"
                 data={{
                   labels: cargaTec.porTecnico?.map((t) => t.nombre) ?? [],
@@ -487,7 +483,7 @@ export default function PantallaPanelAdministrador() {
               <GraficoChart
                 tipo="bar"
                 horizontal={true}
-                titulo="Activos inventariados por edificio (M-03)"
+                titulo="Activos inventariados por edificio"
                 subtitulo="Activos en servicio (no retirados)"
                 data={{
                   labels: activos.porEdificio?.map((e) => e.nombre) ?? [],
@@ -506,7 +502,7 @@ export default function PantallaPanelAdministrador() {
             <CCol lg={3}>
               <GraficoChart
                 tipo="doughnut"
-                titulo="Activos por Estado (M-02)"
+                titulo="Distribución de activos por estado"
                 subtitulo="Ciclo de vida del equipamiento"
                 data={{
                   labels: activos.porEstado?.map((e) => e.nombre) ?? [],
@@ -538,11 +534,11 @@ export default function PantallaPanelAdministrador() {
             {mostrarDetalles && (
               <CCardBody className="p-3">
                 <CRow className="g-4">
-                  {/* Detalle de Materiales Críticos (M-16) */}
+                  {/* Detalle de Materiales Críticos */}
                   <CCol lg={6}>
                     <h6 className="fw-bold mb-3 d-flex align-items-center gap-2">
                       <CIcon icon={cilWarning} className="text-danger" />
-                      Materiales Críticos bajo Stock Mínimo (M-16)
+                      Materiales Críticos bajo Stock Mínimo
                     </h6>
                     {resumen.materialesBajoMinimo?.items?.length > 0 ? (
                       <div className="table-responsive">
@@ -583,11 +579,11 @@ export default function PantallaPanelAdministrador() {
                     )}
                   </CCol>
 
-                  {/* Detalle de Tiempos por Área (M-06) */}
+                  {/* Detalle de Tiempos por Área */}
                   <CCol lg={6}>
                     <h6 className="fw-bold mb-3 d-flex align-items-center gap-2">
                       <CIcon icon={cilClock} className="text-info" />
-                      Tiempos Promedio de Resolución por Área (M-06)
+                      Tiempos Promedio de Resolución por Área
                     </h6>
                     {tiempos.porArea?.length > 0 ? (
                       <div className="table-responsive">
