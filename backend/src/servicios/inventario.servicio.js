@@ -1,6 +1,7 @@
 import { supabase } from '../config/supabase.js';
 import { conflicto, datoInvalido, errorDeBase, noEncontrado } from '../utiles/errores.js';
 import { ENUM_ESTADO_HERRAMIENTA } from '../utiles/enumerados.js';
+import { controlarTecnicoActivo } from './usuarios.servicio.js';
 
 /**
  * Catalogo del deposito (HU-15): materiales (se consumen) y herramientas (se
@@ -333,7 +334,8 @@ export async function actualizarItem(codigo, datos) {
  *
  * Un movimiento de Ingreso viene de un remito y trae su numero y su proveedor.
  * Un Consumo sale de una tarea de OT y no tiene remito: por eso remito_id es
- * anulable y aca el origen queda en null.
+ * anulable y aca el origen queda en null. Un Ingreso manual o un Egreso manual lo
+ * carga el administrador a mano (06/11/2026) y puede traer una observacion.
  */
 export async function obtenerMovimientos(codigo) {
   // Que el item exista: si no, el historial vacio no se distingue de un codigo
@@ -348,6 +350,7 @@ export async function obtenerMovimientos(codigo) {
       inventariomovimientocantidad,
       inventariomovimientofecha,
       inventariomovimientousuario,
+      inventariomovimientoobs,
       remito_id,
       remito (
         remito_num,
@@ -358,6 +361,8 @@ export async function obtenerMovimientos(codigo) {
     .order('inventariomovimientofecha', { ascending: false })
     .order('inventariomovimientoid', { ascending: false });
 
+  // 42703: falta la columna de la observacion, que llega con la migracion de los ajustes.
+  if (error?.code === '42703') throw errorDeBase({ code: 'PGRST202' }, 'de los ajustes de stock');
   // El historial se une con remito, que llega con la migracion de HU-16.
   if (error) throw errorDeBase(error, 'del remito');
 
@@ -367,10 +372,82 @@ export async function obtenerMovimientos(codigo) {
     cantidad: fila.inventariomovimientocantidad,
     fecha: fila.inventariomovimientofecha,
     usuario: fila.inventariomovimientousuario ?? null,
+    observacion: fila.inventariomovimientoobs ?? null,
     idRemito: fila.remito_id ?? null,
     numeroRemito: fila.remito?.remito_num ?? null,
     proveedor: fila.remito?.remito_proveedor ?? null,
   }));
+}
+
+/** Para donde mueve el stock un ajuste. */
+export const TIPOS_AJUSTE = ['Entrada', 'Salida'];
+
+/**
+ * Ajuste de stock de un material (06/11/2026): sumar unidades que no vienen de
+ * una compra o descontar las que no se usaron en una tarea (se rompieron, se
+ * perdieron, se vencieron). No lleva motivo: la observacion es opcional.
+ *
+ * Una herramienta no tiene stock: si se rompe o se pierde se da de baja y
+ * queda fuera de servicio (eliminarItem).
+ *
+ * El trabajo lo hace registrar_ajuste_stock() en la base, que mueve el stock y
+ * anota el movimiento todo junto. Ahi tambien se controla que la fecha no sea
+ * anterior al ultimo movimiento del material. Devuelve el material como queda,
+ * con bajoMinimo ya recalculado: la alerta de stock minimo sale de ese numero.
+ *
+ * @param {string} codigo
+ * @param {object} datos - { tipo: 'Entrada' | 'Salida', cantidad, fecha: '2026-11-06', observacion }
+ * @param {string} usuario - el identificador de la sesion
+ */
+export async function registrarAjuste(codigo, datos = {}, usuario = null) {
+  const tipo = texto(datos.tipo);
+  if (!TIPOS_AJUSTE.includes(tipo)) throw datoInvalido('Hay que elegir si es un ingreso o un egreso.');
+
+  const cantidad = Number(datos.cantidad);
+  if (!Number.isInteger(cantidad) || cantidad <= 0) {
+    throw datoInvalido('La cantidad tiene que ser un número entero mayor que cero.');
+  }
+
+  const fecha = texto(datos.fecha);
+  if (!fecha) throw datoInvalido('Hay que indicar la fecha del ajuste.');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha) || Number.isNaN(Date.parse(fecha))) {
+    throw datoInvalido(`"${fecha}" no es una fecha válida.`);
+  }
+  if (fecha > new Date().toISOString().slice(0, 10)) {
+    throw datoInvalido('La fecha del ajuste no puede ser posterior a hoy.');
+  }
+
+  const observacion = texto(datos.observacion);
+  if (observacion && observacion.length > 500) {
+    throw datoInvalido('La observación puede tener hasta 500 caracteres.');
+  }
+
+  const item = await obtenerItem(codigo);
+  if (item.clase !== 'Material') {
+    throw datoInvalido('Una herramienta no tiene stock: si se rompe o se pierde, se da de baja y queda fuera de servicio.');
+  }
+  if (tipo === 'Salida' && cantidad > item.stockActual) {
+    throw datoInvalido(
+      `No hay stock suficiente de "${item.nombre}": quedan ${item.stockActual} y querés descontar ${cantidad}.`
+    );
+  }
+
+  const { error } = await supabase.rpc('registrar_ajuste_stock', {
+    p_codigo: codigo,
+    p_tipo: tipo,
+    p_cantidad: cantidad,
+    p_fecha: fecha,
+    p_obs: observacion,
+    p_usuario: usuario,
+  });
+
+  if (error) {
+    // P0001: la funcion corto con RAISE EXCEPTION y el mensaje ya es para el administrador.
+    if (error.code === 'P0001') throw datoInvalido(error.message);
+    throw errorDeBase(error, 'de los ajustes de stock');
+  }
+
+  return obtenerItem(codigo);
 }
 
 /**
@@ -463,6 +540,7 @@ export async function asignarHerramienta(codigo, datos = {}) {
     .maybeSingle();
   if (errorTecnico) throw new Error(errorTecnico.message);
   if (!tecnico) throw datoInvalido(`No existe el técnico ${legajo}.`);
+  await controlarTecnicoActivo(legajo);
 
   // Si se toma desde una tarea, el prestamo guarda la OT y la tarea (22/10/2026).
   const desdeTarea = datos.idOt && datos.idTarea ? { ot_id: datos.idOt, tarea_id: datos.idTarea } : {};

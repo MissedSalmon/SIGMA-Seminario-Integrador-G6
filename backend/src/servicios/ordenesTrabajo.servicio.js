@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabase.js';
 import { datoInvalido, noEncontrado, conflicto } from '../utiles/errores.js';
+import { controlarTecnicoActivo } from './usuarios.servicio.js';
 import {
   ENUM_ESTADO_ACTIVO,
   ENUM_ESTADO_ASIGNACION_TECNICO,
@@ -191,6 +192,7 @@ const COLUMNAS = `
   ),
   mantenimiento_preventivo (
     mant_prev_id,
+    mant_prev_nom,
     activo_codigo,
     activo (
       activo_codigo,
@@ -371,6 +373,7 @@ function aOrden(fila, asignaciones = []) {
     origen: fila.ticket_id ? 'Ticket' : 'Mantenimiento preventivo',
     idTicket: fila.ticket_id,
     idMantenimientoPreventivo: fila.mant_prev_id,
+    nombrePlan: mantenimientoPreventivo?.mant_prev_nom ?? null,
     ticket: ticket
       ? {
           id: ticket.ticket_id,
@@ -607,6 +610,35 @@ async function ordenPlanificable(idOt, incluirActivo = false) {
 }
 
 /**
+ * El técnico tiene que tener la especialidad que pide la tarea estándar. Una
+ * plantilla sin especialidad (anterior al 02/11/2026) no restringe a nadie.
+ */
+async function validarEspecialidadDelTecnico(legajoTecnico, idPlantilla) {
+  const { data: plantilla, error: errorPlantilla } = await supabase
+    .from('plantilla_de_tarea')
+    .select('especialidad_id, especialidad(especialidad_nom)')
+    .eq('tarea_plan_id', idPlantilla)
+    .maybeSingle();
+
+  if (errorPlantilla) throw new Error(errorPlantilla.message);
+  if (!plantilla) throw datoInvalido(`No existe la tarea estándar ${idPlantilla}.`);
+  if (!plantilla.especialidad_id) return;
+
+  const { data, error } = await supabase
+    .from('tecnico_especialidad')
+    .select('especialidad_id')
+    .eq('tecnico_legajo', legajoTecnico)
+    .eq('especialidad_id', plantilla.especialidad_id)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data) {
+    const nombre = plantilla.especialidad?.especialidad_nom ?? 'la de la tarea';
+    throw datoInvalido(`El técnico no tiene la especialidad ${nombre}, que pide esta tarea.`);
+  }
+}
+
+/**
  * Revisa y acomoda los datos de una tarea.
  *
  * El responsable es uno solo: un tecnico propio O un prestador externo, nunca
@@ -615,8 +647,8 @@ async function ordenPlanificable(idOt, incluirActivo = false) {
  * tarea sin responsable la OT sigue en "Creada".
  *
  * @param {object} datos             - lo que mando la pantalla
- * @param {object} [fechasActuales]  - las fechas que la tarea ya tenia guardadas
- *                                     (`inicio` y `fin`), al editar una tarea vieja
+ * @param {object} [fechasActuales]  - lo que la tarea ya tenia guardado (`inicio`, `fin`
+ *                                     y `legajoTecnico`), al editar una tarea vieja
  */
 async function validarTarea(datos, fechasActuales = {}) {
   const descripcion = limpiar(datos.descripcion);
@@ -647,6 +679,9 @@ async function validarTarea(datos, fechasActuales = {}) {
 
     if (error) throw new Error(error.message);
     if (!data) throw datoInvalido(`No existe el técnico con legajo ${legajoTecnico}.`);
+
+    // Al editar una tarea se puede dejar al técnico que ya tenía aunque lo hayan desactivado.
+    if (legajoTecnico !== fechasActuales.legajoTecnico) await controlarTecnicoActivo(legajoTecnico);
   }
 
   if (idPrestador) {
@@ -668,6 +703,8 @@ async function validarTarea(datos, fechasActuales = {}) {
   if (!Number.isInteger(idPlantilla)) {
     throw datoInvalido('La plantilla elegida no es válida.');
   }
+
+  if (legajoTecnico) await validarEspecialidadDelTecnico(legajoTecnico, idPlantilla);
 
   const fechaInicio = limpiar(datos.fechaInicio);
   const fechaFin = limpiar(datos.fechaFin);
@@ -903,9 +940,18 @@ export async function actualizarTarea(idOt, idTarea, datos) {
     throw conflicto(`La tarea ${idTarea} ya está finalizada: no se puede modificar.`);
   }
 
+  const { data: asignado, error: errorAsignado } = await supabase
+    .from('tecnico_asignado_tarea_ot')
+    .select('tecnico_legajo')
+    .eq('ot_id', idOt)
+    .eq('tarea_id', idTarea)
+    .maybeSingle();
+  if (errorAsignado) throw new Error(errorAsignado.message);
+
   const tarea = await validarTarea(datos, {
     inicio: existente.tarea_fecha_ini,
     fin: existente.tarea_fecha_fin,
+    legajoTecnico: asignado ? String(asignado.tecnico_legajo) : null,
   });
 
   const estado = estadoSegunResponsable(tarea, normalizarEstadoTarea(existente.tarea_estado));

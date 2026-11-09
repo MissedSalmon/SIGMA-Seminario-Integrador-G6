@@ -4,14 +4,14 @@
  * /activos/AC-014 - la ficha de un activo, con su historial de intervenciones (HU-29).
  *
  * Una intervencion es una OT del activo En ejecución o Finalizada (decision del
- * 25/10/2026, ver .claude/contexto/dominio.md). Cada una es un renglon con lo
- * esencial; "Ver más" abre el detalle tarea por tarea: falla, quien la hizo,
- * materiales y observaciones.
+ * 25/10/2026, ver .claude/contexto/dominio.md). Cada una es un renglon con su
+ * origen (ticket o plan) y su OT, que llevan a su detalle (03/11/2026). El orden
+ * por defecto es de la mas reciente a la mas antigua; un clic en el
+ * encabezado "Fecha" lo da vuelta.
  */
-import { Fragment, use, useEffect, useState } from 'react';
+import { use, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
-  CButton,
   CCard,
   CCardBody,
   CCardHeader,
@@ -25,15 +25,16 @@ import {
   CTableRow,
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilArrowLeft, cilPencil } from '@coreui/icons';
+import { cilArrowBottom, cilArrowLeft, cilArrowTop, cilPencil } from '@coreui/icons';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import { Cargando, SinDatos } from '@/componentes/EstadoTabla.js';
+import EtiquetaEstadoActivo from '@/componentes/activos/EtiquetaEstadoActivo.js';
 import EtiquetaEstadoOT from '@/componentes/ordenes/EtiquetaEstadoOT.js';
 import { obtenerActivo, obtenerHistorialActivo } from '@/servicios/activos.js';
-import { formatearFechaHora, soloFechaLegible } from '@/utils/fechas.js';
+import { soloFechaLegible } from '@/utils/fechas.js';
 
 /** Un renglón "etiqueta: valor" de la ficha. */
 function Dato({ etiqueta, children }) {
@@ -60,91 +61,7 @@ function sinRepetir(textos) {
   return [...new Set(textos.filter(Boolean))].join(', ');
 }
 
-/** Un renglón "Etiqueta: valor" del detalle. */
-function Renglon({ etiqueta, children }) {
-  return (
-    <div className="mb-1" style={{ overflowWrap: 'anywhere' }}>
-      <span className="text-body-secondary">{etiqueta}:</span> {children}
-    </div>
-  );
-}
-
-function Tarea({ tarea }) {
-  const { responsable, falla, materiales, observaciones } = tarea;
-
-  return (
-    <div className="border-top pt-3 mt-3">
-      <div className="fw-semibold mb-2">
-        Tarea {tarea.idTarea}: {tarea.descripcion}
-        <span className="text-body-secondary fw-normal"> — {tarea.estado}</span>
-      </div>
-
-      {/* gx-2: el margen de la fila coincide con el de la celda y la tabla no se ensancha. */}
-      <CRow className="gx-2">
-        <CCol md={6} lg={4}>
-          {/* Si la tarea no terminó, todavía no la ejecutó nadie: es su responsable. */}
-          <Dato etiqueta={tarea.estado === 'Finalizada' ? 'Ejecutó' : 'Responsable'}>
-            {responsable ? (
-              <>
-                {responsable.nombre}
-                <span className="text-body-secondary"> ({responsable.tipo.toLowerCase()})</span>
-              </>
-            ) : (
-              <SinDato>Sin responsable</SinDato>
-            )}
-          </Dato>
-        </CCol>
-        <CCol md={6} lg={4}>
-          <Dato etiqueta="Falla">
-            {falla ? (
-              <>
-                <span className="fw-semibold">{falla.tipo}</span>: {falla.descripcion}
-              </>
-            ) : (
-              <SinDato>Sin falla registrada</SinDato>
-            )}
-          </Dato>
-        </CCol>
-        <CCol md={12} lg={4}>
-          <Dato etiqueta="Materiales consumidos">
-            {materiales.length === 0 ? (
-              <SinDato>Ninguno</SinDato>
-            ) : (
-              <ul className="list-unstyled mb-0">
-                {materiales.map((material) => (
-                  <li key={material.codigo}>
-                    {material.nombre}
-                    <span className="text-body-secondary"> × {material.cantidad}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Dato>
-        </CCol>
-      </CRow>
-
-      <Dato etiqueta="Observaciones">
-        {observaciones.length === 0 ? (
-          <SinDato>Sin observaciones</SinDato>
-        ) : (
-          <ul className="list-unstyled mb-0">
-            {observaciones.map((observacion) => (
-              <li key={observacion.id} className="mb-1">
-                <span className="text-body-secondary small">
-                  {formatearFechaHora(observacion.fecha)} — {observacion.autor}:
-                </span>{' '}
-                <span style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{observacion.texto}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Dato>
-    </div>
-  );
-}
-
 function Intervencion({ intervencion }) {
-  const [abierta, setAbierta] = useState(false);
   const { tareas } = intervencion;
 
   const fallas = sinRepetir(tareas.map((tarea) => tarea.falla?.tipo));
@@ -155,77 +72,45 @@ function Intervencion({ intervencion }) {
       .map((tarea) => tarea.responsable?.nombre)
   );
 
+  const origen = intervencion.idTicket ? (
+    <Link href={`/tickets/${intervencion.idTicket}`}>Ticket #{intervencion.idTicket}</Link>
+  ) : intervencion.idPlan ? (
+    <Link href={`/planes-mantenimiento/${intervencion.idPlan}`} title={intervencion.planPreventivo ?? undefined}>
+      Plan #{intervencion.idPlan}
+    </Link>
+  ) : (
+    <SinDato>-</SinDato>
+  );
+
   return (
-    <Fragment>
-      <CTableRow>
-        <CTableDataCell className="text-nowrap">
-          <span className="fw-semibold">{fechaCorta(intervencion.fecha)}</span>
-          {/* En el celular el tipo y el estado van debajo de la fecha, no en columnas. */}
-          <div className="d-sm-none">
-            {intervencion.tipo}
-            <div>
-              <EtiquetaEstadoOT estado={intervencion.estado} />
-            </div>
+    <CTableRow>
+      <CTableDataCell className="text-nowrap">{origen}</CTableDataCell>
+      <CTableDataCell className="text-nowrap">
+        <Link href={`/ordenes-trabajo/${intervencion.idOt}`} className="fw-semibold">
+          #{intervencion.idOt}
+        </Link>
+      </CTableDataCell>
+      <CTableDataCell className="text-nowrap">
+        <span className="fw-semibold">{fechaCorta(intervencion.fecha)}</span>
+        {/* En el celular el tipo y el estado van debajo de la fecha, no en columnas. */}
+        <div className="d-sm-none">
+          {intervencion.tipo}
+          <div>
+            <EtiquetaEstadoOT estado={intervencion.estado} />
           </div>
-        </CTableDataCell>
-        <CTableDataCell className="d-none d-sm-table-cell">{intervencion.tipo}</CTableDataCell>
-        <CTableDataCell className="d-none d-md-table-cell">
-          {fallas || <SinDato>Sin falla</SinDato>}
-        </CTableDataCell>
-        <CTableDataCell className="d-none d-xl-table-cell">
-          {responsables || <SinDato>Sin responsable</SinDato>}
-        </CTableDataCell>
-        <CTableDataCell className="d-none d-sm-table-cell">
-          <EtiquetaEstadoOT estado={intervencion.estado} />
-        </CTableDataCell>
-        <CTableDataCell className="text-end">
-          <CButton
-            color="secondary"
-            variant="ghost"
-            size="sm"
-            className="text-nowrap px-2"
-            aria-expanded={abierta}
-            onClick={() => setAbierta(!abierta)}
-          >
-            {abierta ? 'Ver menos' : 'Ver más'}
-          </CButton>
-        </CTableDataCell>
-      </CTableRow>
-
-      {abierta && (
-        <CTableRow>
-          <CTableDataCell colSpan={6} className="bg-body-tertiary">
-            <div>
-              {intervencion.tipo === 'Correctiva' ? (
-                <Renglon etiqueta="Ticket">
-                  <Link href={`/tickets/${intervencion.idTicket}`} className="fw-semibold">
-                    #{intervencion.idTicket}
-                  </Link>{' '}
-                  — {intervencion.problemaReportado}
-                </Renglon>
-              ) : (
-                <Renglon etiqueta="Plan preventivo">{intervencion.planPreventivo}</Renglon>
-              )}
-              <Renglon etiqueta="Orden de trabajo">
-                <Link href={`/ordenes-trabajo/${intervencion.idOt}`} className="fw-semibold">
-                  #{intervencion.idOt}
-                </Link>
-                {intervencion.fechaCierre && (
-                  <span className="text-body-secondary">
-                    {' '}
-                    (del {fechaCorta(intervencion.fechaAlta)} al {fechaCorta(intervencion.fechaCierre)})
-                  </span>
-                )}
-              </Renglon>
-            </div>
-
-            {tareas.map((tarea) => (
-              <Tarea key={tarea.idTarea} tarea={tarea} />
-            ))}
-          </CTableDataCell>
-        </CTableRow>
-      )}
-    </Fragment>
+        </div>
+      </CTableDataCell>
+      <CTableDataCell className="d-none d-sm-table-cell">{intervencion.tipo}</CTableDataCell>
+      <CTableDataCell className="d-none d-md-table-cell">
+        {fallas || <SinDato>Sin falla</SinDato>}
+      </CTableDataCell>
+      <CTableDataCell className="d-none d-sm-table-cell">
+        <EtiquetaEstadoOT estado={intervencion.estado} />
+      </CTableDataCell>
+      <CTableDataCell className="d-none d-xl-table-cell">
+        {responsables || <SinDato>Sin responsable</SinDato>}
+      </CTableDataCell>
+    </CTableRow>
   );
 }
 
@@ -239,6 +124,13 @@ export default function PantallaFichaActivo({ params }) {
   const [historial, setHistorial] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  const [recientesPrimero, setRecientesPrimero] = useState(true);
+
+  // La API ya las manda de la más reciente a la más antigua.
+  const intervenciones = useMemo(() => {
+    const lista = historial?.intervenciones ?? [];
+    return recientesPrimero ? lista : [...lista].reverse();
+  }, [historial, recientesPrimero]);
 
   useEffect(() => {
     Promise.all([obtenerActivo(codigoActivo), obtenerHistorialActivo(codigoActivo)])
@@ -290,7 +182,9 @@ export default function PantallaFichaActivo({ params }) {
                     </Dato>
                   </CCol>
                   <CCol sm={6} lg={3}>
-                    <Dato etiqueta="Estado">{activo.estado}</Dato>
+                    <Dato etiqueta="Estado">
+                      <EtiquetaEstadoActivo estado={activo.estado} />
+                    </Dato>
                   </CCol>
                   <CCol sm={6} lg={3}>
                     <Dato etiqueta="Fecha de alta">{soloFechaLegible(activo.fechaAlta)}</Dato>
@@ -324,16 +218,27 @@ export default function PantallaFichaActivo({ params }) {
                       <CTableHead>
                         <CTableRow>
                           {/* La de una finalizada es su cierre; la de una en ejecución, su alta. */}
-                          <CTableHeaderCell>Fecha</CTableHeaderCell>
+                          <CTableHeaderCell>Origen</CTableHeaderCell>
+                          <CTableHeaderCell>OT</CTableHeaderCell>
+                          <CTableHeaderCell aria-sort={recientesPrimero ? 'descending' : 'ascending'}>
+                            <button
+                              type="button"
+                              className="sigma-orden-columna"
+                              onClick={() => setRecientesPrimero(!recientesPrimero)}
+                              title={recientesPrimero ? 'Más recientes primero' : 'Más antiguas primero'}
+                            >
+                              Fecha
+                              <CIcon icon={recientesPrimero ? cilArrowBottom : cilArrowTop} size="sm" className="ms-1" />
+                            </button>
+                          </CTableHeaderCell>
                           <CTableHeaderCell className="d-none d-sm-table-cell">Mantenimiento</CTableHeaderCell>
                           <CTableHeaderCell className="d-none d-md-table-cell">Falla</CTableHeaderCell>
-                          <CTableHeaderCell className="d-none d-xl-table-cell">Ejecutó</CTableHeaderCell>
                           <CTableHeaderCell className="d-none d-sm-table-cell">Estado</CTableHeaderCell>
-                          <CTableHeaderCell />
+                          <CTableHeaderCell className="d-none d-xl-table-cell">Ejecutó</CTableHeaderCell>
                         </CTableRow>
                       </CTableHead>
                       <CTableBody>
-                        {historial.intervenciones.map((intervencion) => (
+                        {intervenciones.map((intervencion) => (
                           <Intervencion key={intervencion.idOt} intervencion={intervencion} />
                         ))}
                       </CTableBody>

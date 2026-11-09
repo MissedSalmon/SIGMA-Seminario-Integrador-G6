@@ -39,6 +39,9 @@ export const env = {
     .split(',')
     .map((origen) => origen.trim())
     .filter(Boolean),
+  // Planes preventivos: la OT se genera el día anterior a la fecha (04/11/2026), a esta hora de Argentina.
+  planesDiasAnticipacion: Number(process.env.PLANES_DIAS_ANTICIPACION ?? 1),
+  planesHoraGeneracion: Number(process.env.PLANES_HORA_GENERACION ?? 6),
 };
 
 export const esProduccion = env.entorno === 'production';

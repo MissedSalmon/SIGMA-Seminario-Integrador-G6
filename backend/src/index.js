@@ -7,9 +7,11 @@
  */
 import app from './app.js';
 import { env } from './config/env.js';
+import { iniciarGeneracionPreventiva } from './tareasProgramadas/generacionPreventiva.js';
 
 app.listen(env.puerto, () => {
   console.log(`API SIGMA escuchando en http://localhost:${env.puerto}`);
   console.log(`Entorno: ${env.entorno}`);
   console.log(`Prueba: http://localhost:${env.puerto}/api/salud`);
+  iniciarGeneracionPreventiva();
 });

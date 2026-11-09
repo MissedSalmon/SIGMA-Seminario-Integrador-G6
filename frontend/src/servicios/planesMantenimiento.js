@@ -57,22 +57,16 @@ export async function darDeBajaPlan(id) {
   return data;
 }
 
-/**
- * Consulta los planes por vencer en los próximos N días (por defecto 7).
- */
-export async function obtenerPlanesPorVencer(dias = 7) {
-  const { data } = await api.get('/planes-mantenimiento/por-vencer', {
-    params: { dias },
-  });
+/** La programación del plan, activo por activo: último mantenimiento, próximo y OT abierta. */
+export async function obtenerProgramacion(id) {
+  const { data } = await api.get(`/planes-mantenimiento/${id}/programacion`);
   return data.datos;
 }
 
-/**
- * Invoca el endpoint protegido para procesar la generación automática de OTs.
- */
-export async function procesarGeneracionAutomatica(fechaCorte) {
-  const { data } = await api.post('/planes-mantenimiento/procesar-generacion', {
-    ...(fechaCorte ? { fechaCorte } : {}),
+/** Los mantenimientos de los próximos N días (por defecto 7) que todavía no tienen OT. */
+export async function obtenerPlanesPorVencer(dias = 7) {
+  const { data } = await api.get('/planes-mantenimiento/por-vencer', {
+    params: { dias },
   });
   return data.datos;
 }

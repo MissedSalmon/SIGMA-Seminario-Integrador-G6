@@ -12,6 +12,7 @@
  * responsables, esa OT todavía no se puede empezar a trabajar.
  */
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilDescription } from '@coreui/icons';
@@ -144,11 +145,16 @@ export default function PantallaOrdenesTrabajo() {
     {
       clave: 'origen',
       encabezado: 'Origen',
+      // Lleva al ticket o al plan preventivo que la generó.
       render: (orden) =>
         orden.idTicket ? (
-          <span className="text-body-secondary">Ticket #{orden.idTicket}</span>
+          <Link href={`/tickets/${orden.idTicket}`}>Ticket #{orden.idTicket}</Link>
+        ) : orden.idMantenimientoPreventivo ? (
+          <Link href={`/planes-mantenimiento/${orden.idMantenimientoPreventivo}`} title={orden.nombrePlan ?? undefined}>
+            Plan #{orden.idMantenimientoPreventivo}
+          </Link>
         ) : (
-          <span className="text-body-secondary">Preventivo</span>
+          <span className="text-body-tertiary">-</span>
         ),
     },
     {
@@ -187,8 +193,8 @@ export default function PantallaOrdenesTrabajo() {
             filas={ordenes}
             claveFila={(orden) => orden.id}
             columnas={columnas}
-            buscarPor={['descripcion', 'codigoActivo']}
-            placeholderBusqueda="Buscar por descripción o activo"
+            buscarPor={['descripcion', 'codigoActivo', 'nombrePlan']}
+            placeholderBusqueda="Buscar por descripción, activo o plan"
             filtros={[
               {
                 etiqueta: 'Estado',

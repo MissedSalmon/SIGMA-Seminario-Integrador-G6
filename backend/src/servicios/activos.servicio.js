@@ -1,6 +1,7 @@
 import { supabase } from '../config/supabase.js';
 import { datoInvalido, noEncontrado, conflicto } from '../utiles/errores.js';
 import { ENUM_ESTADO_ACTIVO } from '../utiles/enumerados.js';
+import { generarOtsPreventivas } from './programacionPreventiva.servicio.js';
 
 // En la base el estado es un numero; la traduccion esta en utiles/enumerados.js.
 export const ESTADOS = ENUM_ESTADO_ACTIVO.textos;
@@ -10,6 +11,18 @@ export const ESTADOS_MANUALES = ['Operativo', 'Fuera de servicio', 'Retirado'];
 
 function hoy() {
   return new Date().toISOString().split('T')[0];
+}
+
+/**
+ * Al dar de alta activos se corre la generación preventiva: si a alguno ya le
+ * toca un plan de su tipo, sale su OT. Un fallo acá no frena el alta.
+ */
+async function programarPreventivos(opciones) {
+  try {
+    await generarOtsPreventivas(opciones);
+  } catch (fallo) {
+    console.error('[planes] No se pudo programar el mantenimiento preventivo del activo:', fallo.message);
+  }
 }
 
 function limpiar(texto) {
@@ -174,6 +187,8 @@ export async function crear(datos) {
     .single();
 
   if (error) throw new Error(error.message);
+
+  await programarPreventivos({ codigoActivo: codigo });
   return aActivo(data);
 }
 
@@ -427,6 +442,7 @@ export async function confirmarImportacion(filasValidas) {
 
   const { data, error } = await supabase.from('activo').insert(records).select(COLUMNAS);
   if (error) throw new Error(error.message);
-  
+
+  await programarPreventivos();
   return data ? data.map(aActivo) : [];
 }

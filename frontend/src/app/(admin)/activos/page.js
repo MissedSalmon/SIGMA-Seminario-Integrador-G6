@@ -19,6 +19,7 @@ import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
 import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
+import EtiquetaEstadoActivo from '@/componentes/activos/EtiquetaEstadoActivo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarEspacios } from '@/servicios/espacios.js';
 import { listarTiposActivos } from '@/servicios/tiposActivos.js';
@@ -170,7 +171,7 @@ export default function PantallaActivos() {
     {
       clave: 'estado',
       encabezado: 'Estado',
-      render: (activo) => <span className="text-body-secondary">{activo.estado}</span>,
+      render: (activo) => <EtiquetaEstadoActivo estado={activo.estado} />,
     },
     {
       clave: 'acciones',

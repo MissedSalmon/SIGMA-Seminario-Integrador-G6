@@ -63,3 +63,51 @@ export function aHorasDecimales(texto) {
 
   return Math.round(horas * 100) / 100;
 }
+
+/*
+ * ---------- Tiempos largos (estadísticas, Sprint 7) ----------
+ *
+ * Un tiempo de resolución puede ser de minutos o de semanas, así que no entra
+ * en el reloj hh:mm de las tareas. La API lo manda en segundos y acá se escribe
+ * con las dos unidades más grandes que tenga (09/11/2026):
+ *
+ *   45            "menos de 1 min"
+ *   1500          "25 min"
+ *   12600         "3 h 30 min"
+ *   187200        "2 d 4 h"
+ *   172800        "2 d"
+ *
+ * Los minutos se redondean al más cercano y, desde un día, las horas también.
+ */
+const SEGUNDOS_POR_MINUTO = 60;
+const MINUTOS_POR_DIA = 24 * MINUTOS_POR_HORA;
+
+/** De segundos a "2 d 4 h". Sin dato (null, vacío o negativo), devuelve "-". */
+export function textoTiempo(segundos) {
+  if (segundos == null || segundos === '') return '-';
+  const valor = Number(segundos);
+  if (Number.isNaN(valor) || valor < 0) return '-';
+
+  if (valor < SEGUNDOS_POR_MINUTO) return 'menos de 1 min';
+
+  const minutos = Math.round(valor / SEGUNDOS_POR_MINUTO);
+  if (minutos < MINUTOS_POR_HORA) return `${minutos} min`;
+
+  if (minutos < MINUTOS_POR_DIA) {
+    const horas = Math.floor(minutos / MINUTOS_POR_HORA);
+    const resto = minutos % MINUTOS_POR_HORA;
+    return resto ? `${horas} h ${resto} min` : `${horas} h`;
+  }
+
+  const horasTotales = Math.round(minutos / MINUTOS_POR_HORA);
+  const dias = Math.floor(horasTotales / 24);
+  const horas = horasTotales % 24;
+  return horas ? `${dias} d ${horas} h` : `${dias} d`;
+}
+
+/** De segundos a horas con un decimal, para el detalle: "52,3 h". */
+export function horasConUnDecimal(segundos) {
+  if (segundos == null || segundos === '' || Number.isNaN(Number(segundos))) return '-';
+  const horas = Number(segundos) / (SEGUNDOS_POR_MINUTO * MINUTOS_POR_HORA);
+  return `${horas.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h`;
+}

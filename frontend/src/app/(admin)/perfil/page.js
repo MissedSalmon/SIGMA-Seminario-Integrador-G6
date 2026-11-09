@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
+  CButton,
   CCard,
   CCardBody,
   CCardHeader,
@@ -12,13 +13,14 @@ import CIcon from '@coreui/icons-react';
 import { cilUser, cilLockLocked } from '@coreui/icons';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
-import BotonEnlace from '@/componentes/BotonEnlace.js';
+import DialogoCambiarContrasena from '@/componentes/usuarios/CambioContrasena.js';
 import { obtenerPerfil } from '@/servicios/auth.js';
 
 export default function PerfilPage() {
   const router = useRouter();
   const [perfil, setPerfil] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [cambiandoContrasena, setCambiandoContrasena] = useState(false);
 
   useEffect(() => {
     const fetchPerfil = async () => {
@@ -149,13 +151,15 @@ export default function PerfilPage() {
           <hr className="my-4" style={{ borderColor: 'var(--sigma-borde)' }} />
 
           <div className="d-flex flex-wrap gap-2">
-            <BotonEnlace href="/configuracion/cambiar-password" color="primary">
+            <CButton type="button" color="primary" onClick={() => setCambiandoContrasena(true)}>
               <CIcon icon={cilLockLocked} className="me-2" />
               Cambiar contraseña
-            </BotonEnlace>
+            </CButton>
           </div>
         </CCardBody>
       </CCard>
+
+      {cambiandoContrasena && <DialogoCambiarContrasena onCerrar={() => setCambiandoContrasena(false)} />}
     </div>
   );
 }

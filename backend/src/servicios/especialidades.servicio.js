@@ -102,6 +102,15 @@ export async function eliminar(id) {
     throw conflicto(`No se puede eliminar la especialidad porque tiene ${count} técnico${count !== 1 ? 's' : ''} asignado${count !== 1 ? 's' : ''}.`);
   }
 
+  const { count: cantidadPlantillas, error: errPlantillas } = await supabase
+    .from('plantilla_de_tarea')
+    .select('*', { count: 'exact', head: true })
+    .eq('especialidad_id', id);
+  if (errPlantillas) throw new Error(errPlantillas.message);
+  if (cantidadPlantillas > 0) {
+    throw conflicto(`No se puede eliminar la especialidad porque tiene ${cantidadPlantillas} plantilla${cantidadPlantillas !== 1 ? 's' : ''} de tareas.`);
+  }
+
   const { data, error } = await supabase.from('especialidad').delete().eq('especialidad_id', id).select().single();
   if (error || !data) throw noEncontrado('No existe la especialidad solicitada.');
 

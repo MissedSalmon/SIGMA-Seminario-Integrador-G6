@@ -10,11 +10,12 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CCard, CCardBody, CFormCheck, CFormLabel } from '@coreui/react';
+import { CCard, CCardBody } from '@coreui/react';
 
 import Aviso from '@/componentes/Aviso.js';
 import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Campo from '@/componentes/formulario/Campo.js';
+import SeleccionMultiple from '@/componentes/formulario/SeleccionMultiple.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarEspecialidades } from '@/servicios/especialidades.js';
@@ -22,7 +23,7 @@ import { LARGO_TELEFONO, digitosDelTelefono, limpiarTelefono } from '@/utils/tel
 
 const DISPONIBILIDADES = ['Disponible', 'No disponible'];
 
-export default function FormularioTecnico({ tecnico = null, onGuardar }) {
+export default function FormularioTecnico({ tecnico = null, onGuardar, volverA = '/tecnicos' }) {
   const router = useRouter();
   const { mostrarToast } = useToast();
   const editando = Boolean(tecnico);
@@ -77,14 +78,6 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
 
   const hayErrores = Object.keys(errores).length > 0;
 
-  function alternarEspecialidad(idEspecialidad) {
-    setEspecialidadesElegidas((actuales) =>
-      actuales.includes(idEspecialidad)
-        ? actuales.filter((id) => id !== idEspecialidad)
-        : [...actuales, idEspecialidad]
-    );
-  }
-
   async function manejarEnvio(evento) {
     evento.preventDefault();
     setRevisado(true);
@@ -105,9 +98,9 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
         tipo: 'exito',
         mensaje: editando
           ? `Se guardaron los cambios de "${nombre}".`
-          : `Se agrego el tecnico "${nombre}".`,
+          : `Se agregó el técnico "${nombre}". Su usuario y su contraseña provisoria son el legajo.`,
       });
-      router.push('/tecnicos');
+      router.push(volverA);
       router.refresh();
     } catch (fallo) {
       setError(fallo.message);
@@ -183,42 +176,29 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
           <h2 className="sigma-seccion-titulo">Especialidad y disponibilidad</h2>
 
           <div className="sigma-campos mb-4">
-            {/*
-              Las especialidades son varias casillas y no una caja, asi que no
-              entran en <Campo>. Se arman a mano con las mismas clases, para que
-              el recuadro y la marca de error queden igual que en el resto.
-            */}
-            <div
-              className={`sigma-campo sigma-campo--ancho${errorEspecialidades ? ' sigma-campo--error' : ''}`}
-            >
-              <CFormLabel className="sigma-obligatorio">Especialidades</CFormLabel>
-
-              {especialidades.length === 0 ? (
-                <Aviso
-                  color="warning"
-                  mensaje="Todavia no hay especialidades cargadas: hace falta al menos una para poder dar de alta un tecnico."
-                />
-              ) : (
-                <>
-                  <div className="sigma-campo-opciones">
-                    {especialidades.map((especialidad) => (
-                      <CFormCheck
-                        key={especialidad.idEspecialidad}
-                        id={`especialidad-${especialidad.idEspecialidad}`}
-                        label={especialidad.nombre}
-                        checked={especialidadesElegidas.includes(especialidad.idEspecialidad)}
-                        onChange={() => alternarEspecialidad(especialidad.idEspecialidad)}
-                      />
-                    ))}
-                  </div>
-                  {errorEspecialidades && (
-                    <p className="sigma-campo-mensaje sigma-campo-mensaje--error">
-                      {errorEspecialidades}
-                    </p>
-                  )}
-                </>
-              )}
-            </div>
+            {especialidades.length === 0 ? (
+              <Aviso
+                color="warning"
+                mensaje="Todavia no hay especialidades cargadas: hace falta al menos una para poder dar de alta un tecnico."
+              />
+            ) : (
+              <SeleccionMultiple
+                id="especialidades"
+                etiqueta="Especialidades"
+                opciones={especialidades.map((especialidad) => ({
+                  valor: especialidad.idEspecialidad,
+                  texto: especialidad.nombre,
+                }))}
+                elegidos={especialidadesElegidas}
+                alCambiar={setEspecialidadesElegidas}
+                textoTodas="Todas las especialidades"
+                textoCantidad={(cantidad) => `${cantidad} especialidades`}
+                placeholder="Elegir especialidades"
+                obligatorio
+                revisado={revisado}
+                error={errorEspecialidades}
+              />
+            )}
 
             <Campo
               id="disponibilidad"
@@ -242,7 +222,7 @@ export default function FormularioTecnico({ tecnico = null, onGuardar }) {
           <BotonesAccion
             procesando={guardando}
             deshabilitado={especialidades.length === 0}
-            hrefCancelar="/tecnicos"
+            hrefCancelar={volverA}
             className="mt-4"
           />
         </form>

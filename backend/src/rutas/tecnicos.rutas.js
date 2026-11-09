@@ -4,8 +4,12 @@
  */
 import { Router } from 'express';
 import * as tecnicos from '../controladores/tecnicos.controlador.js';
+import { validarSesion, protegerPorRol } from '../middlewares/auth.middleware.js';
 
 const router = Router();
+
+router.get('/carga-trabajo', validarSesion, protegerPorRol(['administrador']), tecnicos.listarCargaTrabajo);
+router.get('/:legajo/carga-trabajo', validarSesion, protegerPorRol(['administrador']), tecnicos.listarTareasDeCarga);
 
 router.get('/', tecnicos.listar);
 router.get('/:legajo', tecnicos.obtener);

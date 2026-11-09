@@ -1,13 +1,16 @@
 'use client';
 
-import { CCard, CCardBody, CCardHeader } from '@coreui/react';
+import { useState } from 'react';
+import { CButton, CCard, CCardBody, CCardHeader } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilShieldAlt, cilLockLocked } from '@coreui/icons';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
-import BotonEnlace from '@/componentes/BotonEnlace.js';
+import DialogoCambiarContrasena from '@/componentes/usuarios/CambioContrasena.js';
 
 export default function ConfiguracionPage() {
+  const [cambiandoContrasena, setCambiandoContrasena] = useState(false);
+
   return (
     <div>
       <EncabezadoPagina titulo="Configuración" />
@@ -30,12 +33,14 @@ export default function ConfiguracionPage() {
             Administre sus credenciales de acceso al sistema y mantenga segura su cuenta.
           </p>
 
-          <BotonEnlace href="/configuracion/cambiar-password" color="primary">
+          <CButton type="button" color="primary" onClick={() => setCambiandoContrasena(true)}>
             <CIcon icon={cilLockLocked} className="me-2" />
             Cambiar contraseña
-          </BotonEnlace>
+          </CButton>
         </CCardBody>
       </CCard>
+
+      {cambiandoContrasena && <DialogoCambiarContrasena onCerrar={() => setCambiandoContrasena(false)} />}
     </div>
   );
 }

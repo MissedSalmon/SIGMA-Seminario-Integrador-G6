@@ -7,8 +7,9 @@
  *   { tipo: 'titulo', texto: 'ESTRUCTURA EDILICIA' }
  *   { tipo: 'item', texto: 'Edificios', direccion: '/edificios', icono: cilBuilding }
  *
- * Cuando un modulo tiene mas de una pantalla, en lugar de un item va un
- * desplegable con sus pantallas adentro:
+ * En general cada pantalla va como item directo, porque el titulo de la
+ * seccion ya agrupa. Se usa un desplegable solo cuando, sueltas, sus pantallas
+ * se mezclarian con las demas de la seccion:
  *
  *   { tipo: 'grupo', texto: 'Espacios', icono: cilRoom, items: [ ...items... ] }
  *
@@ -39,8 +40,9 @@ import {
   cilClipboard,
   cilBriefcase,
   cilTask,
-  cilLockLocked,
   cilCalendar,
+  cilInbox,
+  cilContact,
 } from '@coreui/icons';
 
 export const navegacion = [
@@ -167,24 +169,18 @@ export const navegacion = [
     roles: ['administrador'],
   },
   {
-    tipo: 'grupo',
+    tipo: 'item',
+    texto: 'Tipos de activos',
+    direccion: '/tipos-activos',
+    icono: cilTags,
+    roles: ['administrador'],
+  },
+  {
+    tipo: 'item',
     texto: 'Activos',
+    direccion: '/activos',
     icono: cilDevices,
     roles: ['administrador'],
-    items: [
-      {
-        tipo: 'item',
-        texto: 'Tipos de activos',
-        direccion: '/tipos-activos',
-        icono: cilTags,
-      },
-      {
-        tipo: 'item',
-        texto: 'Listado de activos',
-        direccion: '/activos',
-        icono: cilList,
-      },
-    ],
   },
 
   // ─── INVENTARIO (SOLO ADMINISTRADOR) ──────────────────────────────────────
@@ -194,40 +190,36 @@ export const navegacion = [
     roles: ['administrador'],
   },
   {
-    tipo: 'grupo',
-    texto: 'Inventario',
+    tipo: 'item',
+    texto: 'Tipos de materiales y herramientas',
+    direccion: '/inventario/tipos',
+    icono: cilTags,
+    roles: ['administrador'],
+  },
+  {
+    // Materiales y herramientas se manejan distinto (una lleva stock, la
+    // otra se presta y se devuelve), asi que van en pantallas separadas.
+    tipo: 'item',
+    texto: 'Materiales',
+    direccion: '/inventario/materiales',
     icono: cilStorage,
     roles: ['administrador'],
-    items: [
-      {
-        tipo: 'item',
-        texto: 'Tipos de materiales y herramientas',
-        direccion: '/inventario/tipos',
-        icono: cilTags,
-      },
-      {
-        // Materiales y herramientas se manejan distinto (una lleva stock, la
-        // otra se presta y se devuelve), asi que van en pantallas separadas.
-        tipo: 'item',
-        texto: 'Materiales',
-        direccion: '/inventario/materiales',
-        icono: cilList,
-      },
-      {
-        tipo: 'item',
-        texto: 'Herramientas',
-        direccion: '/inventario/herramientas',
-        icono: cilCog,
-      },
-      {
-        // Va al final: para ingresar algo por remito, antes tiene que estar en
-        // el catalogo.
-        tipo: 'item',
-        texto: 'Ingresos',
-        direccion: '/inventario/remitos',
-        icono: cilClipboard,
-      },
-    ],
+  },
+  {
+    tipo: 'item',
+    texto: 'Herramientas',
+    direccion: '/inventario/herramientas',
+    icono: cilCog,
+    roles: ['administrador'],
+  },
+  {
+    // Va al final: para ingresar algo por remito, antes tiene que estar en
+    // el catalogo.
+    tipo: 'item',
+    texto: 'Ingresos',
+    direccion: '/inventario/remitos',
+    icono: cilInbox,
+    roles: ['administrador'],
   },
 
   // ─── PERSONAL (SOLO ADMINISTRADOR) ────────────────────────────────────────
@@ -245,9 +237,9 @@ export const navegacion = [
   },
   {
     tipo: 'item',
-    texto: 'Técnicos',
-    direccion: '/tecnicos',
-    icono: cilPeople,
+    texto: 'Carga de trabajo',
+    direccion: '/tecnicos/carga-trabajo',
+    icono: cilTask,
     roles: ['administrador'],
   },
   {
@@ -273,21 +265,25 @@ export const navegacion = [
     ],
   },
   {
-    // Va despues de las areas (mas arriba, en estructura edilicia): a un usuario
-    // autorizado hay que asignarle un area, asi que primero se cargan las areas.
-    tipo: 'item',
-    texto: 'Usuarios autorizados',
-    direccion: '/autorizados',
-    icono: cilUser,
-    roles: ['administrador'],
-  },
-  {
-    // Va al final: un usuario se crea para una persona que ya esta cargada
-    // (administrador, tecnico o usuario autorizado).
-    tipo: 'item',
+    tipo: 'grupo',
     texto: 'Usuarios',
-    direccion: '/usuarios',
-    icono: cilLockLocked,
+    icono: cilContact,
     roles: ['administrador'],
+    items: [
+      {
+        tipo: 'item',
+        texto: 'Técnicos',
+        direccion: '/tecnicos',
+        icono: cilPeople,
+      },
+      {
+        // A un usuario autorizado hay que asignarle un area, asi que primero
+        // se cargan las areas (en estructura edilicia).
+        tipo: 'item',
+        texto: 'Usuarios autorizados',
+        direccion: '/autorizados',
+        icono: cilUser,
+      },
+    ],
   },
 ];

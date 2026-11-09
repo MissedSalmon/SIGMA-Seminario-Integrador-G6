@@ -19,6 +19,31 @@ export async function listarTecnicos(filtros = {}) {
   return data.datos;
 }
 
+/** Carga de tareas por técnico, filtrada por fecha prevista y especialidad. */
+export async function listarCargaTrabajo(filtros = {}) {
+  const { desde, hasta, especialidad_id } = filtros;
+  const { data } = await api.get('/tecnicos/carga-trabajo', {
+    params: {
+      ...(desde ? { desde } : {}),
+      ...(hasta ? { hasta } : {}),
+      ...(especialidad_id ? { especialidad_id } : {}),
+    },
+  });
+  return data.datos;
+}
+
+/** Tareas vigentes de un técnico dentro del período seleccionado. */
+export async function listarTareasDeCarga(legajo, filtros = {}) {
+  const { desde, hasta } = filtros;
+  const { data } = await api.get(`/tecnicos/${legajo}/carga-trabajo`, {
+    params: {
+      ...(desde ? { desde } : {}),
+      ...(hasta ? { hasta } : {}),
+    },
+  });
+  return data.datos;
+}
+
 export async function obtenerTecnico(legajo) {
   const { data } = await api.get(`/tecnicos/${legajo}`);
   return data.datos;

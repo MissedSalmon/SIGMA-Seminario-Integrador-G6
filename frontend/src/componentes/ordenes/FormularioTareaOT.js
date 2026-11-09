@@ -9,21 +9,25 @@
  * se llega desde el detalle de la OT, con el botón "Agregar" o con el lápiz
  * de cada tarea, y al guardar o cancelar se vuelve a ese detalle.
  *
- * Dos cosas que conviene saber:
+ * Tres cosas que conviene saber:
  *
  * 1. LA TAREA ESTÁNDAR ES OBLIGATORIA (26/09/2026). El desplegable trae las
- *    plantillas del tipo de activo del ticket (HU-12) y copia el texto en la
- *    descripción. Después la descripción se puede ajustar: lo que se guarda es
- *    lo que quedó escrito, y la plantilla queda anotada como origen. Si la
- *    tarea no está, el botón "Agregar" de al lado la crea como plantilla del
- *    tipo de activo sin salir de la OT.
+ *    plantillas (HU-12) y copia el texto en la descripción. Después la
+ *    descripción se puede ajustar: lo que se guarda es lo que quedó escrito, y
+ *    la plantilla queda anotada como origen. Si la tarea no está, el botón
+ *    "Agregar" de al lado la crea como plantilla, con su especialidad, sin
+ *    salir de la OT.
  *
- * 2. EL RESPONSABLE ES UNO SOLO. O un técnico de la facultad, o un prestador
+ * 2. LA ESPECIALIDAD MANDA (02/11/2026). Cada plantilla es de una especialidad,
+ *    y la lista de técnicos muestra sólo los que la tienen. Una plantilla sin
+ *    especialidad (anterior a esa fecha) no filtra nada.
+ *
+ * 3. EL RESPONSABLE ES UNO SOLO. O un técnico de la facultad, o un prestador
  *    externo, nunca los dos (corrección #13 de la profe). También puede quedar
  *    sin asignar: se carga la tarea ahora y se decide después. Mientras haya
  *    una tarea sin responsable, la OT sigue en "Creada".
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   CButton,
@@ -46,7 +50,8 @@ import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Campo from '@/componentes/formulario/Campo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarPrioridades } from '@/servicios/ordenesTrabajo.js';
-import { crearPlantilla, listarPlantillas } from '@/servicios/plantillasTareas.js';
+import { listarPlantillas } from '@/servicios/plantillasTareas.js';
+import DialogoNuevaPlantilla from '@/componentes/plantillas/DialogoNuevaPlantilla.js';
 import { listarPrestadores } from '@/servicios/prestadores.js';
 import { listarTecnicos } from '@/servicios/tecnicos.js';
 import { aHorasDecimales, comoHoraMinuto, DURACION_INCOMPLETA } from '@/utils/duracion.js';
@@ -112,36 +117,42 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
   const [tecnicos, setTecnicos] = useState([]);
   const [prestadores, setPrestadores] = useState([]);
 
-  // La caja para agregar una tarea estándar nueva sin salir de la OT.
+  // La ventana para agregar una tarea estándar nueva sin salir de la OT.
   const [nuevaVisible, setNuevaVisible] = useState(false);
-  const [nuevaDescripcion, setNuevaDescripcion] = useState('');
-  const [errorNueva, setErrorNueva] = useState('');
-  const [creandoPlantilla, setCreandoPlantilla] = useState(false);
 
   useEffect(() => {
-    Promise.all([listarPrioridades(), listarTecnicos(), listarPrestadores()])
-      .then(([listaPrioridades, listaTecnicos, listaPrestadores]) => {
+    Promise.all([
+      listarPrioridades(),
+      listarTecnicos(),
+      listarPrestadores(),
+      listarPlantillas(),
+    ])
+      .then(([listaPrioridades, listaTecnicos, listaPrestadores, listaPlantillas]) => {
         setPrioridades(listaPrioridades);
         setTecnicos(listaTecnicos);
         setPrestadores(listaPrestadores);
+        setPlantillas(listaPlantillas);
       })
       .catch((fallo) => setError(fallo.message));
   }, []);
 
-  /*
-   * Las tareas estándar dependen de la OT: son las plantillas cargadas para el
-   * tipo de activo del ticket (HU-12). Si la OT no tiene activo, no hay
-   * plantillas que ofrecer.
-   */
-  const idTipoActivo = orden.activo?.idTipoActivo;
+  const plantillaElegida = plantillas.find((una) => String(una.idPlantilla) === String(valores.idPlantilla));
+  const idEspecialidad = plantillaElegida?.idEspecialidad ?? null;
 
-  useEffect(() => {
-    if (!idTipoActivo) return;
+  // Al editar se puede dejar al técnico que ya tenía la tarea aunque lo hayan desactivado.
+  const legajoAsignado = tarea?.responsable?.tipo === 'Técnico' ? String(tarea.responsable.legajo) : null;
 
-    listarPlantillas(idTipoActivo)
-      .then(setPlantillas)
-      .catch(() => setPlantillas([]));
-  }, [idTipoActivo]);
+  // Los técnicos que pueden hacer la tarea elegida: los activos, y de esos, los de su especialidad si la pide.
+  const tecnicosAptos = useMemo(
+    () =>
+      tecnicos.filter(
+        (tecnico) =>
+          (tecnico.activo !== false || String(tecnico.legajo) === legajoAsignado) &&
+          (!idEspecialidad ||
+            (tecnico.especialidades ?? []).some((una) => una.idEspecialidad === idEspecialidad)),
+      ),
+    [tecnicos, idEspecialidad, legajoAsignado],
+  );
 
   /*
    * Las tareas se planifican para adelante: el inicio no puede quedar antes
@@ -165,55 +176,38 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
   function elegirPlantilla(idPlantilla) {
     const plantilla = plantillas.find((una) => String(una.idPlantilla) === String(idPlantilla));
 
-    setValores((anteriores) => ({
-      ...anteriores,
-      idPlantilla,
-      descripcion: plantilla ? plantilla.descripcion : anteriores.descripcion,
-    }));
+    setValores((anteriores) => {
+      // Si el técnico ya elegido no tiene la especialidad de la tarea nueva, se vacía.
+      const sigueApto =
+        !plantilla?.idEspecialidad ||
+        tecnicos
+          .find((tecnico) => tecnico.legajo === anteriores.legajoTecnico)
+          ?.especialidades?.some((una) => una.idEspecialidad === plantilla.idEspecialidad);
+
+      return {
+        ...anteriores,
+        idPlantilla,
+        descripcion: plantilla ? plantilla.descripcion : anteriores.descripcion,
+        legajoTecnico: sigueApto ? anteriores.legajoTecnico : '',
+      };
+    });
   }
 
   /*
    * Si la tarea que se necesita no está entre las estándar, se agrega acá
-   * mismo, sin salir de la OT. Queda guardada como plantilla del tipo de
-   * activo de la OT (la misma que se ve en "Plantillas de tareas"), elegida en
-   * el desplegable y copiada en la descripción.
+   * mismo, sin salir de la OT. Queda guardada como plantilla de la especialidad
+   * elegida (la misma que se ve en "Plantillas de tareas"), elegida en el
+   * desplegable y copiada en la descripción.
    */
-  async function agregarPlantilla() {
-    const descripcion = nuevaDescripcion.trim();
-
-    if (!descripcion) {
-      setErrorNueva('Escribí la tarea.');
-      return;
-    }
-
-    setCreandoPlantilla(true);
-    setErrorNueva('');
-
-    try {
-      const nueva = await crearPlantilla({ idTipoActivo, descripcion });
-
-      setPlantillas((anteriores) =>
-        [...anteriores, nueva].sort((a, b) => a.descripcion.localeCompare(b.descripcion)),
-      );
-      setValores((anteriores) => ({
-        ...anteriores,
-        idPlantilla: String(nueva.idPlantilla),
-        descripcion: nueva.descripcion,
-      }));
-      setNuevaVisible(false);
-      setNuevaDescripcion('');
-      mostrarToast({ tipo: 'exito', mensaje: 'Se agregó la tarea estándar.' });
-    } catch (fallo) {
-      setErrorNueva(fallo.message);
-    } finally {
-      setCreandoPlantilla(false);
-    }
-  }
-
-  function cancelarPlantilla() {
-    setNuevaVisible(false);
-    setNuevaDescripcion('');
-    setErrorNueva('');
+  function usarPlantillaNueva(nueva) {
+    setPlantillas((anteriores) =>
+      [...anteriores, nueva].sort((a, b) => a.descripcion.localeCompare(b.descripcion)),
+    );
+    setValores((anteriores) => ({
+      ...anteriores,
+      idPlantilla: String(nueva.idPlantilla),
+      descripcion: nueva.descripcion,
+    }));
   }
 
   /** Al cambiar quién se hace cargo, se limpia la elección anterior. */
@@ -331,11 +325,7 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
                 texto: plantilla.descripcion,
               }))}
               placeholder={
-                !idTipoActivo
-                  ? 'La orden no tiene un activo asociado'
-                  : plantillas.length === 0
-                    ? 'No hay tareas estándar para este tipo de activo'
-                    : 'Elegir tarea estándar'
+                plantillas.length === 0 ? 'Todavía no hay tareas estándar' : 'Elegir tarea estándar'
               }
               obligatorio
               deshabilitado={plantillas.length === 0}
@@ -348,23 +338,21 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
               La etiqueta invisible empuja el botón a la altura de la caja,
               aunque debajo de la caja aparezca un error.
             */}
-            {idTipoActivo && (
-              <div className="sigma-campo">
-                <CFormLabel className="invisible" aria-hidden="true">
-                  Agregar
-                </CFormLabel>
-                <CButton
-                  type="button"
-                  color="secondary"
-                  variant="outline"
-                  onClick={() => setNuevaVisible(true)}
-                  title="Agregar una tarea estándar nueva para este tipo de activo"
-                >
-                  <CIcon icon={cilPlus} size="sm" className="me-1" />
-                  Agregar
-                </CButton>
-              </div>
-            )}
+            <div className="sigma-campo">
+              <CFormLabel className="invisible" aria-hidden="true">
+                Agregar
+              </CFormLabel>
+              <CButton
+                type="button"
+                color="secondary"
+                variant="outline"
+                onClick={() => setNuevaVisible(true)}
+                title="Agregar una tarea estándar nueva"
+              >
+                <CIcon icon={cilPlus} size="sm" className="me-1" />
+                Agregar
+              </CButton>
+            </div>
           </div>
 
           <Campo
@@ -445,11 +433,18 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
                     tipo="lista"
                     valor={valores.legajoTecnico}
                     alCambiar={(valor) => cambiar('legajoTecnico', valor)}
-                    opciones={tecnicos.map((tecnico) => ({
+                    opciones={tecnicosAptos.map((tecnico) => ({
                       valor: tecnico.legajo,
                       texto: textoDelTecnico(tecnico),
                     }))}
-                    placeholder="Elegir técnico"
+                    placeholder={
+                      tecnicosAptos.length > 0
+                        ? 'Elegir técnico'
+                        : idEspecialidad
+                          ? `Ningún técnico tiene la especialidad ${plantillaElegida.nombreEspecialidad}`
+                          : 'Todavía no hay técnicos cargados'
+                    }
+                    deshabilitado={tecnicosAptos.length === 0}
                     obligatorio
                     revisado={revisado}
                     error={errores.legajoTecnico}
@@ -512,40 +507,11 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
         </CModalFooter>
       </CModal>
 
-      <CModal
+      <DialogoNuevaPlantilla
         visible={nuevaVisible}
-        onClose={() => !creandoPlantilla && cancelarPlantilla()}
-        alignment="center"
-      >
-        <CModalHeader>
-          <CModalTitle>
-            Nueva tarea estándar para {orden.activo?.nombreTipo || 'este tipo de activo'}
-          </CModalTitle>
-        </CModalHeader>
-        <CModalBody>
-          <Aviso mensaje={errorNueva} />
-          <Campo
-            id="nuevaTareaEstandar"
-            etiqueta="Descripción"
-            tipo="area"
-            filas={3}
-            valor={nuevaDescripcion}
-            alCambiar={setNuevaDescripcion}
-            placeholder="Ej: limpiar los filtros"
-            obligatorio
-            maxLength={200}
-            revisado={Boolean(errorNueva)}
-            error={errorNueva}
-          />
-        </CModalBody>
-        <CModalFooter>
-          <BotonesAccion
-            procesando={creandoPlantilla}
-            alAceptar={agregarPlantilla}
-            alCancelar={cancelarPlantilla}
-          />
-        </CModalFooter>
-      </CModal>
+        alCrear={usarPlantillaNueva}
+        alCerrar={() => setNuevaVisible(false)}
+      />
     </CCard>
   );
 }
@@ -555,9 +521,8 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
  * está disponible, el aviso.
  *
  * Las especialidades se muestran para poder elegir al que corresponde al
- * trabajo (corrección #2 de la profe). No se filtra la lista: el sistema
- * todavía no sabe qué especialidad pide cada tipo de activo, así que la
- * decisión es del administrador.
+ * trabajo (corrección #2 de la profe). La lista ya viene filtrada por la
+ * especialidad de la tarea estándar.
  */
 function textoDelTecnico(tecnico) {
   const especialidades = (tecnico.especialidades ?? []).map((una) => una.nombre).join(', ');

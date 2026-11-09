@@ -4,38 +4,35 @@
  * /autorizados - listado de usuarios autorizados (HU-8).
  *
  * Se puede filtrar por area para ver quien es responsable de cada una.
+ *
+ * Cada fila tiene «Ver detalle» y «Editar»; el resto de las acciones está en la
+ * ficha, igual que en tecnicos
+ * (ver componentes/usuarios/AccionesUsuario.js).
  */
-import { useEffect, useState } from 'react';
-import {
-  CButton,
-  CButtonGroup,
-  CCard,
-  CCardBody,
-} from '@coreui/react';
-import CIcon from '@coreui/icons-react';
-import { cilPencil, cilTrash } from '@coreui/icons';
+import { useEffect, useMemo, useState } from 'react';
+import { CCard, CCardBody } from '@coreui/react';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
-import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
-import DialogoEliminar from '@/componentes/DialogoEliminar.js';
+import {
+  AccionesFila,
+  COLUMNA_ESTADO,
+  OPCIONES_ESTADO,
+  filtrarPorEstado,
+} from '@/componentes/usuarios/AccionesUsuario.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
-import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarAreas } from '@/servicios/areas.js';
 import { listarAutorizados, eliminarAutorizado } from '@/servicios/autorizados.js';
 
 export default function PantallaAutorizados() {
-  const { mostrarToast } = useToast();
-
   const [autorizados, setAutorizados] = useState([]);
   const [areas, setAreas] = useState([]);
   const [filtroArea, setFiltroArea] = useState('');
+  const [filtroEstado, setFiltroEstado] = useState('');
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
-  const [aEliminar, setAEliminar] = useState(null);
-  const [eliminando, setEliminando] = useState(false);
 
   // Las areas se cargan una sola vez: son las del desplegable del filtro.
   useEffect(() => {
@@ -43,9 +40,6 @@ export default function PantallaAutorizados() {
       .then(setAreas)
       .catch((fallo) => setError(fallo.message));
   }, []);
-
-  // Se suma 1 para volver a pedir la lista (por ejemplo, despues de una baja).
-  const [recarga, setRecarga] = useState(0);
 
   useEffect(() => {
     // Si la pantalla se cierra mientras la API responde, no se toca el estado.
@@ -69,24 +63,9 @@ export default function PantallaAutorizados() {
     return () => {
       vigente = false;
     };
-  }, [filtroArea, recarga]);
+  }, [filtroArea]);
 
-  async function confirmarBaja() {
-    setEliminando(true);
-    setError('');
-
-    try {
-      await eliminarAutorizado(aEliminar.legajo);
-      mostrarToast({ tipo: 'exito', mensaje: `Se eliminó a "${aEliminar.nombre}".` });
-      setAEliminar(null);
-      setRecarga((numero) => numero + 1);
-    } catch (fallo) {
-      setError(fallo.message);
-      setAEliminar(null);
-    } finally {
-      setEliminando(false);
-    }
-  }
+  const filtrados = useMemo(() => filtrarPorEstado(autorizados, filtroEstado), [autorizados, filtroEstado]);
 
   const columnas = [
     {
@@ -123,30 +102,17 @@ export default function PantallaAutorizados() {
         <span className="text-body-secondary">{autorizado.nombreArea || '-'}</span>
       ),
     },
+    COLUMNA_ESTADO,
     {
       clave: 'acciones',
       encabezado: 'Acciones',
       alinearDerecha: true,
       render: (autorizado) => (
-        <CButtonGroup size="sm">
-          <BotonEnlace
-            href={`/autorizados/${autorizado.legajo}/editar`}
-            variante="ghost"
-            className="btn-icono"
-            title="Editar"
-          >
-            <CIcon icon={cilPencil} />
-          </BotonEnlace>
-          <CButton
-            variant="ghost"
-            color="danger"
-            className="btn-icono"
-            onClick={() => setAEliminar(autorizado)}
-            title="Eliminar"
-          >
-            <CIcon icon={cilTrash} />
-          </CButton>
-        </CButtonGroup>
+        <AccionesFila
+          nombre={autorizado.nombre}
+          hrefDetalle={`/autorizados/${autorizado.legajo}`}
+          hrefEditar={`/autorizados/${autorizado.legajo}/editar`}
+        />
       ),
     },
   ];
@@ -164,7 +130,7 @@ export default function PantallaAutorizados() {
       <CCard>
         <CCardBody>
           <TablaDatos
-            filas={autorizados}
+            filas={filtrados}
             claveFila={(autorizado) => autorizado.legajo}
             columnas={columnas}
             buscarPor={['nombre', 'legajo', 'dni', 'email', 'nombreArea']}
@@ -180,33 +146,27 @@ export default function PantallaAutorizados() {
                   texto: area.nombre,
                 })),
               },
+              {
+                etiqueta: 'Estado',
+                valor: filtroEstado,
+                alCambiar: setFiltroEstado,
+                opciones: OPCIONES_ESTADO,
+              },
             ]}
-            alLimpiar={() => setFiltroArea('')}
+            alLimpiar={() => {
+              setFiltroArea('');
+              setFiltroEstado('');
+            }}
             cargando={cargando}
             textoVacio={
-              filtroArea
-                ? 'No hay usuarios autorizados en esa área.'
+              filtroArea || filtroEstado
+                ? 'No hay usuarios autorizados con ese filtro.'
                 : 'Todavía no hay usuarios autorizados cargados.'
             }
-            accionVacio={filtroArea ? undefined : { direccion: '/autorizados/agregar' }}
+            accionVacio={filtroArea || filtroEstado ? undefined : { direccion: '/autorizados/agregar' }}
           />
         </CCardBody>
       </CCard>
-
-      <DialogoEliminar
-        visible={Boolean(aEliminar)}
-        eliminando={eliminando}
-        onConfirmar={confirmarBaja}
-        onCancelar={() => setAEliminar(null)}
-      >
-        <p className="mb-0">
-          Se va a eliminar al usuario autorizado <strong>{aEliminar?.nombre}</strong>.
-        </p>
-        <p className="text-body-secondary mt-2 mb-0">
-          Si ya cargó tickets no se puede eliminar: cada ticket tiene que seguir diciendo quién lo
-          reportó. El área que tenía a cargo queda sin responsable.
-        </p>
-      </DialogoEliminar>
     </>
   );
 }

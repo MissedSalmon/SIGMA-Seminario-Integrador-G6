@@ -353,112 +353,98 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
               </CCardHeader>
               <CCardBody>
                 {orden.tareas.length === 0 ? (
-                  <p className="text-body-secondary mb-0">
-                    Esta orden todavía no tiene tareas. Agregá las que hay que hacer y asignales un
-                    responsable: cuando todas tengan uno, la orden pasa a &quot;Asignada&quot;.
-                  </p>
+                  <p className="text-body-secondary mb-0">Esta orden todavía no tiene tareas.</p>
                 ) : (
-                  <>
-                    {orden.tareasSinResponsable > 0 && (
-                      <p className="text-body-secondary small">
-                        {orden.tareasSinResponsable === 1
-                          ? 'Queda 1 tarea sin responsable.'
-                          : `Quedan ${orden.tareasSinResponsable} tareas sin responsable.`}{' '}
-                        La orden pasa a &quot;Asignada&quot; cuando todas tengan uno.
-                      </p>
-                    )}
+                  <CTable hover responsive align="middle" className="mb-0">
+                    <CTableHead>
+                      <CTableRow>
+                        <CTableHeaderCell>#</CTableHeaderCell>
+                        <CTableHeaderCell>Tarea</CTableHeaderCell>
+                        <CTableHeaderCell>Prioridad</CTableHeaderCell>
+                        <CTableHeaderCell>Responsable</CTableHeaderCell>
+                        <CTableHeaderCell>Previsto</CTableHeaderCell>
+                        <CTableHeaderCell>Duración</CTableHeaderCell>
+                        <CTableHeaderCell>Estado</CTableHeaderCell>
+                        <CTableHeaderCell>Falla</CTableHeaderCell>
+                        {!cerrada && <CTableHeaderCell className="text-end">Acciones</CTableHeaderCell>}
+                      </CTableRow>
+                    </CTableHead>
 
-                    <CTable hover responsive align="middle" className="mb-0">
-                      <CTableHead>
-                        <CTableRow>
-                          <CTableHeaderCell>#</CTableHeaderCell>
-                          <CTableHeaderCell>Tarea</CTableHeaderCell>
-                          <CTableHeaderCell>Prioridad</CTableHeaderCell>
-                          <CTableHeaderCell>Responsable</CTableHeaderCell>
-                          <CTableHeaderCell>Previsto</CTableHeaderCell>
-                          <CTableHeaderCell>Duración</CTableHeaderCell>
-                          <CTableHeaderCell>Estado</CTableHeaderCell>
-                          <CTableHeaderCell>Falla</CTableHeaderCell>
-                          {!cerrada && <CTableHeaderCell className="text-end">Acciones</CTableHeaderCell>}
-                        </CTableRow>
-                      </CTableHead>
+                    <CTableBody>
+                      {orden.tareas.map((tarea) => (
+                        <CTableRow key={tarea.idTarea}>
+                          <CTableDataCell className="fw-semibold">{tarea.idTarea}</CTableDataCell>
 
-                      <CTableBody>
-                        {orden.tareas.map((tarea) => (
-                          <CTableRow key={tarea.idTarea}>
-                            <CTableDataCell className="fw-semibold">{tarea.idTarea}</CTableDataCell>
+                          <CTableDataCell style={{ minWidth: '14rem' }}>
+                            <span style={{ whiteSpace: 'pre-wrap' }}>{tarea.descripcion}</span>
+                          </CTableDataCell>
 
-                            <CTableDataCell style={{ minWidth: '14rem' }}>
-                              <span style={{ whiteSpace: 'pre-wrap' }}>{tarea.descripcion}</span>
-                            </CTableDataCell>
+                          <CTableDataCell>
+                            <EtiquetaPrioridad prioridad={tarea.prioridad} />
+                          </CTableDataCell>
 
-                            <CTableDataCell>
-                              <EtiquetaPrioridad prioridad={tarea.prioridad} />
-                            </CTableDataCell>
-
-                            <CTableDataCell>
-                              {tarea.responsable ? (
-                                <>
-                                  <div>{tarea.responsable.nombre}</div>
-                                  <div className="text-body-secondary small">{tarea.responsable.tipo}</div>
-                                </>
-                              ) : (
-                                <SinDato>Sin asignar</SinDato>
-                              )}
-                            </CTableDataCell>
-
-                            <CTableDataCell className="text-nowrap text-body-secondary">
-                              {soloFechaLegible(tarea.fechaInicio) || '-'}
-                              {tarea.fechaFin && ` → ${soloFechaLegible(tarea.fechaFin)}`}
-                            </CTableDataCell>
-
-                            <CTableDataCell className="text-nowrap text-body-secondary">
-                              {comoHoraMinuto(tarea.horasEstimadas) || '-'}
-                            </CTableDataCell>
-
-                            <CTableDataCell className="text-body-secondary">{tarea.estado}</CTableDataCell>
-
-                            <CTableDataCell style={{ minWidth: '12rem' }}>
-                              {tarea.falla ? (
-                                <>
-                                  <div className="fw-semibold">{tarea.falla.tipo}</div>
-                                  <div style={{ whiteSpace: 'pre-wrap' }}>{tarea.falla.descripcion}</div>
-                                </>
-                              ) : (
-                                <SinDato>Sin diagnóstico</SinDato>
-                              )}
-                            </CTableDataCell>
-
-                            {!cerrada && (
-                              <CTableDataCell className="text-end text-nowrap">
-                                <BotonEnlace
-                                  href={`/ordenes-trabajo/${orden.id}/tareas/${tarea.idTarea}/editar`}
-                                  color="secondary"
-                                  variante="outline"
-                                  tamano="sm"
-                                  className="me-2"
-                                  title="Editar la tarea"
-                                  aria-label={`Editar la tarea ${tarea.idTarea}`}
-                                >
-                                  <CIcon icon={cilPencil} size="sm" />
-                                </BotonEnlace>
-                                <CButton
-                                  color="danger"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => setTareaAEliminar(tarea)}
-                                  title="Eliminar la tarea"
-                                  aria-label={`Eliminar la tarea ${tarea.idTarea}`}
-                                >
-                                  <CIcon icon={cilTrash} size="sm" />
-                                </CButton>
-                              </CTableDataCell>
+                          <CTableDataCell>
+                            {tarea.responsable ? (
+                              <>
+                                <div>{tarea.responsable.nombre}</div>
+                                <div className="text-body-secondary small">{tarea.responsable.tipo}</div>
+                              </>
+                            ) : (
+                              <SinDato>Sin asignar</SinDato>
                             )}
-                          </CTableRow>
-                        ))}
-                      </CTableBody>
-                    </CTable>
-                  </>
+                          </CTableDataCell>
+
+                          <CTableDataCell className="text-nowrap text-body-secondary">
+                            {soloFechaLegible(tarea.fechaInicio) || '-'}
+                            {tarea.fechaFin && ` → ${soloFechaLegible(tarea.fechaFin)}`}
+                          </CTableDataCell>
+
+                          <CTableDataCell className="text-nowrap text-body-secondary">
+                            {comoHoraMinuto(tarea.horasEstimadas) || '-'}
+                          </CTableDataCell>
+
+                          <CTableDataCell className="text-body-secondary">{tarea.estado}</CTableDataCell>
+
+                          <CTableDataCell style={{ minWidth: '12rem' }}>
+                            {tarea.falla ? (
+                              <>
+                                <div className="fw-semibold">{tarea.falla.tipo}</div>
+                                <div style={{ whiteSpace: 'pre-wrap' }}>{tarea.falla.descripcion}</div>
+                              </>
+                            ) : (
+                              <SinDato>Sin diagnóstico</SinDato>
+                            )}
+                          </CTableDataCell>
+
+                          {!cerrada && (
+                            <CTableDataCell className="text-end text-nowrap">
+                              <BotonEnlace
+                                href={`/ordenes-trabajo/${orden.id}/tareas/${tarea.idTarea}/editar`}
+                                color="secondary"
+                                variante="outline"
+                                tamano="sm"
+                                className="me-2"
+                                title="Editar la tarea"
+                                aria-label={`Editar la tarea ${tarea.idTarea}`}
+                              >
+                                <CIcon icon={cilPencil} size="sm" />
+                              </BotonEnlace>
+                              <CButton
+                                color="danger"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setTareaAEliminar(tarea)}
+                                title="Eliminar la tarea"
+                                aria-label={`Eliminar la tarea ${tarea.idTarea}`}
+                              >
+                                <CIcon icon={cilTrash} size="sm" />
+                              </CButton>
+                            </CTableDataCell>
+                          )}
+                        </CTableRow>
+                      ))}
+                    </CTableBody>
+                  </CTable>
                 )}
               </CCardBody>
             </CCard>

@@ -1,17 +1,17 @@
 /**
  * Llamadas a la API de plantillas de tareas (HU-12).
  *
- * Una plantilla es una tarea modelo asociada a un tipo de activo. Sirve para
- * precargar las tareas estándar cuando se arma una orden de trabajo.
- *
- * Ojo: las direcciones /api/plantillas-tareas todavía no existen en el backend.
+ * Una plantilla es una tarea modelo asociada a la especialidad que la hace
+ * (desde el 02/11/2026; antes era el tipo de activo). Sirve para precargar las
+ * tareas estándar cuando se arma una orden de trabajo y para ofrecer sólo los
+ * técnicos de esa especialidad.
  */
 import { api } from './api.js';
 
-/** @param {number} [idTipoActivo] - si viene, trae sólo las de ese tipo de activo. */
-export async function listarPlantillas(idTipoActivo = null) {
+/** @param {number} [idEspecialidad] - si viene, trae sólo las de esa especialidad. */
+export async function listarPlantillas(idEspecialidad = null) {
   const { data } = await api.get('/plantillas-tareas', {
-    params: idTipoActivo ? { idTipoActivo } : undefined,
+    params: idEspecialidad ? { idEspecialidad } : undefined,
   });
   return data.datos;
 }
