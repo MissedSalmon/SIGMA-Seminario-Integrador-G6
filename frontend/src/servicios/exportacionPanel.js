@@ -30,37 +30,50 @@ const saveAs = fileSaver?.saveAs || fileSaver;
 
 export const LIMITE_FILAS_SEGURIDAD = 50000;
 
-// Paleta corporativa de alto contraste y sobriedad técnica (DrawingML)
-const COLOR_NEGRO = makeColor(makeSrgbColor('000000'));
-const COLOR_CHARCOAL = makeColor(makeSrgbColor('495057'));
-const COLOR_GRIS_MEDIO = makeColor(makeSrgbColor('6C757D'));
-const COLOR_GRIS_CLARO = makeColor(makeSrgbColor('ADB5BD'));
-const COLOR_GRIS_SUAVE = makeColor(makeSrgbColor('CED4DA'));
-const COLOR_GRIS_OSCURO = makeColor(makeSrgbColor('212529'));
+// Paleta resuelta desde los tokens del tema CoreUI (DrawingML sRGB)
+const COLOR_PRIMARY = makeColor(makeSrgbColor('321FDB'));   // --cui-primary (#321fdb)
+const COLOR_INFO = makeColor(makeSrgbColor('3399FF'));      // --cui-info (#39f)
+const COLOR_SUCCESS = makeColor(makeSrgbColor('2EB85C'));   // --cui-success (#2eb85c)
+const COLOR_WARNING = makeColor(makeSrgbColor('F9B115'));   // --cui-warning (#f9b115)
+const COLOR_DANGER = makeColor(makeSrgbColor('E55353'));    // --cui-danger (#e55353)
+const COLOR_SECONDARY = makeColor(makeSrgbColor('636F83')); // --cui-secondary (#636f83)
+const COLOR_DARK = makeColor(makeSrgbColor('4F5D73'));      // --cui-dark (#4f5d73)
 
 const PALETA_EXCEL = [
-  COLOR_NEGRO,
-  COLOR_CHARCOAL,
-  COLOR_GRIS_MEDIO,
-  COLOR_GRIS_CLARO,
-  COLOR_GRIS_SUAVE,
+  COLOR_PRIMARY,
+  COLOR_INFO,
+  COLOR_SUCCESS,
+  COLOR_WARNING,
+  COLOR_DANGER,
+  COLOR_SECONDARY,
+  COLOR_DARK,
 ];
 
-// Estilos de trazo fino (1 a 1.5 pt ≈ 12700 - 19050 EMU)
-const LINEA_FINA_NEGRA = makeLine({
+// Estilos de trazo fino (1 a 1.5 pt ≈ 12700 - 19050 EMU) y diferenciación multisensorial
+const LINEA_SERIE_PRIMARIA = makeLine({
   w: 19050, // 1.5 pt
-  fill: makeSolidFill(COLOR_NEGRO),
+  fill: makeSolidFill(COLOR_PRIMARY),
 });
 
-const LINEA_FINA_CHARCOAL = makeLine({
+const LINEA_SERIE_SECUNDARIA = makeLine({
   w: 19050, // 1.5 pt
-  fill: makeSolidFill(COLOR_CHARCOAL),
+  fill: makeSolidFill(COLOR_SUCCESS),
   dash: { kind: 'preset', val: 'dash' },
 });
 
-const BORDE_FINO_BARRA = makeLine({
+const BORDE_BARRA_DANGER = makeLine({
   w: 12700, // 1 pt
-  fill: makeSolidFill(COLOR_NEGRO),
+  fill: makeSolidFill(COLOR_DANGER),
+});
+
+const BORDE_BARRA_PRIMARY = makeLine({
+  w: 12700, // 1 pt
+  fill: makeSolidFill(COLOR_PRIMARY),
+});
+
+const BORDE_BARRA_WARNING = makeLine({
+  w: 12700, // 1 pt
+  fill: makeSolidFill(COLOR_WARNING),
 });
 
 /**
@@ -212,12 +225,12 @@ export async function generarBytesLibroPanel(payloadPanel) {
             symbol: 'circle',
             size: 5,
             spPr: {
-              fill: makeSolidFill(COLOR_NEGRO),
-              ln: LINEA_FINA_NEGRA,
+              fill: makeSolidFill(COLOR_PRIMARY),
+              ln: LINEA_SERIE_PRIMARIA,
             },
           },
           spPr: {
-            ln: LINEA_FINA_NEGRA,
+            ln: LINEA_SERIE_PRIMARIA,
           },
         },
         {
@@ -231,12 +244,12 @@ export async function generarBytesLibroPanel(payloadPanel) {
             symbol: 'square',
             size: 5,
             spPr: {
-              fill: makeSolidFill(COLOR_CHARCOAL),
-              ln: LINEA_FINA_CHARCOAL,
+              fill: makeSolidFill(COLOR_SUCCESS),
+              ln: LINEA_SERIE_SECUNDARIA,
             },
           },
           spPr: {
-            ln: LINEA_FINA_CHARCOAL,
+            ln: LINEA_SERIE_SECUNDARIA,
           },
         },
       ],
@@ -277,8 +290,8 @@ export async function generarBytesLibroPanel(payloadPanel) {
           cat: { ref: `Incidencias_Areas!$A$2:$A$${topFila}` },
           tx: { kind: 'literal', value: 'Fallas por Área' },
           spPr: {
-            fill: makeSolidFill(COLOR_GRIS_OSCURO),
-            ln: BORDE_FINO_BARRA,
+            fill: makeSolidFill(COLOR_DANGER),
+            ln: BORDE_BARRA_DANGER,
           },
         },
       ],
@@ -314,8 +327,8 @@ export async function generarBytesLibroPanel(payloadPanel) {
         cat: { ref: 'OT_Distribucion!$A$2:$A$3' },
         tx: { kind: 'literal', value: 'Órdenes de trabajo por origen' },
         dPt: [
-          { idx: 0, spPr: { fill: makeSolidFill(COLOR_NEGRO) } },
-          { idx: 1, spPr: { fill: makeSolidFill(COLOR_GRIS_MEDIO) } },
+          { idx: 0, spPr: { fill: makeSolidFill(COLOR_PRIMARY) } },
+          { idx: 1, spPr: { fill: makeSolidFill(COLOR_INFO) } },
         ],
       },
     ],
@@ -391,8 +404,8 @@ export async function generarBytesLibroPanel(payloadPanel) {
           cat: { ref: `Activos_Edificios!$A$2:$A$${topFilaEd}` },
           tx: { kind: 'literal', value: 'Activos en Servicio' },
           spPr: {
-            fill: makeSolidFill(COLOR_CHARCOAL),
-            ln: BORDE_FINO_BARRA,
+            fill: makeSolidFill(COLOR_PRIMARY),
+            ln: BORDE_BARRA_PRIMARY,
           },
         },
       ],
@@ -432,8 +445,8 @@ export async function generarBytesLibroPanel(payloadPanel) {
           cat: { ref: `Tecnicos_Carga!$A$2:$A$${topFilaTec}` },
           tx: { kind: 'literal', value: 'Tareas Activas' },
           spPr: {
-            fill: makeSolidFill(COLOR_GRIS_OSCURO),
-            ln: BORDE_FINO_BARRA,
+            fill: makeSolidFill(COLOR_WARNING),
+            ln: BORDE_BARRA_WARNING,
           },
         },
       ],
