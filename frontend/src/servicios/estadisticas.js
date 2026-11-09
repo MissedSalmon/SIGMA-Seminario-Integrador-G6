@@ -45,3 +45,73 @@ export async function obtenerTiemposResolucion(filtros = {}) {
 
   return data.datos;
 }
+
+/**
+ * Resumen general cuantitativo de KPIs instantáneos (M-01, M-07, M-15, M-16).
+ */
+export async function obtenerResumenGeneral() {
+  const { data } = await api.get('/estadisticas/resumen-general');
+  return data.datos;
+}
+
+/**
+ * Distribución de activos por estado y por edificio (M-02, M-03).
+ */
+export async function obtenerDistribucionActivos() {
+  const { data } = await api.get('/estadisticas/activos');
+  return data.datos;
+}
+
+/**
+ * Distribución de órdenes de trabajo por origen, estado, prioridad y cumplimiento (M-08, M-09, M-10, M-12).
+ */
+export async function obtenerOrdenesTrabajo(filtros = {}) {
+  const { desde, hasta } = filtros;
+  const { data } = await api.get('/estadisticas/ordenes-trabajo', {
+    params: {
+      ...(desde ? { desde } : {}),
+      ...(hasta ? { hasta } : {}),
+    },
+  });
+  return data.datos;
+}
+
+/**
+ * Evolución mensual de altas/cierres de tickets y estados (M-11, M-05).
+ */
+export async function obtenerEvolucionTickets(filtros = {}) {
+  const { desde, hasta } = filtros;
+  const { data } = await api.get('/estadisticas/tickets-evolucion', {
+    params: {
+      ...(desde ? { desde } : {}),
+      ...(hasta ? { hasta } : {}),
+    },
+  });
+  return data.datos;
+}
+
+/**
+ * Carga activa de tareas por técnico (M-14).
+ */
+export async function obtenerCargaTecnicos() {
+  const { data } = await api.get('/estadisticas/tecnicos-carga');
+  return data.datos;
+}
+
+/**
+ * Payload integral unificado del panel con metadatos de frescura y alcance (S13, S14, S15).
+ */
+export async function obtenerPanelCompleto(filtros = {}) {
+  const { desde, hasta, tipoFalla } = filtros;
+  const { data } = await api.get('/estadisticas/panel-completo', {
+    params: {
+      ...(desde ? { desde } : {}),
+      ...(hasta ? { hasta } : {}),
+      ...(tipoFalla ? { tipoFalla } : {}),
+    },
+  });
+  return {
+    datos: data.datos,
+    metadatos: data.metadatos,
+  };
+}
