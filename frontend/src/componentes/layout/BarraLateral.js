@@ -18,7 +18,6 @@
  * contexto no se exporta, asi que no hay forma de desactivarlo desde afuera:
  * se arma el <ul> a mano y el acordeon lo llevamos nosotros, mas abajo.
  */
-import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -26,7 +25,6 @@ import {
   CSidebarBrand,
   CSidebarFooter,
   CSidebarHeader,
-  CNavGroup,
   CNavItem,
   CNavLink,
   CNavTitle,
@@ -46,13 +44,11 @@ function visible(opcion, rol) {
   return opcion.roles.includes(rol);
 }
 
-/** Todas las direcciones del menu, incluidas las de adentro de los grupos. */
+/** Todas las direcciones de los enlaces del menu. */
 function juntarDirecciones(opciones) {
-  return opciones.flatMap((opcion) => {
-    if (opcion.tipo === 'grupo') return opcion.items.map((item) => item.direccion);
-    if (opcion.tipo === 'item') return [opcion.direccion];
-    return [];
-  });
+  return opciones
+    .filter((opcion) => opcion.tipo === 'item')
+    .map((opcion) => opcion.direccion);
 }
 
 /**
@@ -99,37 +95,7 @@ export default function BarraLateral() {
     }
   };
 
-  /*
-   * Solo se puede tener un desplegable abierto a la vez: al abrir uno, el que
-   * estaba abierto se cierra. Asi el menu no se llena de opciones y siempre
-   * entra en la pantalla sin tener que hacer scroll.
-   *
-   * Por eso se guarda el NOMBRE del grupo abierto y no un abierto/cerrado por
-   * cada uno: si solo puede haber uno, un solo dato alcanza.
-   *
-   * Los tres valores posibles:
-   *   undefined  el usuario todavia no toco el menu
-   *   null       lo toco y no dejo ninguno abierto
-   *   "Activos"  ese es el que esta abierto
-   */
-  const [grupoAbierto, setGrupoAbierto] = useState(undefined);
-
-  /** El grupo que contiene la pantalla en la que estamos, si hay alguno. */
-  const grupoDeLaPantalla =
-    opcionesVisibles.find(
-      (opcion) =>
-        opcion.tipo === 'grupo' &&
-        opcion.items.some((item) => item.direccion === direccionActiva)
-    )?.texto ?? null;
-
-  // Mientras no toque nada, se abre solo el grupo de la pantalla actual.
-  const abiertoAhora = grupoAbierto === undefined ? grupoDeLaPantalla : grupoAbierto;
-
-  function abrirOCerrar(texto, abierto) {
-    setGrupoAbierto(abierto ? texto : null);
-  }
-
-  /** El enlace de una opcion. Se usa suelto y tambien adentro de un grupo. */
+  /** El enlace directo de una opcion. */
   function enlace(opcion) {
     return (
       <CNavItem key={opcion.direccion}>
@@ -170,25 +136,6 @@ export default function BarraLateral() {
           if (opcion.tipo === 'titulo') {
             return <CNavTitle key={opcion.texto}>{opcion.texto}</CNavTitle>;
           }
-
-          if (opcion.tipo === 'grupo') {
-            return (
-              <CNavGroup
-                key={opcion.texto}
-                visible={abiertoAhora === opcion.texto}
-                onVisibleChange={(valor) => abrirOCerrar(opcion.texto, valor)}
-                toggler={
-                  <>
-                    <CIcon customClassName="nav-icon" icon={opcion.icono} />
-                    {opcion.texto}
-                  </>
-                }
-              >
-                {opcion.items.map(enlace)}
-              </CNavGroup>
-            );
-          }
-
           return enlace(opcion);
         })}
       </ul>

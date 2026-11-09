@@ -88,6 +88,9 @@ export default function GraficoChart({
           },
           y: {
             stacked,
+            ticks: {
+              autoSkip: false,
+            },
           },
         }
       : {
@@ -112,15 +115,35 @@ export default function GraficoChart({
     plugins: {
       legend: {
         display: (data?.datasets?.length ?? 0) > 1 || tipo === 'doughnut' || tipo === 'pie',
-        position: 'top',
+        position: tipo === 'doughnut' || tipo === 'pie' ? 'bottom' : 'top',
         labels: {
           boxWidth: 12,
+          padding: 10,
           usePointStyle: tipo === 'line',
         },
       },
       tooltip: {
         enabled: true,
         boxPadding: 4,
+        callbacks: {
+          label: (context) => {
+            const rawVal = context.raw ?? context.parsed ?? 0;
+            const numVal = Number(rawVal) || 0;
+            const label = context.label || context.dataset?.label || '';
+
+            if (tipo === 'doughnut' || tipo === 'pie') {
+              const datasetData = context.dataset?.data ?? [];
+              const total = datasetData.reduce((acc, curr) => acc + (Number(curr) || 0), 0);
+              const pct = total > 0 ? ((numVal / total) * 100).toFixed(1) : '0';
+              return ` ${label}: ${numVal.toLocaleString('es-AR')} (${pct}%)`;
+            }
+
+            if (context.dataset?.label) {
+              return ` ${context.dataset.label}: ${numVal.toLocaleString('es-AR')}`;
+            }
+            return ` ${label}: ${numVal.toLocaleString('es-AR')}`;
+          },
+        },
       },
     },
     scales: opcionesEscalas,
@@ -159,10 +182,10 @@ export default function GraficoChart({
 
   return (
     <CCard className="mb-4 shadow-sm h-100">
-      <CCardHeader className="d-flex justify-content-between align-items-center py-2">
-        <div>
-          <span className="fw-semibold text-body">{titulo}</span>
-          {subtitulo && <div className="text-body-secondary small">{subtitulo}</div>}
+      <CCardHeader className="d-flex justify-content-between align-items-start gap-2 py-2 bg-body-tertiary">
+        <div className="flex-grow-1 min-w-0">
+          <div className="fw-semibold text-body" title={titulo}>{titulo}</div>
+          {subtitulo && <div className="text-body-secondary small" title={subtitulo}>{subtitulo}</div>}
         </div>
         <CButton
           color="secondary"
@@ -171,7 +194,7 @@ export default function GraficoChart({
           onClick={() => setModoTabla((prev) => !prev)}
           title={modoTabla ? 'Ver como gráfico' : 'Ver como tabla (accesibilidad)'}
           aria-label={modoTabla ? 'Ver como gráfico' : 'Ver como tabla'}
-          className="d-flex align-items-center gap-1"
+          className="ms-2 flex-shrink-0 d-flex align-items-center gap-1"
         >
           <CIcon icon={modoTabla ? cilChartLine : cilSpreadsheet} size="sm" />
           <span className="small">{modoTabla ? 'Gráfico' : 'Tabla'}</span>
@@ -181,26 +204,42 @@ export default function GraficoChart({
       <CCardBody style={{ minHeight: `${altura}px` }} className="p-3">
         {modoTabla ? (
           <div className="table-responsive" style={{ maxHeight: `${altura}px` }}>
-            <CTable striped hover small className="mb-0 text-center">
-              <CTableHead>
+            <CTable striped hover small className="mb-0 align-middle">
+              <CTableHead className="table-light">
                 <CTableRow>
                   <CTableHeaderCell className="text-start">Categoría / Período</CTableHeaderCell>
                   {dataNormalizada.datasets.map((ds, idx) => (
-                    <CTableHeaderCell key={idx}>{ds.label ?? `Serie ${idx + 1}`}</CTableHeaderCell>
+                    <CTableHeaderCell key={idx} className="text-end">
+                      {ds.label ?? (tipo === 'doughnut' ? 'Cantidad' : `Serie ${idx + 1}`)}
+                    </CTableHeaderCell>
                   ))}
+                  {(tipo === 'doughnut' || tipo === 'pie') && (
+                    <CTableHeaderCell className="text-end">% del total</CTableHeaderCell>
+                  )}
                 </CTableRow>
               </CTableHead>
               <CTableBody>
-                {dataNormalizada.labels.map((etiqueta, filaIdx) => (
-                  <CTableRow key={filaIdx}>
-                    <CTableDataCell className="text-start fw-medium">{etiqueta}</CTableDataCell>
-                    {dataNormalizada.datasets.map((ds, colIdx) => (
-                      <CTableDataCell key={colIdx}>
-                        {ds.data?.[filaIdx] != null ? Number(ds.data[filaIdx]).toLocaleString('es-AR') : '-'}
-                      </CTableDataCell>
-                    ))}
-                  </CTableRow>
-                ))}
+                {dataNormalizada.labels.map((etiqueta, filaIdx) => {
+                  const ds0Val = Number(dataNormalizada.datasets[0]?.data?.[filaIdx] ?? 0);
+                  const totalDoughnut = tipo === 'doughnut' || tipo === 'pie'
+                    ? (dataNormalizada.datasets[0]?.data ?? []).reduce((acc, curr) => acc + (Number(curr) || 0), 0)
+                    : 0;
+                  const pct = totalDoughnut > 0 ? ((ds0Val / totalDoughnut) * 100).toFixed(1) : '0';
+
+                  return (
+                    <CTableRow key={filaIdx}>
+                      <CTableDataCell className="text-start fw-medium">{etiqueta}</CTableDataCell>
+                      {dataNormalizada.datasets.map((ds, colIdx) => (
+                        <CTableDataCell key={colIdx} className="text-end">
+                          {ds.data?.[filaIdx] != null ? Number(ds.data[filaIdx]).toLocaleString('es-AR') : '-'}
+                        </CTableDataCell>
+                      ))}
+                      {(tipo === 'doughnut' || tipo === 'pie') && (
+                        <CTableDataCell className="text-end text-body-secondary">{pct} %</CTableDataCell>
+                      )}
+                    </CTableRow>
+                  );
+                })}
               </CTableBody>
             </CTable>
           </div>

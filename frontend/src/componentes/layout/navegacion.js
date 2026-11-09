@@ -42,7 +42,6 @@ import {
   cilTask,
   cilCalendar,
   cilInbox,
-  cilContact,
 } from '@coreui/icons';
 
 export const navegacion = [
@@ -135,24 +134,18 @@ export const navegacion = [
     roles: ['administrador'],
   },
   {
-    tipo: 'grupo',
-    texto: 'Espacios',
+    tipo: 'item',
+    texto: 'Tipos de espacio',
+    direccion: '/espacios/tipos',
+    icono: cilTags,
+    roles: ['administrador'],
+  },
+  {
+    tipo: 'item',
+    texto: 'Listado de espacios',
+    direccion: '/espacios',
     icono: cilRoom,
     roles: ['administrador'],
-    items: [
-      {
-        tipo: 'item',
-        texto: 'Tipos de espacio',
-        direccion: '/espacios/tipos',
-        icono: cilTags,
-      },
-      {
-        tipo: 'item',
-        texto: 'Listado de espacios',
-        direccion: '/espacios',
-        icono: cilList,
-      },
-    ],
   },
   {
     tipo: 'item',
@@ -245,45 +238,32 @@ export const navegacion = [
   {
     // Los tipos (HU-24) van antes que los prestadores (HU-25), porque para
     // cargar un prestador hay que elegir sus tipos.
-    tipo: 'grupo',
-    texto: 'Prestadores de servicio',
-    icono: cilBriefcase,
+    tipo: 'item',
+    texto: 'Tipos de prestador',
+    direccion: '/prestadores/tipos',
+    icono: cilTags,
     roles: ['administrador'],
-    items: [
-      {
-        tipo: 'item',
-        texto: 'Tipos de prestador',
-        direccion: '/prestadores/tipos',
-        icono: cilTags,
-      },
-      {
-        tipo: 'item',
-        texto: 'Listado de prestadores',
-        direccion: '/prestadores',
-        icono: cilList,
-      },
-    ],
   },
   {
-    tipo: 'grupo',
-    texto: 'Usuarios',
-    icono: cilContact,
+    tipo: 'item',
+    texto: 'Listado de prestadores',
+    direccion: '/prestadores',
+    icono: cilBriefcase,
     roles: ['administrador'],
-    items: [
-      {
-        tipo: 'item',
-        texto: 'Técnicos',
-        direccion: '/tecnicos',
-        icono: cilPeople,
-      },
-      {
-        // A un usuario autorizado hay que asignarle un area, asi que primero
-        // se cargan las areas (en estructura edilicia).
-        tipo: 'item',
-        texto: 'Usuarios autorizados',
-        direccion: '/autorizados',
-        icono: cilUser,
-      },
-    ],
+  },
+  {
+    tipo: 'item',
+    texto: 'Técnicos',
+    direccion: '/tecnicos',
+    icono: cilPeople,
+    roles: ['administrador'],
+  },
+  {
+    // Renombrado a Solicitantes según especificación en AGENT.md
+    tipo: 'item',
+    texto: 'Solicitantes',
+    direccion: '/autorizados',
+    icono: cilUser,
+    roles: ['administrador'],
   },
 ];

@@ -10,7 +10,7 @@
  * - Exportación analítica nativa a formato .xlsx generada 100% en el navegador (D1, D3, S15).
  * - Indicadores visibles de alcance ("Todo el sistema") y frescura horaria (S13, S14).
  */
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState } from 'react';
 import {
   CBadge,
   CButton,
@@ -35,11 +35,8 @@ import {
   cilWarning,
   cilCheckCircle,
   cilClock,
-  cilPeople,
-  cilSpreadsheet,
 } from '@coreui/icons';
 
-import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import AvisoPlanesPorVencer from '@/componentes/planes/AvisoPlanesPorVencer.js';
 import Aviso from '@/componentes/Aviso.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
@@ -74,9 +71,6 @@ export default function PantallaPanelAdministrador() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [exportando, setExportando] = useState(false);
-  const [mostrarDetalles, setMostrarDetalles] = useState(false);
-
-  const [, startTransition] = useTransition();
 
   const cargarDatos = async (filtroDesde, filtroHasta) => {
     setCargando(true);
@@ -96,7 +90,27 @@ export default function PantallaPanelAdministrador() {
   };
 
   useEffect(() => {
-    cargarDatos(desde, hasta);
+    let cancelado = false;
+    async function inicializar() {
+      try {
+        const payload = await obtenerPanelCompleto({
+          desde: desde || undefined,
+          hasta: hasta || undefined,
+        });
+        if (!cancelado) setPanelPayload(payload);
+      } catch (err) {
+        if (!cancelado) {
+          console.error('[panel] Error al obtener datos del panel:', err);
+          setError(err?.response?.data?.mensaje || err.message || 'No se pudieron cargar los datos del panel.');
+        }
+      } finally {
+        if (!cancelado) setCargando(false);
+      }
+    }
+    inicializar();
+    return () => {
+      cancelado = true;
+    };
   }, []);
 
   const aplicarPreset = (p) => {
@@ -159,13 +173,13 @@ export default function PantallaPanelAdministrador() {
     <>
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-3">
         <div>
-          <EncabezadoPagina titulo="Panel de Control" />
-          <div className="small text-body-secondary mt-n2 mb-2">
+          <h1 className="sigma-titulo mb-1">Panel de Control</h1>
+          <div className="small text-body-secondary">
             <span>Actualizado: <strong>{fechaFrescura}</strong> (UTC-3)</span>
           </div>
         </div>
 
-        <div className="d-flex align-items-center gap-2">
+        <div className="d-flex flex-wrap align-items-center gap-2">
           <CButton
             color="primary"
             variant="outline"
@@ -252,298 +266,345 @@ export default function PantallaPanelAdministrador() {
         <Cargando texto="Cargando estadísticas consolidadas del sistema..." />
       ) : (
         <>
-          {/* ─── FILA 1: TARJETAS KPI (M-01, M-06, M-07, M-15, M-16) ───────────── */}
-          <CRow className="g-3 mb-4">
-            {/* M-01 · Tasa de Operatividad de Activos */}
-            <CCol sm={6} lg={4} xl>
-              <CCard className="h-100 border-start border-start-4 border-start-success shadow-sm">
-                <CCardBody className="p-3">
-                  <div className="text-body-secondary text-uppercase fw-bold small">Operatividad de Activos</div>
-                  <div className="fs-3 fw-bold text-success my-1">
-                    {resumen.operatividad?.porcentaje != null ? `${resumen.operatividad.porcentaje} %` : '-'}
+          {/* ─── INDICADORES CLAVE (KPIs) ─────────────────────────────────────── */}
+          <div className="row g-3 row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-5 mb-4 align-items-stretch">
+            {/* KPI 1 · Operatividad de Activos */}
+            <div className="col d-flex">
+              <CCard className="w-100 h-100 border-start border-start-4 border-start-primary shadow-sm">
+                <CCardBody className="p-3 d-flex flex-column justify-content-between">
+                  <div>
+                    <div className="text-body-secondary text-uppercase fw-semibold" style={{ fontSize: '0.78rem', letterSpacing: '0.04em' }}>
+                      Operatividad de Activos
+                    </div>
+                    <div className="fs-3 fw-bold text-body my-1">
+                      {resumen.operatividad?.porcentaje != null ? `${resumen.operatividad.porcentaje} %` : '-'}
+                    </div>
                   </div>
-                  <div className="text-body-secondary small">
-                    <strong>{resumen.operatividad?.operativos ?? 0}</strong> de {resumen.operatividad?.enServicio ?? 0} en servicio
-                  </div>
-                  <div className="text-body-tertiary small mt-1">
-                    {resumen.operatividad?.retirados ?? 0} retirados (Total: {resumen.operatividad?.totalActivos ?? 0})
-                  </div>
-                </CCardBody>
-              </CCard>
-            </CCol>
-
-            {/* M-06 · Tiempo Promedio de Resolución */}
-            <CCol sm={6} lg={4} xl>
-              <CCard className="h-100 border-start border-start-4 border-start-info shadow-sm">
-                <CCardBody className="p-3">
-                  <div className="text-body-secondary text-uppercase fw-bold small">Tiempo Promedio Resolución</div>
-                  <div className="fs-3 fw-bold text-info my-1">
-                    {textoTiempo(tiempos.general?.promedioSegundos)}
-                  </div>
-                  <div className="text-body-secondary small">
-                    <strong>{tiempos.general?.cantidadTickets ?? 0}</strong> tickets cerrados evaluados
-                  </div>
-                  <div className="text-body-tertiary small mt-1">
-                    En el período seleccionado
+                  <div>
+                    <div className="text-body-secondary small">
+                      <strong>{resumen.operatividad?.operativos ?? 0}</strong> de {resumen.operatividad?.enServicio ?? 0} en servicio
+                    </div>
+                    <div className="text-body-tertiary small mt-1" style={{ fontSize: '0.75rem' }}>
+                      {resumen.operatividad?.retirados ?? 0} retirados (Total: {resumen.operatividad?.totalActivos ?? 0}) · Estado actual
+                    </div>
                   </div>
                 </CCardBody>
               </CCard>
-            </CCol>
+            </div>
 
-            {/* M-07 · Cobertura Preventiva */}
-            <CCol sm={6} lg={4} xl>
-              <CCard className="h-100 border-start border-start-4 border-start-primary shadow-sm">
-                <CCardBody className="p-3">
-                  <div className="text-body-secondary text-uppercase fw-bold small">Cobertura Preventiva</div>
-                  <div className="fs-3 fw-bold text-primary my-1">
-                    {resumen.coberturaPreventiva?.porcentajeTipos != null ? `${resumen.coberturaPreventiva.porcentajeTipos} %` : '-'}
+            {/* KPI 2 · Tiempo Promedio de Resolución */}
+            <div className="col d-flex">
+              <CCard className="w-100 h-100 border-start border-start-4 border-start-secondary shadow-sm">
+                <CCardBody className="p-3 d-flex flex-column justify-content-between">
+                  <div>
+                    <div className="text-body-secondary text-uppercase fw-semibold" style={{ fontSize: '0.78rem', letterSpacing: '0.04em' }}>
+                      Tiempo Promedio Resolución
+                    </div>
+                    <div className="fs-3 fw-bold text-body my-1">
+                      {textoTiempo(tiempos.general?.promedioSegundos)}
+                    </div>
                   </div>
-                  <div className="text-body-secondary small">
-                    <strong>{resumen.coberturaPreventiva?.tiposConPlan ?? 0}</strong> de {resumen.coberturaPreventiva?.totalTipos ?? 0} tipos cubiertos
-                  </div>
-                  <div className="text-body-tertiary small mt-1">
-                    {resumen.coberturaPreventiva?.activosCubiertos ?? 0} activos amparados ({resumen.coberturaPreventiva?.porcentajeActivos ?? 0} %)
+                  <div>
+                    <div className="text-body-secondary small">
+                      <strong>{tiempos.general?.cantidadTickets ?? 0}</strong> tickets cerrados evaluados
+                    </div>
+                    <div className="text-body-tertiary small mt-1" style={{ fontSize: '0.75rem' }}>
+                      En el período seleccionado
+                    </div>
                   </div>
                 </CCardBody>
               </CCard>
-            </CCol>
+            </div>
 
-            {/* M-15 · Disponibilidad del Plantel Técnico */}
-            <CCol sm={6} lg={6} xl>
-              <CCard className="h-100 border-start border-start-4 border-start-warning shadow-sm">
-                <CCardBody className="p-3">
-                  <div className="text-body-secondary text-uppercase fw-bold small">Disponibilidad Técnica</div>
-                  <div className="fs-3 fw-bold text-warning my-1">
-                    {resumen.disponibilidadTecnicos?.porcentaje != null ? `${resumen.disponibilidadTecnicos.porcentaje} %` : '-'}
+            {/* KPI 3 · Cobertura Preventiva */}
+            <div className="col d-flex">
+              <CCard className="w-100 h-100 border-start border-start-4 border-start-primary shadow-sm">
+                <CCardBody className="p-3 d-flex flex-column justify-content-between">
+                  <div>
+                    <div className="text-body-secondary text-uppercase fw-semibold" style={{ fontSize: '0.78rem', letterSpacing: '0.04em' }}>
+                      Cobertura Preventiva
+                    </div>
+                    <div className="fs-3 fw-bold text-body my-1">
+                      {resumen.coberturaPreventiva?.porcentajeTipos != null ? `${resumen.coberturaPreventiva.porcentajeTipos} %` : '-'}
+                    </div>
                   </div>
-                  <div className="text-body-secondary small">
-                    <strong>{resumen.disponibilidadTecnicos?.disponibles ?? 0}</strong> de {resumen.disponibilidadTecnicos?.totalTecnicos ?? 0} disponibles
-                  </div>
-                  <div className="text-body-tertiary small mt-1">
-                    Plantel de técnicos activos
+                  <div>
+                    <div className="text-body-secondary small">
+                      <strong>{resumen.coberturaPreventiva?.tiposConPlan ?? 0}</strong> de {resumen.coberturaPreventiva?.totalTipos ?? 0} tipos cubiertos
+                    </div>
+                    <div className="text-body-tertiary small mt-1" style={{ fontSize: '0.75rem' }}>
+                      {resumen.coberturaPreventiva?.activosCubiertos ?? 0} activos amparados ({resumen.coberturaPreventiva?.porcentajeActivos ?? 0} %) · Planes vigentes
+                    </div>
                   </div>
                 </CCardBody>
               </CCard>
-            </CCol>
+            </div>
 
-            {/* M-16 · Materiales Críticos Bajo Mínimo */}
-            <CCol sm={6} lg={6} xl>
-              <CCard className={`h-100 border-start border-start-4 shadow-sm ${
+            {/* KPI 4 · Disponibilidad Técnica */}
+            <div className="col d-flex">
+              <CCard className="w-100 h-100 border-start border-start-4 border-start-secondary shadow-sm">
+                <CCardBody className="p-3 d-flex flex-column justify-content-between">
+                  <div>
+                    <div className="text-body-secondary text-uppercase fw-semibold" style={{ fontSize: '0.78rem', letterSpacing: '0.04em' }}>
+                      Disponibilidad Técnica
+                    </div>
+                    <div className="fs-3 fw-bold text-body my-1">
+                      {resumen.disponibilidadTecnicos?.porcentaje != null ? `${resumen.disponibilidadTecnicos.porcentaje} %` : '-'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-body-secondary small">
+                      <strong>{resumen.disponibilidadTecnicos?.disponibles ?? 0}</strong> de {resumen.disponibilidadTecnicos?.totalTecnicos ?? 0} disponibles
+                    </div>
+                    <div className="text-body-tertiary small mt-1" style={{ fontSize: '0.75rem' }}>
+                      Plantel de técnicos activos · Estado actual
+                    </div>
+                  </div>
+                </CCardBody>
+              </CCard>
+            </div>
+
+            {/* KPI 5 · Materiales Bajo Mínimo */}
+            <div className="col d-flex">
+              <CCard className={`w-100 h-100 border-start border-start-4 shadow-sm ${
                 (resumen.materialesBajoMinimo?.bajoMinimo ?? 0) > 0 ? 'border-start-danger' : 'border-start-success'
               }`}>
-                <CCardBody className="p-3">
-                  <div className="text-body-secondary text-uppercase fw-bold small">Materiales Bajo Mínimo</div>
-                  <div className={`fs-3 fw-bold my-1 ${
-                    (resumen.materialesBajoMinimo?.bajoMinimo ?? 0) > 0 ? 'text-danger' : 'text-success'
-                  }`}>
-                    {resumen.materialesBajoMinimo?.bajoMinimo ?? 0}
+                <CCardBody className="p-3 d-flex flex-column justify-content-between">
+                  <div>
+                    <div className="text-body-secondary text-uppercase fw-semibold" style={{ fontSize: '0.78rem', letterSpacing: '0.04em' }}>
+                      Materiales Bajo Mínimo
+                    </div>
+                    <div className={`fs-3 fw-bold my-1 ${
+                      (resumen.materialesBajoMinimo?.bajoMinimo ?? 0) > 0 ? 'text-danger' : 'text-success'
+                    }`}>
+                      {resumen.materialesBajoMinimo?.bajoMinimo ?? 0}
+                    </div>
                   </div>
-                  <div className="text-body-secondary small">
-                    de <strong>{resumen.materialesBajoMinimo?.totalMateriales ?? 0}</strong> insumos registrados
-                  </div>
-                  <div className="text-body-tertiary small mt-1">
-                    {resumen.materialesBajoMinimo?.porcentaje ?? 0} % del inventario
+                  <div>
+                    <div className="text-body-secondary small">
+                      de <strong>{resumen.materialesBajoMinimo?.totalMateriales ?? 0}</strong> insumos registrados
+                    </div>
+                    <div className="text-body-tertiary small mt-1" style={{ fontSize: '0.75rem' }}>
+                      {resumen.materialesBajoMinimo?.porcentaje ?? 0} % del inventario · Stock actual
+                    </div>
                   </div>
                 </CCardBody>
               </CCard>
-            </CCol>
-          </CRow>
+            </div>
+          </div>
 
-          {/* ─── FILA 2: MANTENIMIENTO CORRECTIVO ─────────────────────────────── */}
-          <CRow className="g-3 mb-4">
-            <CCol lg={8}>
-              <GraficoChart
-                tipo="line"
-                titulo="Evolución mensual de tickets: Creados vs. Cerrados"
-                subtitulo="Series cronológicas completas; períodos sin actividad en 0"
-                data={{
-                  labels: evolucion.evolucion?.map((e) => e.mesRotulo ?? e.periodo) ?? [],
-                  datasets: [
-                    {
-                      label: 'Tickets creados',
-                      data: evolucion.evolucion?.map((e) => e.ticketsCreados) ?? [],
-                      borderColor: '#321fdb',
-                      backgroundColor: 'rgba(50, 31, 219, 0.1)',
-                    },
-                    {
-                      label: 'Tickets cerrados',
-                      data: evolucion.evolucion?.map((e) => e.ticketsCerrados) ?? [],
-                      borderColor: '#2eb85c',
-                      backgroundColor: 'rgba(46, 184, 92, 0.1)',
-                    },
-                  ],
-                }}
-                altura={320}
-              />
-            </CCol>
+          {/* ─── SECCIÓN A: MANTENIMIENTO Y TICKETS ──────────────────────────── */}
+          <div className="mb-4">
+            <h2 className="h5 fw-bold text-body-secondary text-uppercase mb-3" style={{ letterSpacing: '0.05em' }}>
+              Mantenimiento y tickets
+            </h2>
 
-            <CCol lg={4}>
-              <GraficoChart
-                tipo="bar"
-                titulo="Distribución de tickets por estado"
-                subtitulo="Tickets dados de alta en el período"
-                data={{
-                  labels: evolucion.porEstado?.map((e) => e.nombre) ?? [],
-                  datasets: [
-                    {
-                      label: 'Cantidad de tickets',
-                      data: evolucion.porEstado?.map((e) => e.cantidad) ?? [],
-                      backgroundColor: '#39f',
-                    },
-                  ],
-                }}
-                altura={320}
-              />
-            </CCol>
-          </CRow>
+            {/* Fila 1: Actividad y estado de tickets (8 cols + 4 cols) */}
+            <CRow className="g-3 mb-3">
+              <CCol xs={12} lg={8}>
+                <GraficoChart
+                  tipo="line"
+                  titulo="Tickets creados y cerrados por mes"
+                  subtitulo="Comparación mensual de tickets registrados y finalizados."
+                  data={{
+                    labels: evolucion.evolucion?.map((e) => e.mesRotulo ?? e.periodo) ?? [],
+                    datasets: [
+                      {
+                        label: 'Tickets creados',
+                        data: evolucion.evolucion?.map((e) => e.ticketsCreados) ?? [],
+                        borderColor: '#321fdb',
+                        backgroundColor: 'rgba(50, 31, 219, 0.1)',
+                      },
+                      {
+                        label: 'Tickets cerrados',
+                        data: evolucion.evolucion?.map((e) => e.ticketsCerrados) ?? [],
+                        borderColor: '#2eb85c',
+                        backgroundColor: 'rgba(46, 184, 92, 0.1)',
+                      },
+                    ],
+                  }}
+                  altura={320}
+                />
+              </CCol>
 
-          {/* ─── FILA 3: ÓRDENES DE TRABAJO E INCIDENCIAS ───────────────────────── */}
-          <CRow className="g-3 mb-4">
-            <CCol lg={6}>
-              <GraficoChart
-                tipo="bar"
-                horizontal={true}
-                titulo="Ranking de áreas con mayor incidencia de fallas"
-                subtitulo="Top áreas con fallas registradas en activos"
-                data={{
-                  labels: areas.ranking?.slice(0, 8).map((a) => a.nombreArea ?? a.nombre) ?? [],
-                  datasets: [
-                    {
-                      label: 'Fallas registradas',
-                      data: areas.ranking?.slice(0, 8).map((a) => a.cantidadFallas ?? a.fallas) ?? [],
-                      backgroundColor: '#e55353',
-                    },
-                  ],
-                }}
-                altura={320}
-              />
-            </CCol>
+              <CCol xs={12} lg={4}>
+                <GraficoChart
+                  tipo="bar"
+                  titulo="Tickets según su estado"
+                  subtitulo="Distribución de los tickets registrados en el período seleccionado."
+                  data={{
+                    labels: evolucion.porEstado?.map((e) => e.nombre) ?? [],
+                    datasets: [
+                      {
+                        label: 'Cantidad de tickets',
+                        data: evolucion.porEstado?.map((e) => e.cantidad) ?? [],
+                        backgroundColor: '#39f',
+                      },
+                    ],
+                  }}
+                  altura={320}
+                />
+              </CCol>
+            </CRow>
 
-            <CCol lg={3}>
-              <GraficoChart
-                tipo="doughnut"
-                titulo="Órdenes de trabajo por origen"
-                subtitulo="Correctivas vs. Preventivas"
-                data={{
-                  labels: ['Correctivas', 'Preventivas'],
-                  datasets: [
-                    {
-                      data: [
-                        ordenes.porOrigen?.correctivas ?? 0,
-                        ordenes.porOrigen?.preventivas ?? 0,
-                      ],
-                    },
-                  ],
-                }}
-                altura={320}
-              />
-            </CCol>
+            {/* Fila 2: Incidencias y órdenes de trabajo (6 cols + 3 cols + 3 cols) */}
+            <CRow className="g-3 mb-3">
+              <CCol xs={12} lg={6}>
+                <GraficoChart
+                  tipo="bar"
+                  horizontal={true}
+                  titulo="Áreas con más incidencias"
+                  subtitulo="Cantidad de fallas registradas en activos de cada área."
+                  data={{
+                    labels: areas.ranking?.slice(0, 8).map((a) => a.nombreArea ?? a.nombre) ?? [],
+                    datasets: [
+                      {
+                        label: 'Fallas registradas',
+                        data: areas.ranking?.slice(0, 8).map((a) => a.cantidadFallas ?? a.fallas) ?? [],
+                        backgroundColor: '#e55353',
+                      },
+                    ],
+                  }}
+                  altura={320}
+                />
+              </CCol>
 
-            <CCol lg={3}>
-              <GraficoChart
-                tipo="doughnut"
-                titulo="Órdenes de trabajo por prioridad"
-                subtitulo="OTs no canceladas en el período"
-                data={{
-                  labels: ordenes.porPrioridad?.map((p) => p.nombre) ?? [],
-                  datasets: [
-                    {
-                      data: ordenes.porPrioridad?.map((p) => p.cantidad) ?? [],
-                    },
-                  ],
-                }}
-                altura={320}
-              />
-            </CCol>
-          </CRow>
+              <CCol xs={12} sm={6} lg={3}>
+                <GraficoChart
+                  tipo="doughnut"
+                  titulo="Órdenes de trabajo por tipo"
+                  subtitulo="Comparación entre órdenes correctivas y preventivas."
+                  data={{
+                    labels: ['Correctivas', 'Preventivas'],
+                    datasets: [
+                      {
+                        data: [
+                          ordenes.porOrigen?.correctivas ?? 0,
+                          ordenes.porOrigen?.preventivas ?? 0,
+                        ],
+                      },
+                    ],
+                  }}
+                  altura={320}
+                />
+              </CCol>
 
-          {/* ─── FILA 4: RECURSOS Y PLANTA FÍSICA ───────────────────────────────── */}
-          <CRow className="g-3 mb-4">
-            <CCol lg={5}>
-              <GraficoChart
-                tipo="bar"
-                horizontal={true}
-                titulo="Carga de trabajo activa por técnico"
-                subtitulo="Tareas asignadas pendientes de conclusión"
-                data={{
-                  labels: cargaTec.porTecnico?.map((t) => t.nombre) ?? [],
-                  datasets: [
-                    {
-                      label: 'Tareas activas',
-                      data: cargaTec.porTecnico?.map((t) => t.tareasActivas) ?? [],
-                      backgroundColor: '#f9b115',
-                    },
-                  ],
-                }}
-                altura={320}
-              />
-            </CCol>
+              <CCol xs={12} sm={6} lg={3}>
+                <GraficoChart
+                  tipo="doughnut"
+                  titulo="Órdenes por prioridad"
+                  subtitulo="Órdenes no canceladas incluidas en el período seleccionado."
+                  data={{
+                    labels: ordenes.porPrioridad?.map((p) => p.nombre) ?? [],
+                    datasets: [
+                      {
+                        data: ordenes.porPrioridad?.map((p) => p.cantidad) ?? [],
+                      },
+                    ],
+                  }}
+                  altura={320}
+                />
+              </CCol>
+            </CRow>
+          </div>
 
-            <CCol lg={4}>
-              <GraficoChart
-                tipo="bar"
-                horizontal={true}
-                titulo="Activos inventariados por edificio"
-                subtitulo="Activos en servicio (no retirados)"
-                data={{
-                  labels: activos.porEdificio?.map((e) => e.nombre) ?? [],
-                  datasets: [
-                    {
-                      label: 'Activos',
-                      data: activos.porEdificio?.map((e) => e.cantidad) ?? [],
-                      backgroundColor: '#321fdb',
-                    },
-                  ],
-                }}
-                altura={320}
-              />
-            </CCol>
+          {/* ─── SECCIÓN B: PERSONAL E INVENTARIO DE ACTIVOS ─────────────────── */}
+          <div className="mb-4">
+            <h2 className="h5 fw-bold text-body-secondary text-uppercase mb-3" style={{ letterSpacing: '0.05em' }}>
+              Personal e inventario de activos
+            </h2>
 
-            <CCol lg={3}>
-              <GraficoChart
-                tipo="doughnut"
-                titulo="Distribución de activos por estado"
-                subtitulo="Ciclo de vida del equipamiento"
-                data={{
-                  labels: activos.porEstado?.map((e) => e.nombre) ?? [],
-                  datasets: [
-                    {
-                      data: activos.porEstado?.map((e) => e.cantidad) ?? [],
-                    },
-                  ],
-                }}
-                altura={320}
-              />
-            </CCol>
-          </CRow>
+            {/* Fila 1: Carga de trabajo (12 cols) */}
+            <CRow className="g-3 mb-3">
+              <CCol xs={12}>
+                <GraficoChart
+                  tipo="bar"
+                  horizontal={true}
+                  titulo="Tareas pendientes por técnico"
+                  subtitulo="Tareas asignadas que todavía no fueron finalizadas."
+                  data={{
+                    labels: cargaTec.porTecnico?.map((t) => t.nombre) ?? [],
+                    datasets: [
+                      {
+                        label: 'Tareas pendientes',
+                        data: cargaTec.porTecnico?.map((t) => t.tareasActivas) ?? [],
+                        backgroundColor: '#f9b115',
+                      },
+                    ],
+                  }}
+                  altura={Math.max(260, (cargaTec.porTecnico?.length ?? 0) * 36 + 80)}
+                />
+              </CCol>
+            </CRow>
 
-          {/* ─── FILA 5: SECCIÓN DE AUDITORÍA Y DETALLES TABULARES ───────────────── */}
-          <CCard className="mb-4 shadow-sm">
-            <CCardHeader className="d-flex justify-content-between align-items-center py-2 bg-body-tertiary">
-              <span className="fw-semibold">Auditoría y Tablas de Detalle</span>
-              <CButton
-                color="secondary"
-                variant="ghost"
-                size="sm"
-                onClick={() => setMostrarDetalles((prev) => !prev)}
-              >
-                {mostrarDetalles ? 'Ocultar detalles' : 'Mostrar tablas de auditoría'}
-              </CButton>
-            </CCardHeader>
+            {/* Fila 2: Inventario de activos (8 cols + 4 cols) */}
+            <CRow className="g-3 mb-3">
+              <CCol xs={12} lg={8}>
+                <GraficoChart
+                  tipo="bar"
+                  horizontal={true}
+                  titulo="Activos en servicio por edificio"
+                  subtitulo="Cantidad de activos en servicio; no incluye los retirados."
+                  data={{
+                    labels: activos.porEdificio?.map((e) => e.nombre) ?? [],
+                    datasets: [
+                      {
+                        label: 'Activos en servicio',
+                        data: activos.porEdificio?.map((e) => e.cantidad) ?? [],
+                        backgroundColor: '#321fdb',
+                      },
+                    ],
+                  }}
+                  altura={320}
+                />
+              </CCol>
 
-            {mostrarDetalles && (
+              <CCol xs={12} lg={4}>
+                <GraficoChart
+                  tipo="doughnut"
+                  titulo="Activos según su estado"
+                  subtitulo="Distribución según el estado del ciclo de vida del equipamiento."
+                  data={{
+                    labels: activos.porEstado?.map((e) => e.nombre) ?? [],
+                    datasets: [
+                      {
+                        data: activos.porEstado?.map((e) => e.cantidad) ?? [],
+                      },
+                    ],
+                  }}
+                  altura={320}
+                />
+              </CCol>
+            </CRow>
+          </div>
+
+          {/* ─── AUDITORÍA Y TABLAS DE DETALLE ─────────────────────────────── */}
+          <div className="mb-4">
+            <CCard className="shadow-sm">
+              <CCardHeader className="py-2 bg-body-tertiary">
+                <span className="fw-semibold text-body">Auditoría y Tablas de Detalle</span>
+              </CCardHeader>
+
               <CCardBody className="p-3">
                 <CRow className="g-4">
                   {/* Detalle de Materiales Críticos */}
-                  <CCol lg={6}>
-                    <h6 className="fw-bold mb-3 d-flex align-items-center gap-2">
-                      <CIcon icon={cilWarning} className="text-danger" />
-                      Materiales Críticos bajo Stock Mínimo
-                    </h6>
+                  <CCol xs={12} lg={6}>
+                    <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                      <h6 className="fw-bold mb-0 d-flex align-items-center gap-2">
+                        <CIcon icon={cilWarning} className="text-danger" />
+                        Materiales Críticos bajo Stock Mínimo
+                      </h6>
+                      {resumen.materialesBajoMinimo?.items?.length > 0 && (
+                        <CBadge color="danger">
+                          {resumen.materialesBajoMinimo.items.length}{' '}
+                          {resumen.materialesBajoMinimo.items.length === 1 ? 'material por debajo del stock mínimo' : 'materiales por debajo del stock mínimo'}
+                        </CBadge>
+                      )}
+                    </div>
                     {resumen.materialesBajoMinimo?.items?.length > 0 ? (
                       <div className="table-responsive">
                         <CTable striped hover small className="align-middle">
-                          <CTableHead>
+                          <CTableHead className="table-light">
                             <CTableRow>
                               <CTableHeaderCell>Código</CTableHeaderCell>
                               <CTableHeaderCell>Material</CTableHeaderCell>
@@ -563,8 +624,10 @@ export default function PantallaPanelAdministrador() {
                                 <CTableDataCell className="text-end text-body-secondary">
                                   {m.stockMinimo}
                                 </CTableDataCell>
-                                <CTableDataCell className="text-end fw-bold text-warning">
-                                  +{m.faltante}
+                                <CTableDataCell className="text-end">
+                                  <span className="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle fw-semibold">
+                                    +{m.faltante}
+                                  </span>
                                 </CTableDataCell>
                               </CTableRow>
                             ))}
@@ -580,15 +643,22 @@ export default function PantallaPanelAdministrador() {
                   </CCol>
 
                   {/* Detalle de Tiempos por Área */}
-                  <CCol lg={6}>
-                    <h6 className="fw-bold mb-3 d-flex align-items-center gap-2">
-                      <CIcon icon={cilClock} className="text-info" />
-                      Tiempos Promedio de Resolución por Área
-                    </h6>
+                  <CCol xs={12} lg={6}>
+                    <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                      <h6 className="fw-bold mb-0 d-flex align-items-center gap-2">
+                        <CIcon icon={cilClock} className="text-info" />
+                        Tiempos Promedio de Resolución por Área
+                      </h6>
+                      {tiempos.porArea?.length > 0 && (
+                        <span className="small text-body-secondary">
+                          {tiempos.porArea.length} áreas evaluadas
+                        </span>
+                      )}
+                    </div>
                     {tiempos.porArea?.length > 0 ? (
                       <div className="table-responsive">
                         <CTable striped hover small className="align-middle">
-                          <CTableHead>
+                          <CTableHead className="table-light">
                             <CTableRow>
                               <CTableHeaderCell>Área</CTableHeaderCell>
                               <CTableHeaderCell>Edificio</CTableHeaderCell>
@@ -618,8 +688,8 @@ export default function PantallaPanelAdministrador() {
                   </CCol>
                 </CRow>
               </CCardBody>
-            )}
-          </CCard>
+            </CCard>
+          </div>
         </>
       )}
     </>
