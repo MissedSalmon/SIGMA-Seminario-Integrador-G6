@@ -107,6 +107,7 @@ export default function GraficoChart({
     animation: false,
     responsive: true,
     maintainAspectRatio: false,
+    resizeDelay: 50,
     indexAxis: horizontal ? 'y' : 'x',
     plugins: {
       legend: {
@@ -204,12 +205,14 @@ export default function GraficoChart({
             </CTable>
           </div>
         ) : (
-          <div style={{ height: `${altura}px`, position: 'relative' }}>
+          <div style={{ height: `${altura}px`, maxHeight: `${altura}px`, width: '100%', position: 'relative' }}>
             <CChart
               type={tipo}
               data={dataNormalizada}
               options={opcionesFinales}
               aria-label={ariaLabel ?? titulo}
+              customTooltips={false}
+              wrapper={false}
             />
           </div>
         )}
