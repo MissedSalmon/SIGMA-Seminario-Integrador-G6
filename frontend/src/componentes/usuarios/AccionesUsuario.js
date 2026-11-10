@@ -6,8 +6,9 @@
  *
  *   - En la lista, cada fila tiene «Ver detalle» y «Editar» (AccionesFila),
  *     como los planes de mantenimiento.
- *   - En la ficha están todas las acciones (AccionesFicha): Editar ·
- *     Restablecer contraseña · Desactivar/Activar · Eliminar.
+ *   - En la ficha están todas las acciones (AccionesFicha): «Editar» a la
+ *     vista, como en las demás fichas, y en el desplegable «Opciones»:
+ *     Restablecer contraseña · Desactivar/Activar · Eliminar (10/11/2026).
  *
  * Desactivar es la baja normal: la persona no puede entrar, pero queda todo lo
  * que registró. Eliminar es para alguien cargado por error y la API lo frena si
@@ -18,8 +19,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  CButton,
   CButtonGroup,
+  CDropdown,
+  CDropdownDivider,
+  CDropdownItem,
+  CDropdownMenu,
+  CDropdownToggle,
   CModal,
   CModalBody,
   CModalFooter,
@@ -178,23 +183,44 @@ export default function AccionesFicha({ persona, hrefEditar, volverA, eliminar, 
         Editar
       </BotonEnlace>
 
-      {conUsuario && (
-        <>
-          <CButton color="secondary" variant="outline" onClick={() => setRestableciendo(true)}>
-            <CIcon icon={cilLockLocked} className="me-2" />
-            Restablecer contraseña
-          </CButton>
-          <CButton color="secondary" variant="outline" onClick={() => setCambiandoEstado(true)}>
-            <CIcon icon={persona.activo ? cilBan : cilCheckCircle} className="me-2" />
-            {persona.activo ? 'Desactivar' : 'Activar'}
-          </CButton>
-        </>
-      )}
-
-      <CButton color="secondary" variant="outline" onClick={() => setAEliminar(true)}>
-        <CIcon icon={cilTrash} className="me-2" />
-        Eliminar
-      </CButton>
+      {/* El resto va en un desplegable, como «Opciones» del listado de activos. */}
+      <CDropdown placement="bottom-end">
+        <CDropdownToggle color="secondary" variant="outline">
+          Opciones
+        </CDropdownToggle>
+        <CDropdownMenu className="shadow-sm border" style={{ minWidth: '14rem' }}>
+          {conUsuario && (
+            <>
+              <CDropdownItem
+                as="button"
+                className="d-flex align-items-center gap-2 py-2"
+                onClick={() => setRestableciendo(true)}
+              >
+                <CIcon icon={cilLockLocked} />
+                Restablecer contraseña
+              </CDropdownItem>
+              <CDropdownItem
+                as="button"
+                className="d-flex align-items-center gap-2 py-2"
+                onClick={() => setCambiandoEstado(true)}
+              >
+                <CIcon icon={persona.activo ? cilBan : cilCheckCircle} />
+                {persona.activo ? 'Desactivar' : 'Activar'}
+              </CDropdownItem>
+              <CDropdownDivider className="my-1" />
+            </>
+          )}
+          {/* En rojo y separado, como «Cerrar sesión»: rojo = no se puede deshacer. */}
+          <CDropdownItem
+            as="button"
+            className="d-flex align-items-center gap-2 py-2 text-danger"
+            onClick={() => setAEliminar(true)}
+          >
+            <CIcon icon={cilTrash} />
+            Eliminar
+          </CDropdownItem>
+        </CDropdownMenu>
+      </CDropdown>
 
       {restableciendo && (
         <DialogoRestablecerContrasena
