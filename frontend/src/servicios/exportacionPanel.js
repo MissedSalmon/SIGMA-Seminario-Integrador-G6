@@ -1,25 +1,35 @@
 /**
- * Módulo de exportación analítica del Panel de Administración a informe PDF.
+ * Informe PDF del panel del administrador (A4, se arma en el navegador).
  *
- * Genera un informe formal en PDF (formato A4) con:
- * - Encabezado institucional SIGMA, período seleccionado y marca temporal UTC-3.
- * - Indicadores clave de gestión (KPIs).
- * - Las mismas tablas analíticas que exportaba el panel, cada una con su título,
- *   tabla de datos y su gráfico correspondiente.
- * - Paginación limpia, repetición de encabezados de tabla en saltos de página
- *   y estado vacío explícito ("Sin datos en el período") cuando corresponda.
+ * Portada con los indicadores clave y el índice; después una sección por tema.
+ * Cada bloque dice su base: «Período» (lo que pasó entre las fechas elegidas) o
+ * «Estado actual» (la situación al momento de generar el informe).
+ * Los gráficos se dibujan acá con vectores: no dependen del tamaño ni del tema de la pantalla.
  */
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { textoTiempo } from '../utils/duracion.js';
 
-const COLOR_PRIMARIO_RGB = [50, 31, 219]; // #321fdb
-const COLOR_TEXTO_TITULO = [30, 41, 59];
-const COLOR_TEXTO_MUTED = [100, 116, 139];
+const COLOR = {
+  azul: [31, 59, 77],
+  azulMedio: [74, 107, 130],
+  azulClaro: [160, 180, 195],
+  arena: [238, 236, 231],
+  linea: [217, 214, 207],
+  texto: [34, 48, 58],
+  gris: [107, 119, 128],
+  blanco: [255, 255, 255],
+};
 
-/**
- * Formatea una fecha ISO o actual a la zona horaria de Argentina (UTC-3).
- */
+const PAGINA = { ancho: 210, alto: 297, margen: 18, arriba: 26, abajo: 276 };
+const ANCHO_UTIL = PAGINA.ancho - 2 * PAGINA.margen;
+const M = PAGINA.margen;
+
+const BASE = { periodo: 'Período', actual: 'Estado actual' };
+
+const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+/** Formatea una fecha ISO (o la actual) en la hora de Argentina (UTC-3). */
 export function formatearFechaUtc3(fechaIso) {
   const d = fechaIso ? new Date(fechaIso) : new Date();
   return new Intl.DateTimeFormat('es-AR', {
@@ -29,23 +39,17 @@ export function formatearFechaUtc3(fechaIso) {
   }).format(d);
 }
 
-/**
- * Obtiene la fecha de hoy en formato YYYY-MM-DD para el nombre de archivo.
- */
+/** La fecha de hoy en Argentina como AAAA-MM-DD, para el nombre del archivo. */
 export function fechaHoyArchivoUtc3() {
-  const ahora = new Date();
-  const formato = new Intl.DateTimeFormat('en-CA', {
+  return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Argentina/Buenos_Aires',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-  });
-  return formato.format(ahora); // YYYY-MM-DD
+  }).format(new Date());
 }
 
-/**
- * Aplica autoTable de forma segura tanto en ESM (navegador) como en CJS/Jest.
- */
+/** autoTable se exporta distinto en el navegador (ESM) y en Jest (CJS). */
 function aplicarAutoTable(doc, opciones) {
   if (typeof doc.autoTable === 'function') {
     doc.autoTable(opciones);
@@ -56,385 +60,611 @@ function aplicarAutoTable(doc, opciones) {
   }
 }
 
+const numero = (valor) => Number(valor ?? 0).toLocaleString('es-AR', { maximumFractionDigits: 1 });
+const porcentaje = (valor) => `${numero(valor)} %`;
+
+/** "2026-11-09" -> "09/11/2026". */
+function fechaCorta(iso) {
+  if (!iso) return null;
+  const [anio, mes, dia] = String(iso).slice(0, 10).split('-');
+  return `${dia}/${mes}/${anio}`;
+}
+
+function textoPeriodo(filtros = {}) {
+  const desde = fechaCorta(filtros.desde);
+  const hasta = fechaCorta(filtros.hasta);
+  if (desde && hasta) return `${desde} al ${hasta}`;
+  if (desde) return `Desde el ${desde}`;
+  if (hasta) return `Hasta el ${hasta}`;
+  return 'Histórico completo';
+}
+
+/** El rótulo del mes sale de "2026-11" y no del texto de la base, que depende del idioma del servidor. */
+function rotuloMes(fila) {
+  const [anio, mes] = String(fila.periodo ?? '').split('-');
+  const nombre = MESES[Number(mes) - 1];
+  return nombre ? `${nombre} ${anio}` : String(fila.mesRotulo ?? fila.periodo ?? '');
+}
+
+/** El paso de la escala del eje: 1, 2 o 5 por una potencia de 10. */
+function pasoRedondo(valor) {
+  const potencia = 10 ** Math.floor(Math.log10(valor));
+  const base = valor / potencia;
+  const factor = base <= 1 ? 1 : base <= 2 ? 2 : base <= 5 ? 5 : 10;
+  return Math.max(1, factor * potencia);
+}
+
+function indicadoresClave(datos) {
+  const resumen = datos.resumenGeneral ?? {};
+  const operatividad = resumen.operatividad ?? {};
+  const cobertura = resumen.coberturaPreventiva ?? {};
+  const tecnicos = resumen.disponibilidadTecnicos ?? {};
+  const materiales = resumen.materialesBajoMinimo ?? {};
+  const tiempos = datos.tiemposResolucion?.general ?? {};
+
+  return [
+    {
+      rotulo: 'Operatividad de activos',
+      valor: porcentaje(operatividad.porcentaje),
+      detalle: `${numero(operatividad.operativos)} de ${numero(operatividad.enServicio)} activos en servicio están operativos`,
+      base: BASE.actual,
+    },
+    {
+      rotulo: 'Tiempo promedio de resolución',
+      valor: tiempos.promedioSegundos != null ? textoTiempo(tiempos.promedioSegundos) : 'Sin datos',
+      detalle: `Sobre ${numero(tiempos.cantidadTickets)} tickets cerrados`,
+      base: BASE.periodo,
+    },
+    {
+      rotulo: 'Cobertura preventiva',
+      valor: porcentaje(cobertura.porcentajeActivos),
+      detalle: `${numero(cobertura.activosCubiertos)} de ${numero(cobertura.totalActivosEnServicio)} activos en servicio con plan; ${numero(cobertura.tiposConPlan)} tipos con plan`,
+      base: BASE.actual,
+    },
+    {
+      rotulo: 'Disponibilidad técnica',
+      valor: porcentaje(tecnicos.porcentaje),
+      detalle: `${numero(tecnicos.disponibles)} de ${numero(tecnicos.totalTecnicos)} técnicos disponibles`,
+      base: BASE.actual,
+    },
+    {
+      rotulo: 'Materiales bajo stock mínimo',
+      valor: numero(materiales.bajoMinimo),
+      detalle: `De ${numero(materiales.totalMateriales)} materiales registrados`,
+      base: BASE.actual,
+    },
+  ];
+}
+
 /**
- * Construye el documento jsPDF con todas las tablas y gráficos requeridos.
+ * Construye el documento con la portada, las secciones y la numeración.
  *
- * @param {object} payloadPanel - Objeto { datos, metadatos } consolidado del panel.
- * @param {object} [opciones]
- * @param {object} [opciones.imagenesGraficos] - Mapa de { [idGrafico]: dataUrlPng }
- * @returns {jsPDF} Instancia configurada de jsPDF.
+ * @param {object} payloadPanel - { datos, metadatos } tal como los devuelve /estadisticas/panel-completo.
+ * @returns {jsPDF}
  */
-export function generarDocumentoPdf(payloadPanel, { imagenesGraficos = {} } = {}) {
+export function generarDocumentoPdf(payloadPanel) {
   const datos = payloadPanel?.datos ?? {};
   const metadatos = payloadPanel?.metadatos ?? {};
+  const periodo = textoPeriodo(metadatos.filtros);
+  const generado = `${formatearFechaUtc3(metadatos.generadoEn)} (UTC-3)`;
 
-  const doc = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format: 'a4',
-  });
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const indice = [];
+  let y = 0;
 
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const margenIzq = 14;
-  const margenDer = 14;
-  const margenSup = 20;
-  const margenInf = 20;
-  const anchoUtil = pageWidth - margenIzq - margenDer;
+  const paginaActual = () => doc.getCurrentPageInfo().pageNumber;
 
-  // Encabezado institucional de la primera página
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  doc.setTextColor(...COLOR_PRIMARIO_RGB);
-  doc.text('SIGMA', margenIzq, 18);
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.setTextColor(...COLOR_TEXTO_TITULO);
-  doc.text('Informe del Panel de Control', margenIzq, 26);
-
-  // Período
-  let textoPeriodo = 'Histórico (sin límite temporal)';
-  if (metadatos.filtros?.desde && metadatos.filtros?.hasta) {
-    textoPeriodo = `${metadatos.filtros.desde} al ${metadatos.filtros.hasta}`;
-  } else if (metadatos.filtros?.desde) {
-    textoPeriodo = `Desde ${metadatos.filtros.desde}`;
-  } else if (metadatos.filtros?.hasta) {
-    textoPeriodo = `Hasta ${metadatos.filtros.hasta}`;
+  function escribir(texto, x, yTexto, { tam = 8, estilo = 'normal', fuente = 'helvetica', color = COLOR.texto, ...opciones } = {}) {
+    doc.setFont(fuente, estilo);
+    doc.setFontSize(tam);
+    doc.setTextColor(...color);
+    doc.text(texto, x, yTexto, opciones);
   }
 
-  const fechaGeneracion = formatearFechaUtc3(metadatos.generadoEn);
+  function envolver(texto, ancho, { tam = 8, estilo = 'normal', fuente = 'helvetica' } = {}) {
+    doc.setFont(fuente, estilo);
+    doc.setFontSize(tam);
+    return doc.splitTextToSize(texto, ancho);
+  }
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
-  doc.setTextColor(...COLOR_TEXTO_MUTED);
-  doc.text(
-    `Período: ${textoPeriodo}   |   Generado: ${fechaGeneracion} (UTC-3)   |   Alcance: ${metadatos.alcance ?? 'Todo el sistema'}`,
-    margenIzq,
-    32
-  );
+  function linea(x1, y1, x2, y2, color = COLOR.linea, grosor = 0.2) {
+    doc.setDrawColor(...color);
+    doc.setLineWidth(grosor);
+    doc.line(x1, y1, x2, y2);
+  }
 
-  doc.setDrawColor(226, 232, 240);
-  doc.setLineWidth(0.4);
-  doc.line(margenIzq, 35, pageWidth - margenDer, 35);
+  function rectangulo(x, yRect, ancho, alto, color) {
+    doc.setFillColor(...color);
+    doc.rect(x, yRect, ancho, alto, 'F');
+  }
 
-  let currentY = 41;
+  function asegurarEspacio(alto) {
+    if (y + alto > PAGINA.abajo) {
+      doc.addPage();
+      y = PAGINA.arriba;
+    }
+  }
+
+  function tituloPortada(texto, yTitulo) {
+    escribir(texto.toUpperCase(), M, yTitulo, { fuente: 'times', tam: 13, color: COLOR.azul, charSpace: 0.5 });
+    linea(M, yTitulo + 3, M + ANCHO_UTIL, yTitulo + 3, COLOR.azul, 0.3);
+  }
+
+  function abrirSeccion(titulo, base) {
+    const numeroSeccion = String(indice.length + 1).padStart(2, '0');
+    if (indice.length === 0) {
+      doc.addPage();
+      y = PAGINA.arriba;
+    } else {
+      y += 6;
+      asegurarEspacio(80);
+    }
+    indice.push({ numero: numeroSeccion, titulo, base, pagina: paginaActual() });
+
+    escribir(numeroSeccion, M, y + 6, { fuente: 'times', tam: 20, color: COLOR.azulClaro });
+    escribir(titulo.toUpperCase(), M + 14, y + 6, { fuente: 'times', tam: 15, color: COLOR.azul, charSpace: 0.4 });
+    escribir(base.toUpperCase(), M + ANCHO_UTIL, y + 6, { tam: 6.5, estilo: 'bold', color: COLOR.azulMedio, align: 'right' });
+    linea(M, y + 9.5, M + ANCHO_UTIL, y + 9.5, COLOR.azul, 0.4);
+    y += 19;
+  }
+
+  function tituloBloque(titulo, detalle, x = M, ancho = ANCHO_UTIL) {
+    escribir(titulo, x, y, { tam: 9.5, estilo: 'bold' });
+    y += 1.5;
+    if (detalle) {
+      const lineas = envolver(detalle, ancho, { tam: 7 });
+      escribir(lineas, x, y + 3.5, { tam: 7, color: COLOR.gris, lineHeightFactor: 1.35 });
+      y += 3.5 + lineas.length * 3.3;
+    }
+    y += 2;
+  }
 
   /**
-   * Agrega una sección completa: título de la tabla, tabla de datos y gráfico asociado.
+   * Tabla sin grilla, con líneas finas entre filas. Si una columna tiene `barra`,
+   * en esa celda se dibuja una barra proporcional a `valorBarra` de cada fila.
    */
-  function agregarSeccion({
-    titulo,
-    columnas,
-    filas,
-    idGrafico,
-    anchoGrafico = 150,
-    altoGrafico = 60,
-  }) {
-    const hayDatos = Array.isArray(filas) && filas.length > 0;
-    const imagen = idGrafico ? imagenesGraficos[idGrafico] : null;
-
-    // Verificar si necesitamos salto de página antes del título y tabla
-    const espacioNecesario = hayDatos ? 35 : 20;
-    if (currentY + espacioNecesario > pageHeight - margenInf) {
-      doc.addPage();
-      currentY = margenSup;
-    }
-
-    // Título de la tabla (sin subtítulos según especificación)
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10.5);
-    doc.setTextColor(...COLOR_TEXTO_TITULO);
-    doc.text(titulo, margenIzq, currentY);
-    currentY += 4;
-
-    if (!hayDatos) {
-      doc.setFont('helvetica', 'italic');
-      doc.setFontSize(8.5);
-      doc.setTextColor(...COLOR_TEXTO_MUTED);
-      doc.text('Sin datos en el período', margenIzq, currentY + 2);
-      currentY += 12;
+  function tabla({ columnas, filas, pie, x = M, ancho = ANCHO_UTIL, vacio = 'Sin datos en el período.' }) {
+    if (!filas.length) {
+      escribir(vacio, x, y + 3, { tam: 8, estilo: 'italic', color: COLOR.gris });
+      y += 13;
       return;
     }
 
+    const indiceBarra = columnas.findIndex((c) => c.barra);
+    const maximo = Math.max(0, ...filas.map((f) => Number(f.valorBarra) || 0)) || 1;
+
     aplicarAutoTable(doc, {
-      head: [columnas],
-      body: filas,
-      startY: currentY,
-      margin: { left: margenIzq, right: margenDer, top: margenSup, bottom: margenInf },
-      theme: 'grid',
+      startY: y,
+      margin: { left: x, right: PAGINA.ancho - x - ancho, top: PAGINA.arriba, bottom: PAGINA.alto - PAGINA.abajo },
+      tableWidth: ancho,
+      head: [columnas.map((c) => c.titulo.toUpperCase())],
+      body: filas.map((f) => f.celdas),
+      foot: pie ? [pie] : undefined,
+      theme: 'plain',
+      showHead: 'everyPage',
+      showFoot: 'lastPage',
       styles: {
-        fontSize: 7.5,
-        cellPadding: 2,
         font: 'helvetica',
-        textColor: [51, 65, 85],
-        lineColor: [226, 232, 240],
-        lineWidth: 0.1,
+        fontSize: 8,
+        textColor: COLOR.texto,
+        cellPadding: { top: 2.1, bottom: 2.1, left: 1.5, right: 1.5 },
+        lineColor: COLOR.linea,
+        lineWidth: { bottom: 0.1 },
+        valign: 'middle',
       },
       headStyles: {
-        fillColor: COLOR_PRIMARIO_RGB,
-        textColor: [255, 255, 255],
+        fontSize: 6.5,
         fontStyle: 'bold',
-        fontSize: 7.5,
+        textColor: COLOR.gris,
+        lineColor: COLOR.azul,
+        lineWidth: { bottom: 0.35 },
       },
-      alternateRowStyles: {
-        fillColor: [248, 250, 252],
+      footStyles: {
+        fontStyle: 'bold',
+        textColor: COLOR.texto,
+        lineColor: COLOR.azul,
+        lineWidth: { top: 0.35 },
       },
-      showHead: 'everyPage',
+      columnStyles: Object.fromEntries(
+        columnas.map((c, i) => [i, { cellWidth: c.ancho ?? 'auto', halign: c.alinear ?? 'left' }])
+      ),
+      didParseCell: (celda) => {
+        celda.cell.styles.halign = columnas[celda.column.index]?.alinear ?? 'left';
+      },
+      didDrawCell: (celda) => {
+        if (celda.section !== 'body' || celda.column.index !== indiceBarra) return;
+        const valor = Number(filas[celda.row.index]?.valorBarra) || 0;
+        const { x: xCelda, y: yCelda, width, height } = celda.cell;
+        const altoBarra = 2.6;
+        const yBarra = yCelda + (height - altoBarra) / 2;
+        const anchoPista = width - 3;
+        rectangulo(xCelda + 1.5, yBarra, anchoPista, altoBarra, COLOR.arena);
+        if (valor > 0) {
+          rectangulo(xCelda + 1.5, yBarra, Math.max(0.6, (anchoPista * valor) / maximo), altoBarra, COLOR.azul);
+        }
+      },
     });
 
-    const finalY = doc.lastAutoTable?.finalY ?? currentY + 20;
-    currentY = finalY + 5;
-
-    // Agregar gráfico correspondiente si existe imagen
-    if (imagen) {
-      if (currentY + altoGrafico > pageHeight - margenInf) {
-        doc.addPage();
-        currentY = margenSup;
-      }
-      const xGrafico = margenIzq + (anchoUtil - anchoGrafico) / 2;
-      try {
-        doc.addImage(imagen, 'PNG', xGrafico, currentY, anchoGrafico, altoGrafico);
-        currentY += altoGrafico + 8;
-      } catch (err) {
-        console.warn(`[pdf] Error al insertar imagen del gráfico ${idGrafico}:`, err);
-        currentY += 4;
-      }
-    } else {
-      currentY += 4;
-    }
+    y = (doc.lastAutoTable?.finalY ?? y) + 11;
   }
 
-  // ─── 1. TABLA: INDICADORES CLAVE DE GESTIÓN (KPIs) ──────────────────────────
-  const resumen = datos.resumenGeneral ?? {};
-  const tiemposGen = datos.tiemposResolucion?.general ?? {};
-  const kpisFilas = [
-    [
-      'Tasa de operatividad de activos',
-      `${resumen.operatividad?.porcentaje ?? 0} %`,
-      `${resumen.operatividad?.operativos ?? 0} de ${resumen.operatividad?.enServicio ?? 0} en servicio`,
-      `${resumen.operatividad?.retirados ?? 0} retirados (Total: ${resumen.operatividad?.totalActivos ?? 0}) · Estado actual`,
-    ],
-    [
-      'Tiempo promedio de resolución',
-      tiemposGen.promedioSegundos ? textoTiempo(tiemposGen.promedioSegundos) : 'Sin datos',
-      `${tiemposGen.cantidadTickets ?? 0} tickets cerrados evaluados`,
-      'Período seleccionado',
-    ],
-    [
-      'Cobertura preventiva',
-      `${resumen.coberturaPreventiva?.porcentajeTipos ?? 0} %`,
-      `${resumen.coberturaPreventiva?.tiposConPlan ?? 0} de ${resumen.coberturaPreventiva?.totalTipos ?? 0} tipos cubiertos`,
-      `${resumen.coberturaPreventiva?.activosCubiertos ?? 0} activos amparados (${resumen.coberturaPreventiva?.porcentajeActivos ?? 0} %) · Planes vigentes`,
-    ],
-    [
-      'Disponibilidad técnica',
-      `${resumen.disponibilidadTecnicos?.porcentaje ?? 0} %`,
-      `${resumen.disponibilidadTecnicos?.disponibles ?? 0} de ${resumen.disponibilidadTecnicos?.totalTecnicos ?? 0} técnicos disponibles`,
-      'Plantel de técnicos activos · Estado actual',
-    ],
-    [
-      'Materiales por debajo del stock mínimo',
-      `${resumen.materialesBajoMinimo?.bajoMinimo ?? 0}`,
-      `de ${resumen.materialesBajoMinimo?.totalMateriales ?? 0} insumos registrados`,
-      `${resumen.materialesBajoMinimo?.porcentaje ?? 0} % del inventario · Stock actual`,
-    ],
+  function bloque({ titulo, detalle, ...opcionesTabla }) {
+    asegurarEspacio(Math.min(opcionesTabla.filas.length, 4) * 7.5 + 30);
+    tituloBloque(titulo, detalle);
+    tabla(opcionesTabla);
+  }
+
+  /** Dos bloques lado a lado; sigue abajo del que termine más lejos. */
+  function dosColumnas(bloques) {
+    const anchoColumna = (ANCHO_UTIL - 10) / 2;
+    const filasMax = Math.max(...bloques.map((b) => b.filas.length));
+    asegurarEspacio(Math.min(filasMax, 6) * 7.5 + 34);
+
+    const inicio = { pagina: paginaActual(), y };
+    let fin = { ...inicio };
+
+    bloques.forEach(({ titulo, detalle, ...opcionesTabla }, i) => {
+      doc.setPage(inicio.pagina);
+      y = inicio.y;
+      const x = M + i * (anchoColumna + 10);
+      tituloBloque(titulo, detalle, x, anchoColumna);
+      tabla({ ...opcionesTabla, x, ancho: anchoColumna });
+      const pagina = paginaActual();
+      if (pagina > fin.pagina || (pagina === fin.pagina && y > fin.y)) fin = { pagina, y };
+    });
+
+    doc.setPage(fin.pagina);
+    y = fin.y;
+  }
+
+  /** Barras agrupadas por mes: creados y cerrados, con el valor arriba de cada barra. */
+  function graficoMensual(meses) {
+    const SERIES = [
+      { clave: 'ticketsCreados', nombre: 'Creados', color: COLOR.azul },
+      { clave: 'ticketsCerrados', nombre: 'Cerrados', color: COLOR.azulClaro },
+    ];
+    const altoGrafico = 42;
+    asegurarEspacio(altoGrafico + 40);
+
+    tituloBloque(
+      'Tickets creados y cerrados por mes',
+      'Los creados se cuentan por su fecha de alta y los cerrados por su fecha de cierre.'
+    );
+
+    if (!meses.length) {
+      tabla({ columnas: [], filas: [] });
+      return;
+    }
+
+    let xLeyenda = M + ANCHO_UTIL;
+    [...SERIES].reverse().forEach((serie) => {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      const anchoTexto = doc.getTextWidth(serie.nombre);
+      escribir(serie.nombre, xLeyenda, y, { tam: 7, color: COLOR.texto, align: 'right' });
+      rectangulo(xLeyenda - anchoTexto - 4, y - 2.4, 2.6, 2.6, serie.color);
+      xLeyenda -= anchoTexto + 10;
+    });
+
+    const xEje = M + 8;
+    const anchoGrafico = ANCHO_UTIL - 8;
+    const yTope = y + 6;
+    const yBase = yTope + altoGrafico;
+
+    const maximo = Math.max(1, ...meses.flatMap((m) => SERIES.map((s) => Number(m[s.clave]) || 0)));
+    const paso = pasoRedondo(maximo / 4);
+    const tope = Math.ceil(maximo / paso) * paso;
+
+    for (let valor = 0; valor <= tope; valor += paso) {
+      const yLinea = yBase - (valor / tope) * altoGrafico;
+      linea(xEje, yLinea, xEje + anchoGrafico, yLinea, valor === 0 ? COLOR.azulMedio : COLOR.linea, valor === 0 ? 0.3 : 0.1);
+      escribir(numero(valor), xEje - 2, yLinea + 1, { tam: 6.5, color: COLOR.gris, align: 'right' });
+    }
+
+    const anchoGrupo = anchoGrafico / meses.length;
+    const anchoBarra = Math.min(9, anchoGrupo * 0.3);
+    const tamRotulo = meses.length > 8 ? 6 : 7;
+
+    meses.forEach((mes, i) => {
+      const centro = xEje + anchoGrupo * (i + 0.5);
+      SERIES.forEach((serie, j) => {
+        const valor = Number(mes[serie.clave]) || 0;
+        const alto = (valor / tope) * altoGrafico;
+        const xBarra = centro + (j === 0 ? -anchoBarra - 0.4 : 0.4);
+        if (alto > 0) rectangulo(xBarra, yBase - alto, anchoBarra, alto, serie.color);
+        if (meses.length <= 12) {
+          escribir(numero(valor), xBarra + anchoBarra / 2, yBase - alto - 1.3, { tam: 6.5, align: 'center' });
+        }
+      });
+      escribir(rotuloMes(mes), centro, yBase + 4.5, { tam: tamRotulo, align: 'center' });
+      if (mes.esParcial) {
+        escribir('(parcial)', centro, yBase + 8, { tam: 6, color: COLOR.gris, align: 'center' });
+      }
+    });
+
+    y = yBase + 19;
+  }
+
+  // Portada: banda, datos del informe, indicadores clave e índice.
+  rectangulo(0, 0, PAGINA.ancho, 60, COLOR.azul);
+  escribir('SIGMA', M, 20, { tam: 9, estilo: 'bold', color: COLOR.azulClaro, charSpace: 1.2 });
+  escribir('INFORME DEL PANEL', M, 34, { fuente: 'times', tam: 24, color: COLOR.blanco, charSpace: 0.4 });
+  escribir('DE CONTROL', M, 44, { fuente: 'times', tam: 24, color: COLOR.blanco, charSpace: 0.4 });
+  escribir('Sistema Integral de Gestión de Mantenimiento de Activos · UTN Facultad Regional Resistencia', M, 52, {
+    tam: 8,
+    color: COLOR.azulClaro,
+  });
+
+  rectangulo(0, 60, PAGINA.ancho, 20, COLOR.arena);
+  const cabecera = [
+    ['Período', periodo],
+    ['Generado', generado],
+    ['Alcance', metadatos.alcance ?? 'Todo el sistema'],
   ];
-  agregarSeccion({
-    titulo: 'Indicadores Clave de Gestión (KPIs)',
-    columnas: ['Indicador Clave (KPI)', 'Valor Principal', 'Denominador / Total (n)', 'Detalle'],
-    filas: kpisFilas,
+  cabecera.forEach(([rotulo, valor], i) => {
+    const x = M + (i * ANCHO_UTIL) / 3;
+    escribir(rotulo.toUpperCase(), x, 67.5, { tam: 6.5, estilo: 'bold', color: COLOR.gris, charSpace: 0.4 });
+    escribir(valor, x, 73.5, { tam: 9 });
   });
 
-  // ─── 2. TABLA Y GRÁFICO: EVOLUCIÓN MENSUAL DE TICKETS ───────────────────────
-  const evolucion = datos.evolucionTickets?.evolucion ?? [];
-  const filasEvolucion = evolucion.map((f) => [
-    f.mesRotulo ?? f.periodo,
-    f.ticketsCreados ?? 0,
-    f.ticketsCerrados ?? 0,
-  ]);
-  agregarSeccion({
-    titulo: 'Tickets creados y cerrados por mes',
-    columnas: ['Período', 'Tickets Creados', 'Tickets Cerrados'],
-    filas: filasEvolucion,
-    idGrafico: 'grafico-evolucion-tickets',
-    altoGrafico: 62,
+  tituloPortada('Indicadores clave', 94);
+  const kpis = indicadoresClave(datos);
+  const anchoKpi = ANCHO_UTIL / kpis.length;
+  const yKpi = 102;
+  const altoKpi = 50;
+  rectangulo(M, yKpi, ANCHO_UTIL, altoKpi, COLOR.arena);
+  kpis.forEach((kpi, i) => {
+    const x = M + i * anchoKpi + 4;
+    const anchoTexto = anchoKpi - 8;
+    if (i > 0) linea(M + i * anchoKpi, yKpi + 5, M + i * anchoKpi, yKpi + altoKpi - 5, COLOR.linea, 0.3);
+
+    const rotulo = envolver(kpi.rotulo.toUpperCase(), anchoTexto, { tam: 6.5, estilo: 'bold' }).slice(0, 2);
+    escribir(rotulo, x, yKpi + 8, { tam: 6.5, estilo: 'bold', color: COLOR.gris, lineHeightFactor: 1.3 });
+    escribir(kpi.valor, x, yKpi + 23, { tam: 17, estilo: 'bold', color: COLOR.azul });
+    const detalle = envolver(kpi.detalle, anchoTexto, { tam: 7 }).slice(0, 3);
+    escribir(detalle, x, yKpi + 29.5, { tam: 7, lineHeightFactor: 1.35 });
+    escribir(kpi.base.toUpperCase(), x, yKpi + altoKpi - 5, { tam: 6, estilo: 'bold', color: COLOR.azulMedio });
   });
 
-  // ─── 3. TABLA Y GRÁFICO: TICKETS SEGÚN SU ESTADO ───────────────────────────
-  const porEstado = (datos.evolucionTickets?.porEstado ?? []).filter(
-    (e) => e.nombre !== 'Finalizado' && e.id !== 5
+  escribir(
+    'Período: lo que pasó entre las fechas del informe.   Estado actual: la situación al momento de generarlo.',
+    M,
+    yKpi + altoKpi + 6,
+    { tam: 7, color: COLOR.gris }
   );
-  const filasTicketsEstado = porEstado.map((e) => [
-    e.nombre,
-    e.cantidad ?? 0,
-    `${e.porcentaje ?? 0} %`,
-  ]);
-  agregarSeccion({
+
+  tituloPortada('Contenido', 176);
+  const yIndice = 186;
+
+  // 01 · Tickets e incidencias
+  const evolucion = datos.evolucionTickets ?? {};
+  abrirSeccion('Tickets e incidencias', BASE.periodo);
+  graficoMensual(evolucion.evolucion ?? []);
+
+  const ticketsPorEstado = evolucion.porEstado ?? [];
+  const totalTickets =
+    evolucion.totalTicketsPeriodo ?? ticketsPorEstado.reduce((suma, e) => suma + (Number(e.cantidad) || 0), 0);
+  bloque({
     titulo: 'Tickets según su estado',
-    columnas: ['Estado del Ticket', 'Cantidad', 'Porcentaje'],
-    filas: filasTicketsEstado,
-    idGrafico: 'grafico-tickets-estado',
-    altoGrafico: 55,
+    detalle: `Tickets dados de alta en el período (${numero(totalTickets)}), según el estado en que están hoy.`,
+    columnas: [
+      { titulo: 'Estado', ancho: 52 },
+      { titulo: '', barra: true },
+      { titulo: 'Cantidad', ancho: 20, alinear: 'right' },
+      { titulo: '%', ancho: 20, alinear: 'right' },
+    ],
+    filas: ticketsPorEstado.map((e) => ({
+      valorBarra: e.cantidad,
+      celdas: [e.nombre, '', numero(e.cantidad), porcentaje(e.porcentaje)],
+    })),
+    pie: ['Total', '', numero(totalTickets), ''],
   });
 
-  // ─── 4. TABLA Y GRÁFICO: ÁREAS CON MÁS INCIDENCIAS ─────────────────────────
   const rawAreas = datos.areasIncidencia;
-  const listaAreas = Array.isArray(rawAreas) ? rawAreas : (rawAreas?.ranking ?? []);
-  const filasAreas = listaAreas.map((a) => [
-    a.nombreArea ?? a.nombre ?? 'Sin área',
-    a.nombreEdificio || '-',
-    a.cantidadFallas ?? a.fallas ?? 0,
-    a.cantidadTickets ?? a.tickets ?? 0,
-    `${a.porcentaje ?? 0} %`,
-  ]);
-  agregarSeccion({
+  const areas = Array.isArray(rawAreas) ? rawAreas : (rawAreas?.ranking ?? []);
+  bloque({
     titulo: 'Áreas con más incidencias',
-    columnas: ['Área', 'Edificio', 'Fallas Totales', 'Tickets Afectados', 'Porcentaje'],
-    filas: filasAreas,
-    idGrafico: 'grafico-areas-incidencias',
-    altoGrafico: 62,
+    detalle: 'Fallas registradas en el período, según el área del activo. Si dos áreas comparten un espacio, la falla cuenta para las dos.',
+    columnas: [
+      { titulo: 'Área', ancho: 50 },
+      { titulo: 'Edificio', ancho: 32 },
+      { titulo: '', barra: true },
+      { titulo: 'Fallas', ancho: 15, alinear: 'right' },
+      { titulo: 'Tickets', ancho: 15, alinear: 'right' },
+      { titulo: '%', ancho: 17, alinear: 'right' },
+    ],
+    filas: areas.map((a) => ({
+      valorBarra: a.cantidadFallas ?? a.fallas,
+      celdas: [
+        a.nombreArea ?? a.nombre ?? 'Sin área',
+        a.nombreEdificio || '-',
+        '',
+        numero(a.cantidadFallas ?? a.fallas),
+        numero(a.cantidadTickets ?? a.tickets),
+        porcentaje(a.porcentaje),
+      ],
+    })),
   });
 
-  // ─── 5. TABLA Y GRÁFICO: ÓRDENES DE TRABAJO POR ORIGEN ─────────────────────
-  const otOrigen = datos.ordenesTrabajo?.porOrigen ?? {};
-  const totalOtOrigen = (otOrigen.correctivas ?? 0) + (otOrigen.preventivas ?? 0);
-  const filasOtOrigen = totalOtOrigen > 0 ? [
-    ['Correctivas', otOrigen.correctivas ?? 0, `${otOrigen.porcentajeCorrectivas ?? 0} %`],
-    ['Preventivas', otOrigen.preventivas ?? 0, `${otOrigen.porcentajePreventivas ?? 0} %`],
-  ] : [];
-  agregarSeccion({
-    titulo: 'Órdenes de trabajo por origen',
-    columnas: ['Origen', 'Cantidad', 'Porcentaje'],
-    filas: filasOtOrigen,
-    idGrafico: 'grafico-ordenes-origen',
-    anchoGrafico: 90,
-    altoGrafico: 55,
+  const tiempos = datos.tiemposResolucion ?? {};
+  const promedioGeneral = tiempos.general?.promedioSegundos;
+  bloque({
+    titulo: 'Tiempo promedio de resolución por área',
+    detalle: `Desde el alta hasta el cierre de los tickets cerrados en el período (${numero(tiempos.general?.cantidadTickets)}). Promedio general: ${promedioGeneral != null ? textoTiempo(promedioGeneral) : 'sin datos'}.`,
+    columnas: [
+      { titulo: 'Área', ancho: 50 },
+      { titulo: 'Edificio', ancho: 32 },
+      { titulo: '', barra: true },
+      { titulo: 'Tickets', ancho: 16, alinear: 'right' },
+      { titulo: 'Promedio', ancho: 22, alinear: 'right' },
+    ],
+    filas: (tiempos.porArea ?? []).map((a) => ({
+      valorBarra: a.promedioSegundos,
+      celdas: [a.nombre ?? 'Sin área', a.edificio || '-', '', numero(a.cantidadTickets), textoTiempo(a.promedioSegundos)],
+    })),
   });
 
-  // ─── 6. TABLA Y GRÁFICO: ÓRDENES DE TRABAJO POR PRIORIDAD ──────────────────
-  const otPrioridad = datos.ordenesTrabajo?.porPrioridad ?? [];
-  const filasOtPrioridad = otPrioridad.map((p) => [
-    p.nombre,
-    p.cantidad ?? 0,
-    `${p.porcentaje ?? 0} %`,
+  // 02 · Órdenes de trabajo
+  const ordenes = datos.ordenesTrabajo ?? {};
+  const origen = ordenes.porOrigen ?? {};
+  const totalOt = origen.total ?? (Number(origen.correctivas) || 0) + (Number(origen.preventivas) || 0);
+  const prioridades = ordenes.porPrioridad ?? [];
+  const totalPrioridad =
+    ordenes.totalNoCanceladas ?? prioridades.reduce((suma, p) => suma + (Number(p.cantidad) || 0), 0);
+  const filasPrioridad = prioridades.map((p) => ({
+    valorBarra: p.cantidad,
+    celdas: [p.nombre, '', numero(p.cantidad), porcentaje(p.porcentaje)],
+  }));
+
+  const columnasAngostas = (rotulo) => [
+    { titulo: rotulo, ancho: 27 },
+    { titulo: '', barra: true },
+    { titulo: 'Cant.', ancho: 13, alinear: 'right' },
+    { titulo: '%', ancho: 16, alinear: 'right' },
+  ];
+
+  abrirSeccion('Órdenes de trabajo', BASE.periodo);
+  dosColumnas([
+    {
+      titulo: 'Por origen',
+      detalle: `OT dadas de alta en el período (${numero(totalOt)}).`,
+      columnas: columnasAngostas('Origen'),
+      filas:
+        totalOt > 0
+          ? [
+              { valorBarra: origen.correctivas, celdas: ['Correctivas', '', numero(origen.correctivas), porcentaje(origen.porcentajeCorrectivas)] },
+              { valorBarra: origen.preventivas, celdas: ['Preventivas', '', numero(origen.preventivas), porcentaje(origen.porcentajePreventivas)] },
+            ]
+          : [],
+      pie: ['Total', '', numero(totalOt), ''],
+    },
+    {
+      titulo: 'Por prioridad',
+      detalle: `OT no canceladas del período (${numero(totalPrioridad)}).`,
+      columnas: columnasAngostas('Prioridad'),
+      filas: totalPrioridad > 0 ? filasPrioridad : [],
+      pie: ['Total', '', numero(totalPrioridad), ''],
+    },
   ]);
-  agregarSeccion({
-    titulo: 'Órdenes de trabajo por prioridad',
-    columnas: ['Prioridad', 'Cantidad', 'Porcentaje'],
-    filas: filasOtPrioridad,
-    idGrafico: 'grafico-ordenes-prioridad',
-    anchoGrafico: 90,
-    altoGrafico: 55,
-  });
 
-  // ─── 7. TABLA Y GRÁFICO: ACTIVOS EN SERVICIO POR EDIFICIO ──────────────────
-  const activosEdificios = datos.activos?.porEdificio ?? [];
-  const filasActivosEdificio = activosEdificios.map((ed) => [
-    ed.nombre,
-    ed.cantidad ?? 0,
-    `${ed.porcentaje ?? 0} %`,
-  ]);
-  agregarSeccion({
-    titulo: 'Activos en servicio por edificio',
-    columnas: ['Edificio', 'Activos en Servicio', 'Porcentaje'],
-    filas: filasActivosEdificio,
-    idGrafico: 'grafico-activos-edificio',
-    altoGrafico: 60,
-  });
-
-  // ─── 8. TABLA Y GRÁFICO: ACTIVOS SEGÚN SU ESTADO ───────────────────────────
-  const activosEstados = datos.activos?.porEstado ?? [];
-  const filasActivosEstado = activosEstados.map((st) => [
-    st.nombre,
-    st.cantidad ?? 0,
-    `${st.porcentaje ?? 0} %`,
-  ]);
-  agregarSeccion({
+  // 03 · Activos
+  const activos = datos.activos ?? {};
+  abrirSeccion('Activos', BASE.actual);
+  bloque({
     titulo: 'Activos según su estado',
-    columnas: ['Estado', 'Cantidad', 'Porcentaje'],
-    filas: filasActivosEstado,
-    idGrafico: 'grafico-activos-estado',
-    anchoGrafico: 90,
-    altoGrafico: 55,
+    detalle: `Todos los activos registrados (${numero(activos.totalActivos)}), incluidos los retirados.`,
+    columnas: [
+      { titulo: 'Estado', ancho: 52 },
+      { titulo: '', barra: true },
+      { titulo: 'Cantidad', ancho: 20, alinear: 'right' },
+      { titulo: '%', ancho: 20, alinear: 'right' },
+    ],
+    filas: (activos.porEstado ?? []).map((e) => ({
+      valorBarra: e.cantidad,
+      celdas: [e.nombre, '', numero(e.cantidad), porcentaje(e.porcentaje)],
+    })),
+    pie: ['Total', '', numero(activos.totalActivos), ''],
+    vacio: 'Sin activos registrados.',
   });
 
-  // ─── 9. TABLA Y GRÁFICO: CARGA TÉCNICA ─────────────────────────────────────
-  const tecnicosCarga = datos.cargaTecnicos?.porTecnico ?? [];
-  const filasTecnicos = tecnicosCarga.map((t) => [
-    t.nombre,
-    t.tareasActivas ?? 0,
-    t.disponible ? 'Disponible' : 'No disponible',
-    `${t.porcentaje ?? 0} %`,
-  ]);
-  agregarSeccion({
+  bloque({
+    titulo: 'Activos en servicio por edificio',
+    detalle: `Activos operativos, en mantenimiento o fuera de servicio (${numero(activos.totalEnServicio)}). No incluye los retirados.`,
+    columnas: [
+      { titulo: 'Edificio', ancho: 52 },
+      { titulo: '', barra: true },
+      { titulo: 'Cantidad', ancho: 20, alinear: 'right' },
+      { titulo: '%', ancho: 20, alinear: 'right' },
+    ],
+    filas: (activos.porEdificio ?? []).map((e) => ({
+      valorBarra: e.cantidad,
+      celdas: [e.nombre, '', numero(e.cantidad), porcentaje(e.porcentaje)],
+    })),
+    pie: ['Total', '', numero(activos.totalEnServicio), ''],
+    vacio: 'Sin activos en servicio.',
+  });
+
+  // 04 · Personal técnico
+  const carga = datos.cargaTecnicos ?? {};
+  const sinAsignar = Number(carga.sinAsignar) || 0;
+  abrirSeccion('Personal técnico', BASE.actual);
+  bloque({
     titulo: 'Tareas pendientes por técnico',
-    columnas: ['Técnico', 'Tareas Pendientes', 'Disponibilidad', 'Porcentaje de Carga'],
-    filas: filasTecnicos,
-    idGrafico: 'grafico-carga-tecnicos',
-    altoGrafico: 60,
+    detalle: `Tareas sin terminar con un técnico asignado (${numero(carga.totalTareasActivas)}). Tareas abiertas que todavía no tienen técnico: ${numero(sinAsignar)}.`,
+    columnas: [
+      { titulo: 'Técnico', ancho: 52 },
+      { titulo: '', barra: true },
+      { titulo: 'Tareas', ancho: 16, alinear: 'right' },
+      { titulo: '% del total', ancho: 20, alinear: 'right' },
+      { titulo: 'Disponibilidad', ancho: 26 },
+    ],
+    filas: (carga.porTecnico ?? []).map((t) => ({
+      valorBarra: t.tareasActivas,
+      celdas: [t.nombre, '', numero(t.tareasActivas), porcentaje(t.porcentaje), t.disponible ? 'Disponible' : 'No disponible'],
+    })),
+    vacio: 'Sin técnicos registrados.',
   });
 
-  // ─── 10. TABLA: MATERIALES POR DEBAJO DEL STOCK MÍNIMO ─────────────────────
-  const materialesItems = datos.resumenGeneral?.materialesBajoMinimo?.items ?? [];
-  const filasMateriales = materialesItems.map((m) => [
-    m.codigo,
-    m.nombre,
-    m.stockActual ?? 0,
-    m.stockMinimo ?? 0,
-    `+${m.faltante ?? 0}`,
-  ]);
-  agregarSeccion({
+  // 05 · Inventario
+  const materiales = datos.resumenGeneral?.materialesBajoMinimo ?? {};
+  abrirSeccion('Inventario', BASE.actual);
+  bloque({
     titulo: 'Materiales por debajo del stock mínimo',
-    columnas: ['Código', 'Material', 'Stock Actual', 'Stock Mínimo', 'Faltante'],
-    filas: filasMateriales,
+    detalle: `${numero(materiales.bajoMinimo)} de ${numero(materiales.totalMateriales)} materiales registrados (${porcentaje(materiales.porcentaje)}), ordenados por faltante.`,
+    columnas: [
+      { titulo: 'Código', ancho: 26 },
+      { titulo: 'Material' },
+      { titulo: 'Stock actual', ancho: 24, alinear: 'right' },
+      { titulo: 'Stock mínimo', ancho: 24, alinear: 'right' },
+      { titulo: 'Faltante', ancho: 22, alinear: 'right' },
+    ],
+    filas: (materiales.items ?? []).map((m) => ({
+      celdas: [m.codigo, m.nombre, numero(m.stockActual), numero(m.stockMinimo), numero(m.faltante)],
+    })),
+    vacio: 'Ningún material está por debajo de su stock mínimo.',
   });
 
-  // ─── 11. TABLA: TIEMPOS PROMEDIO DE RESOLUCIÓN POR ÁREA ────────────────────
-  const tiemposArea = datos.tiemposResolucion?.porArea ?? [];
-  const filasTiemposArea = tiemposArea.map((a) => [
-    a.nombre ?? 'Sin área',
-    a.edificio || '-',
-    a.cantidadTickets ?? 0,
-    textoTiempo(a.promedioSegundos),
-  ]);
-  agregarSeccion({
-    titulo: 'Tiempos promedio de resolución por área',
-    columnas: ['Área', 'Edificio', 'Tickets Cerrados', 'Tiempo Promedio'],
-    filas: filasTiemposArea,
+  // El índice se completa al final, cuando ya se sabe en qué página quedó cada sección.
+  doc.setPage(1);
+  indice.forEach((entrada, i) => {
+    const yEntrada = yIndice + i * 10;
+    escribir(entrada.numero, M, yEntrada, { fuente: 'times', tam: 13, color: COLOR.azulClaro });
+    escribir(entrada.titulo, M + 13, yEntrada, { tam: 10 });
+    escribir(entrada.base.toUpperCase(), M + 120, yEntrada, { tam: 6.5, estilo: 'bold', color: COLOR.azulMedio });
+    escribir(String(entrada.pagina), M + ANCHO_UTIL, yEntrada, { tam: 10, align: 'right' });
+    linea(M, yEntrada + 3.8, M + ANCHO_UTIL, yEntrada + 3.8, COLOR.linea, 0.15);
   });
 
-  // Numeración de páginas en el pie de página
   const totalPaginas = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= totalPaginas; i++) {
-    doc.setPage(i);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(148, 163, 184);
-    doc.text('SIGMA · Sistema Integral de Gestión de Mantenimiento de Activos', margenIzq, 287);
-    doc.text(`Página ${i} de ${totalPaginas}`, pageWidth - margenDer, 287, { align: 'right' });
+  for (let pagina = 1; pagina <= totalPaginas; pagina++) {
+    doc.setPage(pagina);
+    if (pagina > 1) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      const anchoMarca = doc.getTextWidth('SIGMA');
+      escribir('SIGMA', M, 13, { tam: 7, estilo: 'bold', color: COLOR.azul });
+      escribir('Informe del Panel de Control', M + anchoMarca + 3, 13, { tam: 7, color: COLOR.gris });
+      escribir(periodo, M + ANCHO_UTIL, 13, { tam: 7, color: COLOR.gris, align: 'right' });
+      linea(M, 16, M + ANCHO_UTIL, 16);
+    }
+    linea(M, 283, M + ANCHO_UTIL, 283);
+    escribir(`Generado el ${generado}`, M, 288, { tam: 6.5, color: COLOR.gris });
+    escribir(`${pagina} / ${totalPaginas}`, M + ANCHO_UTIL, 288, { tam: 6.5, color: COLOR.gris, align: 'right' });
   }
 
   return doc;
 }
 
-/**
- * Genera el documento PDF como un Uint8Array desacoplado del navegador.
- */
-export async function generarBytesPdf(payloadPanel, opciones = {}) {
-  const doc = generarDocumentoPdf(payloadPanel, opciones);
-  const buffer = doc.output('arraybuffer');
-  return new Uint8Array(buffer);
+/** El PDF como Uint8Array, sin depender del navegador (lo usan las pruebas). */
+export async function generarBytesPdf(payloadPanel) {
+  const doc = generarDocumentoPdf(payloadPanel);
+  return new Uint8Array(doc.output('arraybuffer'));
 }
 
-/**
- * Disparador de descarga de archivo PDF en el navegador del usuario.
- * Cumple con el formato de nombre: informe-panel-AAAA-MM-DD.pdf.
- */
-export async function exportarPanelPdf(payloadPanel, opciones = {}) {
-  const doc = generarDocumentoPdf(payloadPanel, opciones);
-  const fechaHoy = fechaHoyArchivoUtc3();
-  const nombreArchivo = `informe-panel-${fechaHoy}.pdf`;
+/** Descarga el informe como informe-panel-AAAA-MM-DD.pdf. */
+export async function exportarPanelPdf(payloadPanel) {
+  const doc = generarDocumentoPdf(payloadPanel);
+  const nombreArchivo = `informe-panel-${fechaHoyArchivoUtc3()}.pdf`;
   doc.save(nombreArchivo);
   return nombreArchivo;
 }
