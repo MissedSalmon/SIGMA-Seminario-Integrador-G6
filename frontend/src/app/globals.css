@@ -1469,6 +1469,133 @@ body {
   margin-top: 0.25rem;
 }
 
+.sigma-panel-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* En el celular los dos botones del panel se reparten el ancho. */
+@media (max-width: 575.98px) {
+  .sigma-panel-acciones {
+    width: 100%;
+  }
+
+  .sigma-panel-acciones .btn {
+    flex: 1 1 0;
+  }
+}
+
+/* El panel tiene una fila de 4 tarjetas (situación actual) y otra de 3 (según el período). */
+@media (min-width: 768px) and (max-width: 1023.98px) {
+  .sigma-kpi-grid--4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 768px) {
+  .sigma-kpi-grid--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .sigma-kpi-grid--4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/*
+  Selector de período del panel: un control segmentado (el elegido queda como
+  una pestaña blanca sobre el fondo gris) y al lado el rango o las dos fechas.
+*/
+.sigma-periodo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  padding: 0.75rem 1rem;
+}
+
+.sigma-periodo-etiqueta {
+  font-size: 0.875rem;
+  color: var(--sigma-texto-secundario);
+}
+
+.sigma-segmentos {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--sigma-fondo);
+  border: 1px solid var(--sigma-borde);
+  border-radius: var(--sigma-radio-sm);
+}
+
+.sigma-segmento {
+  border: 0;
+  background: transparent;
+  color: var(--sigma-texto-secundario);
+  font-size: 0.875rem;
+  padding: 0.3rem 0.85rem;
+  border-radius: calc(var(--sigma-radio-sm) - 3px);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.sigma-segmento:hover:not([aria-pressed='true']):not(:disabled) {
+  color: var(--sigma-ink);
+  background: rgba(var(--sigma-teal-rgb), 0.06);
+}
+
+.sigma-segmento[aria-pressed='true'] {
+  background: var(--sigma-superficie);
+  color: var(--sigma-teal);
+  font-weight: 600;
+  box-shadow: var(--sigma-sombra-sm), 0 0 0 1px var(--sigma-borde);
+}
+
+.sigma-segmento:focus-visible {
+  outline: 2px solid var(--sigma-teal);
+  outline-offset: 1px;
+}
+
+.sigma-segmento:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.sigma-periodo-rango {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--sigma-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.sigma-periodo-fechas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.sigma-periodo-cargando {
+  color: var(--sigma-teal);
+}
+
+/* En el celular los seis botones van en dos filas de tres, a todo el ancho. */
+@media (max-width: 767.98px) {
+  .sigma-segmentos {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .sigma-segmento {
+    padding: 0.4rem 0.25rem;
+    white-space: normal;
+  }
+}
+
 .sigma-stat-tarjeta {
   display: flex;
   align-items: center;
@@ -1521,6 +1648,8 @@ body {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.5rem;
   margin-bottom: 1.5rem;
+  padding: 0.5rem 0 1.5rem;
+  border-bottom: 1px solid var(--sigma-borde);
 }
 
 .sigma-carga-leyenda {

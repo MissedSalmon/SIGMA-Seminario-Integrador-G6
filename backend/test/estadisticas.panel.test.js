@@ -113,7 +113,7 @@ const MOCK_EVOLUCION_TICKETS = {
     { periodo: '2026-05', mesRotulo: 'May 2026', ticketsCreados: 15, ticketsCerrados: 12, esParcial: false },
     { periodo: '2026-06', mesRotulo: 'Jun 2026', ticketsCreados: 0, ticketsCerrados: 0, esParcial: false },
     { periodo: '2026-07', mesRotulo: 'Jul 2026', ticketsCreados: 20, ticketsCerrados: 18, esParcial: false },
-    { periodo: '2026-11', mesRotulo: 'Nov 2026 * (parcial)', ticketsCreados: 5, ticketsCerrados: 3, esParcial: true },
+    { periodo: '2026-11', mesRotulo: 'Nov 2026 (parcial)', ticketsCreados: 5, ticketsCerrados: 3, esParcial: true },
   ],
   porEstado: [
     { id: 1, nombre: 'Creado', cantidad: 5, porcentaje: 12.5 },
@@ -176,7 +176,7 @@ describe('Servicios analíticos del Panel (BE-03)', () => {
     expect(mesVacio.ticketsCerrados).toBe(0);
     const mesParcial = res.evolucion.find((e) => e.periodo === '2026-11');
     expect(mesParcial.esParcial).toBe(true);
-    expect(mesParcial.mesRotulo).toContain('* (parcial)');
+    expect(mesParcial.mesRotulo).toContain('(parcial)');
   });
 
   test('obtenerCargaTecnicos expone técnicos con 0 tareas y tareas sin asignar (S6)', async () => {
@@ -210,6 +210,7 @@ describe('Servicios analíticos del Panel (BE-03)', () => {
       gte: jest.fn().mockReturnThis(),
       lte: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
+      range: jest.fn().mockReturnThis(),
       then: (resolve) => resolve({ data: [], error: null }),
     });
 
@@ -227,6 +228,26 @@ describe('Servicios analíticos del Panel (BE-03)', () => {
     expect(resultado.metadatos.versionSistema).toBe('0.1.0');
     expect(resultado.metadatos.commit).toBe('899b562d0c76832de809bf99f3e5875703e503e7');
     expect(resultado.metadatos.definiciones).toHaveLength(DEFINICIONES_METRICAS.length);
+    // El período se informa con los días pedidos, no con el día en UTC del final del período.
+    expect(resultado.metadatos.filtros.desde).toBe('2026-01-01');
+    expect(resultado.metadatos.filtros.hasta).toBe('2026-11-09');
+  });
+
+  test('obtenerEvolucionTickets muestra "Finalizado" sólo si hay tickets en ese estado', async () => {
+    const conEstados = (cantidadFinalizados) => ({
+      ...MOCK_EVOLUCION_TICKETS,
+      porEstado: [
+        { id: 1, nombre: 'Creado', cantidad: 5, porcentaje: 50 },
+        { id: 5, nombre: 'Finalizado', cantidad: cantidadFinalizados, porcentaje: 0 },
+        { id: 6, nombre: 'Cerrado', cantidad: 5, porcentaje: 50 },
+      ],
+    });
+
+    supabase.rpc.mockResolvedValueOnce({ data: conEstados(0), error: null });
+    expect((await obtenerEvolucionTickets()).porEstado.map((e) => e.nombre)).toEqual(['Creado', 'Cerrado']);
+
+    supabase.rpc.mockResolvedValueOnce({ data: conEstados(2), error: null });
+    expect((await obtenerEvolucionTickets()).porEstado.map((e) => e.nombre)).toEqual(['Creado', 'Finalizado', 'Cerrado']);
   });
 
   test('validación: fechas invertidas (desde > hasta) rechazan con 400', async () => {
@@ -283,6 +304,7 @@ describe('Rutas HTTP del Panel (BE-01, BE-02): Autorización exclusiva administr
       gte: jest.fn().mockReturnThis(),
       lte: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
+      range: jest.fn().mockReturnThis(),
       then: (resolve) => resolve({ data: [], error: null }),
     });
 

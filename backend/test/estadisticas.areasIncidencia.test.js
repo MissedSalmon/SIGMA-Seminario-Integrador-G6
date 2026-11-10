@@ -46,6 +46,7 @@ function falla({ tipo, areas = [], ticket = null, plan = null, ot = 10, fecha = 
 /** Hace que from('falla').select(...)... devuelva esas filas y guarda los filtros pedidos. */
 let consulta;
 function fallasRegistradas(filas) {
+  let pagina = [0, filas.length];
   consulta = {
     select: jest.fn(() => consulta),
     not: jest.fn(() => consulta),
@@ -53,7 +54,12 @@ function fallasRegistradas(filas) {
     gte: jest.fn(() => consulta),
     lte: jest.fn(() => consulta),
     eq: jest.fn(() => consulta),
-    then: (resolver, rechazar) => Promise.resolve({ data: filas, error: null }).then(resolver, rechazar),
+    range: jest.fn((inicio, fin) => {
+      pagina = [inicio, fin + 1];
+      return consulta;
+    }),
+    then: (resolver, rechazar) =>
+      Promise.resolve({ data: filas.slice(...pagina), error: null }).then(resolver, rechazar),
   };
   supabase.from.mockImplementation(() => consulta);
 }
@@ -169,6 +175,26 @@ describe('obtenerAreasConMayorIncidencia', () => {
     expect(consulta.gte).toHaveBeenCalledWith('falla_fecha', '2026-05-01T00:00:00.000Z');
     expect(consulta.lte).toHaveBeenCalledWith('falla_fecha', '2026-11-01T00:00:00.000Z');
     expect(consulta.eq).toHaveBeenCalledWith('falla_tipo', 'Sanitaria');
+  });
+
+  test('una fecha sola es el día entero en la hora de Argentina', async () => {
+    fallasRegistradas([]);
+
+    await obtenerAreasConMayorIncidencia({ desde: '2026-11-01', hasta: '2026-11-09' });
+
+    expect(consulta.gte).toHaveBeenCalledWith('falla_fecha', '2026-11-01T03:00:00.000Z');
+    expect(consulta.lte).toHaveBeenCalledWith('falla_fecha', '2026-11-10T02:59:59.999Z');
+  });
+
+  test('trae todas las fallas aunque pasen las 1000 filas de un pedido', async () => {
+    fallasRegistradas(
+      Array.from({ length: 1500 }, (_, i) => falla({ tipo: 'Eléctrica', areas: [LABORATORIO], ticket: i + 1 }))
+    );
+
+    const ranking = await obtenerAreasConMayorIncidencia();
+
+    expect(consulta.range).toHaveBeenCalledTimes(2);
+    expect(ranking[0].cantidadFallas).toBe(1500);
   });
 
   test('sin filtros no acota la consulta', async () => {
