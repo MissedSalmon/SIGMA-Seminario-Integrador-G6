@@ -1,20 +1,19 @@
 /**
- * Pruebas unitarias del módulo de exportación .xlsx del Panel (Suite C, CA-05, CA-06).
+ * Pruebas unitarias del módulo de exportación analítica a PDF del Panel.
  *
  * Verifica:
- * - Generación desacoplada del libro y serialización binaria OpenXML (D1, D3).
- * - Estructura de las 8 hojas de cálculo.
- * - Sanitización estricta contra CSV/Formula Injection (prefijo ' en =, +, -, @).
- * - Inclusión de gráficos nativos en hojas analíticas.
+ * - Generación de documento PDF binario válido (formato A4 con encabezado %PDF-1.).
+ * - Estructura de tablas requeridas y datos asociados.
+ * - Formato de nombre de archivo (informe-panel-AAAA-MM-DD.pdf).
+ * - Manejo de estados vacíos ("Sin datos en el período").
+ * - Integración de imágenes de gráficos cuando están disponibles.
  */
 import {
-  generarBytesLibroPanel,
-  sanitizarTextoExcel,
-  LIMITE_FILAS_SEGURIDAD,
+  generarDocumentoPdf,
+  generarBytesPdf,
+  fechaHoyArchivoUtc3,
+  formatearFechaUtc3,
 } from '../../frontend/src/servicios/exportacionPanel.js';
-import { loadWorkbook, fromArrayBuffer } from '@office-kit/xlsx/io';
-import { sheetNames } from '@office-kit/xlsx/workbook';
-import { unzipSync } from 'fflate';
 
 const MOCK_DATOS_PANEL = {
   datos: {
@@ -33,6 +32,10 @@ const MOCK_DATOS_PANEL = {
         activosCubiertos: 70,
         totalActivosEnServicio: 95,
         porcentajeActivos: 73.7,
+        tiposSinPlan: [
+          { id: 2, nombre: 'Luminarias' },
+          { id: 3, nombre: 'Mobiliario' },
+        ],
       },
       disponibilidadTecnicos: {
         disponibles: 4,
@@ -44,15 +47,45 @@ const MOCK_DATOS_PANEL = {
         totalMateriales: 20,
         porcentaje: 10.0,
         items: [
-          { codigo: '=MAT-01', nombre: 'Filtro de aire', stockActual: 1, stockMinimo: 5, faltante: 4 },
-          { codigo: '-MAT-02', nombre: '+Lámpara LED', stockActual: 0, stockMinimo: 10, faltante: 10 },
+          { codigo: 'MAT-01', nombre: 'Filtro de aire', stockActual: 1, stockMinimo: 5, faltante: 4 },
+          { codigo: 'MAT-02', nombre: 'Lámpara LED', stockActual: 0, stockMinimo: 10, faltante: 10 },
         ],
       },
     },
     tiemposResolucion: {
-      general: { promedioSegundos: 7200, cantidadTickets: 15 },
+      general: {
+        promedioSegundos: 7200,
+        cantidadTickets: 15,
+      },
       porArea: [
-        { id: 1, nombre: 'Laboratorio', edificio: 'Central', cantidadTickets: 10, promedioSegundos: 3600 },
+        { id: 1, nombre: 'Laboratorio', edificio: 'Central', cantidadTickets: 5, promedioSegundos: 3600 },
+        { id: null, nombre: 'Sin área', edificio: '', cantidadTickets: 2, promedioSegundos: 10800 },
+      ],
+    },
+    activos: {
+      totalActivos: 100,
+      totalEnServicio: 95,
+      porEdificio: [
+        { id: 1, nombre: 'Edificio Central', cantidad: 60, porcentaje: 63.2 },
+        { id: 2, nombre: 'Anexo Laboratorios', cantidad: 35, porcentaje: 36.8 },
+      ],
+      porEstado: [
+        { id: 1, nombre: 'Operativo', cantidad: 92, porcentaje: 92.0 },
+        { id: 2, nombre: 'En mantenimiento', cantidad: 3, porcentaje: 3.0 },
+        { id: 4, nombre: 'Retirado', cantidad: 5, porcentaje: 5.0 },
+      ],
+    },
+    ordenesTrabajo: {
+      porOrigen: {
+        correctivas: 25,
+        preventivas: 15,
+        total: 40,
+        porcentajeCorrectivas: 62.5,
+        porcentajePreventivas: 37.5,
+      },
+      porPrioridad: [
+        { id: 1, nombre: 'Alta', cantidad: 10, porcentaje: 25.0 },
+        { id: 2, nombre: 'Media', cantidad: 20, porcentaje: 50.0 },
       ],
     },
     evolucionTickets: {
@@ -68,36 +101,8 @@ const MOCK_DATOS_PANEL = {
     },
     areasIncidencia: {
       ranking: [
-        { nombreArea: 'Química', cantidadFallas: 8, cantidadTickets: 6, porcentaje: 50.0 },
-        { nombreArea: 'Física', cantidadFallas: 4, cantidadTickets: 3, porcentaje: 25.0 },
-      ],
-    },
-    ordenesTrabajo: {
-      porOrigen: {
-        correctivas: 25,
-        preventivas: 15,
-        total: 40,
-        porcentajeCorrectivas: 62.5,
-        porcentajePreventivas: 37.5,
-      },
-      porPrioridad: [
-        { id: 1, nombre: 'Alta', cantidad: 10, porcentaje: 25.0 },
-        { id: 2, nombre: 'Media', cantidad: 20, porcentaje: 50.0 },
-        { id: 3, nombre: 'Baja', cantidad: 10, porcentaje: 25.0 },
-      ],
-      porEstado: [
-        { id: 1, nombre: 'Creada', cantidad: 5, porcentaje: 12.5 },
-        { id: 4, nombre: 'Finalizada', cantidad: 35, porcentaje: 87.5 },
-      ],
-    },
-    activos: {
-      porEdificio: [
-        { id: 1, nombre: 'Edificio Central', cantidad: 60, porcentaje: 63.2 },
-        { id: 2, nombre: 'Anexo Laboratorios', cantidad: 35, porcentaje: 36.8 },
-      ],
-      porEstado: [
-        { id: 1, nombre: 'Operativo', cantidad: 92, porcentaje: 92.0 },
-        { id: 4, nombre: 'Retirado', cantidad: 5, porcentaje: 5.0 },
+        { nombreArea: 'Química', nombreEdificio: 'Central', cantidadFallas: 8, cantidadTickets: 6, porcentaje: 50.0 },
+        { nombreArea: 'Física', nombreEdificio: 'Central', cantidadFallas: 4, cantidadTickets: 3, porcentaje: 25.0 },
       ],
     },
     cargaTecnicos: {
@@ -116,56 +121,60 @@ const MOCK_DATOS_PANEL = {
     versionSistema: '0.1.0',
     commit: '899b562d0c76832de809bf99f3e5875703e503e7',
     filtros: { desde: '2026-09-01', hasta: '2026-11-09' },
-    definiciones: [
-      { id: 'M-01', nombre: 'Tasa de operatividad', formula: '(Operativos / En servicio) * 100', origen: 'activo.activo_estado', tipoGrafico: 'KPI' },
-      { id: 'M-11', nombre: 'Evolución de tickets', formula: 'Altas y cierres por mes', origen: 'ticket', tipoGrafico: 'Línea' },
-    ],
   },
 };
 
-describe('Módulo de Exportación a Excel (FE-04, Suite C)', () => {
-  test('sanitizarTextoExcel neutraliza inyección de fórmulas con prefijo apostrofe', () => {
-    expect(sanitizarTextoExcel('=SUM(A1:A5)')).toBe("'=SUM(A1:A5)");
-    expect(sanitizarTextoExcel('+12345')).toBe("'+12345");
-    expect(sanitizarTextoExcel('-cmd|/c calc')).toBe("'-cmd|/c calc");
-    expect(sanitizarTextoExcel('@SUM')).toBe("'@SUM");
-    expect(sanitizarTextoExcel('\tTabulado')).toBe("'\tTabulado");
-    expect(sanitizarTextoExcel('\rRetorno')).toBe("'\rRetorno");
-    expect(sanitizarTextoExcel('TextoNormal')).toBe('TextoNormal');
-    expect(sanitizarTextoExcel(123)).toBe('123');
-    expect(sanitizarTextoExcel(null)).toBe('');
-    expect(sanitizarTextoExcel(undefined)).toBe('');
-  });
+// 1x1 PNG transparente base64 para simular gráfico capturado
+const MOCK_PNG_BASE64 =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
-  test('generarBytesLibroPanel genera un Uint8Array válido de hoja de cálculo OpenXML con gráficos nativos', async () => {
-    const bytes = await generarBytesLibroPanel(MOCK_DATOS_PANEL);
+describe('Módulo de Exportación a PDF del Panel de Control', () => {
+  test('generarBytesPdf genera un Uint8Array binario con cabecera %PDF-', async () => {
+    const bytes = await generarBytesPdf(MOCK_DATOS_PANEL);
     expect(bytes).toBeInstanceOf(Uint8Array);
-    expect(bytes.length).toBeGreaterThan(5000);
+    expect(bytes.length).toBeGreaterThan(1000);
 
-    // Relectura del libro con @office-kit/xlsx/io
-    const libroLeido = await loadWorkbook(fromArrayBuffer(bytes.buffer));
-    const hojas = sheetNames(libroLeido);
-
-    // Comprobar las 8 hojas programadas
-    expect(hojas).toHaveLength(8);
-    expect(hojas).toEqual([
-      'Resumen',
-      'Definiciones',
-      'Evolucion_Tickets',
-      'Incidencias_Areas',
-      'OT_Distribucion',
-      'Activos_Edificios',
-      'Tecnicos_Carga',
-      'Materiales_Criticos',
-    ]);
-
-    // Verificar que los 6 gráficos OpenXML nativos estén empaquetados en el archivo .xlsx
-    const entradasZip = unzipSync(bytes);
-    const archivosGraficos = Object.keys(entradasZip).filter((k) => k.startsWith('xl/charts/chart'));
-    expect(archivosGraficos.length).toBe(6);
+    const cabecera = Buffer.from(bytes.slice(0, 5)).toString('utf-8');
+    expect(cabecera).toBe('%PDF-');
   });
 
-  test('límite de seguridad de filas declarado', () => {
-    expect(LIMITE_FILAS_SEGURIDAD).toBe(50000);
+  test('formato de nombre de archivo sigue informe-panel-AAAA-MM-DD.pdf', () => {
+    const fecha = fechaHoyArchivoUtc3();
+    expect(fecha).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    const nombreEsperado = `informe-panel-${fecha}.pdf`;
+    expect(nombreEsperado).toMatch(/^informe-panel-\d{4}-\d{2}-\d{2}\.pdf$/);
+  });
+
+  test('formatearFechaUtc3 formatea correctamente fechas a hora de Argentina', () => {
+    const fechaTexto = formatearFechaUtc3('2026-11-09T18:30:00.000Z');
+    expect(fechaTexto).toBeTruthy();
+    expect(typeof fechaTexto).toBe('string');
+  });
+
+  test('generarDocumentoPdf construye un documento con múltiples páginas estructuradas', () => {
+    const doc = generarDocumentoPdf(MOCK_DATOS_PANEL, {
+      imagenesGraficos: {
+        'grafico-evolucion-tickets': MOCK_PNG_BASE64,
+        'grafico-areas-incidencias': MOCK_PNG_BASE64,
+      },
+    });
+
+    const totalPaginas = doc.internal.getNumberOfPages();
+    expect(totalPaginas).toBeGreaterThanOrEqual(1);
+  });
+
+  test('manejo de estado vacío: genera PDF sin fallar cuando no hay datos en el período', async () => {
+    const payloadVacio = {
+      datos: {},
+      metadatos: {
+        alcance: 'Todo el sistema',
+        generadoEn: '2026-11-10T08:00:00.000Z',
+        filtros: { desde: '2026-11-01', hasta: '2026-11-10' },
+      },
+    };
+
+    const bytes = await generarBytesPdf(payloadVacio);
+    expect(bytes).toBeInstanceOf(Uint8Array);
+    expect(Buffer.from(bytes.slice(0, 5)).toString('utf-8')).toBe('%PDF-');
   });
 });

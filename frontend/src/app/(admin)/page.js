@@ -6,11 +6,12 @@
  * Muestra el estado integral de la gestión de mantenimiento, infraestructura y pañol:
  * - Indicadores clave (KPIs) con denominadores visibles (S4).
  * - Gráficos analíticos mediante GraficoChart con principios anti-sesgo (S9, S10, S11).
- * - Selector de períodos temporales y filtros personalizados.
- * - Exportación analítica nativa a formato .xlsx generada 100% en el navegador (D1, D3, S15).
+ * - Selector de períodos temporales y filtros personalizados responsive.
+ * - Exportación analítica en formato PDF generada 100% en el navegador (D1, D3, S15).
  * - Indicadores visibles de alcance ("Todo el sistema") y frescura horaria (S13, S14).
  */
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import {
   CBadge,
   CButton,
@@ -43,7 +44,7 @@ import { Cargando } from '@/componentes/EstadoTabla.js';
 import CampoFecha from '@/componentes/formulario/CampoFecha.js';
 import GraficoChart from '@/componentes/estadisticas/GraficoChart.js';
 import { obtenerPanelCompleto } from '@/servicios/estadisticas.js';
-import { exportarPanelXlsx } from '@/servicios/exportacionPanel.js';
+import { exportarPanelPdf } from '@/servicios/exportacionPanel.js';
 import { hoyTexto } from '@/utils/fechas.js';
 import { textoTiempo } from '@/utils/duracion.js';
 
@@ -141,10 +142,42 @@ export default function PantallaPanelAdministrador() {
     if (!panelPayload) return;
     setExportando(true);
     try {
-      await exportarPanelXlsx(panelPayload);
+      const imagenesGraficos = {};
+      const idsGraficos = [
+        'grafico-evolucion-tickets',
+        'grafico-tickets-estado',
+        'grafico-areas-incidencias',
+        'grafico-ordenes-origen',
+        'grafico-ordenes-prioridad',
+        'grafico-carga-tecnicos',
+        'grafico-activos-edificio',
+        'grafico-activos-estado',
+      ];
+
+      idsGraficos.forEach((id) => {
+        const cont = document.getElementById(id);
+        const canvas = cont?.querySelector('canvas');
+        if (canvas) {
+          try {
+            // Fondo blanco para impresión nítida en papel A4
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const ctx = tempCanvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            ctx.drawImage(canvas, 0, 0);
+            imagenesGraficos[id] = tempCanvas.toDataURL('image/png');
+          } catch (e) {
+            console.warn(`[pdf] Error al capturar canvas de ${id}:`, e);
+          }
+        }
+      });
+
+      await exportarPanelPdf(panelPayload, { imagenesGraficos });
     } catch (err) {
-      console.error('[panel] Error al exportar archivo .xlsx:', err);
-      setError('No se pudo generar el archivo Excel. Verifique la consola para más detalles.');
+      console.error('[panel] Error al exportar archivo PDF:', err);
+      setError('No se pudo generar el informe PDF. Verifique la consola para más detalles.');
     } finally {
       setExportando(false);
     }
@@ -159,6 +192,7 @@ export default function PantallaPanelAdministrador() {
   const evolucion = datos.evolucionTickets ?? {};
   const cargaTec = datos.cargaTecnicos ?? {};
   const areas = datos.areasIncidencia ?? {};
+  const rankingAreas = Array.isArray(areas) ? areas : (areas.ranking ?? []);
 
   // Formato de fecha de frescura
   const fechaFrescura = metadatos.generadoEn
@@ -196,6 +230,8 @@ export default function PantallaPanelAdministrador() {
             disabled={cargando || exportando || !panelPayload}
             onClick={handleExportar}
             className="d-flex align-items-center gap-2 text-white shadow-sm"
+            title="Exportar informe en formato PDF"
+            aria-label="Exportar informe"
           >
             {exportando ? (
               <>
@@ -205,7 +241,7 @@ export default function PantallaPanelAdministrador() {
             ) : (
               <>
                 <CIcon icon={cilCloudDownload} />
-                <span>Exportar a Excel</span>
+                <span>Exportar</span>
               </>
             )}
           </CButton>
@@ -218,9 +254,32 @@ export default function PantallaPanelAdministrador() {
       <CCard className="mb-4 shadow-sm">
         <CCardBody className="p-3">
           <div className="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-3">
-            <div className="d-flex flex-wrap align-items-center gap-2">
+            {/* Selector en móvil (< 768px): dropdown accesible sin overflow horizontal */}
+            <div className="d-block d-md-none w-100">
+              <label htmlFor="select-periodo-movil" className="small fw-semibold text-body-secondary mb-1 d-block">
+                Período:
+              </label>
+              <select
+                id="select-periodo-movil"
+                className="form-select form-select-sm"
+                value={preset}
+                onChange={(e) => {
+                  const seleccionado = PRESETS_PERIODO.find((p) => p.clave === e.target.value);
+                  if (seleccionado) aplicarPreset(seleccionado);
+                }}
+              >
+                {PRESETS_PERIODO.map((p) => (
+                  <option key={p.clave} value={p.clave}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Selector en pantallas medianas y grandes (>= 768px): botones con wrap */}
+            <div className="d-none d-md-flex flex-wrap align-items-center gap-2">
               <span className="small fw-semibold text-body-secondary me-2">Período:</span>
-              <CButtonGroup size="sm" role="group">
+              <div className="btn-group btn-group-sm flex-wrap" role="group">
                 {PRESETS_PERIODO.map((p) => (
                   <CButton
                     key={p.clave}
@@ -231,27 +290,31 @@ export default function PantallaPanelAdministrador() {
                     {p.label}
                   </CButton>
                 ))}
-              </CButtonGroup>
+              </div>
             </div>
 
             {preset === 'personalizado' && (
-              <form onSubmit={aplicarFiltroPersonalizado} className="d-flex flex-wrap align-items-center gap-2">
-                <CampoFecha
-                  id="desde"
-                  etiqueta="Desde"
-                  valor={desde}
-                  alCambiar={setDesde}
-                  maximo={hasta || hoyTexto()}
-                />
-                <CampoFecha
-                  id="hasta"
-                  etiqueta="Hasta"
-                  valor={hasta}
-                  alCambiar={setHasta}
-                  minimo={desde}
-                  maximo={hoyTexto()}
-                />
-                <CButton type="submit" color="primary" size="sm" className="mt-3">
+              <form onSubmit={aplicarFiltroPersonalizado} className="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-end gap-2 w-100 w-lg-auto mt-2 mt-lg-0">
+                <div className="flex-grow-1">
+                  <CampoFecha
+                    id="desde"
+                    etiqueta="Desde"
+                    valor={desde}
+                    alCambiar={setDesde}
+                    maximo={hasta || hoyTexto()}
+                  />
+                </div>
+                <div className="flex-grow-1">
+                  <CampoFecha
+                    id="hasta"
+                    etiqueta="Hasta"
+                    valor={hasta}
+                    alCambiar={setHasta}
+                    minimo={desde}
+                    maximo={hoyTexto()}
+                  />
+                </div>
+                <CButton type="submit" color="primary" size="sm" className="mb-1">
                   Aplicar
                 </CButton>
               </form>
@@ -267,129 +330,141 @@ export default function PantallaPanelAdministrador() {
       ) : (
         <>
           {/* ─── INDICADORES CLAVE (KPIs) ─────────────────────────────────────── */}
-          <div className="row g-3 row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-5 mb-4 align-items-stretch">
+          <div className="sigma-kpi-grid">
             {/* KPI 1 · Operatividad de Activos */}
-            <div className="col d-flex">
-              <CCard className="w-100 h-100 border-start border-start-4 border-start-primary shadow-sm">
-                <CCardBody className="p-3 d-flex flex-column justify-content-between">
-                  <div>
-                    <div className="text-body-secondary text-uppercase fw-semibold" style={{ fontSize: '0.78rem', letterSpacing: '0.04em' }}>
-                      Operatividad de Activos
-                    </div>
-                    <div className="fs-3 fw-bold text-body my-1">
-                      {resumen.operatividad?.porcentaje != null ? `${resumen.operatividad.porcentaje} %` : '-'}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-body-secondary small">
-                      <strong>{resumen.operatividad?.operativos ?? 0}</strong> de {resumen.operatividad?.enServicio ?? 0} en servicio
-                    </div>
-                    <div className="text-body-tertiary small mt-1" style={{ fontSize: '0.75rem' }}>
-                      {resumen.operatividad?.retirados ?? 0} retirados (Total: {resumen.operatividad?.totalActivos ?? 0}) · Estado actual
-                    </div>
-                  </div>
-                </CCardBody>
-              </CCard>
+            <div className="sigma-kpi-card border-start-primary">
+              <div>
+                <div className="sigma-kpi-title" title="Operatividad de activos en servicio">
+                  Operatividad de Activos
+                </div>
+                <div className="sigma-kpi-value text-body">
+                  {resumen.operatividad?.porcentaje != null ? `${resumen.operatividad.porcentaje} %` : '-'}
+                </div>
+              </div>
+              <div className="sigma-kpi-footer">
+                <div>
+                  <strong>{resumen.operatividad?.operativos ?? 0}</strong> de {resumen.operatividad?.enServicio ?? 0} en servicio
+                </div>
+                <div className="sigma-kpi-subtext">
+                  {resumen.operatividad?.retirados ?? 0} retirados (Total: {resumen.operatividad?.totalActivos ?? 0}) · Estado actual
+                </div>
+              </div>
             </div>
 
             {/* KPI 2 · Tiempo Promedio de Resolución */}
-            <div className="col d-flex">
-              <CCard className="w-100 h-100 border-start border-start-4 border-start-secondary shadow-sm">
-                <CCardBody className="p-3 d-flex flex-column justify-content-between">
-                  <div>
-                    <div className="text-body-secondary text-uppercase fw-semibold" style={{ fontSize: '0.78rem', letterSpacing: '0.04em' }}>
-                      Tiempo Promedio Resolución
-                    </div>
-                    <div className="fs-3 fw-bold text-body my-1">
-                      {textoTiempo(tiempos.general?.promedioSegundos)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-body-secondary small">
-                      <strong>{tiempos.general?.cantidadTickets ?? 0}</strong> tickets cerrados evaluados
-                    </div>
-                    <div className="text-body-tertiary small mt-1" style={{ fontSize: '0.75rem' }}>
-                      En el período seleccionado
-                    </div>
-                  </div>
-                </CCardBody>
-              </CCard>
+            <div className="sigma-kpi-card border-start-secondary">
+              <div>
+                <div className="sigma-kpi-title" title="Tiempo promedio de resolución de tickets cerrados">
+                  Tiempo Promedio Resolución
+                </div>
+                <div className="sigma-kpi-value text-body">
+                  {textoTiempo(tiempos.general?.promedioSegundos)}
+                </div>
+              </div>
+              <div className="sigma-kpi-footer">
+                <div>
+                  <strong>{tiempos.general?.cantidadTickets ?? 0}</strong> tickets cerrados evaluados
+                </div>
+                <div className="sigma-kpi-subtext">
+                  En el período seleccionado
+                </div>
+              </div>
             </div>
 
             {/* KPI 3 · Cobertura Preventiva */}
-            <div className="col d-flex">
-              <CCard className="w-100 h-100 border-start border-start-4 border-start-primary shadow-sm">
-                <CCardBody className="p-3 d-flex flex-column justify-content-between">
-                  <div>
-                    <div className="text-body-secondary text-uppercase fw-semibold" style={{ fontSize: '0.78rem', letterSpacing: '0.04em' }}>
-                      Cobertura Preventiva
-                    </div>
-                    <div className="fs-3 fw-bold text-body my-1">
-                      {resumen.coberturaPreventiva?.porcentajeTipos != null ? `${resumen.coberturaPreventiva.porcentajeTipos} %` : '-'}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-body-secondary small">
+            <div className={`sigma-kpi-card ${
+              (resumen.coberturaPreventiva?.porcentajeTipos ?? 0) === 100 ? 'border-start-success' : 'border-start-primary'
+            }`}>
+              <div>
+                <div
+                  className="sigma-kpi-title"
+                  title="Tipos de activo con al menos un plan preventivo vigente"
+                >
+                  Cobertura Preventiva
+                </div>
+                <div className={`sigma-kpi-value ${
+                  (resumen.coberturaPreventiva?.porcentajeTipos ?? 0) === 100 ? 'text-success' : 'text-body'
+                }`}>
+                  {resumen.coberturaPreventiva?.porcentajeTipos != null ? `${resumen.coberturaPreventiva.porcentajeTipos} %` : '-'}
+                </div>
+              </div>
+              <div className="sigma-kpi-footer">
+                <div>
+                  {(resumen.coberturaPreventiva?.porcentajeTipos ?? 0) === 100 ? (
+                    <span className="text-success fw-semibold">
+                      <CIcon icon={cilCheckCircle} className="me-1" />
+                      Todos los tipos cubiertos ({resumen.coberturaPreventiva?.totalTipos ?? 0} de {resumen.coberturaPreventiva?.totalTipos ?? 0})
+                    </span>
+                  ) : (
+                    <>
                       <strong>{resumen.coberturaPreventiva?.tiposConPlan ?? 0}</strong> de {resumen.coberturaPreventiva?.totalTipos ?? 0} tipos cubiertos
-                    </div>
-                    <div className="text-body-tertiary small mt-1" style={{ fontSize: '0.75rem' }}>
-                      {resumen.coberturaPreventiva?.activosCubiertos ?? 0} activos amparados ({resumen.coberturaPreventiva?.porcentajeActivos ?? 0} %) · Planes vigentes
-                    </div>
-                  </div>
-                </CCardBody>
-              </CCard>
+                    </>
+                  )}
+                </div>
+                <div className="sigma-kpi-subtext d-flex align-items-center justify-content-between gap-1 flex-wrap">
+                  <span>
+                    {resumen.coberturaPreventiva?.activosCubiertos ?? 0} activos amparados ({resumen.coberturaPreventiva?.porcentajeActivos ?? 0} %)
+                  </span>
+                  {(resumen.coberturaPreventiva?.porcentajeTipos ?? 0) < 100 && (
+                    <Link
+                      href="/planes-mantenimiento"
+                      className="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle text-decoration-none d-inline-flex align-items-center gap-1"
+                      title={resumen.coberturaPreventiva?.tiposSinPlan?.length > 0
+                        ? `Sin plan vigente: ${resumen.coberturaPreventiva.tiposSinPlan.map((t) => t.nombre).join(', ')}`
+                        : 'Gestionar planes de mantenimiento'}
+                    >
+                      <span>
+                        {resumen.coberturaPreventiva?.tiposSinPlan?.length ?? ((resumen.coberturaPreventiva?.totalTipos ?? 0) - (resumen.coberturaPreventiva?.tiposConPlan ?? 0))} sin plan
+                      </span>
+                      <span aria-hidden="true">&rarr;</span>
+                    </Link>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* KPI 4 · Disponibilidad Técnica */}
-            <div className="col d-flex">
-              <CCard className="w-100 h-100 border-start border-start-4 border-start-secondary shadow-sm">
-                <CCardBody className="p-3 d-flex flex-column justify-content-between">
-                  <div>
-                    <div className="text-body-secondary text-uppercase fw-semibold" style={{ fontSize: '0.78rem', letterSpacing: '0.04em' }}>
-                      Disponibilidad Técnica
-                    </div>
-                    <div className="fs-3 fw-bold text-body my-1">
-                      {resumen.disponibilidadTecnicos?.porcentaje != null ? `${resumen.disponibilidadTecnicos.porcentaje} %` : '-'}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-body-secondary small">
-                      <strong>{resumen.disponibilidadTecnicos?.disponibles ?? 0}</strong> de {resumen.disponibilidadTecnicos?.totalTecnicos ?? 0} disponibles
-                    </div>
-                    <div className="text-body-tertiary small mt-1" style={{ fontSize: '0.75rem' }}>
-                      Plantel de técnicos activos · Estado actual
-                    </div>
-                  </div>
-                </CCardBody>
-              </CCard>
+            <div className="sigma-kpi-card border-start-secondary">
+              <div>
+                <div className="sigma-kpi-title" title="Disponibilidad del plantel técnico">
+                  Disponibilidad Técnica
+                </div>
+                <div className="sigma-kpi-value text-body">
+                  {resumen.disponibilidadTecnicos?.porcentaje != null ? `${resumen.disponibilidadTecnicos.porcentaje} %` : '-'}
+                </div>
+              </div>
+              <div className="sigma-kpi-footer">
+                <div>
+                  <strong>{resumen.disponibilidadTecnicos?.disponibles ?? 0}</strong> de {resumen.disponibilidadTecnicos?.totalTecnicos ?? 0} disponibles
+                </div>
+                <div className="sigma-kpi-subtext">
+                  Plantel de técnicos activos · Estado actual
+                </div>
+              </div>
             </div>
 
-            {/* KPI 5 · Materiales Bajo Mínimo */}
-            <div className="col d-flex">
-              <CCard className={`w-100 h-100 border-start border-start-4 shadow-sm ${
-                (resumen.materialesBajoMinimo?.bajoMinimo ?? 0) > 0 ? 'border-start-danger' : 'border-start-success'
-              }`}>
-                <CCardBody className="p-3 d-flex flex-column justify-content-between">
-                  <div>
-                    <div className="text-body-secondary text-uppercase fw-semibold" style={{ fontSize: '0.78rem', letterSpacing: '0.04em' }}>
-                      Materiales Bajo Mínimo
-                    </div>
-                    <div className={`fs-3 fw-bold my-1 ${
-                      (resumen.materialesBajoMinimo?.bajoMinimo ?? 0) > 0 ? 'text-danger' : 'text-success'
-                    }`}>
-                      {resumen.materialesBajoMinimo?.bajoMinimo ?? 0}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-body-secondary small">
-                      de <strong>{resumen.materialesBajoMinimo?.totalMateriales ?? 0}</strong> insumos registrados
-                    </div>
-                    <div className="text-body-tertiary small mt-1" style={{ fontSize: '0.75rem' }}>
-                      {resumen.materialesBajoMinimo?.porcentaje ?? 0} % del inventario · Stock actual
-                    </div>
-                  </div>
-                </CCardBody>
-              </CCard>
+            {/* KPI 5 · Materiales por debajo del stock mínimo */}
+            <div className={`sigma-kpi-card ${
+              (resumen.materialesBajoMinimo?.bajoMinimo ?? 0) > 0 ? 'border-start-danger' : 'border-start-success'
+            }`}>
+              <div>
+                <div className="sigma-kpi-title" title="Materiales por debajo del stock mínimo de seguridad">
+                  Materiales por debajo del stock mínimo
+                </div>
+                <div className={`sigma-kpi-value ${
+                  (resumen.materialesBajoMinimo?.bajoMinimo ?? 0) > 0 ? 'text-danger' : 'text-success'
+                }`}>
+                  {resumen.materialesBajoMinimo?.bajoMinimo ?? 0}
+                </div>
+              </div>
+              <div className="sigma-kpi-footer">
+                <div>
+                  de <strong>{resumen.materialesBajoMinimo?.totalMateriales ?? 0}</strong> insumos registrados
+                </div>
+                <div className="sigma-kpi-subtext">
+                  {resumen.materialesBajoMinimo?.porcentaje ?? 0} % del inventario · Stock actual
+                </div>
+              </div>
             </div>
           </div>
 
@@ -403,9 +478,10 @@ export default function PantallaPanelAdministrador() {
             <CRow className="g-3 mb-3">
               <CCol xs={12} lg={8}>
                 <GraficoChart
+                  id="grafico-evolucion-tickets"
                   tipo="line"
                   titulo="Tickets creados y cerrados por mes"
-                  subtitulo="Comparación mensual de tickets registrados y finalizados."
+                  subtitulo="Comparación mensual de tickets registrados y cerrados."
                   data={{
                     labels: evolucion.evolucion?.map((e) => e.mesRotulo ?? e.periodo) ?? [],
                     datasets: [
@@ -429,15 +505,16 @@ export default function PantallaPanelAdministrador() {
 
               <CCol xs={12} lg={4}>
                 <GraficoChart
+                  id="grafico-tickets-estado"
                   tipo="bar"
                   titulo="Tickets según su estado"
                   subtitulo="Distribución de los tickets registrados en el período seleccionado."
                   data={{
-                    labels: evolucion.porEstado?.map((e) => e.nombre) ?? [],
+                    labels: evolucion.porEstado?.filter((e) => e.nombre !== 'Finalizado' && e.id !== 5).map((e) => e.nombre) ?? [],
                     datasets: [
                       {
                         label: 'Cantidad de tickets',
-                        data: evolucion.porEstado?.map((e) => e.cantidad) ?? [],
+                        data: evolucion.porEstado?.filter((e) => e.nombre !== 'Finalizado' && e.id !== 5).map((e) => e.cantidad) ?? [],
                         backgroundColor: '#39f',
                       },
                     ],
@@ -451,16 +528,18 @@ export default function PantallaPanelAdministrador() {
             <CRow className="g-3 mb-3">
               <CCol xs={12} lg={6}>
                 <GraficoChart
+                  id="grafico-areas-incidencias"
                   tipo="bar"
                   horizontal={true}
                   titulo="Áreas con más incidencias"
                   subtitulo="Cantidad de fallas registradas en activos de cada área."
+                  mensajeVacio="Sin incidencias en el período seleccionado"
                   data={{
-                    labels: areas.ranking?.slice(0, 8).map((a) => a.nombreArea ?? a.nombre) ?? [],
+                    labels: rankingAreas.slice(0, 8).map((a) => a.nombreArea ?? a.nombre) ?? [],
                     datasets: [
                       {
                         label: 'Fallas registradas',
-                        data: areas.ranking?.slice(0, 8).map((a) => a.cantidadFallas ?? a.fallas) ?? [],
+                        data: rankingAreas.slice(0, 8).map((a) => a.cantidadFallas ?? a.fallas) ?? [],
                         backgroundColor: '#e55353',
                       },
                     ],
@@ -471,6 +550,7 @@ export default function PantallaPanelAdministrador() {
 
               <CCol xs={12} sm={6} lg={3}>
                 <GraficoChart
+                  id="grafico-ordenes-origen"
                   tipo="doughnut"
                   titulo="Órdenes de trabajo por tipo"
                   subtitulo="Comparación entre órdenes correctivas y preventivas."
@@ -491,6 +571,7 @@ export default function PantallaPanelAdministrador() {
 
               <CCol xs={12} sm={6} lg={3}>
                 <GraficoChart
+                  id="grafico-ordenes-prioridad"
                   tipo="doughnut"
                   titulo="Órdenes por prioridad"
                   subtitulo="Órdenes no canceladas incluidas en el período seleccionado."
@@ -518,6 +599,7 @@ export default function PantallaPanelAdministrador() {
             <CRow className="g-3 mb-3">
               <CCol xs={12}>
                 <GraficoChart
+                  id="grafico-carga-tecnicos"
                   tipo="bar"
                   horizontal={true}
                   titulo="Tareas pendientes por técnico"
@@ -541,6 +623,7 @@ export default function PantallaPanelAdministrador() {
             <CRow className="g-3 mb-3">
               <CCol xs={12} lg={8}>
                 <GraficoChart
+                  id="grafico-activos-edificio"
                   tipo="bar"
                   horizontal={true}
                   titulo="Activos en servicio por edificio"
@@ -561,6 +644,7 @@ export default function PantallaPanelAdministrador() {
 
               <CCol xs={12} lg={4}>
                 <GraficoChart
+                  id="grafico-activos-estado"
                   tipo="doughnut"
                   titulo="Activos según su estado"
                   subtitulo="Distribución según el estado del ciclo de vida del equipamiento."

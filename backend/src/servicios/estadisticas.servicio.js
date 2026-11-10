@@ -324,7 +324,7 @@ export async function obtenerTiemposResolucion(filtros = {}) {
 
 /**
  * Catálogo formal de definiciones de métricas (S3, S15).
- * Se serializa en metadatos para que la UI y el archivo .xlsx lean la misma fuente de verdad.
+ * Se serializa en metadatos para que la UI y el informe analítico lean la misma fuente de verdad.
  */
 export const DEFINICIONES_METRICAS = [
   { id: 'M-01', nombre: 'Tasa de operatividad de activos', formula: '(Activos operativos / Activos en servicio) * 100', origen: 'activo.activo_estado', tipoGrafico: 'KPI' },
@@ -351,6 +351,23 @@ export const DEFINICIONES_METRICAS = [
 export async function obtenerResumenGeneral() {
   const { data, error } = await supabase.rpc('estadistica_resumen_general');
   if (error) throw errorDeBase(error, 'del resumen general del panel');
+
+  // Identificar los tipos de activo sin plan preventivo vigente (brechas accionables)
+  if (data?.coberturaPreventiva) {
+    try {
+      const [{ data: tipos }, { data: planes }] = await Promise.all([
+        supabase.from('tipo_activo').select('tipo_activo_id, tipo_activo_nom').order('tipo_activo_nom'),
+        supabase.from('mantenimiento_preventivo').select('tipo_activo_id').eq('mant_prev_activo', true),
+      ]);
+      const cubiertos = new Set((planes ?? []).map((p) => p.tipo_activo_id));
+      data.coberturaPreventiva.tiposSinPlan = (tipos ?? [])
+        .filter((t) => !cubiertos.has(t.tipo_activo_id))
+        .map((t) => ({ id: t.tipo_activo_id, nombre: t.tipo_activo_nom }));
+    } catch {
+      data.coberturaPreventiva.tiposSinPlan = [];
+    }
+  }
+
   return data;
 }
 
@@ -396,6 +413,12 @@ export async function obtenerEvolucionTickets(filtros = {}) {
     p_hasta: hasta,
   });
   if (error) throw errorDeBase(error, 'de la evolución de tickets');
+
+  // Elimina el estado residual 'Finalizado' para que no figure en gráficos ni tablas
+  if (data?.porEstado) {
+    data.porEstado = data.porEstado.filter((e) => e.nombre !== 'Finalizado' && e.id !== 5);
+  }
+
   return data;
 }
 
@@ -409,7 +432,7 @@ export async function obtenerCargaTecnicos() {
 }
 
 /**
- * Payload consolidado del panel completo para visualización y exportación .xlsx (S13, S14, S15).
+ * Payload consolidado del panel completo para visualización e informe analítico (S13, S14, S15).
  */
 export async function obtenerPanelCompleto(filtros = {}) {
   const desde = extremoDelPeriodo(filtros.desde, 'desde', false);
@@ -436,7 +459,9 @@ export async function obtenerPanelCompleto(filtros = {}) {
       ordenesTrabajo,
       evolucionTickets,
       cargaTecnicos,
-      areasIncidencia,
+      areasIncidencia: {
+        ranking: areasIncidencia,
+      },
       tiemposResolucion,
     },
     metadatos: {
