@@ -120,7 +120,7 @@ export default function PantallaAutorizados() {
   return (
     <>
       <EncabezadoPagina
-        titulo="Usuarios autorizados"
+        titulo="Usuarios solicitantes"
         descripcion="Los responsables de cada área: son los que pueden cargar tickets sobre los activos de su área."
         accion={{ direccion: '/autorizados/agregar' }}
       />
