@@ -502,6 +502,25 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 > - Sin tickets cerrados en el período se muestra un cartel («No hay tickets cerrados en el
 >   período elegido»), nunca 0 ni NaN.
 
+> **Correcciones de cálculo del panel (10/11/2026, migración `20261110120000`):**
+> - **Cobertura preventiva = activos en servicio cuyo tipo tiene un plan vigente ÷ activos en
+>   servicio.** Antes era tipos con plan ÷ todos los tipos, y un tipo sin activos bajaba el
+>   porcentaje. Al lado se muestra cuántos tipos tienen plan. *La métrica sigue en revisión.*
+> - **Materiales bajo el mínimo:** sólo los que tienen stock **menor** al mínimo, igual que la
+>   campana (HU-33). Antes el panel contaba también los que estaban justo en el mínimo.
+> - **OT por prioridad:** las OT no canceladas sin prioridad cargada van en la fila
+>   **«Sin prioridad»**, así la distribución suma el total.
+> - **Tickets por estado:** «Finalizado» se muestra sólo si hay algún ticket en ese estado.
+> - **Período «Histórico»:** en la evolución mensual y en tickets por estado arranca con el
+>   primer ticket (antes tomaba sólo los últimos 6 meses).
+> - **Meses:** se arman en la hora de Argentina y se nombran en español («Nov 2026 (parcial)»).
+> - **Áreas con mayor incidencia:** una fecha sola es el día entero en la hora de Argentina,
+>   como en los tiempos de resolución, y las fallas se traen de a 1000 para no perder ninguna.
+> - **Período del informe:** se escribe con los días pedidos (antes el «hasta» salía un día
+>   después porque se tomaba el día en UTC).
+> - **«% del total»** de la carga de un técnico es su parte de todas las tareas abiertas
+>   asignadas, no cuánto está ocupado.
+
 ---
 
 ## Automatismos

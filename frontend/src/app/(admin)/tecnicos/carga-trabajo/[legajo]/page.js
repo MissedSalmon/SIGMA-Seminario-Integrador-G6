@@ -5,11 +5,15 @@
  */
 import { use, useEffect, useState } from 'react';
 import { CCard, CCardBody } from '@coreui/react';
+import CIcon from '@coreui/icons-react';
+import { cilArrowLeft, cilDescription } from '@coreui/icons';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
+import EtiquetaEstadoOT from '@/componentes/ordenes/EtiquetaEstadoOT.js';
+import EtiquetaPrioridad from '@/componentes/ordenes/EtiquetaPrioridad.js';
 import { listarTareasDeCarga, obtenerTecnico } from '@/servicios/tecnicos.js';
 import { soloFechaLegible } from '@/utils/fechas.js';
 
@@ -63,45 +67,46 @@ export default function PantallaDetalleCargaTrabajo({ params, searchParams }) {
 
   const cargando = consultaResuelta !== claveConsulta;
 
+  // Mismas columnas y etiquetas que la lista de «Tareas asignadas».
   const columnas = [
     {
-      clave: 'tarea',
-      encabezado: 'Tarea',
-      render: (tarea) => (
-        <>
-          <span className="fw-semibold">{tarea.descripcion}</span>
-          <span className="d-block text-body-secondary">
-            OT #{tarea.idOt}, tarea #{tarea.idTarea}
-          </span>
-        </>
-      ),
+      clave: 'prioridad',
+      encabezado: 'Prioridad',
+      render: (tarea) => <EtiquetaPrioridad prioridad={tarea.prioridad} />,
     },
     {
       clave: 'estado',
       encabezado: 'Estado',
-      render: (tarea) => tarea.estado,
+      render: (tarea) => <EtiquetaEstadoOT estado={tarea.estado} />,
     },
     {
-      clave: 'prioridad',
-      encabezado: 'Prioridad',
-      render: (tarea) => tarea.prioridad,
+      clave: 'tarea',
+      encabezado: 'Tarea',
+      render: (tarea) => <span className="fw-semibold">{tarea.descripcion}</span>,
     },
     {
       clave: 'fechaInicio',
       encabezado: 'Inicio previsto',
-      render: (tarea) => soloFechaLegible(tarea.fechaInicio),
+      render: (tarea) => <span className="text-nowrap">{soloFechaLegible(tarea.fechaInicio)}</span>,
     },
     {
-      clave: 'orden',
-      encabezado: 'Orden de trabajo',
+      clave: 'ot',
+      encabezado: 'OT',
+      render: (tarea) => <span className="text-body-secondary text-nowrap">#{tarea.idOt}</span>,
+    },
+    {
+      clave: 'acciones',
+      encabezado: 'Acción',
       alinearDerecha: true,
       render: (tarea) => (
         <BotonEnlace
           href={`/ordenes-trabajo/${tarea.idOt}`}
-          variante="outline"
-          tamano="sm"
+          variante="ghost"
+          className="btn-icono"
+          title="Ver la orden de trabajo"
+          aria-label={`Ver la orden de trabajo ${tarea.idOt}`}
         >
-          Ver OT
+          <CIcon icon={cilDescription} />
         </BotonEnlace>
       ),
     },
@@ -109,23 +114,16 @@ export default function PantallaDetalleCargaTrabajo({ params, searchParams }) {
 
   const periodo = desde || hasta
     ? `Período: ${desde ? soloFechaLegible(desde) : 'sin inicio'} a ${hasta ? soloFechaLegible(hasta) : 'sin fin'}`
-    : 'Sin filtro de período';
+    : null;
 
   return (
     <>
-      <EncabezadoPagina
-        titulo={tecnico ? `Tareas de ${tecnico.nombre}` : 'Tareas del técnico'}
-        accionesExtra={
-          <BotonEnlace href={volverALista(desde, hasta)} color="secondary" variante="outline">
-            Volver a carga de trabajo
-          </BotonEnlace>
-        }
-      />
+      <EncabezadoPagina titulo={tecnico ? `Tareas de ${tecnico.nombre}` : 'Tareas del técnico'} />
       <Aviso mensaje={error} onCerrar={() => setError('')} />
 
       <CCard>
         <CCardBody>
-          <p className="text-body-secondary">{periodo}</p>
+          {periodo && <p className="text-body-secondary">{periodo}</p>}
           <TablaDatos
             filas={tareas}
             claveFila={(tarea) => `${tarea.idOt}-${tarea.idTarea}`}
@@ -141,6 +139,13 @@ export default function PantallaDetalleCargaTrabajo({ params, searchParams }) {
           />
         </CCardBody>
       </CCard>
+
+      <div className="mt-2 mb-4">
+        <BotonEnlace href={volverALista(desde, hasta)} color="secondary" variante="outline">
+          <CIcon icon={cilArrowLeft} className="me-2" />
+          Volver a carga de trabajo
+        </BotonEnlace>
+      </div>
     </>
   );
 }

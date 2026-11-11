@@ -92,6 +92,8 @@ export default function TablaDatos({
   alLimpiar,
   cargando = false,
   textoVacio = 'Todavia no hay datos cargados.',
+  /** Lo que va entre los filtros y la tabla (por ejemplo, gráficos que dependen de los mismos filtros). */
+  antesDeLaTabla = null,
 }) {
   const [busqueda, setBusqueda] = useState('');
   const [paginaPedida, setPaginaPedida] = useState(1);
@@ -201,6 +203,8 @@ export default function TablaDatos({
           {filasFiltradas.length} {filasFiltradas.length === 1 ? 'resultado' : 'resultados'}
         </span>
       </div>
+
+      {antesDeLaTabla}
 
       {!cargando && filas.length === 0 ? (
         <SinDatos texto={textoVacio} />

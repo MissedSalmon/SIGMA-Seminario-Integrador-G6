@@ -63,12 +63,8 @@ const COLUMNAS = `
 
 const SIN_AREA = 'Sin área';
 
-function fechaValida(texto, nombre) {
-  if (texto == null || texto === '') return null;
-  const fecha = new Date(texto);
-  if (Number.isNaN(fecha.getTime())) throw datoInvalido(`La fecha "${nombre}" no es válida.`);
-  return fecha.toISOString();
-}
+/** PostgREST devuelve como mucho 1000 filas por pedido: las fallas se traen de a páginas. */
+const FILAS_POR_PAGINA = 1000;
 
 /** Una falla tal como se muestra en el detalle del área. */
 function aIncidencia(fila) {
@@ -127,35 +123,41 @@ function compararRanking(a, b) {
  * El ranking de áreas por cantidad de fallas, de mayor a menor.
  *
  * @param {object} [filtros]
- * @param {string} [filtros.desde]     - fecha/hora ISO: fallas registradas desde ese momento
- * @param {string} [filtros.hasta]     - fecha/hora ISO: fallas registradas hasta ese momento
+ * @param {string} [filtros.desde]     - "2026-11-01" o un ISO con zona: fallas registradas desde ese momento
+ * @param {string} [filtros.hasta]     - "2026-11-30" o un ISO con zona: fallas registradas hasta ese momento
  * @param {string} [filtros.tipoFalla] - el nombre del tipo de falla ("Eléctrica")
  */
 export async function obtenerAreasConMayorIncidencia(filtros = {}) {
-  const desde = fechaValida(filtros.desde, 'desde');
-  const hasta = fechaValida(filtros.hasta, 'hasta');
+  const desde = extremoDelPeriodo(filtros.desde, 'desde', false);
+  const hasta = extremoDelPeriodo(filtros.hasta, 'hasta', true);
   if (desde && hasta && desde > hasta) {
     throw datoInvalido('La fecha "desde" no puede ser posterior a la fecha "hasta".');
   }
 
-  let consulta = supabase
-    .from('falla')
-    .select(COLUMNAS)
-    .not('activo_codigo', 'is', null)
-    .order('falla_fecha', { ascending: false });
+  const data = [];
+  for (let inicio = 0; ; inicio += FILAS_POR_PAGINA) {
+    let consulta = supabase
+      .from('falla')
+      .select(COLUMNAS)
+      .not('activo_codigo', 'is', null)
+      .order('falla_fecha', { ascending: false })
+      .order('falla_id', { ascending: true });
 
-  if (desde) consulta = consulta.gte('falla_fecha', desde);
-  if (hasta) consulta = consulta.lte('falla_fecha', hasta);
-  if (filtros.tipoFalla) consulta = consulta.eq('falla_tipo', filtros.tipoFalla);
+    if (desde) consulta = consulta.gte('falla_fecha', desde);
+    if (hasta) consulta = consulta.lte('falla_fecha', hasta);
+    if (filtros.tipoFalla) consulta = consulta.eq('falla_tipo', filtros.tipoFalla);
 
-  const { data, error } = await consulta;
-  if (error) throw new Error(error.message);
+    const { data: pagina, error } = await consulta.range(inicio, inicio + FILAS_POR_PAGINA - 1);
+    if (error) throw new Error(error.message);
+    data.push(...(pagina ?? []));
+    if ((pagina ?? []).length < FILAS_POR_PAGINA) break;
+  }
 
   // Sólo aparecen las áreas que tienen alguna falla en el período.
   const porArea = new Map();
   const fallasDistintas = new Set();
 
-  for (const fila of data ?? []) {
+  for (const fila of data) {
     const incidencia = aIncidencia(fila);
     fallasDistintas.add(incidencia.idFalla);
 
@@ -251,6 +253,19 @@ function extremoDelPeriodo(valor, nombre, esFinal) {
   throw invalida;
 }
 
+/**
+ * El día de la facultad de un instante ISO: "2026-11-11T02:59:59.999Z" es el 10/11 en Argentina.
+ * Cortar el texto ISO daría el día en UTC, uno más para el final del período.
+ */
+function diaEnArgentina(iso) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Argentina/Buenos_Aires',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(iso));
+}
+
 /** Los textos de las filas que no son un área, un tipo o un técnico de verdad. */
 const SIN_DATO = {
   area: 'Sin área',
@@ -324,7 +339,7 @@ export async function obtenerTiemposResolucion(filtros = {}) {
 
 /**
  * Catálogo formal de definiciones de métricas (S3, S15).
- * Se serializa en metadatos para que la UI y el archivo .xlsx lean la misma fuente de verdad.
+ * Se serializa en metadatos para que la UI y el informe analítico lean la misma fuente de verdad.
  */
 export const DEFINICIONES_METRICAS = [
   { id: 'M-01', nombre: 'Tasa de operatividad de activos', formula: '(Activos operativos / Activos en servicio) * 100', origen: 'activo.activo_estado', tipoGrafico: 'KPI' },
@@ -333,16 +348,16 @@ export const DEFINICIONES_METRICAS = [
   { id: 'M-04', nombre: 'Ranking de áreas con mayor incidencia de fallas', formula: 'Conteo de fallas de activos por área', origen: 'falla.falla_id', tipoGrafico: 'Barras apiladas' },
   { id: 'M-05', nombre: 'Distribución de tickets por estado', formula: 'Conteo de tickets dados de alta por estado', origen: 'ticket.ticket_estado', tipoGrafico: 'Barras verticales' },
   { id: 'M-06', nombre: 'Tiempo promedio de resolución de tickets', formula: 'AVG(ticket_fecha_cierre - ticket_fecha_alta)', origen: 'ticket.ticket_fecha_alta, ticket.ticket_fecha_cierre', tipoGrafico: 'KPI / Barras horizontales' },
-  { id: 'M-07', nombre: 'Cobertura de planes de mantenimiento preventivo', formula: '(Tipos con plan activo / Total tipos) * 100', origen: 'mantenimiento_preventivo.tipo_activo_id', tipoGrafico: 'KPI' },
+  { id: 'M-07', nombre: 'Cobertura de planes de mantenimiento preventivo', formula: '(Activos en servicio cuyo tipo tiene un plan vigente / Activos en servicio) * 100', origen: 'activo.tipo_activo_id, mantenimiento_preventivo.tipo_activo_id', tipoGrafico: 'KPI' },
   { id: 'M-08', nombre: 'Órdenes de trabajo por origen', formula: 'Correctivas (con ticket) vs. Preventivas (con plan)', origen: 'orden_trabajo.ticket_id, orden_trabajo.mant_prev_id', tipoGrafico: 'Dona' },
   { id: 'M-09', nombre: 'Estado operativo de órdenes de trabajo', formula: 'Conteo de OTs del período por estado', origen: 'orden_trabajo.ot_estado', tipoGrafico: 'Barras verticales' },
-  { id: 'M-10', nombre: 'Órdenes de trabajo por prioridad', formula: 'Conteo de OTs no canceladas por prioridad', origen: 'orden_trabajo.ot_prioridad', tipoGrafico: 'Dona' },
+  { id: 'M-10', nombre: 'Órdenes de trabajo por prioridad', formula: 'Conteo de OTs no canceladas por prioridad, con «Sin prioridad» para las que no la tienen', origen: 'orden_trabajo.ot_prioridad', tipoGrafico: 'Dona' },
   { id: 'M-11', nombre: 'Evolución temporal de generación y cierre de tickets', formula: 'Tickets creados y tickets cerrados agrupados por mes', origen: 'ticket.ticket_fecha_alta, ticket.ticket_fecha_cierre', tipoGrafico: 'Línea' },
   { id: 'M-12', nombre: 'Tasa de cumplimiento y estado de tareas', formula: 'Conteo de tareas de OTs por estado', origen: 'tarea_ot.tarea_estado', tipoGrafico: 'Barras horizontales' },
   { id: 'M-13', nombre: 'Distribución de fallas por tipo', formula: 'Conteo de fallas por categoría', origen: 'falla.falla_tipo', tipoGrafico: 'Barras horizontales / Dona' },
   { id: 'M-14', nombre: 'Carga de trabajo activa por técnico', formula: 'Tareas asignadas no concluidas por técnico', origen: 'tecnico_asignado_tarea_ot', tipoGrafico: 'Barras horizontales' },
   { id: 'M-15', nombre: 'Índice de disponibilidad del plantel técnico', formula: '(Técnicos disponibles / Total de técnicos) * 100', origen: 'tecnico.tecnico_disponibilidad', tipoGrafico: 'KPI' },
-  { id: 'M-16', nombre: 'Materiales críticos bajo stock mínimo', formula: 'Materiales con stock_actual <= stock_minimo', origen: 'material.mat_stock_actual, material.mat_stock_min', tipoGrafico: 'KPI / Tabla' },
+  { id: 'M-16', nombre: 'Materiales críticos bajo stock mínimo', formula: 'Materiales con stock_actual < stock_minimo', origen: 'material.mat_stock_actual, material.mat_stock_min', tipoGrafico: 'KPI / Tabla' },
 ];
 
 /**
@@ -351,6 +366,23 @@ export const DEFINICIONES_METRICAS = [
 export async function obtenerResumenGeneral() {
   const { data, error } = await supabase.rpc('estadistica_resumen_general');
   if (error) throw errorDeBase(error, 'del resumen general del panel');
+
+  // Identificar los tipos de activo sin plan preventivo vigente (brechas accionables)
+  if (data?.coberturaPreventiva) {
+    try {
+      const [{ data: tipos }, { data: planes }] = await Promise.all([
+        supabase.from('tipo_activo').select('tipo_activo_id, tipo_activo_nom').order('tipo_activo_nom'),
+        supabase.from('mantenimiento_preventivo').select('tipo_activo_id').eq('mant_prev_activo', true),
+      ]);
+      const cubiertos = new Set((planes ?? []).map((p) => p.tipo_activo_id));
+      data.coberturaPreventiva.tiposSinPlan = (tipos ?? [])
+        .filter((t) => !cubiertos.has(t.tipo_activo_id))
+        .map((t) => ({ id: t.tipo_activo_id, nombre: t.tipo_activo_nom }));
+    } catch {
+      data.coberturaPreventiva.tiposSinPlan = [];
+    }
+  }
+
   return data;
 }
 
@@ -396,6 +428,13 @@ export async function obtenerEvolucionTickets(filtros = {}) {
     p_hasta: hasta,
   });
   if (error) throw errorDeBase(error, 'de la evolución de tickets');
+
+  // "Finalizado" casi no se usa (el ticket pasa a Cerrado al finalizar la OT): sólo se muestra si
+  // hay alguno, para que la distribución siga sumando el total.
+  if (data?.porEstado) {
+    data.porEstado = data.porEstado.filter((e) => e.id !== 5 || Number(e.cantidad) > 0);
+  }
+
   return data;
 }
 
@@ -409,7 +448,7 @@ export async function obtenerCargaTecnicos() {
 }
 
 /**
- * Payload consolidado del panel completo para visualización y exportación .xlsx (S13, S14, S15).
+ * Payload consolidado del panel completo para visualización e informe analítico (S13, S14, S15).
  */
 export async function obtenerPanelCompleto(filtros = {}) {
   const desde = extremoDelPeriodo(filtros.desde, 'desde', false);
@@ -436,7 +475,9 @@ export async function obtenerPanelCompleto(filtros = {}) {
       ordenesTrabajo,
       evolucionTickets,
       cargaTecnicos,
-      areasIncidencia,
+      areasIncidencia: {
+        ranking: areasIncidencia,
+      },
       tiemposResolucion,
     },
     metadatos: {
@@ -446,8 +487,8 @@ export async function obtenerPanelCompleto(filtros = {}) {
       versionSistema: '0.1.0',
       commit: '899b562d0c76832de809bf99f3e5875703e503e7',
       filtros: {
-        desde: desde ? desde.slice(0, 10) : null,
-        hasta: hasta ? hasta.slice(0, 10) : null,
+        desde: desde ? diaEnArgentina(desde) : null,
+        hasta: hasta ? diaEnArgentina(hasta) : null,
         tipoFalla: filtros.tipoFalla ?? null,
       },
       definiciones: DEFINICIONES_METRICAS,

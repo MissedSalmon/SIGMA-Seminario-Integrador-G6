@@ -53,6 +53,7 @@ ChartJS.register(
 );
 
 export default function GraficoChart({
+  id,
   tipo = 'bar',
   titulo,
   subtitulo,
@@ -62,6 +63,7 @@ export default function GraficoChart({
   stacked = false,
   altura = 300,
   ariaLabel,
+  mensajeVacio,
 }) {
   const [modoTabla, setModoTabla] = useState(false);
 
@@ -180,29 +182,40 @@ export default function GraficoChart({
     datasets: datasetsNormalizados,
   };
 
+  const noHayDatos = !dataNormalizada.labels || dataNormalizada.labels.length === 0;
+
   return (
-    <CCard className="mb-4 shadow-sm h-100">
+    <CCard id={id} className="mb-4 shadow-sm h-100">
       <CCardHeader className="d-flex justify-content-between align-items-start gap-2 py-2 bg-body-tertiary">
         <div className="flex-grow-1 min-w-0">
           <div className="fw-semibold text-body" title={titulo}>{titulo}</div>
           {subtitulo && <div className="text-body-secondary small" title={subtitulo}>{subtitulo}</div>}
         </div>
-        <CButton
-          color="secondary"
-          variant="ghost"
-          size="sm"
-          onClick={() => setModoTabla((prev) => !prev)}
-          title={modoTabla ? 'Ver como gráfico' : 'Ver como tabla (accesibilidad)'}
-          aria-label={modoTabla ? 'Ver como gráfico' : 'Ver como tabla'}
-          className="ms-2 flex-shrink-0 d-flex align-items-center gap-1"
-        >
-          <CIcon icon={modoTabla ? cilChartLine : cilSpreadsheet} size="sm" />
-          <span className="small">{modoTabla ? 'Gráfico' : 'Tabla'}</span>
-        </CButton>
+        {!noHayDatos && (
+          <CButton
+            color="secondary"
+            variant="ghost"
+            size="sm"
+            onClick={() => setModoTabla((prev) => !prev)}
+            title={modoTabla ? 'Ver como gráfico' : 'Ver como tabla (accesibilidad)'}
+            aria-label={modoTabla ? 'Ver como gráfico' : 'Ver como tabla'}
+            className="ms-2 flex-shrink-0 d-flex align-items-center gap-1"
+          >
+            <CIcon icon={modoTabla ? cilChartLine : cilSpreadsheet} size="sm" />
+            <span className="small">{modoTabla ? 'Gráfico' : 'Tabla'}</span>
+          </CButton>
+        )}
       </CCardHeader>
 
       <CCardBody style={{ minHeight: `${altura}px` }} className="p-3">
-        {modoTabla ? (
+        {noHayDatos ? (
+          <div
+            className="d-flex align-items-center justify-content-center text-body-secondary small text-center p-3 w-100"
+            style={{ minHeight: `${altura - 32}px` }}
+          >
+            {mensajeVacio || 'Sin datos en el período seleccionado'}
+          </div>
+        ) : modoTabla ? (
           <div className="table-responsive" style={{ maxHeight: `${altura}px` }}>
             <CTable striped hover small className="mb-0 align-middle">
               <CTableHead className="table-light">

@@ -1,507 +1,670 @@
 /**
- * Módulo de exportación analítica del Panel de Administración a archivo .xlsx (D1, D3).
+ * Informe PDF del panel del administrador (A4, se arma en el navegador).
  *
- * Principios aplicados:
- * - D1: Gráficos NATIVOS de hoja de cálculo con @office-kit/xlsx.
- * - D3: Generación 100% en el cliente (navegador), sin endpoint de descarga en backend.
- * - S13: Alcance visible ("Todo el sistema").
- * - S14: Frescura y zona horaria declaradas.
- * - S15: Mismo contrato y cálculo que en pantalla (serialización pura sin recálculo).
- * - Seguridad: Sanitización estricta contra inyección de fórmulas CSV/Excel (CSV Formula Injection).
+ * Portada con los indicadores clave y el índice; después una sección por tema.
+ * Cada bloque dice su base: «Período» (lo que pasó entre las fechas elegidas) o
+ * «Estado actual» (la situación al momento de generar el informe).
+ * Los gráficos se dibujan acá con vectores: no dependen del tamaño ni del tema de la pantalla.
  */
-import { createWorkbook, addWorksheet } from '@office-kit/xlsx/workbook';
-import { setCellByCoord } from '@office-kit/xlsx/worksheet';
-import {
-  makeChartSpace,
-  makeLineChart,
-  makeBarChart,
-  makeDoughnutChart,
-} from '@office-kit/xlsx/chart';
-import {
-  addChartAt,
-  makeSrgbColor,
-  makeColor,
-  makeSolidFill,
-  makeLine,
-} from '@office-kit/xlsx/drawing';
-import { workbookToBytes } from '@office-kit/xlsx/io';
-import fileSaver from 'file-saver';
-const saveAs = fileSaver?.saveAs || fileSaver;
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { textoTiempo } from '../utils/duracion.js';
 
-export const LIMITE_FILAS_SEGURIDAD = 50000;
+const COLOR = {
+  azul: [31, 59, 77],
+  azulMedio: [74, 107, 130],
+  azulClaro: [160, 180, 195],
+  arena: [238, 236, 231],
+  linea: [217, 214, 207],
+  texto: [34, 48, 58],
+  gris: [107, 119, 128],
+  blanco: [255, 255, 255],
+};
 
-// Paleta resuelta desde los tokens del tema CoreUI (DrawingML sRGB)
-const COLOR_PRIMARY = makeColor(makeSrgbColor('321FDB'));   // --cui-primary (#321fdb)
-const COLOR_INFO = makeColor(makeSrgbColor('3399FF'));      // --cui-info (#39f)
-const COLOR_SUCCESS = makeColor(makeSrgbColor('2EB85C'));   // --cui-success (#2eb85c)
-const COLOR_WARNING = makeColor(makeSrgbColor('F9B115'));   // --cui-warning (#f9b115)
-const COLOR_DANGER = makeColor(makeSrgbColor('E55353'));    // --cui-danger (#e55353)
-const COLOR_SECONDARY = makeColor(makeSrgbColor('636F83')); // --cui-secondary (#636f83)
-const COLOR_DARK = makeColor(makeSrgbColor('4F5D73'));      // --cui-dark (#4f5d73)
+const PAGINA = { ancho: 210, alto: 297, margen: 18, arriba: 26, abajo: 276 };
+const ANCHO_UTIL = PAGINA.ancho - 2 * PAGINA.margen;
+const M = PAGINA.margen;
 
-const PALETA_EXCEL = [
-  COLOR_PRIMARY,
-  COLOR_INFO,
-  COLOR_SUCCESS,
-  COLOR_WARNING,
-  COLOR_DANGER,
-  COLOR_SECONDARY,
-  COLOR_DARK,
-];
+const BASE = { periodo: 'Período', actual: 'Estado actual' };
 
-// Estilos de trazo fino (1 a 1.5 pt ≈ 12700 - 19050 EMU) y diferenciación multisensorial
-const LINEA_SERIE_PRIMARIA = makeLine({
-  w: 19050, // 1.5 pt
-  fill: makeSolidFill(COLOR_PRIMARY),
-});
+const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
-const LINEA_SERIE_SECUNDARIA = makeLine({
-  w: 19050, // 1.5 pt
-  fill: makeSolidFill(COLOR_SUCCESS),
-  dash: { kind: 'preset', val: 'dash' },
-});
-
-const BORDE_BARRA_DANGER = makeLine({
-  w: 12700, // 1 pt
-  fill: makeSolidFill(COLOR_DANGER),
-});
-
-const BORDE_BARRA_PRIMARY = makeLine({
-  w: 12700, // 1 pt
-  fill: makeSolidFill(COLOR_PRIMARY),
-});
-
-const BORDE_BARRA_WARNING = makeLine({
-  w: 12700, // 1 pt
-  fill: makeSolidFill(COLOR_WARNING),
-});
-
-/**
- * Sanitiza valores de texto para prevenir inyección de fórmulas (Formula Injection).
- * Si un valor inicia con '=', '+', '-', '@', '\t' o '\r', antepone un apóstrofe simple (').
- *
- * @param {any} valor
- * @returns {string}
- */
-export function sanitizarTextoExcel(valor) {
-  if (valor == null) return '';
-  const texto = String(valor);
-  if (/^[=+\-@\t\r]/.test(texto)) {
-    return `'${texto}`;
-  }
-  return texto;
+/** Formatea una fecha ISO (o la actual) en la hora de Argentina (UTC-3). */
+export function formatearFechaUtc3(fechaIso) {
+  const d = fechaIso ? new Date(fechaIso) : new Date();
+  return new Intl.DateTimeFormat('es-AR', {
+    timeZone: 'America/Argentina/Buenos_Aires',
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(d);
 }
 
-/**
- * Genera el libro Excel con datos y gráficos nativos como Uint8Array desacoplado del navegador.
- *
- * @param {object} payloadPanel - Objeto { datos, metadatos } devuelto por /api/estadisticas/panel-completo
- * @returns {Promise<Uint8Array>}
- */
-export async function generarBytesLibroPanel(payloadPanel) {
-  const datos = payloadPanel?.datos ?? {};
-  const metadatos = payloadPanel?.metadatos ?? {};
-
-  const wb = createWorkbook();
-
-  // ─── HOJA 1: RESUMEN ──────────────────────────────────────────────────────────
-  const wsResumen = addWorksheet(wb, 'Resumen');
-  setCellByCoord(wsResumen, 'A1', 'SIGMA - Panel de Estadísticas y Mantenimiento');
-  setCellByCoord(wsResumen, 'A2', `Alcance: ${sanitizarTextoExcel(metadatos.alcance ?? 'Todo el sistema')}`);
-  setCellByCoord(
-    wsResumen,
-    'A3',
-    `Fecha de generación: ${metadatos.generadoEn ?? new Date().toISOString()} (${metadatos.zonaHoraria ?? 'America/Argentina/Buenos_Aires'})`
-  );
-  setCellByCoord(
-    wsResumen,
-    'A4',
-    `Versión del sistema: ${metadatos.versionSistema ?? '0.1.0'} (Commit: ${metadatos.commit ?? '899b562d0c76832de809bf99f3e5875703e503e7'})`
-  );
-  if (metadatos.filtros?.desde || metadatos.filtros?.hasta) {
-    setCellByCoord(
-      wsResumen,
-      'A5',
-      `Filtros aplicados: Desde ${metadatos.filtros?.desde ?? 'Inicio'} Hasta ${metadatos.filtros?.hasta ?? 'Actualidad'}`
-    );
-  }
-
-  // Tabla resumen de KPIs
-  setCellByCoord(wsResumen, 'A7', 'Indicador Clave (KPI)');
-  setCellByCoord(wsResumen, 'B7', 'Valor Principal');
-  setCellByCoord(wsResumen, 'C7', 'Denominador / Total (n)');
-  setCellByCoord(wsResumen, 'D7', 'Detalle');
-
-  const resumen = datos.resumenGeneral ?? {};
-  const tiempos = datos.tiemposResolucion?.general ?? {};
-
-  const kpis = [
-    [
-      'Tasa de operatividad de activos',
-      `${resumen.operatividad?.porcentaje ?? 0} %`,
-      `${resumen.operatividad?.operativos ?? 0} de ${resumen.operatividad?.enServicio ?? 0} en servicio`,
-      `${resumen.operatividad?.retirados ?? 0} retirados (Total: ${resumen.operatividad?.totalActivos ?? 0})`,
-    ],
-    [
-      'Tiempo promedio de resolución',
-      tiempos.promedioSegundos ? `${Math.round(tiempos.promedioSegundos / 3600)} horas` : 'Sin datos',
-      `${tiempos.cantidadTickets ?? 0} tickets cerrados`,
-      'Período seleccionado',
-    ],
-    [
-      'Cobertura preventiva',
-      `${resumen.coberturaPreventiva?.porcentajeTipos ?? 0} % tipos`,
-      `${resumen.coberturaPreventiva?.tiposConPlan ?? 0} de ${resumen.coberturaPreventiva?.totalTipos ?? 0} tipos`,
-      `${resumen.coberturaPreventiva?.activosCubiertos ?? 0} activos amparados (${resumen.coberturaPreventiva?.porcentajeActivos ?? 0} %)`,
-    ],
-    [
-      'Disponibilidad técnica',
-      `${resumen.disponibilidadTecnicos?.porcentaje ?? 0} %`,
-      `${resumen.disponibilidadTecnicos?.disponibles ?? 0} de ${resumen.disponibilidadTecnicos?.totalTecnicos ?? 0} técnicos`,
-      'Plantel operativo activo',
-    ],
-    [
-      'Materiales bajo stock mínimo',
-      `${resumen.materialesBajoMinimo?.bajoMinimo ?? 0} críticos`,
-      `${resumen.materialesBajoMinimo?.bajoMinimo ?? 0} de ${resumen.materialesBajoMinimo?.totalMateriales ?? 0} materiales`,
-      `${resumen.materialesBajoMinimo?.porcentaje ?? 0} % del inventario`,
-    ],
-  ];
-
-  kpis.forEach((fila, idx) => {
-    const r = 8 + idx;
-    setCellByCoord(wsResumen, `A${r}`, fila[0]);
-    setCellByCoord(wsResumen, `B${r}`, fila[1]);
-    setCellByCoord(wsResumen, `C${r}`, fila[2]);
-    setCellByCoord(wsResumen, `D${r}`, fila[3]);
-  });
-
-  // ─── HOJA 2: DEFINICIONES ─────────────────────────────────────────────────────
-  const wsDef = addWorksheet(wb, 'Definiciones');
-  setCellByCoord(wsDef, 'A1', 'Código');
-  setCellByCoord(wsDef, 'B1', 'Métrica');
-  setCellByCoord(wsDef, 'C1', 'Fórmula de Cálculo');
-  setCellByCoord(wsDef, 'D1', 'Origen de Datos (tabla.columna)');
-  setCellByCoord(wsDef, 'E1', 'Tipo de Gráfico');
-
-  const definiciones = metadatos.definiciones ?? [];
-  definiciones.forEach((d, idx) => {
-    const r = 2 + idx;
-    setCellByCoord(wsDef, `A${r}`, sanitizarTextoExcel(d.id));
-    setCellByCoord(wsDef, `B${r}`, sanitizarTextoExcel(d.nombre));
-    setCellByCoord(wsDef, `C${r}`, sanitizarTextoExcel(d.formula));
-    setCellByCoord(wsDef, `D${r}`, sanitizarTextoExcel(d.origen));
-    setCellByCoord(wsDef, `E${r}`, sanitizarTextoExcel(d.tipoGrafico));
-  });
-
-  // ─── HOJA 3: EVOLUCIÓN DE TICKETS (M-11) ──────────────────────────────────────
-  const wsEvolucion = addWorksheet(wb, 'Evolucion_Tickets');
-  setCellByCoord(wsEvolucion, 'A1', 'Período');
-  setCellByCoord(wsEvolucion, 'B1', 'Tickets Creados');
-  setCellByCoord(wsEvolucion, 'C1', 'Tickets Cerrados');
-
-  const evolucion = datos.evolucionTickets?.evolucion ?? [];
-  const filasEvolucion = evolucion.slice(0, LIMITE_FILAS_SEGURIDAD);
-  filasEvolucion.forEach((fila, idx) => {
-    const r = 2 + idx;
-    setCellByCoord(wsEvolucion, `A${r}`, sanitizarTextoExcel(fila.mesRotulo ?? fila.periodo));
-    setCellByCoord(wsEvolucion, `B${r}`, Number(fila.ticketsCreados ?? 0));
-    setCellByCoord(wsEvolucion, `C${r}`, Number(fila.ticketsCerrados ?? 0));
-  });
-
-  if (filasEvolucion.length > 0) {
-    const topFila = filasEvolucion.length + 1;
-    const chartEvolucion = makeLineChart({
-      smooth: true,
-      series: [
-        {
-          idx: 0,
-          order: 0,
-          val: { ref: `Evolucion_Tickets!$B$2:$B$${topFila}` },
-          cat: { ref: `Evolucion_Tickets!$A$2:$A$${topFila}` },
-          tx: { kind: 'literal', value: 'Tickets Creados' },
-          smooth: true,
-          marker: {
-            symbol: 'circle',
-            size: 5,
-            spPr: {
-              fill: makeSolidFill(COLOR_PRIMARY),
-              ln: LINEA_SERIE_PRIMARIA,
-            },
-          },
-          spPr: {
-            ln: LINEA_SERIE_PRIMARIA,
-          },
-        },
-        {
-          idx: 1,
-          order: 1,
-          val: { ref: `Evolucion_Tickets!$C$2:$C$${topFila}` },
-          cat: { ref: `Evolucion_Tickets!$A$2:$A$${topFila}` },
-          tx: { kind: 'literal', value: 'Tickets Cerrados' },
-          smooth: true,
-          marker: {
-            symbol: 'square',
-            size: 5,
-            spPr: {
-              fill: makeSolidFill(COLOR_SUCCESS),
-              ln: LINEA_SERIE_SECUNDARIA,
-            },
-          },
-          spPr: {
-            ln: LINEA_SERIE_SECUNDARIA,
-          },
-        },
-      ],
-    });
-    const spaceEvolucion = makeChartSpace({
-      title: 'Evolución mensual de tickets: Creados vs. Cerrados',
-      plotArea: { chart: chartEvolucion },
-    });
-    addChartAt(wsEvolucion, 'E2', { space: spaceEvolucion }, { widthPx: 640, heightPx: 360 });
-  }
-
-  // ─── HOJA 4: INCIDENCIAS POR ÁREA (M-04) ──────────────────────────────────────
-  const wsIncidencias = addWorksheet(wb, 'Incidencias_Areas');
-  setCellByCoord(wsIncidencias, 'A1', 'Área');
-  setCellByCoord(wsIncidencias, 'B1', 'Fallas Totales');
-  setCellByCoord(wsIncidencias, 'C1', 'Tickets Afectados');
-  setCellByCoord(wsIncidencias, 'D1', 'Porcentaje');
-
-  const incidencias = datos.areasIncidencia?.ranking ?? [];
-  const filasIncidencias = incidencias.slice(0, LIMITE_FILAS_SEGURIDAD);
-  filasIncidencias.forEach((fila, idx) => {
-    const r = 2 + idx;
-    setCellByCoord(wsIncidencias, `A${r}`, sanitizarTextoExcel(fila.nombreArea ?? fila.nombre ?? 'Sin área'));
-    setCellByCoord(wsIncidencias, `B${r}`, Number(fila.cantidadFallas ?? fila.fallas ?? 0));
-    setCellByCoord(wsIncidencias, `C${r}`, Number(fila.cantidadTickets ?? fila.tickets ?? 0));
-    setCellByCoord(wsIncidencias, `D${r}`, Number(fila.porcentaje ?? 0));
-  });
-
-  if (filasIncidencias.length > 0) {
-    const topFila = filasIncidencias.length + 1;
-    const chartIncidencias = makeBarChart({
-      barDir: 'bar',
-      series: [
-        {
-          idx: 0,
-          order: 0,
-          val: { ref: `Incidencias_Areas!$B$2:$B$${topFila}` },
-          cat: { ref: `Incidencias_Areas!$A$2:$A$${topFila}` },
-          tx: { kind: 'literal', value: 'Fallas por Área' },
-          spPr: {
-            fill: makeSolidFill(COLOR_DANGER),
-            ln: BORDE_BARRA_DANGER,
-          },
-        },
-      ],
-    });
-    const spaceIncidencias = makeChartSpace({
-      title: 'Ranking de áreas con mayor incidencia de fallas',
-      plotArea: { chart: chartIncidencias },
-    });
-    addChartAt(wsIncidencias, 'F2', { space: spaceIncidencias }, { widthPx: 640, heightPx: 360 });
-  }
-
-  // ─── HOJA 5: ÓRDENES DE TRABAJO (M-08, M-09, M-10) ───────────────────────────
-  const wsOt = addWorksheet(wb, 'OT_Distribucion');
-  // Tabla A: Origen
-  setCellByCoord(wsOt, 'A1', 'Origen');
-  setCellByCoord(wsOt, 'B1', 'Cantidad');
-  setCellByCoord(wsOt, 'C1', 'Porcentaje');
-  const otOrigen = datos.ordenesTrabajo?.porOrigen ?? {};
-  setCellByCoord(wsOt, 'A2', 'Correctivas');
-  setCellByCoord(wsOt, 'B2', Number(otOrigen.correctivas ?? 0));
-  setCellByCoord(wsOt, 'C2', Number(otOrigen.porcentajeCorrectivas ?? 0));
-  setCellByCoord(wsOt, 'A3', 'Preventivas');
-  setCellByCoord(wsOt, 'B3', Number(otOrigen.preventivas ?? 0));
-  setCellByCoord(wsOt, 'C3', Number(otOrigen.porcentajePreventivas ?? 0));
-
-  const chartOrigen = makeDoughnutChart({
-    holeSize: 60,
-    series: [
-      {
-        idx: 0,
-        order: 0,
-        val: { ref: 'OT_Distribucion!$B$2:$B$3' },
-        cat: { ref: 'OT_Distribucion!$A$2:$A$3' },
-        tx: { kind: 'literal', value: 'Órdenes de trabajo por origen' },
-        dPt: [
-          { idx: 0, spPr: { fill: makeSolidFill(COLOR_PRIMARY) } },
-          { idx: 1, spPr: { fill: makeSolidFill(COLOR_INFO) } },
-        ],
-      },
-    ],
-  });
-  const spaceOrigen = makeChartSpace({
-    title: 'Órdenes de trabajo por origen',
-    plotArea: { chart: chartOrigen },
-  });
-  addChartAt(wsOt, 'E2', { space: spaceOrigen }, { widthPx: 480, heightPx: 300 });
-
-  // Tabla B: Prioridad
-  setCellByCoord(wsOt, 'A8', 'Prioridad');
-  setCellByCoord(wsOt, 'B8', 'Cantidad');
-  setCellByCoord(wsOt, 'C8', 'Porcentaje');
-  const otPrioridad = datos.ordenesTrabajo?.porPrioridad ?? [];
-  otPrioridad.forEach((p, idx) => {
-    const r = 9 + idx;
-    setCellByCoord(wsOt, `A${r}`, sanitizarTextoExcel(p.nombre));
-    setCellByCoord(wsOt, `B${r}`, Number(p.cantidad ?? 0));
-    setCellByCoord(wsOt, `C${r}`, Number(p.porcentaje ?? 0));
-  });
-
-  if (otPrioridad.length > 0) {
-    const topFilaPrioridad = 8 + otPrioridad.length;
-    const dPtPrioridad = otPrioridad.map((_, idx) => ({
-      idx,
-      spPr: { fill: makeSolidFill(PALETA_EXCEL[idx % PALETA_EXCEL.length]) },
-    }));
-
-    const chartPrioridad = makeDoughnutChart({
-      holeSize: 60,
-      series: [
-        {
-          idx: 0,
-          order: 0,
-          val: { ref: `OT_Distribucion!$B$9:$B$${topFilaPrioridad}` },
-          cat: { ref: `OT_Distribucion!$A$9:$A$${topFilaPrioridad}` },
-          tx: { kind: 'literal', value: 'Órdenes de trabajo por prioridad' },
-          dPt: dPtPrioridad,
-        },
-      ],
-    });
-    const spacePrioridad = makeChartSpace({
-      title: 'Órdenes de trabajo por prioridad',
-      plotArea: { chart: chartPrioridad },
-    });
-    addChartAt(wsOt, 'E14', { space: spacePrioridad }, { widthPx: 480, heightPx: 300 });
-  }
-
-  // ─── HOJA 6: ACTIVOS POR EDIFICIO (M-03) ──────────────────────────────────────
-  const wsEdificios = addWorksheet(wb, 'Activos_Edificios');
-  setCellByCoord(wsEdificios, 'A1', 'Edificio');
-  setCellByCoord(wsEdificios, 'B1', 'Activos en Servicio');
-  setCellByCoord(wsEdificios, 'C1', 'Porcentaje');
-
-  const edificios = datos.activos?.porEdificio ?? [];
-  edificios.forEach((ed, idx) => {
-    const r = 2 + idx;
-    setCellByCoord(wsEdificios, `A${r}`, sanitizarTextoExcel(ed.nombre));
-    setCellByCoord(wsEdificios, `B${r}`, Number(ed.cantidad ?? 0));
-    setCellByCoord(wsEdificios, `C${r}`, Number(ed.porcentaje ?? 0));
-  });
-
-  if (edificios.length > 0) {
-    const topFilaEd = edificios.length + 1;
-    const chartEdificios = makeBarChart({
-      barDir: 'bar',
-      series: [
-        {
-          idx: 0,
-          order: 0,
-          val: { ref: `Activos_Edificios!$B$2:$B$${topFilaEd}` },
-          cat: { ref: `Activos_Edificios!$A$2:$A$${topFilaEd}` },
-          tx: { kind: 'literal', value: 'Activos en Servicio' },
-          spPr: {
-            fill: makeSolidFill(COLOR_PRIMARY),
-            ln: BORDE_BARRA_PRIMARY,
-          },
-        },
-      ],
-    });
-    const spaceEdificios = makeChartSpace({
-      title: 'Activos inventariados por edificio',
-      plotArea: { chart: chartEdificios },
-    });
-    addChartAt(wsEdificios, 'E2', { space: spaceEdificios }, { widthPx: 640, heightPx: 360 });
-  }
-
-  // ─── HOJA 7: CARGA TÉCNICA (M-14) ─────────────────────────────────────────────
-  const wsTecnicos = addWorksheet(wb, 'Tecnicos_Carga');
-  setCellByCoord(wsTecnicos, 'A1', 'Técnico');
-  setCellByCoord(wsTecnicos, 'B1', 'Tareas Activas');
-  setCellByCoord(wsTecnicos, 'C1', 'Disponibilidad');
-  setCellByCoord(wsTecnicos, 'D1', 'Porcentaje de Carga');
-
-  const tecnicos = datos.cargaTecnicos?.porTecnico ?? [];
-  tecnicos.forEach((t, idx) => {
-    const r = 2 + idx;
-    setCellByCoord(wsTecnicos, `A${r}`, sanitizarTextoExcel(t.nombre));
-    setCellByCoord(wsTecnicos, `B${r}`, Number(t.tareasActivas ?? 0));
-    setCellByCoord(wsTecnicos, `C${r}`, t.disponible ? 'Disponible' : 'No disponible');
-    setCellByCoord(wsTecnicos, `D${r}`, Number(t.porcentaje ?? 0));
-  });
-
-  if (tecnicos.length > 0) {
-    const topFilaTec = tecnicos.length + 1;
-    const chartTecnicos = makeBarChart({
-      barDir: 'bar',
-      series: [
-        {
-          idx: 0,
-          order: 0,
-          val: { ref: `Tecnicos_Carga!$B$2:$B$${topFilaTec}` },
-          cat: { ref: `Tecnicos_Carga!$A$2:$A$${topFilaTec}` },
-          tx: { kind: 'literal', value: 'Tareas Activas' },
-          spPr: {
-            fill: makeSolidFill(COLOR_WARNING),
-            ln: BORDE_BARRA_WARNING,
-          },
-        },
-      ],
-    });
-    const spaceTecnicos = makeChartSpace({
-      title: 'Carga de trabajo activa por técnico',
-      plotArea: { chart: chartTecnicos },
-    });
-    addChartAt(wsTecnicos, 'F2', { space: spaceTecnicos }, { widthPx: 640, heightPx: 360 });
-  }
-
-  // ─── HOJA 8: MATERIALES CRÍTICOS (M-16) ───────────────────────────────────────
-  const wsMateriales = addWorksheet(wb, 'Materiales_Criticos');
-  setCellByCoord(wsMateriales, 'A1', 'Código');
-  setCellByCoord(wsMateriales, 'B1', 'Material');
-  setCellByCoord(wsMateriales, 'C1', 'Stock Actual');
-  setCellByCoord(wsMateriales, 'D1', 'Stock Mínimo');
-  setCellByCoord(wsMateriales, 'E1', 'Faltante');
-
-  const materiales = datos.resumenGeneral?.materialesBajoMinimo?.items ?? [];
-  materiales.forEach((m, idx) => {
-    const r = 2 + idx;
-    setCellByCoord(wsMateriales, `A${r}`, sanitizarTextoExcel(m.codigo));
-    setCellByCoord(wsMateriales, `B${r}`, sanitizarTextoExcel(m.nombre));
-    setCellByCoord(wsMateriales, `C${r}`, Number(m.stockActual ?? 0));
-    setCellByCoord(wsMateriales, `D${r}`, Number(m.stockMinimo ?? 0));
-    setCellByCoord(wsMateriales, `E${r}`, Number(m.faltante ?? 0));
-  });
-
-  return await workbookToBytes(wb);
-}
-
-/**
- * Disparador de descarga de archivo .xlsx en el navegador del usuario.
- *
- * @param {object} payloadPanel - Objeto { datos, metadatos }
- */
-export async function exportarPanelXlsx(payloadPanel) {
-  const bytes = await generarBytesLibroPanel(payloadPanel);
-  const blob = new Blob([bytes], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  });
-
-  const fechaStr = new Intl.DateTimeFormat('es-AR', {
+/** La fecha de hoy en Argentina como AAAA-MM-DD, para el nombre del archivo. */
+export function fechaHoyArchivoUtc3() {
+  return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Argentina/Buenos_Aires',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  })
-    .format(new Date())
-    .replace(/[/, :]/g, '')
-    .slice(0, 12);
+  }).format(new Date());
+}
 
-  saveAs(blob, `panel-estadisticas-${fechaStr}.xlsx`);
+/** autoTable se exporta distinto en el navegador (ESM) y en Jest (CJS). */
+function aplicarAutoTable(doc, opciones) {
+  if (typeof doc.autoTable === 'function') {
+    doc.autoTable(opciones);
+  } else if (typeof autoTable === 'function') {
+    autoTable(doc, opciones);
+  } else if (autoTable?.default) {
+    autoTable.default(doc, opciones);
+  }
+}
+
+const numero = (valor) => Number(valor ?? 0).toLocaleString('es-AR', { maximumFractionDigits: 1 });
+const porcentaje = (valor) => `${numero(valor)} %`;
+
+/** "2026-11-09" -> "09/11/2026". */
+function fechaCorta(iso) {
+  if (!iso) return null;
+  const [anio, mes, dia] = String(iso).slice(0, 10).split('-');
+  return `${dia}/${mes}/${anio}`;
+}
+
+function textoPeriodo(filtros = {}) {
+  const desde = fechaCorta(filtros.desde);
+  const hasta = fechaCorta(filtros.hasta);
+  if (desde && hasta) return `${desde} al ${hasta}`;
+  if (desde) return `Desde el ${desde}`;
+  if (hasta) return `Hasta el ${hasta}`;
+  return 'Histórico completo';
+}
+
+/** El rótulo del mes sale de "2026-11" y no del texto de la base, que depende del idioma del servidor. */
+function rotuloMes(fila) {
+  const [anio, mes] = String(fila.periodo ?? '').split('-');
+  const nombre = MESES[Number(mes) - 1];
+  return nombre ? `${nombre} ${anio}` : String(fila.mesRotulo ?? fila.periodo ?? '');
+}
+
+/** El paso de la escala del eje: 1, 2 o 5 por una potencia de 10. */
+function pasoRedondo(valor) {
+  const potencia = 10 ** Math.floor(Math.log10(valor));
+  const base = valor / potencia;
+  const factor = base <= 1 ? 1 : base <= 2 ? 2 : base <= 5 ? 5 : 10;
+  return Math.max(1, factor * potencia);
+}
+
+function indicadoresClave(datos) {
+  const resumen = datos.resumenGeneral ?? {};
+  const operatividad = resumen.operatividad ?? {};
+  const cobertura = resumen.coberturaPreventiva ?? {};
+  const tecnicos = resumen.disponibilidadTecnicos ?? {};
+  const materiales = resumen.materialesBajoMinimo ?? {};
+  const tiempos = datos.tiemposResolucion?.general ?? {};
+
+  return [
+    {
+      rotulo: 'Operatividad de activos',
+      valor: porcentaje(operatividad.porcentaje),
+      detalle: `${numero(operatividad.operativos)} de ${numero(operatividad.enServicio)} activos en servicio están operativos`,
+      base: BASE.actual,
+    },
+    {
+      rotulo: 'Tiempo promedio de resolución',
+      valor: tiempos.promedioSegundos != null ? textoTiempo(tiempos.promedioSegundos) : 'Sin datos',
+      detalle: `Sobre ${numero(tiempos.cantidadTickets)} tickets cerrados`,
+      base: BASE.periodo,
+    },
+    {
+      rotulo: 'Cobertura preventiva',
+      valor: porcentaje(cobertura.porcentajeActivos),
+      detalle: `${numero(cobertura.activosCubiertos)} de ${numero(cobertura.totalActivosEnServicio)} activos en servicio con plan; ${numero(cobertura.tiposConPlan)} tipos con plan`,
+      base: BASE.actual,
+    },
+    {
+      rotulo: 'Disponibilidad técnica',
+      valor: porcentaje(tecnicos.porcentaje),
+      detalle: `${numero(tecnicos.disponibles)} de ${numero(tecnicos.totalTecnicos)} técnicos disponibles`,
+      base: BASE.actual,
+    },
+    {
+      rotulo: 'Materiales bajo stock mínimo',
+      valor: numero(materiales.bajoMinimo),
+      detalle: `De ${numero(materiales.totalMateriales)} materiales registrados`,
+      base: BASE.actual,
+    },
+  ];
+}
+
+/**
+ * Construye el documento con la portada, las secciones y la numeración.
+ *
+ * @param {object} payloadPanel - { datos, metadatos } tal como los devuelve /estadisticas/panel-completo.
+ * @returns {jsPDF}
+ */
+export function generarDocumentoPdf(payloadPanel) {
+  const datos = payloadPanel?.datos ?? {};
+  const metadatos = payloadPanel?.metadatos ?? {};
+  const periodo = textoPeriodo(metadatos.filtros);
+  const generado = `${formatearFechaUtc3(metadatos.generadoEn)} (UTC-3)`;
+
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const indice = [];
+  let y = 0;
+
+  const paginaActual = () => doc.getCurrentPageInfo().pageNumber;
+
+  function escribir(texto, x, yTexto, { tam = 8, estilo = 'normal', fuente = 'helvetica', color = COLOR.texto, ...opciones } = {}) {
+    doc.setFont(fuente, estilo);
+    doc.setFontSize(tam);
+    doc.setTextColor(...color);
+    doc.text(texto, x, yTexto, opciones);
+  }
+
+  function envolver(texto, ancho, { tam = 8, estilo = 'normal', fuente = 'helvetica' } = {}) {
+    doc.setFont(fuente, estilo);
+    doc.setFontSize(tam);
+    return doc.splitTextToSize(texto, ancho);
+  }
+
+  function linea(x1, y1, x2, y2, color = COLOR.linea, grosor = 0.2) {
+    doc.setDrawColor(...color);
+    doc.setLineWidth(grosor);
+    doc.line(x1, y1, x2, y2);
+  }
+
+  function rectangulo(x, yRect, ancho, alto, color) {
+    doc.setFillColor(...color);
+    doc.rect(x, yRect, ancho, alto, 'F');
+  }
+
+  function asegurarEspacio(alto) {
+    if (y + alto > PAGINA.abajo) {
+      doc.addPage();
+      y = PAGINA.arriba;
+    }
+  }
+
+  function tituloPortada(texto, yTitulo) {
+    escribir(texto.toUpperCase(), M, yTitulo, { fuente: 'times', tam: 13, color: COLOR.azul, charSpace: 0.5 });
+    linea(M, yTitulo + 3, M + ANCHO_UTIL, yTitulo + 3, COLOR.azul, 0.3);
+  }
+
+  function abrirSeccion(titulo, base) {
+    const numeroSeccion = String(indice.length + 1).padStart(2, '0');
+    if (indice.length === 0) {
+      doc.addPage();
+      y = PAGINA.arriba;
+    } else {
+      y += 6;
+      asegurarEspacio(80);
+    }
+    indice.push({ numero: numeroSeccion, titulo, base, pagina: paginaActual() });
+
+    escribir(numeroSeccion, M, y + 6, { fuente: 'times', tam: 20, color: COLOR.azulClaro });
+    escribir(titulo.toUpperCase(), M + 14, y + 6, { fuente: 'times', tam: 15, color: COLOR.azul, charSpace: 0.4 });
+    escribir(base.toUpperCase(), M + ANCHO_UTIL, y + 6, { tam: 6.5, estilo: 'bold', color: COLOR.azulMedio, align: 'right' });
+    linea(M, y + 9.5, M + ANCHO_UTIL, y + 9.5, COLOR.azul, 0.4);
+    y += 19;
+  }
+
+  function tituloBloque(titulo, detalle, x = M, ancho = ANCHO_UTIL) {
+    escribir(titulo, x, y, { tam: 9.5, estilo: 'bold' });
+    y += 1.5;
+    if (detalle) {
+      const lineas = envolver(detalle, ancho, { tam: 7 });
+      escribir(lineas, x, y + 3.5, { tam: 7, color: COLOR.gris, lineHeightFactor: 1.35 });
+      y += 3.5 + lineas.length * 3.3;
+    }
+    y += 2;
+  }
+
+  /**
+   * Tabla sin grilla, con líneas finas entre filas. Si una columna tiene `barra`,
+   * en esa celda se dibuja una barra proporcional a `valorBarra` de cada fila.
+   */
+  function tabla({ columnas, filas, pie, x = M, ancho = ANCHO_UTIL, vacio = 'Sin datos en el período.' }) {
+    if (!filas.length) {
+      escribir(vacio, x, y + 3, { tam: 8, estilo: 'italic', color: COLOR.gris });
+      y += 13;
+      return;
+    }
+
+    const indiceBarra = columnas.findIndex((c) => c.barra);
+    const maximo = Math.max(0, ...filas.map((f) => Number(f.valorBarra) || 0)) || 1;
+
+    aplicarAutoTable(doc, {
+      startY: y,
+      margin: { left: x, right: PAGINA.ancho - x - ancho, top: PAGINA.arriba, bottom: PAGINA.alto - PAGINA.abajo },
+      tableWidth: ancho,
+      head: [columnas.map((c) => c.titulo.toUpperCase())],
+      body: filas.map((f) => f.celdas),
+      foot: pie ? [pie] : undefined,
+      theme: 'plain',
+      showHead: 'everyPage',
+      showFoot: 'lastPage',
+      styles: {
+        font: 'helvetica',
+        fontSize: 8,
+        textColor: COLOR.texto,
+        cellPadding: { top: 2.1, bottom: 2.1, left: 1.5, right: 1.5 },
+        lineColor: COLOR.linea,
+        lineWidth: { bottom: 0.1 },
+        valign: 'middle',
+      },
+      headStyles: {
+        fontSize: 6.5,
+        fontStyle: 'bold',
+        textColor: COLOR.gris,
+        lineColor: COLOR.azul,
+        lineWidth: { bottom: 0.35 },
+      },
+      footStyles: {
+        fontStyle: 'bold',
+        textColor: COLOR.texto,
+        lineColor: COLOR.azul,
+        lineWidth: { top: 0.35 },
+      },
+      columnStyles: Object.fromEntries(
+        columnas.map((c, i) => [i, { cellWidth: c.ancho ?? 'auto', halign: c.alinear ?? 'left' }])
+      ),
+      didParseCell: (celda) => {
+        celda.cell.styles.halign = columnas[celda.column.index]?.alinear ?? 'left';
+      },
+      didDrawCell: (celda) => {
+        if (celda.section !== 'body' || celda.column.index !== indiceBarra) return;
+        const valor = Number(filas[celda.row.index]?.valorBarra) || 0;
+        const { x: xCelda, y: yCelda, width, height } = celda.cell;
+        const altoBarra = 2.6;
+        const yBarra = yCelda + (height - altoBarra) / 2;
+        const anchoPista = width - 3;
+        rectangulo(xCelda + 1.5, yBarra, anchoPista, altoBarra, COLOR.arena);
+        if (valor > 0) {
+          rectangulo(xCelda + 1.5, yBarra, Math.max(0.6, (anchoPista * valor) / maximo), altoBarra, COLOR.azul);
+        }
+      },
+    });
+
+    y = (doc.lastAutoTable?.finalY ?? y) + 11;
+  }
+
+  function bloque({ titulo, detalle, ...opcionesTabla }) {
+    asegurarEspacio(Math.min(opcionesTabla.filas.length, 4) * 7.5 + 30);
+    tituloBloque(titulo, detalle);
+    tabla(opcionesTabla);
+  }
+
+  /** Dos bloques lado a lado; sigue abajo del que termine más lejos. */
+  function dosColumnas(bloques) {
+    const anchoColumna = (ANCHO_UTIL - 10) / 2;
+    const filasMax = Math.max(...bloques.map((b) => b.filas.length));
+    asegurarEspacio(Math.min(filasMax, 6) * 7.5 + 34);
+
+    const inicio = { pagina: paginaActual(), y };
+    let fin = { ...inicio };
+
+    bloques.forEach(({ titulo, detalle, ...opcionesTabla }, i) => {
+      doc.setPage(inicio.pagina);
+      y = inicio.y;
+      const x = M + i * (anchoColumna + 10);
+      tituloBloque(titulo, detalle, x, anchoColumna);
+      tabla({ ...opcionesTabla, x, ancho: anchoColumna });
+      const pagina = paginaActual();
+      if (pagina > fin.pagina || (pagina === fin.pagina && y > fin.y)) fin = { pagina, y };
+    });
+
+    doc.setPage(fin.pagina);
+    y = fin.y;
+  }
+
+  /** Barras agrupadas por mes: creados y cerrados, con el valor arriba de cada barra. */
+  function graficoMensual(meses) {
+    const SERIES = [
+      { clave: 'ticketsCreados', nombre: 'Creados', color: COLOR.azul },
+      { clave: 'ticketsCerrados', nombre: 'Cerrados', color: COLOR.azulClaro },
+    ];
+    const altoGrafico = 42;
+    asegurarEspacio(altoGrafico + 40);
+
+    tituloBloque(
+      'Tickets creados y cerrados por mes',
+      'Los creados se cuentan por su fecha de alta y los cerrados por su fecha de cierre.'
+    );
+
+    if (!meses.length) {
+      tabla({ columnas: [], filas: [] });
+      return;
+    }
+
+    let xLeyenda = M + ANCHO_UTIL;
+    [...SERIES].reverse().forEach((serie) => {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      const anchoTexto = doc.getTextWidth(serie.nombre);
+      escribir(serie.nombre, xLeyenda, y, { tam: 7, color: COLOR.texto, align: 'right' });
+      rectangulo(xLeyenda - anchoTexto - 4, y - 2.4, 2.6, 2.6, serie.color);
+      xLeyenda -= anchoTexto + 10;
+    });
+
+    const xEje = M + 8;
+    const anchoGrafico = ANCHO_UTIL - 8;
+    const yTope = y + 6;
+    const yBase = yTope + altoGrafico;
+
+    const maximo = Math.max(1, ...meses.flatMap((m) => SERIES.map((s) => Number(m[s.clave]) || 0)));
+    const paso = pasoRedondo(maximo / 4);
+    const tope = Math.ceil(maximo / paso) * paso;
+
+    for (let valor = 0; valor <= tope; valor += paso) {
+      const yLinea = yBase - (valor / tope) * altoGrafico;
+      linea(xEje, yLinea, xEje + anchoGrafico, yLinea, valor === 0 ? COLOR.azulMedio : COLOR.linea, valor === 0 ? 0.3 : 0.1);
+      escribir(numero(valor), xEje - 2, yLinea + 1, { tam: 6.5, color: COLOR.gris, align: 'right' });
+    }
+
+    const anchoGrupo = anchoGrafico / meses.length;
+    const anchoBarra = Math.min(9, anchoGrupo * 0.3);
+    const tamRotulo = meses.length > 8 ? 6 : 7;
+
+    meses.forEach((mes, i) => {
+      const centro = xEje + anchoGrupo * (i + 0.5);
+      SERIES.forEach((serie, j) => {
+        const valor = Number(mes[serie.clave]) || 0;
+        const alto = (valor / tope) * altoGrafico;
+        const xBarra = centro + (j === 0 ? -anchoBarra - 0.4 : 0.4);
+        if (alto > 0) rectangulo(xBarra, yBase - alto, anchoBarra, alto, serie.color);
+        if (meses.length <= 12) {
+          escribir(numero(valor), xBarra + anchoBarra / 2, yBase - alto - 1.3, { tam: 6.5, align: 'center' });
+        }
+      });
+      escribir(rotuloMes(mes), centro, yBase + 4.5, { tam: tamRotulo, align: 'center' });
+      if (mes.esParcial) {
+        escribir('(parcial)', centro, yBase + 8, { tam: 6, color: COLOR.gris, align: 'center' });
+      }
+    });
+
+    y = yBase + 19;
+  }
+
+  // Portada: banda, datos del informe, indicadores clave e índice.
+  rectangulo(0, 0, PAGINA.ancho, 60, COLOR.azul);
+  escribir('SIGMA', M, 20, { tam: 9, estilo: 'bold', color: COLOR.azulClaro, charSpace: 1.2 });
+  escribir('INFORME DEL PANEL', M, 34, { fuente: 'times', tam: 24, color: COLOR.blanco, charSpace: 0.4 });
+  escribir('DE CONTROL', M, 44, { fuente: 'times', tam: 24, color: COLOR.blanco, charSpace: 0.4 });
+  escribir('Sistema Integral de Gestión de Mantenimiento de Activos · UTN Facultad Regional Resistencia', M, 52, {
+    tam: 8,
+    color: COLOR.azulClaro,
+  });
+
+  rectangulo(0, 60, PAGINA.ancho, 20, COLOR.arena);
+  const cabecera = [
+    ['Período', periodo],
+    ['Generado', generado],
+    ['Alcance', metadatos.alcance ?? 'Todo el sistema'],
+  ];
+  cabecera.forEach(([rotulo, valor], i) => {
+    const x = M + (i * ANCHO_UTIL) / 3;
+    escribir(rotulo.toUpperCase(), x, 67.5, { tam: 6.5, estilo: 'bold', color: COLOR.gris, charSpace: 0.4 });
+    escribir(valor, x, 73.5, { tam: 9 });
+  });
+
+  tituloPortada('Indicadores clave', 94);
+  const kpis = indicadoresClave(datos);
+  const anchoKpi = ANCHO_UTIL / kpis.length;
+  const yKpi = 102;
+  const altoKpi = 50;
+  rectangulo(M, yKpi, ANCHO_UTIL, altoKpi, COLOR.arena);
+  kpis.forEach((kpi, i) => {
+    const x = M + i * anchoKpi + 4;
+    const anchoTexto = anchoKpi - 8;
+    if (i > 0) linea(M + i * anchoKpi, yKpi + 5, M + i * anchoKpi, yKpi + altoKpi - 5, COLOR.linea, 0.3);
+
+    const rotulo = envolver(kpi.rotulo.toUpperCase(), anchoTexto, { tam: 6.5, estilo: 'bold' }).slice(0, 2);
+    escribir(rotulo, x, yKpi + 8, { tam: 6.5, estilo: 'bold', color: COLOR.gris, lineHeightFactor: 1.3 });
+    escribir(kpi.valor, x, yKpi + 23, { tam: 17, estilo: 'bold', color: COLOR.azul });
+    const detalle = envolver(kpi.detalle, anchoTexto, { tam: 7 }).slice(0, 3);
+    escribir(detalle, x, yKpi + 29.5, { tam: 7, lineHeightFactor: 1.35 });
+    escribir(kpi.base.toUpperCase(), x, yKpi + altoKpi - 5, { tam: 6, estilo: 'bold', color: COLOR.azulMedio });
+  });
+
+  escribir(
+    'Período: lo que pasó entre las fechas del informe.   Estado actual: la situación al momento de generarlo.',
+    M,
+    yKpi + altoKpi + 6,
+    { tam: 7, color: COLOR.gris }
+  );
+
+  tituloPortada('Contenido', 176);
+  const yIndice = 186;
+
+  // 01 · Tickets e incidencias
+  const evolucion = datos.evolucionTickets ?? {};
+  abrirSeccion('Tickets e incidencias', BASE.periodo);
+  graficoMensual(evolucion.evolucion ?? []);
+
+  const ticketsPorEstado = evolucion.porEstado ?? [];
+  const totalTickets =
+    evolucion.totalTicketsPeriodo ?? ticketsPorEstado.reduce((suma, e) => suma + (Number(e.cantidad) || 0), 0);
+  bloque({
+    titulo: 'Tickets según su estado',
+    detalle: `Tickets dados de alta en el período (${numero(totalTickets)}), según el estado en que están hoy.`,
+    columnas: [
+      { titulo: 'Estado', ancho: 52 },
+      { titulo: '', barra: true },
+      { titulo: 'Cantidad', ancho: 20, alinear: 'right' },
+      { titulo: '%', ancho: 20, alinear: 'right' },
+    ],
+    filas: ticketsPorEstado.map((e) => ({
+      valorBarra: e.cantidad,
+      celdas: [e.nombre, '', numero(e.cantidad), porcentaje(e.porcentaje)],
+    })),
+    pie: ['Total', '', numero(totalTickets), ''],
+  });
+
+  const rawAreas = datos.areasIncidencia;
+  const areas = Array.isArray(rawAreas) ? rawAreas : (rawAreas?.ranking ?? []);
+  bloque({
+    titulo: 'Áreas con más incidencias',
+    detalle: 'Fallas registradas en el período, según el área del activo. Si dos áreas comparten un espacio, la falla cuenta para las dos.',
+    columnas: [
+      { titulo: 'Área', ancho: 50 },
+      { titulo: 'Edificio', ancho: 32 },
+      { titulo: '', barra: true },
+      { titulo: 'Fallas', ancho: 15, alinear: 'right' },
+      { titulo: 'Tickets', ancho: 15, alinear: 'right' },
+      { titulo: '%', ancho: 17, alinear: 'right' },
+    ],
+    filas: areas.map((a) => ({
+      valorBarra: a.cantidadFallas ?? a.fallas,
+      celdas: [
+        a.nombreArea ?? a.nombre ?? 'Sin área',
+        a.nombreEdificio || '-',
+        '',
+        numero(a.cantidadFallas ?? a.fallas),
+        numero(a.cantidadTickets ?? a.tickets),
+        porcentaje(a.porcentaje),
+      ],
+    })),
+  });
+
+  const tiempos = datos.tiemposResolucion ?? {};
+  const promedioGeneral = tiempos.general?.promedioSegundos;
+  bloque({
+    titulo: 'Tiempo promedio de resolución por área',
+    detalle: `Desde el alta hasta el cierre de los tickets cerrados en el período (${numero(tiempos.general?.cantidadTickets)}). Promedio general: ${promedioGeneral != null ? textoTiempo(promedioGeneral) : 'sin datos'}.`,
+    columnas: [
+      { titulo: 'Área', ancho: 50 },
+      { titulo: 'Edificio', ancho: 32 },
+      { titulo: '', barra: true },
+      { titulo: 'Tickets', ancho: 16, alinear: 'right' },
+      { titulo: 'Promedio', ancho: 22, alinear: 'right' },
+    ],
+    filas: (tiempos.porArea ?? []).map((a) => ({
+      valorBarra: a.promedioSegundos,
+      celdas: [a.nombre ?? 'Sin área', a.edificio || '-', '', numero(a.cantidadTickets), textoTiempo(a.promedioSegundos)],
+    })),
+  });
+
+  // 02 · Órdenes de trabajo
+  const ordenes = datos.ordenesTrabajo ?? {};
+  const origen = ordenes.porOrigen ?? {};
+  const totalOt = origen.total ?? (Number(origen.correctivas) || 0) + (Number(origen.preventivas) || 0);
+  const prioridades = ordenes.porPrioridad ?? [];
+  const totalPrioridad =
+    ordenes.totalNoCanceladas ?? prioridades.reduce((suma, p) => suma + (Number(p.cantidad) || 0), 0);
+  const filasPrioridad = prioridades.map((p) => ({
+    valorBarra: p.cantidad,
+    celdas: [p.nombre, '', numero(p.cantidad), porcentaje(p.porcentaje)],
+  }));
+
+  const columnasAngostas = (rotulo) => [
+    { titulo: rotulo, ancho: 27 },
+    { titulo: '', barra: true },
+    { titulo: 'Cant.', ancho: 13, alinear: 'right' },
+    { titulo: '%', ancho: 16, alinear: 'right' },
+  ];
+
+  abrirSeccion('Órdenes de trabajo', BASE.periodo);
+  dosColumnas([
+    {
+      titulo: 'Por origen',
+      detalle: `OT dadas de alta en el período (${numero(totalOt)}).`,
+      columnas: columnasAngostas('Origen'),
+      filas:
+        totalOt > 0
+          ? [
+              { valorBarra: origen.correctivas, celdas: ['Correctivas', '', numero(origen.correctivas), porcentaje(origen.porcentajeCorrectivas)] },
+              { valorBarra: origen.preventivas, celdas: ['Preventivas', '', numero(origen.preventivas), porcentaje(origen.porcentajePreventivas)] },
+            ]
+          : [],
+      pie: ['Total', '', numero(totalOt), ''],
+    },
+    {
+      titulo: 'Por prioridad',
+      detalle: `OT no canceladas del período (${numero(totalPrioridad)}).`,
+      columnas: columnasAngostas('Prioridad'),
+      filas: totalPrioridad > 0 ? filasPrioridad : [],
+      pie: ['Total', '', numero(totalPrioridad), ''],
+    },
+  ]);
+
+  // 03 · Activos
+  const activos = datos.activos ?? {};
+  abrirSeccion('Activos', BASE.actual);
+  bloque({
+    titulo: 'Activos según su estado',
+    detalle: `Todos los activos registrados (${numero(activos.totalActivos)}), incluidos los retirados.`,
+    columnas: [
+      { titulo: 'Estado', ancho: 52 },
+      { titulo: '', barra: true },
+      { titulo: 'Cantidad', ancho: 20, alinear: 'right' },
+      { titulo: '%', ancho: 20, alinear: 'right' },
+    ],
+    filas: (activos.porEstado ?? []).map((e) => ({
+      valorBarra: e.cantidad,
+      celdas: [e.nombre, '', numero(e.cantidad), porcentaje(e.porcentaje)],
+    })),
+    pie: ['Total', '', numero(activos.totalActivos), ''],
+    vacio: 'Sin activos registrados.',
+  });
+
+  bloque({
+    titulo: 'Activos en servicio por edificio',
+    detalle: `Activos operativos, en mantenimiento o fuera de servicio (${numero(activos.totalEnServicio)}). No incluye los retirados.`,
+    columnas: [
+      { titulo: 'Edificio', ancho: 52 },
+      { titulo: '', barra: true },
+      { titulo: 'Cantidad', ancho: 20, alinear: 'right' },
+      { titulo: '%', ancho: 20, alinear: 'right' },
+    ],
+    filas: (activos.porEdificio ?? []).map((e) => ({
+      valorBarra: e.cantidad,
+      celdas: [e.nombre, '', numero(e.cantidad), porcentaje(e.porcentaje)],
+    })),
+    pie: ['Total', '', numero(activos.totalEnServicio), ''],
+    vacio: 'Sin activos en servicio.',
+  });
+
+  // 04 · Personal técnico
+  const carga = datos.cargaTecnicos ?? {};
+  const sinAsignar = Number(carga.sinAsignar) || 0;
+  abrirSeccion('Personal técnico', BASE.actual);
+  bloque({
+    titulo: 'Tareas pendientes por técnico',
+    detalle: `Tareas sin terminar con un técnico asignado (${numero(carga.totalTareasActivas)}). Tareas abiertas que todavía no tienen técnico: ${numero(sinAsignar)}.`,
+    columnas: [
+      { titulo: 'Técnico', ancho: 52 },
+      { titulo: '', barra: true },
+      { titulo: 'Tareas', ancho: 16, alinear: 'right' },
+      { titulo: '% del total', ancho: 20, alinear: 'right' },
+      { titulo: 'Disponibilidad', ancho: 26 },
+    ],
+    filas: (carga.porTecnico ?? []).map((t) => ({
+      valorBarra: t.tareasActivas,
+      celdas: [t.nombre, '', numero(t.tareasActivas), porcentaje(t.porcentaje), t.disponible ? 'Disponible' : 'No disponible'],
+    })),
+    vacio: 'Sin técnicos registrados.',
+  });
+
+  // 05 · Inventario
+  const materiales = datos.resumenGeneral?.materialesBajoMinimo ?? {};
+  abrirSeccion('Inventario', BASE.actual);
+  bloque({
+    titulo: 'Materiales por debajo del stock mínimo',
+    detalle: `${numero(materiales.bajoMinimo)} de ${numero(materiales.totalMateriales)} materiales registrados (${porcentaje(materiales.porcentaje)}), ordenados por faltante.`,
+    columnas: [
+      { titulo: 'Código', ancho: 26 },
+      { titulo: 'Material' },
+      { titulo: 'Stock actual', ancho: 24, alinear: 'right' },
+      { titulo: 'Stock mínimo', ancho: 24, alinear: 'right' },
+      { titulo: 'Faltante', ancho: 22, alinear: 'right' },
+    ],
+    filas: (materiales.items ?? []).map((m) => ({
+      celdas: [m.codigo, m.nombre, numero(m.stockActual), numero(m.stockMinimo), numero(m.faltante)],
+    })),
+    vacio: 'Ningún material está por debajo de su stock mínimo.',
+  });
+
+  // El índice se completa al final, cuando ya se sabe en qué página quedó cada sección.
+  doc.setPage(1);
+  indice.forEach((entrada, i) => {
+    const yEntrada = yIndice + i * 10;
+    escribir(entrada.numero, M, yEntrada, { fuente: 'times', tam: 13, color: COLOR.azulClaro });
+    escribir(entrada.titulo, M + 13, yEntrada, { tam: 10 });
+    escribir(entrada.base.toUpperCase(), M + 120, yEntrada, { tam: 6.5, estilo: 'bold', color: COLOR.azulMedio });
+    escribir(String(entrada.pagina), M + ANCHO_UTIL, yEntrada, { tam: 10, align: 'right' });
+    linea(M, yEntrada + 3.8, M + ANCHO_UTIL, yEntrada + 3.8, COLOR.linea, 0.15);
+  });
+
+  const totalPaginas = doc.internal.getNumberOfPages();
+  for (let pagina = 1; pagina <= totalPaginas; pagina++) {
+    doc.setPage(pagina);
+    if (pagina > 1) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      const anchoMarca = doc.getTextWidth('SIGMA');
+      escribir('SIGMA', M, 13, { tam: 7, estilo: 'bold', color: COLOR.azul });
+      escribir('Informe del Panel de Control', M + anchoMarca + 3, 13, { tam: 7, color: COLOR.gris });
+      escribir(periodo, M + ANCHO_UTIL, 13, { tam: 7, color: COLOR.gris, align: 'right' });
+      linea(M, 16, M + ANCHO_UTIL, 16);
+    }
+    linea(M, 283, M + ANCHO_UTIL, 283);
+    escribir(`Generado el ${generado}`, M, 288, { tam: 6.5, color: COLOR.gris });
+    escribir(`${pagina} / ${totalPaginas}`, M + ANCHO_UTIL, 288, { tam: 6.5, color: COLOR.gris, align: 'right' });
+  }
+
+  return doc;
+}
+
+/** El PDF como Uint8Array, sin depender del navegador (lo usan las pruebas). */
+export async function generarBytesPdf(payloadPanel) {
+  const doc = generarDocumentoPdf(payloadPanel);
+  return new Uint8Array(doc.output('arraybuffer'));
+}
+
+/** Descarga el informe como informe-panel-AAAA-MM-DD.pdf. */
+export async function exportarPanelPdf(payloadPanel) {
+  const doc = generarDocumentoPdf(payloadPanel);
+  const nombreArchivo = `informe-panel-${fechaHoyArchivoUtc3()}.pdf`;
+  doc.save(nombreArchivo);
+  return nombreArchivo;
 }

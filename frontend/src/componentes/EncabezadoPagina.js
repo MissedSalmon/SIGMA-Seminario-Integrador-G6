@@ -24,7 +24,7 @@ export default function EncabezadoPagina({ titulo, accion, accionesExtra }) {
     <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
       <h1 className="sigma-titulo">{titulo}</h1>
 
-      <div className="d-flex gap-2">
+      <div className="d-flex flex-wrap gap-2">
         {accionesExtra && accionesExtra}
         {accion && (
           <BotonEnlace href={accion.direccion}>

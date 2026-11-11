@@ -5,6 +5,8 @@
  */
 import { useEffect, useState } from 'react';
 import { CCard, CCardBody } from '@coreui/react';
+import CIcon from '@coreui/icons-react';
+import { cilDescription } from '@coreui/icons';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
@@ -111,35 +113,41 @@ export default function PantallaCargaTrabajo() {
     },
     {
       clave: 'pendientes',
+      alinearDerecha: true,
       encabezado: 'Pendientes',
       render: (tecnico) => tecnico.pendientes,
     },
     {
       clave: 'enEjecucion',
+      alinearDerecha: true,
       encabezado: 'En ejecución',
       render: (tecnico) => tecnico.enEjecucion,
     },
     {
       clave: 'completadas',
+      alinearDerecha: true,
       encabezado: 'Completadas',
       render: (tecnico) => tecnico.completadas,
     },
     {
       clave: 'cargaActiva',
+      alinearDerecha: true,
       encabezado: 'Carga activa',
       render: (tecnico) => <span className="fw-semibold">{tecnico.cargaActiva}</span>,
     },
     {
-      clave: 'detalle',
-      encabezado: 'Detalle',
+      clave: 'acciones',
+      encabezado: 'Acción',
       alinearDerecha: true,
       render: (tecnico) => (
         <BotonEnlace
           href={direccionDetalle(tecnico.legajo, filtroDesde, filtroHasta)}
-          variante="outline"
-          tamano="sm"
+          variante="ghost"
+          className="btn-icono"
+          title="Ver sus tareas"
+          aria-label={`Ver las tareas de ${tecnico.nombre}`}
         >
-          Ver tareas
+          <CIcon icon={cilDescription} />
         </BotonEnlace>
       ),
     },
@@ -147,6 +155,76 @@ export default function PantallaCargaTrabajo() {
 
   const maximoCargaActiva = Math.max(1, ...tecnicos.map((tecnico) => tecnico.cargaActiva));
   const maximoCompletadas = Math.max(1, ...tecnicos.map((tecnico) => tecnico.completadas));
+
+  const graficos = (
+    <section className="sigma-carga-graficos" aria-label="Gráficos de carga de trabajo">
+      <div className="sigma-carga-leyenda" aria-label="Referencias de estado">
+        <span><i className="sigma-carga-muestra sigma-carga-muestra-pendiente" />Pendientes</span>
+        <span><i className="sigma-carga-muestra sigma-carga-muestra-ejecucion" />En ejecución</span>
+        <span><i className="sigma-carga-muestra sigma-carga-muestra-completada" />Completadas</span>
+      </div>
+
+      <figure className="sigma-carga-grafico">
+        <figcaption>
+          <h2>Carga activa</h2>
+          <p>Pendientes y en ejecución, ordenadas por técnico.</p>
+        </figcaption>
+        {tecnicos.map((tecnico) => {
+          const anchoPendientes = (tecnico.pendientes / maximoCargaActiva) * 100;
+          const anchoEjecucion = (tecnico.enEjecucion / maximoCargaActiva) * 100;
+
+          return (
+            <div className="sigma-carga-fila" key={`activa-${tecnico.legajo}`}>
+              <span className="sigma-carga-nombre" title={`${tecnico.nombre} (${tecnico.legajo})`}>
+                {tecnico.nombre}
+              </span>
+              <div
+                className="sigma-carga-pista"
+                role="img"
+                aria-label={`${tecnico.nombre}: ${tecnico.pendientes} pendientes y ${tecnico.enEjecucion} en ejecución`}
+              >
+                <span className="sigma-carga-barra sigma-carga-barra-pendiente" style={{ width: `${anchoPendientes}%` }} />
+                <span className="sigma-carga-barra sigma-carga-barra-ejecucion" style={{ width: `${anchoEjecucion}%` }} />
+              </div>
+              <strong className="sigma-carga-total">{tecnico.cargaActiva}</strong>
+            </div>
+          );
+        })}
+        {tecnicos.length === 0 && !cargando && (
+          <p className="text-body-secondary mb-0">No hay datos para graficar.</p>
+        )}
+      </figure>
+
+      <figure className="sigma-carga-grafico">
+        <figcaption>
+          <h2>Tareas completadas</h2>
+          <p>Comparación por técnico en el mismo período.</p>
+        </figcaption>
+        {tecnicos.map((tecnico) => {
+          const anchoCompletadas = (tecnico.completadas / maximoCompletadas) * 100;
+
+          return (
+            <div className="sigma-carga-fila" key={`completadas-${tecnico.legajo}`}>
+              <span className="sigma-carga-nombre" title={`${tecnico.nombre} (${tecnico.legajo})`}>
+                {tecnico.nombre}
+              </span>
+              <div
+                className="sigma-carga-pista"
+                role="img"
+                aria-label={`${tecnico.nombre}: ${tecnico.completadas} tareas completadas`}
+              >
+                <span className="sigma-carga-barra sigma-carga-barra-completada" style={{ width: `${anchoCompletadas}%` }} />
+              </div>
+              <strong className="sigma-carga-total">{tecnico.completadas}</strong>
+            </div>
+          );
+        })}
+        {tecnicos.length === 0 && !cargando && (
+          <p className="text-body-secondary mb-0">No hay datos para graficar.</p>
+        )}
+      </figure>
+    </section>
+  );
 
   return (
     <>
@@ -161,74 +239,6 @@ export default function PantallaCargaTrabajo() {
 
       <CCard>
         <CCardBody>
-          <section className="sigma-carga-graficos" aria-label="Gráficos de carga de trabajo">
-            <div className="sigma-carga-leyenda" aria-label="Referencias de estado">
-              <span><i className="sigma-carga-muestra sigma-carga-muestra-pendiente" />Pendientes</span>
-              <span><i className="sigma-carga-muestra sigma-carga-muestra-ejecucion" />En ejecución</span>
-              <span><i className="sigma-carga-muestra sigma-carga-muestra-completada" />Completadas</span>
-            </div>
-
-            <figure className="sigma-carga-grafico">
-              <figcaption>
-                <h2>Carga activa</h2>
-                <p>Pendientes y en ejecución, ordenadas por técnico.</p>
-              </figcaption>
-              {tecnicos.map((tecnico) => {
-                const anchoPendientes = (tecnico.pendientes / maximoCargaActiva) * 100;
-                const anchoEjecucion = (tecnico.enEjecucion / maximoCargaActiva) * 100;
-
-                return (
-                  <div className="sigma-carga-fila" key={`activa-${tecnico.legajo}`}>
-                    <span className="sigma-carga-nombre" title={`${tecnico.nombre} (${tecnico.legajo})`}>
-                      {tecnico.nombre}
-                    </span>
-                    <div
-                      className="sigma-carga-pista"
-                      role="img"
-                      aria-label={`${tecnico.nombre}: ${tecnico.pendientes} pendientes y ${tecnico.enEjecucion} en ejecución`}
-                    >
-                      <span className="sigma-carga-barra sigma-carga-barra-pendiente" style={{ width: `${anchoPendientes}%` }} />
-                      <span className="sigma-carga-barra sigma-carga-barra-ejecucion" style={{ width: `${anchoEjecucion}%` }} />
-                    </div>
-                    <strong className="sigma-carga-total">{tecnico.cargaActiva}</strong>
-                  </div>
-                );
-              })}
-              {tecnicos.length === 0 && !cargando && (
-                <p className="text-body-secondary mb-0">No hay datos para graficar.</p>
-              )}
-            </figure>
-
-            <figure className="sigma-carga-grafico">
-              <figcaption>
-                <h2>Tareas completadas</h2>
-                <p>Comparación por técnico en el mismo período.</p>
-              </figcaption>
-              {tecnicos.map((tecnico) => {
-                const anchoCompletadas = (tecnico.completadas / maximoCompletadas) * 100;
-
-                return (
-                  <div className="sigma-carga-fila" key={`completadas-${tecnico.legajo}`}>
-                    <span className="sigma-carga-nombre" title={`${tecnico.nombre} (${tecnico.legajo})`}>
-                      {tecnico.nombre}
-                    </span>
-                    <div
-                      className="sigma-carga-pista"
-                      role="img"
-                      aria-label={`${tecnico.nombre}: ${tecnico.completadas} tareas completadas`}
-                    >
-                      <span className="sigma-carga-barra sigma-carga-barra-completada" style={{ width: `${anchoCompletadas}%` }} />
-                    </div>
-                    <strong className="sigma-carga-total">{tecnico.completadas}</strong>
-                  </div>
-                );
-              })}
-              {tecnicos.length === 0 && !cargando && (
-                <p className="text-body-secondary mb-0">No hay datos para graficar.</p>
-              )}
-            </figure>
-          </section>
-
           <TablaDatos
             filas={tecnicos}
             claveFila={(tecnico) => tecnico.legajo}
@@ -262,6 +272,7 @@ export default function PantallaCargaTrabajo() {
               },
             ]}
             alLimpiar={limpiarFiltros}
+            antesDeLaTabla={graficos}
             cargando={cargando}
             textoVacio={
               filtroEspecialidad || filtroDesde || filtroHasta
