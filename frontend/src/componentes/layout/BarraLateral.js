@@ -36,12 +36,14 @@ import { navegacion } from './navegacion.js';
 import { useLayout } from './ContextoLayout.js';
 import { useSesion } from './ContextoSesion.js';
 import { logout } from '@/servicios/auth.js';
+import { normalizarRol, inicioPorRol } from '@/utils/roles.js';
 
 /** Devuelve true si el item debe mostrarse al rol dado. Sin propiedad roles = visible para todos. */
 function visible(opcion, rol) {
   if (!opcion.roles) return true;
-  if (!rol) return false;
-  return opcion.roles.includes(rol);
+  const r = normalizarRol(rol);
+  if (!r) return false;
+  return opcion.roles.some((rolOpcion) => normalizarRol(rolOpcion) === r);
 }
 
 /** Todas las direcciones de los enlaces del menu. */
@@ -79,8 +81,9 @@ export default function BarraLateral() {
   const router = useRouter();
   const { barraVisible, setBarraVisible } = useLayout();
   const { usuario } = useSesion();
-  const rol = usuario?.rol ?? null;
+  const rol = normalizarRol(usuario?.rol ?? null);
   const direccionActual = usePathname() ?? '/';
+  const rutaInicio = inicioPorRol(rol);
 
   // Solo se calculan las direcciones de los items que el usuario puede ver.
   const opcionesVisibles = navegacion.filter((opcion) => visible(opcion, rol));
@@ -89,9 +92,10 @@ export default function BarraLateral() {
   const handleLogout = async () => {
     try {
       await logout();
-      router.push('/login');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
+    } finally {
+      window.location.replace('/login');
     }
   };
 
@@ -120,7 +124,7 @@ export default function BarraLateral() {
       onVisibleChange={(v) => setBarraVisible(v)}
     >
       <CSidebarHeader className="border-bottom d-flex align-items-center justify-content-between">
-        <CSidebarBrand as={Link} href="/" className="text-decoration-none">
+        <CSidebarBrand as={Link} href={rutaInicio} className="text-decoration-none">
           <span className="sigma-marca">SIGMA</span>
         </CSidebarBrand>
         <button

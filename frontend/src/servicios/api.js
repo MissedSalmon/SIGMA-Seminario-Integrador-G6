@@ -45,6 +45,18 @@ export const api = axios.create({
 api.interceptors.response.use(
   (respuesta) => respuesta,
   (error) => {
+    // Si la sesión expiró o es inválida (401), redirigir a login con aviso de sesión expirada
+    if (error.response?.status === 401) {
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+        const rutaActual = window.location.pathname + window.location.search;
+        const rutaDestino =
+          rutaActual && rutaActual !== '/'
+            ? `/login?expirada=true&redireccion=${encodeURIComponent(rutaActual)}`
+            : '/login?expirada=true';
+        window.location.replace(rutaDestino);
+      }
+    }
+
     // Caso 1: el backend contesto, pero con un error. El mensaje ya viene
     // escrito por el ("El nombre del edificio es obligatorio.").
     if (error.response) {

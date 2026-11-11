@@ -43,6 +43,7 @@ import { useLayout } from './ContextoLayout.js';
 import { useSesion } from './ContextoSesion.js';
 import CampanaNotificaciones, { olvidarAvisadas, ROLES_CON_NOTIFICACIONES } from './CampanaNotificaciones.js';
 import { logout } from '@/servicios/auth.js';
+import { inicioPorRol } from '@/utils/roles.js';
 import DialogoCambiarContrasena from '@/componentes/usuarios/CambioContrasena.js';
 
 /**
@@ -194,14 +195,16 @@ export default function Encabezado() {
   const { usuario } = useSesion();
   const migas = armarMigas(direccionActual);
   const [cambiandoContrasena, setCambiandoContrasena] = useState(false);
+  const rutaInicio = inicioPorRol(usuario?.rol);
 
   const handleLogout = async () => {
     try {
       await logout();
-      olvidarAvisadas();
-      router.push('/login');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
+    } finally {
+      olvidarAvisadas?.();
+      window.location.replace('/login');
     }
   };
 
@@ -220,7 +223,7 @@ export default function Encabezado() {
             <RouterProvider navigate={router.push}>
               <Breadcrumbs className="sigma-migas">
                 {/* En la pantalla de inicio, "Inicio" es la unica miga y es la actual. */}
-                <Breadcrumbs.Item href={migas.length > 0 ? '/' : undefined}>Inicio</Breadcrumbs.Item>
+                <Breadcrumbs.Item href={migas.length > 0 ? rutaInicio : undefined}>Inicio</Breadcrumbs.Item>
 
                 {migas.map((miga) => (
                   <Breadcrumbs.Item

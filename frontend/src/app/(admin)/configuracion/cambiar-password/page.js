@@ -34,8 +34,8 @@ export default function PantallaCambioObligatorio() {
     try {
       await logout();
     } finally {
-      olvidarAvisadas();
-      router.push('/login');
+      olvidarAvisadas?.();
+      window.location.replace('/login');
     }
   }
 
