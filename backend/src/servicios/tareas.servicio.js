@@ -8,8 +8,9 @@
  *
  * De cada tarea se trae lo que el tecnico necesita para ir a hacerla: que hay
  * que hacer, sobre que activo, donde esta (edificio y espacio) y a que OT
- * pertenece. El activo cuelga del ticket o del mantenimiento preventivo que
- * origino la OT, igual que en ordenesTrabajo.servicio.js.
+ * pertenece. El activo se busca primero en la propia OT (las preventivas lo
+ * guardan ahi desde que los planes son por activo, 03/11/2026), despues en el
+ * ticket y por ultimo en el plan (OT preventivas viejas). Ver `activoDeLaOrden`.
  *
  * DECISIONES (10/10/2026, ver .claude/contexto/dominio.md):
  *   - "Pendiente" para el aviso es toda tarea que todavia no termino: la que
@@ -31,6 +32,7 @@ import {
 } from '../utiles/enumerados.js';
 import * as inventario from './inventario.servicio.js';
 import { observacionesDeLaTarea } from './observaciones.servicio.js';
+import { guardarFalla, validarDatosFalla } from './ordenesTrabajo.servicio.js';
 
 /** De mas urgente a menos: con este orden se ofrecen en el filtro. */
 export const PRIORIDADES = ENUM_PRIORIDAD.textos;
@@ -43,7 +45,7 @@ const ASIGNACION_CANCELADA = ENUM_ESTADO_ASIGNACION_TECNICO.codigo('Cancelada');
 /** Errores de la base cuando una columna no existe (42703 al leer, PGRST204 al escribir). */
 const FALTA_COLUMNA = ['42703', 'PGRST204'];
 
-/** El activo y donde esta. Se repite para el ticket y para el preventivo. */
+/** El activo y donde esta. Se repite para la OT, el ticket y el preventivo. */
 const ACTIVO = `
   activo (
     activo_codigo,
@@ -73,6 +75,8 @@ const COLUMNAS = `
       ot_id,
       ot_desc,
       ot_estado,
+      activo_codigo,
+      ${ACTIVO},
       ticket ( ticket_id, ${ACTIVO} ),
       mantenimiento_preventivo ( mant_prev_id, ${ACTIVO} )
     )
@@ -95,10 +99,19 @@ function nombreDelEspacio(espacio) {
     : `Espacio ${espacio.espacio_num}`;
 }
 
+/**
+ * El activo de una OT. Una OT preventiva lo tiene en la propia OT (el plan es
+ * de un tipo de activo y no tiene activo propio); una correctiva, en el
+ * ticket. Las preventivas viejas lo tenian en el plan.
+ */
+function activoDeLaOrden(orden) {
+  return orden?.activo ?? orden?.ticket?.activo ?? orden?.mantenimiento_preventivo?.activo ?? null;
+}
+
 function aTarea(fila) {
   const tarea = fila.tarea_ot;
   const orden = tarea.orden_trabajo ?? null;
-  const activo = orden?.ticket?.activo ?? orden?.mantenimiento_preventivo?.activo ?? null;
+  const activo = activoDeLaOrden(orden);
   const espacio = activo?.espacio ?? null;
   const estado = ENUM_ESTADO_TAREA.texto(tarea.tarea_estado) ?? 'Creada';
 
@@ -231,7 +244,22 @@ export async function obtenerUnaDelTecnico(legajo, idOt, idTarea) {
     ...aTarea(data),
     materiales: await materialesDeLaTarea(idOt, idTarea),
     observaciones: await observacionesDeLaTarea(idOt, idTarea),
+    falla: await fallaDeLaTarea(idOt, idTarea),
   };
+}
+
+/** La falla que se diagnosticó en la tarea, o null si no hay (es opcional). */
+async function fallaDeLaTarea(idOt, idTarea) {
+  const { data, error } = await supabase
+    .from('falla')
+    .select('falla_tipo, falla_desc, falla_fecha')
+    .eq('ot_id', idOt)
+    .eq('tarea_id', idTarea)
+    .maybeSingle();
+
+  if (error) throw errorDeBase(error, 'de la falla de la tarea');
+
+  return data ? { tipo: data.falla_tipo, descripcion: data.falla_desc, fecha: data.falla_fecha } : null;
 }
 
 /* ======================================================================
@@ -252,7 +280,9 @@ const codigosTicket = (estados) => estados.map((estado) => ENUM_ESTADO_TICKET.co
 async function ordenConActivo(idOt) {
   const { data, error } = await supabase
     .from('orden_trabajo')
-    .select('ot_id, ot_estado, ticket_id, ticket ( activo_codigo ), mantenimiento_preventivo ( activo_codigo )')
+    .select(
+      'ot_id, ot_estado, ticket_id, activo_codigo, ticket ( activo_codigo ), mantenimiento_preventivo ( activo_codigo )'
+    )
     .eq('ot_id', idOt)
     .maybeSingle();
 
@@ -262,7 +292,8 @@ async function ordenConActivo(idOt) {
   return {
     idOt: data.ot_id,
     idTicket: data.ticket_id,
-    codigoActivo: data.ticket?.activo_codigo ?? data.mantenimiento_preventivo?.activo_codigo ?? null,
+    codigoActivo:
+      data.activo_codigo ?? data.ticket?.activo_codigo ?? data.mantenimiento_preventivo?.activo_codigo ?? null,
   };
 }
 
@@ -304,7 +335,13 @@ async function cambiarEstadoTarea(idOt, idTarea, desde, hacia) {
 async function activoSigueEnMantenimiento(codigoActivo, idOtQueTermina) {
   const enEjecucion = ENUM_ESTADO_OT.codigo('En ejecución');
 
-  const [porTicket, porPreventivo] = await Promise.all([
+  const [porOrden, porTicket, porPreventivo] = await Promise.all([
+    supabase
+      .from('orden_trabajo')
+      .select('ot_id')
+      .eq('ot_estado', enEjecucion)
+      .eq('activo_codigo', codigoActivo)
+      .neq('ot_id', idOtQueTermina),
     supabase
       .from('orden_trabajo')
       .select('ot_id, ticket!inner ( activo_codigo )')
@@ -319,10 +356,11 @@ async function activoSigueEnMantenimiento(codigoActivo, idOtQueTermina) {
       .neq('ot_id', idOtQueTermina),
   ]);
 
+  if (porOrden.error) throw errorDeBase(porOrden.error, 'de las órdenes de trabajo');
   if (porTicket.error) throw errorDeBase(porTicket.error, 'de las órdenes de trabajo');
   if (porPreventivo.error) throw errorDeBase(porPreventivo.error, 'de las órdenes de trabajo');
 
-  return (porTicket.data ?? []).length + (porPreventivo.data ?? []).length > 0;
+  return (porOrden.data ?? []).length + (porTicket.data ?? []).length + (porPreventivo.data ?? []).length > 0;
 }
 
 /**
@@ -548,6 +586,41 @@ export async function registrarMateriales(legajo, idOt, idTarea, items) {
   return obtenerUnaDelTecnico(legajo, idOt, idTarea);
 }
 
+/* ------------------------------------------------------------------ Falla */
+
+/**
+ * El técnico carga la falla que encontró en su tarea (10/11/2026). Es
+ * opcional: no hace falta para finalizar. Sólo mientras la tarea está en
+ * ejecución, y una sola por tarea: si ya había una, se reemplaza.
+ */
+export async function registrarFalla(legajo, idOt, idTarea, datos) {
+  const tarea = await obtenerUnaDelTecnico(legajo, idOt, idTarea);
+  if (tarea.estado !== 'En ejecución') {
+    throw conflicto('La falla se carga mientras la tarea está en ejecución.');
+  }
+  if (!tarea.codigoActivo) {
+    throw datoInvalido('La orden de trabajo no tiene un activo asociado para registrar la falla.');
+  }
+
+  const { tipo, descripcion } = await validarDatosFalla(datos);
+  await guardarFalla({ idOt, idTarea, codigoActivo: tarea.codigoActivo, tipo, descripcion });
+
+  return obtenerUnaDelTecnico(legajo, idOt, idTarea);
+}
+
+/** El técnico quita la falla que cargó, mientras la tarea sigue en ejecución. */
+export async function quitarFalla(legajo, idOt, idTarea) {
+  const tarea = await obtenerUnaDelTecnico(legajo, idOt, idTarea);
+  if (tarea.estado !== 'En ejecución') {
+    throw conflicto('La falla se puede quitar mientras la tarea está en ejecución.');
+  }
+
+  const { error } = await supabase.from('falla').delete().eq('ot_id', idOt).eq('tarea_id', idTarea);
+  if (error) throw errorDeBase(error, 'de la falla de la tarea');
+
+  return obtenerUnaDelTecnico(legajo, idOt, idTarea);
+}
+
 /* ------------------------------------------------------------- Herramientas */
 
 /**
@@ -595,6 +668,7 @@ const TAREA_DEL_HISTORIAL = `
   tarea_ot (
     tarea_desc,
     orden_trabajo (
+      ${ACTIVO},
       ticket ( ${ACTIVO} ),
       mantenimiento_preventivo ( ${ACTIVO} )
     )
@@ -603,8 +677,7 @@ const TAREA_DEL_HISTORIAL = `
 
 /** Lo que el técnico reconoce de una tarea: qué era, sobre qué activo y dónde. */
 function tareaDelHistorial(tareaOt) {
-  const orden = tareaOt?.orden_trabajo ?? null;
-  const activo = orden?.ticket?.activo ?? orden?.mantenimiento_preventivo?.activo ?? null;
+  const activo = activoDeLaOrden(tareaOt?.orden_trabajo ?? null);
 
   return {
     tarea: tareaOt?.tarea_desc ?? '',

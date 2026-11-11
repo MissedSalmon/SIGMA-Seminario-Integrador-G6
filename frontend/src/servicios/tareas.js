@@ -70,6 +70,28 @@ export async function registrarMateriales(idOt, idTarea, items) {
   return data.datos;
 }
 
+/**
+ * Carga (o reemplaza) la falla encontrada en la tarea. Es opcional y sólo se
+ * puede mientras la tarea está en ejecución. Devuelve la tarea actualizada.
+ * @param {{ tipo: string, descripcion: string }} falla
+ */
+export async function registrarFallaDeTarea(idOt, idTarea, falla) {
+  const { data } = await api.put(`/tareas/mias/${idOt}/${idTarea}/falla`, falla);
+  return data.datos;
+}
+
+/** Quita la falla cargada en la tarea. Devuelve la tarea actualizada. */
+export async function quitarFallaDeTarea(idOt, idTarea) {
+  const { data } = await api.delete(`/tareas/mias/${idOt}/${idTarea}/falla`);
+  return data.datos;
+}
+
+/** El catálogo de tipos de falla: ["Eléctrica", "Mecánica", ...]. */
+export async function listarTiposDeFalla() {
+  const { data } = await api.get('/tareas/tipos-falla');
+  return data.datos;
+}
+
 /** Los materiales del depósito con su stock: [{ codigo, nombre, stock }]. */
 export async function listarMaterialesDelDeposito() {
   const { data } = await api.get('/tareas/materiales');

@@ -284,6 +284,21 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 > - Desde «Otra» se pueden agregar tipos al catálogo. Se guardan con inicial mayúscula,
 >   se rechazan duplicados sin distinguir mayúsculas y quedan disponibles para otras tareas.
 
+> **Decisión del 10/11/2026 (el técnico carga la falla):**
+> - El técnico carga la falla desde el detalle de su tarea (`/tareas/[idOt]/[idTarea]`),
+>   en la tarjeta «Falla encontrada». **Es opcional:** la tarea se finaliza igual sin falla.
+> - Sólo mientras la tarea está **En ejecución**. Antes de iniciarla o después de finalizarla
+>   se ve, pero no se cambia. Mientras está en ejecución la puede editar o quitar.
+> - El tipo se elige del catálogo `tipo_falla` (el técnico no agrega tipos nuevos). Se guarda
+>   en la misma tabla `falla`, una por tarea, con el activo de la OT. Sin activo no se carga.
+> - API: `PUT` y `DELETE /api/tareas/mias/:idOt/:idTarea/falla`, `GET /api/tareas/tipos-falla`.
+> - El técnico **no agrega tipos nuevos** de falla y **puede quitar** la que cargó mientras la
+>   tarea está en ejecución (confirmado por el equipo, 10/11/2026).
+> - **Dónde se busca el activo de una OT** (corrección del 10/11/2026): primero en la propia OT
+>   (`orden_trabajo.activo_codigo`, que es donde lo guardan las preventivas desde el 03/11),
+>   después en el ticket y por último en el plan (preventivas viejas). Las tareas del técnico
+>   sólo miraban ticket y plan, y en las preventivas nuevas «Activo y ubicación» salía vacío.
+
 > **Decisiones del 03/10/2026 (devolución del Sprint 3, HU-13 y HU-16):**
 > - **Los materiales no llevan fecha de vencimiento.** Se sacó del formulario, de la ficha y
 >   de la base (columna `material.mat_fecha_venc`).

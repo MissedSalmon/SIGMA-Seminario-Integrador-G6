@@ -10,6 +10,7 @@ import { PRIORIDADES } from '../servicios/tareas.servicio.js';
 import { datoInvalido } from '../utiles/errores.js';
 import { ENUM_ESTADO_TAREA } from '../utiles/enumerados.js';
 import { registrarObservacion } from '../servicios/observaciones.servicio.js';
+import { listarTiposFalla } from '../servicios/ordenesTrabajo.servicio.js';
 
 export async function agregarObservacion(req, res) {
   const { idOt, idTarea } = leerTarea(req);
@@ -136,6 +137,28 @@ export async function tomarHerramienta(req, res) {
     req.body?.codigo
   );
   res.status(201).json({ ok: true, datos });
+}
+
+/**
+ * PUT /api/tareas/mias/:idOt/:idTarea/falla
+ * Cuerpo: { tipo: "Eléctrica", descripcion: "..." }. Es opcional cargarla.
+ */
+export async function registrarFalla(req, res) {
+  const { idOt, idTarea } = leerTarea(req);
+  const tarea = await tareasServicio.registrarFalla(req.usuario.identificador, idOt, idTarea, req.body ?? {});
+  res.json({ ok: true, datos: tarea });
+}
+
+/** DELETE /api/tareas/mias/:idOt/:idTarea/falla */
+export async function quitarFalla(req, res) {
+  const { idOt, idTarea } = leerTarea(req);
+  const tarea = await tareasServicio.quitarFalla(req.usuario.identificador, idOt, idTarea);
+  res.json({ ok: true, datos: tarea });
+}
+
+/** GET /api/tareas/tipos-falla: el catálogo para elegir el tipo. */
+export async function listarTiposDeFalla(req, res) {
+  res.json({ ok: true, datos: await listarTiposFalla() });
 }
 
 /** GET /api/tareas/materiales: los del deposito con su stock. */

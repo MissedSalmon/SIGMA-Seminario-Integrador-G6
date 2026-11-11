@@ -17,6 +17,7 @@ router.use(validarSesion);
 router.use(protegerPorRol(['tecnico']));
 
 router.get('/prioridades', tareas.listarPrioridades);
+router.get('/tipos-falla', tareas.listarTiposDeFalla);
 router.get('/materiales', tareas.listarMateriales);
 router.get('/herramientas', tareas.listarHerramientas);
 router.post('/herramientas/:codigo/devolver', tareas.devolverHerramienta);
@@ -30,5 +31,7 @@ router.post('/mias/:idOt/:idTarea/iniciar', tareas.iniciar);
 router.post('/mias/:idOt/:idTarea/finalizar', tareas.finalizar);
 router.post('/mias/:idOt/:idTarea/materiales', tareas.registrarMateriales);
 router.post('/mias/:idOt/:idTarea/herramientas', tareas.tomarHerramienta);
+router.put('/mias/:idOt/:idTarea/falla', tareas.registrarFalla);
+router.delete('/mias/:idOt/:idTarea/falla', tareas.quitarFalla);
 
 export default router;
