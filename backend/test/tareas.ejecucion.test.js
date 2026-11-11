@@ -296,6 +296,119 @@ describe('registrarMateriales', () => {
   });
 });
 
+describe('activo de una OT preventiva (guardado en la OT, 03/11/2026)', () => {
+  test('el detalle muestra el activo y su ubicación aunque el plan no tenga activo', async () => {
+    const fila = filaAsignacion({ esPreventiva: true });
+    fila.tarea_ot.orden_trabajo.activo_codigo = 'PC-LAB-01';
+    fila.tarea_ot.orden_trabajo.activo = {
+      activo_codigo: 'PC-LAB-01',
+      activo_desc: 'PC del laboratorio',
+      tipo_activo: { tipo_activo_nom: 'Computadora' },
+      espacio: { espacio_num: 12, espacio_piso: '1', tipo_espacio: { tipo_espacio_nom: 'Aula' }, edificio: { edificio_nom: 'Central' } },
+    };
+    lecturas.tecnico_asignado_tarea_ot = [{ data: fila, error: null }];
+
+    const tarea = await tareas.obtenerUnaDelTecnico('2030', 9, 1);
+
+    expect(tarea.codigoActivo).toBe('PC-LAB-01');
+    expect(tarea.activo).toEqual({ codigo: 'PC-LAB-01', descripcion: 'PC del laboratorio', nombreTipo: 'Computadora' });
+    expect(tarea.ubicacion).toEqual({ edificio: 'Central', espacio: 'Aula 12', piso: '1' });
+  });
+
+  test('al iniciar, pasa a En mantenimiento el activo guardado en la OT', async () => {
+    laTareaEsta({ estadoTarea: 2, esPreventiva: true, fechaInicio: '2026-01-01' });
+    lecturas.orden_trabajo = [
+      {
+        data: { ot_id: 9, ot_estado: 2, ticket_id: null, activo_codigo: 'PC-LAB-01', ticket: null, mantenimiento_preventivo: { activo_codigo: null } },
+        error: null,
+      },
+    ];
+
+    await tareas.iniciarTarea('2030', 9, 1);
+
+    const [activo] = escriturasEn('activo');
+    expect(activo.ops).toContainEqual(['eq', 'activo_codigo', 'PC-LAB-01']);
+  });
+});
+
+describe('falla de la tarea (opcional)', () => {
+  /** La tarea con el activo AC-001 colgando del ticket. */
+  function laTareaConActivoEsta(estadoTarea, veces = 3) {
+    lecturas.tecnico_asignado_tarea_ot = Array.from({ length: veces }, () => {
+      const fila = filaAsignacion({ estadoTarea });
+      fila.tarea_ot.orden_trabajo.ticket.activo = { activo_codigo: 'AC-001', activo_desc: null, espacio: null };
+      return { data: fila, error: null };
+    });
+  }
+
+  const CATALOGO = { data: [{ tipo_falla_nom: 'Eléctrica' }, { tipo_falla_nom: 'Mecánica' }], error: null };
+
+  function upsertsDeFalla() {
+    return llamadas.filter((llamada) => llamada.tabla === 'falla' && llamada.ops.some(([op]) => op === 'upsert'));
+  }
+
+  test('guarda la falla con el activo de la tarea mientras está en ejecución', async () => {
+    laTareaConActivoEsta(3);
+    lecturas.tipo_falla = [CATALOGO];
+
+    await tareas.registrarFalla('2030', 9, 1, { tipo: 'eléctrica', descripcion: '  Cable cortado  ' });
+
+    const [guardado] = upsertsDeFalla();
+    const [, fila, opciones] = guardado.ops.find(([op]) => op === 'upsert');
+    expect(fila).toEqual({
+      ot_id: 9,
+      tarea_id: 1,
+      activo_codigo: 'AC-001',
+      falla_tipo: 'Eléctrica',
+      falla_desc: 'Cable cortado',
+    });
+    expect(opciones).toEqual({ onConflict: 'ot_id,tarea_id' }); // una sola por tarea
+  });
+
+  test.each([
+    [2, 'Asignada'],
+    [5, 'Finalizada'],
+  ])('no deja cargarla si la tarea no está en ejecución (%s)', async (estadoTarea) => {
+    laTareaConActivoEsta(estadoTarea);
+
+    await expect(
+      tareas.registrarFalla('2030', 9, 1, { tipo: 'Eléctrica', descripcion: 'Cable cortado' })
+    ).rejects.toMatchObject({ estado: 409, message: expect.stringContaining('en ejecución') });
+    expect(upsertsDeFalla()).toHaveLength(0);
+  });
+
+  test('rechaza un tipo que no está en el catálogo', async () => {
+    laTareaConActivoEsta(3);
+    lecturas.tipo_falla = [CATALOGO];
+
+    await expect(
+      tareas.registrarFalla('2030', 9, 1, { tipo: 'Inventada', descripcion: 'Algo' })
+    ).rejects.toMatchObject({ estado: 400 });
+    expect(upsertsDeFalla()).toHaveLength(0);
+  });
+
+  test('rechaza una falla sin descripción', async () => {
+    laTareaConActivoEsta(3);
+
+    await expect(
+      tareas.registrarFalla('2030', 9, 1, { tipo: 'Eléctrica', descripcion: '   ' })
+    ).rejects.toMatchObject({ estado: 400, message: expect.stringContaining('descripción') });
+  });
+
+  test('la quita sólo con la tarea en ejecución', async () => {
+    laTareaConActivoEsta(3);
+    await tareas.quitarFalla('2030', 9, 1);
+    const borrado = llamadas.find((llamada) => llamada.tabla === 'falla' && llamada.ops.some(([op]) => op === 'delete'));
+    expect(borrado.ops).toContainEqual(['eq', 'ot_id', 9]);
+    expect(borrado.ops).toContainEqual(['eq', 'tarea_id', 1]);
+
+    llamadas = [];
+    laTareaConActivoEsta(5);
+    await expect(tareas.quitarFalla('2030', 9, 1)).rejects.toMatchObject({ estado: 409 });
+    expect(llamadas.some((llamada) => llamada.ops.some(([op]) => op === 'delete'))).toBe(false);
+  });
+});
+
 describe('historial', () => {
   test('materiales: sólo lo usado en las tareas del técnico, aunque compartan OT con otro', async () => {
     lecturas.tecnico_asignado_tarea_ot = [{ data: [{ ot_id: 9, tarea_id: 1 }], error: null }];

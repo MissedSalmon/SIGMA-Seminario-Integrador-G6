@@ -10,6 +10,8 @@
  *   - "Iniciar tarea": pasa a En ejecución y el activo a En mantenimiento.
  *   - Mientras está en ejecución registra en una ventana los materiales que usa
  *     (descuentan stock) y toma las herramientas que necesita (quedan a su nombre).
+ *   - Mientras está en ejecución puede cargar la falla que encontró. Es
+ *     opcional: se puede finalizar sin falla (10/11/2026).
  *   - "Finalizar tarea": pasa a Finalizada. Si era la última de la OT, la OT
  *     se finaliza sola y el ticket se cierra (HU-26).
  *
@@ -47,10 +49,17 @@ import { Cargando } from '@/componentes/EstadoTabla.js';
 import EtiquetaEstadoOT from '@/componentes/ordenes/EtiquetaEstadoOT.js';
 import EtiquetaPrioridad from '@/componentes/ordenes/EtiquetaPrioridad.js';
 import DialogoHerramienta from '@/componentes/tareas/DialogoHerramienta.js';
+import DialogoFalla from '@/componentes/tareas/DialogoFalla.js';
 import DialogoMaterial from '@/componentes/tareas/DialogoMaterial.js';
 import ObservacionesTarea from '@/componentes/tareas/ObservacionesTarea.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
-import { finalizarTarea, iniciarTarea, listarMisHerramientas, obtenerMiTarea } from '@/servicios/tareas.js';
+import {
+  finalizarTarea,
+  iniciarTarea,
+  listarMisHerramientas,
+  obtenerMiTarea,
+  quitarFallaDeTarea,
+} from '@/servicios/tareas.js';
 import { formatearFecha, formatearFechaHora, soloFechaLegible } from '@/utils/fechas.js';
 
 /** Una tarea en estos estados todavía no empezó: se puede iniciar. */
@@ -80,7 +89,8 @@ export default function PantallaDetalleMiTarea({ params }) {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
-  // Qué ventana está abierta: 'iniciar', 'finalizar', 'material', 'tomar', o la herramienta a devolver.
+  // Qué ventana está abierta: 'iniciar', 'finalizar', 'material', 'tomar', 'falla',
+  // 'quitarFalla', o la herramienta a devolver.
   const [ventana, setVentana] = useState(null);
   const [procesando, setProcesando] = useState(false);
   const [errorVentana, setErrorVentana] = useState('');
@@ -138,6 +148,20 @@ export default function PantallaDetalleMiTarea({ params }) {
           ? `La tarea quedó finalizada. Era la última: la OT #${idOt} se finalizó y el ticket se cerró.`
           : 'La tarea quedó finalizada.',
       });
+    } catch (fallo) {
+      setErrorVentana(fallo.message);
+    } finally {
+      setProcesando(false);
+    }
+  }
+
+  async function confirmarQuitarFalla() {
+    setProcesando(true);
+    setErrorVentana('');
+    try {
+      setTarea(await quitarFallaDeTarea(idOt, idTarea));
+      setVentana(null);
+      mostrarToast({ tipo: 'exito', mensaje: 'Se quitó la falla de la tarea.' });
     } catch (fallo) {
       setErrorVentana(fallo.message);
     } finally {
@@ -404,6 +428,51 @@ export default function PantallaDetalleMiTarea({ params }) {
               </CCol>
             </CRow>
 
+            <CRow className="g-4 mb-4">
+              <CCol lg={7}>
+                <CCard>
+                  <CCardHeader className="d-flex justify-content-between align-items-center gap-2">
+                    <span className="fw-semibold">Falla encontrada</span>
+                    {enEjecucion && !tarea.falla && tarea.activo && (
+                      <CButton color="primary" size="sm" onClick={() => abrir('falla')}>
+                        <CIcon icon={cilPlus} size="sm" className="me-1" />
+                        Agregar
+                      </CButton>
+                    )}
+                    {enEjecucion && tarea.falla && (
+                      <div className="d-flex gap-2">
+                        <CButton color="primary" variant="outline" size="sm" onClick={() => abrir('falla')}>
+                          Editar
+                        </CButton>
+                        <CButton color="danger" variant="outline" size="sm" onClick={() => abrir('quitarFalla')}>
+                          Quitar
+                        </CButton>
+                      </div>
+                    )}
+                  </CCardHeader>
+                  <CCardBody>
+                    {tarea.falla ? (
+                      <>
+                        <Dato etiqueta="Tipo de falla">{tarea.falla.tipo}</Dato>
+                        <Dato etiqueta="Descripción">
+                          <span style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+                            {tarea.falla.descripcion}
+                          </span>
+                        </Dato>
+                      </>
+                    ) : (
+                      <SinDato>
+                        {enEjecucion && !tarea.activo
+                          ? 'La orden de trabajo no tiene un activo asociado: no se puede cargar una falla.'
+                          : enEjecucion || sinEmpezar
+                            ? 'No se cargó ninguna falla. Es opcional: cargala sólo si encontraste una.'
+                            : 'En esta tarea no se registró ninguna falla.'}
+                      </SinDato>
+                    )}
+                  </CCardBody>
+                </CCard>
+              </CCol>
+            </CRow>
           </>
         )
       )}
@@ -463,6 +532,39 @@ export default function PantallaDetalleMiTarea({ params }) {
           />
         </CModalFooter>
       </CModal>
+
+      <CModal visible={ventana === 'quitarFalla'} onClose={cerrar} alignment="center">
+        <CModalHeader>
+          <CModalTitle>Quitar la falla</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          <Aviso mensaje={errorVentana} />
+          <p className="mb-0">La falla cargada en esta tarea se va a borrar.</p>
+        </CModalBody>
+        <CModalFooter>
+          <BotonesAccion
+            texto="Quitar"
+            textoProcesando="Quitando..."
+            color="danger"
+            procesando={procesando}
+            alAceptar={confirmarQuitarFalla}
+            alCancelar={cerrar}
+          />
+        </CModalFooter>
+      </CModal>
+
+      {ventana === 'falla' && (
+        <DialogoFalla
+          idOt={idOt}
+          idTarea={idTarea}
+          fallaActual={tarea?.falla ?? null}
+          onCerrar={() => setVentana(null)}
+          onGuardado={(datos) => {
+            setTarea(datos);
+            setVentana(null);
+          }}
+        />
+      )}
 
       {ventana === 'material' && (
         <DialogoMaterial

@@ -588,7 +588,7 @@ export async function actualizar(id, datos) {
 /** La OT tal cual esta en la base, para las validaciones de las tareas. */
 async function ordenPlanificable(idOt, incluirActivo = false) {
   const columnas = incluirActivo
-    ? 'ot_id, ot_estado, ticket_id, ticket(activo_codigo), mantenimiento_preventivo(activo_codigo)'
+    ? 'ot_id, ot_estado, ticket_id, activo_codigo, ticket(activo_codigo), mantenimiento_preventivo(activo_codigo)'
     : 'ot_id, ot_estado, ticket_id';
   const { data, error } = await supabase
     .from('orden_trabajo')
@@ -1023,10 +1023,14 @@ export async function eliminarTarea(idOt, idTarea) {
   return obtenerPorId(idOt);
 }
 
-/** Registra o actualiza el diagnóstico único de una tarea. */
-export async function registrarFalla(idOt, idTarea, datos) {
-  const tipoSolicitado = normalizarNombreTipoFalla(datos.tipo);
-  const descripcion = limpiar(datos.descripcion);
+/**
+ * Revisa el tipo y la descripción de una falla. Devuelve el tipo tal como está
+ * en el catálogo y la descripción limpia. Lo usan el administrador (desde la OT)
+ * y el técnico (desde su tarea en ejecución).
+ */
+export async function validarDatosFalla(datos) {
+  const tipoSolicitado = normalizarNombreTipoFalla(datos?.tipo);
+  const descripcion = limpiar(datos?.descripcion);
 
   if (!tipoSolicitado) throw datoInvalido('Elegí un tipo de falla válido.');
   if (!descripcion) throw datoInvalido('La descripción de la falla es obligatoria.');
@@ -1035,8 +1039,35 @@ export async function registrarFalla(idOt, idTarea, datos) {
   const tipo = tipos.find((uno) => claveTipoFalla(uno) === claveTipoFalla(tipoSolicitado));
   if (!tipo) throw datoInvalido('Elegí un tipo de falla existente.');
 
+  return { tipo, descripcion };
+}
+
+/**
+ * Guarda la falla de la tarea. Hay una sola por tarea (falla_una_por_tarea):
+ * si ya había una, se reemplaza.
+ */
+export async function guardarFalla({ idOt, idTarea, codigoActivo, tipo, descripcion }) {
+  const { error } = await supabase.from('falla').upsert(
+    {
+      ot_id: idOt,
+      tarea_id: idTarea,
+      activo_codigo: codigoActivo,
+      falla_tipo: tipo,
+      falla_desc: descripcion,
+    },
+    { onConflict: 'ot_id,tarea_id' }
+  );
+
+  if (error) throw new Error(error.message);
+}
+
+/** Registra o actualiza el diagnóstico único de una tarea. */
+export async function registrarFalla(idOt, idTarea, datos) {
+  const { tipo, descripcion } = await validarDatosFalla(datos);
+
   const orden = await ordenPlanificable(idOt, true);
-  const codigoActivo = orden.ticket?.activo_codigo ?? orden.mantenimiento_preventivo?.activo_codigo;
+  const codigoActivo =
+    orden.activo_codigo ?? orden.ticket?.activo_codigo ?? orden.mantenimiento_preventivo?.activo_codigo;
   if (!codigoActivo) {
     throw datoInvalido('La orden de trabajo no tiene un activo asociado para registrar la falla.');
   }
@@ -1051,18 +1082,7 @@ export async function registrarFalla(idOt, idTarea, datos) {
   if (errorTarea) throw new Error(errorTarea.message);
   if (!tarea) throw noEncontrado(`La orden de trabajo ${idOt} no tiene la tarea ${idTarea}.`);
 
-  const { error } = await supabase.from('falla').upsert(
-    {
-      ot_id: idOt,
-      tarea_id: idTarea,
-      activo_codigo: codigoActivo,
-      falla_tipo: tipo,
-      falla_desc: descripcion,
-    },
-    { onConflict: 'ot_id,tarea_id' }
-  );
-
-  if (error) throw new Error(error.message);
+  await guardarFalla({ idOt, idTarea, codigoActivo, tipo, descripcion });
 
   return obtenerPorId(idOt);
 }
