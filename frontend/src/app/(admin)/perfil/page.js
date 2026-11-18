@@ -41,7 +41,7 @@ export default function PerfilPage() {
   if (isLoading) {
     return (
       <div>
-        <EncabezadoPagina titulo="Mi Perfil" />
+        <EncabezadoPagina titulo="Mi perfil" />
         <div className="d-flex align-items-center gap-2 text-secondary p-4">
           <CSpinner size="sm" />
           <span>Cargando perfil...</span>
@@ -53,7 +53,7 @@ export default function PerfilPage() {
   if (!perfil) {
     return (
       <div>
-        <EncabezadoPagina titulo="Mi Perfil" />
+        <EncabezadoPagina titulo="Mi perfil" />
         <div className="alert alert-danger" role="alert">
           No se pudo cargar la información del perfil.
         </div>
@@ -85,7 +85,7 @@ export default function PerfilPage() {
 
   return (
     <div>
-      <EncabezadoPagina titulo="Mi Perfil" />
+      <EncabezadoPagina titulo="Mi perfil" />
 
       <CCard
         className="shadow-sm border mb-4"

@@ -281,7 +281,7 @@ export default function PantallaActivos() {
             textoVacio={
               hayFiltros
                 ? 'No hay activos que cumplan con esos filtros.'
-                : 'Todavia no hay activos cargados.'
+                : 'Todavía no hay activos cargados.'
             }
           />
         </CCardBody>

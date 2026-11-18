@@ -156,7 +156,7 @@ export default function PantallaImportarActivos() {
   return (
     <>
       <EncabezadoPagina
-        titulo="Importar Activos"
+        titulo="Importar activos"
         
       />
 

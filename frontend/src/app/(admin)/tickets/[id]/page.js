@@ -183,7 +183,7 @@ export default function PantallaDetalleTicket({ params }) {
 
   async function handleRechazar() {
     if (!motivoRechazo.trim()) {
-      setErrorRechazo('Debes indicar un motivo de rechazo.');
+      setErrorRechazo('Tenés que indicar un motivo de rechazo.');
       return;
     }
     setProcesando(true);

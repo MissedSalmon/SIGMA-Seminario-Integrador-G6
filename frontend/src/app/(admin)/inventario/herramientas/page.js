@@ -192,7 +192,7 @@ export default function PantallaHerramientas() {
               setTecnico('');
             }}
             cargando={cargando}
-            textoVacio="Todavia no hay herramientas cargadas."
+            textoVacio="Todavía no hay herramientas cargadas."
           />
         </CCardBody>
       </CCard>

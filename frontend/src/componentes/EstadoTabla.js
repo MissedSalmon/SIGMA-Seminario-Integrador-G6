@@ -40,7 +40,7 @@ export function EsqueletoFilas({ columnas, filas = 5 }) {
 /**
  * Estado vacio de una tabla o listado.
  *
- *   <SinDatos texto="Todavia no hay edificios cargados." />
+ *   <SinDatos texto="Todavía no hay edificios cargados." />
  *
  * Avisa que no hay nada, nada mas. No lleva un boton de Agregar a proposito:
  * el de la pantalla esta justo arriba, en el encabezado, y dos botones que

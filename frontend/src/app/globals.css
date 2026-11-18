@@ -390,6 +390,14 @@ body {
 .sigma-migas {
   font-size: 1.25rem;
   font-weight: 600;
+  min-width: 0;
+}
+
+/* En el celular la ruta va más chica: si no, con tres tramos ya no entra en un renglón. */
+@media (max-width: 575.98px) {
+  .sigma-migas {
+    font-size: 1rem;
+  }
 }
 
 /*
@@ -1427,12 +1435,11 @@ body {
   justify-content: space-between;
   height: 100%;
   min-height: clamp(140px, 13vh, 180px);
-  background-color: var(--cui-card-bg, #ffffff);
-  border: 1px solid var(--cui-border-color-translucent, rgba(0, 0, 0, 0.08));
-  border-left-width: 4px !important;
-  border-radius: 0.5rem;
+  background-color: var(--sigma-superficie);
+  border: 1px solid var(--sigma-borde);
+  border-radius: var(--sigma-radio-md);
   padding: clamp(0.75rem, 0.8vw, 1.15rem);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--sigma-sombra-sm);
   box-sizing: border-box;
 }
 

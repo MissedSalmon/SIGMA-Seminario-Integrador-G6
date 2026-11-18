@@ -39,7 +39,7 @@ import AvisoPlanesPorVencer from '@/componentes/planes/AvisoPlanesPorVencer.js';
 import Aviso from '@/componentes/Aviso.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
 import CampoFecha from '@/componentes/formulario/CampoFecha.js';
-import GraficoChart from '@/componentes/estadisticas/GraficoChart.js';
+import GraficoChart, { COLORES_GRAFICO } from '@/componentes/estadisticas/GraficoChart.js';
 import { obtenerPanelCompleto } from '@/servicios/estadisticas.js';
 import { exportarPanelPdf } from '@/servicios/exportacionPanel.js';
 import { hoyTexto } from '@/utils/fechas.js';
@@ -189,7 +189,7 @@ export default function PantallaPanelAdministrador() {
     <>
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-3">
         <div>
-          <h1 className="sigma-titulo mb-1">Panel de Control</h1>
+          <h1 className="sigma-titulo mb-1">Panel de control</h1>
           {metadatos.generadoEn && (
             <div className="small text-body-secondary">
               Actualizado: <strong>{fechaFrescura}</strong> (UTC-3)
@@ -231,7 +231,7 @@ export default function PantallaPanelAdministrador() {
             <TituloSeccion>Situación actual</TituloSeccion>
 
             <div className="sigma-kpi-grid sigma-kpi-grid--4">
-              <div className="sigma-kpi-card border-start-primary">
+              <div className="sigma-kpi-card">
                 <div>
                   <div className="sigma-kpi-title" title="Operatividad de activos en servicio">
                     Operatividad de activos
@@ -250,9 +250,7 @@ export default function PantallaPanelAdministrador() {
                 </div>
               </div>
 
-              <div className={`sigma-kpi-card ${
-                (resumen.coberturaPreventiva?.porcentajeActivos ?? 0) === 100 ? 'border-start-success' : 'border-start-primary'
-              }`}>
+              <div className="sigma-kpi-card">
                 <div>
                   <div
                     className="sigma-kpi-title"
@@ -260,16 +258,14 @@ export default function PantallaPanelAdministrador() {
                   >
                     Cobertura preventiva
                   </div>
-                  <div className={`sigma-kpi-value ${
-                    (resumen.coberturaPreventiva?.porcentajeActivos ?? 0) === 100 ? 'text-success' : 'text-body'
-                  }`}>
+                  <div className="sigma-kpi-value text-body">
                     {resumen.coberturaPreventiva?.porcentajeActivos != null ? `${resumen.coberturaPreventiva.porcentajeActivos} %` : '-'}
                   </div>
                 </div>
                 <div className="sigma-kpi-footer">
                   <div>
                     {(resumen.coberturaPreventiva?.porcentajeActivos ?? 0) === 100 ? (
-                      <span className="text-success fw-semibold">
+                      <span className="fw-semibold">
                         <CIcon icon={cilCheckCircle} className="me-1" />
                         Todos los activos cubiertos ({resumen.coberturaPreventiva?.totalActivosEnServicio ?? 0})
                       </span>
@@ -301,7 +297,7 @@ export default function PantallaPanelAdministrador() {
                 </div>
               </div>
 
-              <div className="sigma-kpi-card border-start-secondary">
+              <div className="sigma-kpi-card">
                 <div>
                   <div className="sigma-kpi-title" title="Disponibilidad del plantel técnico">
                     Disponibilidad técnica
@@ -317,16 +313,12 @@ export default function PantallaPanelAdministrador() {
                 </div>
               </div>
 
-              <div className={`sigma-kpi-card ${
-                (resumen.materialesBajoMinimo?.bajoMinimo ?? 0) > 0 ? 'border-start-danger' : 'border-start-success'
-              }`}>
+              <div className="sigma-kpi-card">
                 <div>
                   <div className="sigma-kpi-title" title="Materiales por debajo del stock mínimo">
                     Materiales bajo stock mínimo
                   </div>
-                  <div className={`sigma-kpi-value ${
-                    (resumen.materialesBajoMinimo?.bajoMinimo ?? 0) > 0 ? 'text-danger' : 'text-success'
-                  }`}>
+                  <div className="sigma-kpi-value text-body">
                     {resumen.materialesBajoMinimo?.bajoMinimo ?? 0}
                   </div>
                 </div>
@@ -355,7 +347,6 @@ export default function PantallaPanelAdministrador() {
                       {
                         label: 'Activos en servicio',
                         data: activos.porEdificio?.map((e) => e.cantidad) ?? [],
-                        backgroundColor: '#321fdb',
                       },
                     ],
                   }}
@@ -396,7 +387,6 @@ export default function PantallaPanelAdministrador() {
                       {
                         label: 'Tareas pendientes',
                         data: cargaTec.porTecnico?.map((t) => t.tareasActivas) ?? [],
-                        backgroundColor: '#f9b115',
                       },
                     ],
                   }}
@@ -431,7 +421,7 @@ export default function PantallaPanelAdministrador() {
                           <CTableBody>
                             {resumen.materialesBajoMinimo.items.map((m) => (
                               <CTableRow key={m.codigo}>
-                                <CTableDataCell className="fw-medium">{m.codigo}</CTableDataCell>
+                                <CTableDataCell className="fw-medium text-nowrap">{m.codigo}</CTableDataCell>
                                 <CTableDataCell>{m.nombre}</CTableDataCell>
                                 <CTableDataCell className="text-end fw-bold text-danger">
                                   {m.stockActual}
@@ -512,7 +502,7 @@ export default function PantallaPanelAdministrador() {
             </CCard>
 
             <div className="sigma-kpi-grid sigma-kpi-grid--3">
-              <div className="sigma-kpi-card border-start-secondary">
+              <div className="sigma-kpi-card">
                 <div>
                   <div className="sigma-kpi-title" title="Tiempo promedio de resolución de los tickets cerrados en el período">
                     Tiempo promedio de resolución
@@ -526,7 +516,7 @@ export default function PantallaPanelAdministrador() {
                 </div>
               </div>
 
-              <div className="sigma-kpi-card border-start-secondary">
+              <div className="sigma-kpi-card">
                 <div>
                   <div className="sigma-kpi-title" title="Tickets dados de alta en el período">
                     Tickets registrados
@@ -538,7 +528,7 @@ export default function PantallaPanelAdministrador() {
                 </div>
               </div>
 
-              <div className="sigma-kpi-card border-start-secondary">
+              <div className="sigma-kpi-card">
                 <div>
                   <div className="sigma-kpi-title" title="Órdenes de trabajo dadas de alta en el período">
                     Órdenes de trabajo
@@ -564,14 +554,14 @@ export default function PantallaPanelAdministrador() {
                       {
                         label: 'Tickets creados',
                         data: evolucion.evolucion?.map((e) => e.ticketsCreados) ?? [],
-                        borderColor: '#321fdb',
-                        backgroundColor: 'rgba(50, 31, 219, 0.1)',
+                        borderColor: COLORES_GRAFICO.petroleo,
+                        backgroundColor: COLORES_GRAFICO.petroleo,
                       },
                       {
                         label: 'Tickets cerrados',
                         data: evolucion.evolucion?.map((e) => e.ticketsCerrados) ?? [],
-                        borderColor: '#2eb85c',
-                        backgroundColor: 'rgba(46, 184, 92, 0.1)',
+                        borderColor: COLORES_GRAFICO.exito,
+                        backgroundColor: COLORES_GRAFICO.exito,
                       },
                     ],
                   }}
@@ -591,7 +581,6 @@ export default function PantallaPanelAdministrador() {
                       {
                         label: 'Cantidad de tickets',
                         data: evolucion.porEstado?.map((e) => e.cantidad) ?? [],
-                        backgroundColor: '#39f',
                       },
                     ],
                   }}
@@ -615,7 +604,6 @@ export default function PantallaPanelAdministrador() {
                       {
                         label: 'Fallas registradas',
                         data: rankingAreas.slice(0, 8).map((a) => a.cantidadFallas ?? a.fallas) ?? [],
-                        backgroundColor: '#e55353',
                       },
                     ],
                   }}
@@ -666,7 +654,7 @@ export default function PantallaPanelAdministrador() {
             <CCard className="shadow-sm">
               <CCardHeader className="py-2 d-flex align-items-center justify-content-between flex-wrap gap-2">
                 <span className="fw-semibold d-flex align-items-center gap-2">
-                  <CIcon icon={cilClock} className="text-info" />
+                  <CIcon icon={cilClock} className="text-primary" />
                   Tiempos promedio de resolución por área
                 </span>
                 {tiempos.porArea?.length > 0 && (
@@ -691,7 +679,7 @@ export default function PantallaPanelAdministrador() {
                             <CTableDataCell className="fw-medium">{a.nombre}</CTableDataCell>
                             <CTableDataCell className="text-body-secondary">{a.edificio || '-'}</CTableDataCell>
                             <CTableDataCell className="text-end">{a.cantidadTickets}</CTableDataCell>
-                            <CTableDataCell className="text-end fw-bold text-info">
+                            <CTableDataCell className="text-end fw-semibold">
                               {textoTiempo(a.promedioSegundos)}
                             </CTableDataCell>
                           </CTableRow>

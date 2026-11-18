@@ -111,6 +111,7 @@ export default function PantallaTickets() {
     {
       clave: 'fechaAlta',
       encabezado: 'Fecha de alta',
+      ocultarDebajoDe: 'md',
       render: (ticket) => <span className="text-body-secondary">{formatearFechaHora(ticket.fechaAlta)}</span>,
     },
     {
@@ -122,12 +123,15 @@ export default function PantallaTickets() {
           {ticket.activo?.nombreTipo && (
             <span className="text-body-secondary"> — {ticket.activo.nombreTipo}</span>
           )}
+          {/* En el celular la columna de la fecha no se ve: va acá abajo. */}
+          <div className="d-md-none small text-body-secondary">{formatearFechaHora(ticket.fechaAlta)}</div>
         </>
       ),
     },
     {
       clave: 'area',
       encabezado: 'Área',
+      ocultarDebajoDe: 'lg',
       render: (ticket) =>
         ticket.nombreArea ? (
           <span className="text-body-secondary">{ticket.nombreArea}</span>
@@ -138,6 +142,7 @@ export default function PantallaTickets() {
     {
       clave: 'registradoPor',
       encabezado: 'Registrado por',
+      ocultarDebajoDe: 'lg',
       render: (ticket) => (
         <span className="text-body-secondary">
           {ticket.registradoPor?.nombre || ticket.registradoPor?.legajo || '-'}

@@ -18,7 +18,7 @@
  *     placeholderBusqueda="Buscar edificio..."
  *     filtros={[ ... ver abajo ... ]}
  *     cargando={cargando}
- *     textoVacio="Todavia no hay edificios cargados."
+ *     textoVacio="Todavía no hay edificios cargados."
  *   />
  *
  * `claseFila` (opcional): funcion que devuelve una clase CSS para resaltar una fila.
@@ -91,7 +91,7 @@ export default function TablaDatos({
   filtros = [],
   alLimpiar,
   cargando = false,
-  textoVacio = 'Todavia no hay datos cargados.',
+  textoVacio = 'Todavía no hay datos cargados.',
   /** Lo que va entre los filtros y la tabla (por ejemplo, gráficos que dependen de los mismos filtros). */
   antesDeLaTabla = null,
 }) {
@@ -199,8 +199,11 @@ export default function TablaDatos({
           )}
         </div>
 
-        <span className="sigma-tabla-conteo">
-          {filasFiltradas.length} {filasFiltradas.length === 1 ? 'resultado' : 'resultados'}
+        {/* Mientras carga no hay cantidad que mostrar: "0 resultados" engañaría. */}
+        <span className="sigma-tabla-conteo" aria-live="polite">
+          {cargando
+            ? 'Cargando…'
+            : `${filasFiltradas.length} ${filasFiltradas.length === 1 ? 'resultado' : 'resultados'}`}
         </span>
       </div>
 
@@ -243,7 +246,7 @@ export default function TablaDatos({
           {totalPaginas > 1 && (
             <div className="sigma-tabla-paginacion">
               <span className="sigma-tabla-conteo">
-                Pagina {pagina} de {totalPaginas}
+                Página {pagina} de {totalPaginas}
               </span>
               <CButtonGroup size="sm">
                 <CButton
@@ -252,8 +255,8 @@ export default function TablaDatos({
                   className="btn-icono"
                   disabled={pagina === 1}
                   onClick={() => setPaginaPedida(pagina - 1)}
-                  title="Pagina anterior"
-                  aria-label="Pagina anterior"
+                  title="Página anterior"
+                  aria-label="Página anterior"
                 >
                   <CIcon icon={cilChevronLeft} />
                 </CButton>
@@ -263,8 +266,8 @@ export default function TablaDatos({
                   className="btn-icono"
                   disabled={pagina === totalPaginas}
                   onClick={() => setPaginaPedida(pagina + 1)}
-                  title="Pagina siguiente"
-                  aria-label="Pagina siguiente"
+                  title="Página siguiente"
+                  aria-label="Página siguiente"
                 >
                   <CIcon icon={cilChevronRight} />
                 </CButton>

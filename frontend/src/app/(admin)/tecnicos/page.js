@@ -173,8 +173,8 @@ export default function PantallaTecnicos() {
             cargando={cargando}
             textoVacio={
               filtroEspecialidad || filtroDisponibilidad || filtroEstado
-                ? 'No hay tecnicos que cumplan con ese filtro.'
-                : 'Todavia no hay tecnicos cargados.'
+                ? 'No hay técnicos que cumplan con ese filtro.'
+                : 'Todavía no hay técnicos cargados.'
             }
           />
         </CCardBody>

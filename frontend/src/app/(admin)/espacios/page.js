@@ -169,8 +169,8 @@ export default function PantallaEspacios() {
             cargando={cargando}
             textoVacio={
               filtroEdificio
-                ? 'Ese edificio todavia no tiene espacios cargados.'
-                : 'Todavia no hay espacios cargados.'
+                ? 'Ese edificio todavía no tiene espacios cargados.'
+                : 'Todavía no hay espacios cargados.'
             }
           />
         </CCardBody>

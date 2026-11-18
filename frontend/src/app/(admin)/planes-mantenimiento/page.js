@@ -121,7 +121,7 @@ export default function PantallaPlanesMantenimiento() {
     },
     {
       clave: 'acciones',
-      encabezado: 'Acción',
+      encabezado: 'Acciones',
       alinearDerecha: true,
       render: (plan) => (
         <CButtonGroup size="sm">

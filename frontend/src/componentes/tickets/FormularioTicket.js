@@ -172,7 +172,7 @@ export default function FormularioTicket({ onGuardar }) {
       return;
     }
     if (archivo.size > TAMANO_MAXIMO) {
-      setErrorFoto(`La foto pesa ${pesoLegible(archivo.size)} y el maximo son 5 MB.`);
+      setErrorFoto(`La foto pesa ${pesoLegible(archivo.size)} y el máximo son 5 MB.`);
       return;
     }
 
@@ -240,8 +240,6 @@ export default function FormularioTicket({ onGuardar }) {
         <Aviso mensaje={error} onCerrar={() => setError('')} />
 
         <form noValidate onSubmit={manejarEnvio}>
-          <h2 className="sigma-seccion-titulo"></h2>
-
           <div className="sigma-campos mb-4">
             <Campo
               id="fechaDeHoy"

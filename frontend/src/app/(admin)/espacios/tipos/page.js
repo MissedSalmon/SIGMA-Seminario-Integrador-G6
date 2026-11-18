@@ -128,7 +128,7 @@ export default function PantallaTiposEspacio() {
             buscarPor={['nombre']}
             placeholderBusqueda="Buscar por nombre"
             cargando={cargando}
-            textoVacio="Todavia no hay tipos de espacio cargados."
+            textoVacio="Todavía no hay tipos de espacio cargados."
           />
         </CCardBody>
       </CCard>

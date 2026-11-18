@@ -275,7 +275,8 @@ Sobrios y legibles, siempre con el verbo escrito.
 - **Corner Style:** 0.75rem.
 - **Background:** Superficie sobre Fondo.
 - **Shadow Strategy:** sombra de Apoyo.
-- **Border:** 1px en Borde. Las tarjetas de KPI agregan un borde izquierdo de 4px.
+- **Border:** 1px en Borde, igual en todas. Las tarjetas de KPI del panel no llevan borde
+  de color: un color ahí no tenía referencia (decisión del 18/11/2026).
 - **Internal Padding:** el de CoreUI; las tarjetas de KPI usan entre 0.75 y 1.15rem según
   el ancho.
 
@@ -306,6 +307,16 @@ Sobrios y legibles, siempre con el verbo escrito.
   línea en Borde.
 - Mientras carga se ve un esqueleto de líneas grises que brillan. Sin datos, un ícono
   redondo en Petróleo suave y un mensaje.
+
+### Gráficos del panel
+Los dibuja `GraficoChart` (Chart.js) con la letra Inter y los ejes en gris secundario.
+- **Una sola serie** (activos por edificio, tareas por técnico, fallas por área): barras en
+  Petróleo con las puntas redondeadas. El color no significa nada; lo que se lee es el largo.
+- **Porciones que son un estado o una prioridad:** el mismo color que la etiqueta de ese
+  estado en las tablas (Operativo verde, Fuera de servicio rojo, prioridad Alta roja, etc.),
+  siempre con la referencia abajo.
+- **Porciones sin significado propio** (correctivas y preventivas): Petróleo y Petróleo claro.
+- Cada gráfico tiene un botón con ícono para verlo como tabla.
 
 ### Toasts
 Arriba a la derecha, de hasta 22rem. Tarjeta blanca con la sombra Flotante y un ícono

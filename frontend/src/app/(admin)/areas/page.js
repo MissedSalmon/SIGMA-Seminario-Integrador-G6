@@ -132,7 +132,7 @@ export default function PantallaAreas() {
             buscarPor={['nombre', 'nombreEspacio', 'nombreEdificio']}
             placeholderBusqueda="Buscar por nombre, espacio o edificio"
             cargando={cargando}
-            textoVacio="Todavia no hay areas cargadas."
+            textoVacio="Todavía no hay áreas cargadas."
           />
         </CCardBody>
       </CCard>
