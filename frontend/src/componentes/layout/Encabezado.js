@@ -239,7 +239,7 @@ export default function Encabezado() {
           {/* min-w-0: las migas largas se acomodan en su lugar en vez de empujar los íconos a otro renglón. */}
           <div className="d-flex align-items-center flex-grow-1 min-w-0">
             <button
-              className="btn btn-link text-body p-0 d-md-none me-3"
+              className="btn btn-link text-body p-0 d-md-none me-2 sigma-boton-menu"
               onClick={() => setBarraVisible(!barraVisible)}
               aria-label="Alternar menú"
             >

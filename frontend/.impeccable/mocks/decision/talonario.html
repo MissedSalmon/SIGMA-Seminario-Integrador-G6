@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1440px;height:900px;overflow:hidden;font-family:'Public Sans',sans-serif;background:#f5f7f8;color:#0c2733;display:flex;font-variant-numeric:tabular-nums}
+.nav{width:232px;background:#0c2733;color:rgba(255,255,255,.74);padding:22px 14px}
+.marca{font-weight:800;font-size:22px;letter-spacing:.2em;color:#fff;padding:0 8px 18px}
+.grupo{font-size:11px;font-weight:700;letter-spacing:.08em;color:rgba(255,255,255,.55);margin:16px 8px 6px}
+.it{font-size:14px;padding:8px 10px;border-radius:6px}
+.it.on{background:#0b6b8c;color:#fff;font-weight:600}
+main{flex:1;padding:26px 34px}
+h1{font-size:26px;font-weight:800}
+.sub{font-size:13px;color:#5b6f78;margin-top:4px}
+h2{font-size:15px;font-weight:700;margin:20px 0 10px}
+.tal{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.t{display:grid;grid-template-columns:78px 1fr;background:#fff;border:1px solid #c3d4da;border-radius:8px;overflow:hidden}
+.ta{border-right:2px dashed #c3d4da;padding:12px 10px;text-align:center}
+.ta small{display:block;font-size:10px;letter-spacing:.1em;color:#5b6f78;font-weight:700}
+.ta b{font-size:30px;font-weight:800;color:#0b6b8c}
+.cu{padding:10px 12px}
+.cas{display:grid;grid-template-columns:1fr 1fr;border:1px solid #dfe8eb;border-radius:4px;margin-top:6px}
+.cas div{padding:5px 8px;border-right:1px solid #dfe8eb;font-size:13px}
+.cas div:last-child{border-right:0}
+.cas small{display:block;font-size:10px;color:#5b6f78;letter-spacing:.06em;font-weight:700}
+.q{font-size:14px;font-weight:600}
+.sello{display:inline-block;margin-top:8px;border:1.5px solid #0b6b8c;color:#0b6b8c;border-radius:4px;padding:1px 7px;font-size:10px;font-weight:800;letter-spacing:.08em}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:4px}
+.k{background:#fff;border:1px solid #d3dfe3;border-radius:8px;padding:14px 16px}
+.k .l{font-size:12px;color:#5b6f78;font-weight:600}
+.k .v{font-size:34px;font-weight:800;margin-top:4px}
+.k .p{font-size:12px;color:#5b6f78}
+.tabla{margin-top:14px;background:#fff;border:1px solid #d3dfe3;border-radius:8px;padding:12px 16px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:11px;letter-spacing:.06em;color:#5b6f78;padding:8px 6px;border-bottom:1px solid #d3dfe3}
+td{padding:10px 6px;border-bottom:1px solid #edf2f4}
+td.r{text-align:right}
+</style></head><body>
+<nav class="nav"><div class="marca">SIGMA</div>
+<div class="it on">Panel</div>
+<div class="grupo">MANTENIMIENTO</div><div class="it">Tickets</div><div class="it">Órdenes de trabajo</div><div class="it">Planes de mantenimiento</div><div class="it">Plantillas de tareas</div>
+<div class="grupo">ESTRUCTURA EDILICIA</div><div class="it">Edificios</div><div class="it">Espacios</div><div class="it">Áreas</div>
+<div class="grupo">ACTIVOS E INVENTARIO</div><div class="it">Activos</div><div class="it">Materiales</div><div class="it">Herramientas</div></nav>
+<main>
+<h1>Panel de control</h1><div class="sub">Actualizado el 18/11/2026 a las 17:05 · Semestre</div>
+<h2>Órdenes de trabajo abiertas</h2>
+<div class="tal">
+<div class="t"><div class="ta"><small>OT N°</small><b>47</b></div><div class="cu"><div class="q">Proyector se ve borroso</div><div class="cas"><div><small>ACTIVO</small>PROY-001</div><div><small>PRIORIDAD</small>Sin tareas</div></div><span class="sello">CREADA</span></div></div>
+<div class="t"><div class="ta"><small>OT N°</small><b>45</b></div><div class="cu"><div class="q">Mantenimiento de PCs</div><div class="cas"><div><small>ACTIVO</small>PC-014</div><div><small>PRIORIDAD</small>Media</div></div><span class="sello">EN EJECUCIÓN</span></div></div>
+<div class="t"><div class="ta"><small>OT N°</small><b>44</b></div><div class="cu"><div class="q">Mantenimiento general</div><div class="cas"><div><small>ACTIVO</small>AC-002</div><div><small>PRIORIDAD</small>Alta</div></div><span class="sello">ASIGNADA</span></div></div>
+<div class="t"><div class="ta"><small>OT N°</small><b>9</b></div><div class="cu"><div class="q">Aire no enfría</div><div class="cas"><div><small>ACTIVO</small>AC-001</div><div><small>PRIORIDAD</small>Alta</div></div><span class="sello">EN EJECUCIÓN</span></div></div>
+</div>
+<h2>Indicadores</h2>
+<div class="kpis">
+<div class="k"><div class="l">Operatividad</div><div class="v">79,2 %</div><div class="p">19 de 24 en servicio</div></div>
+<div class="k"><div class="l">Resolución promedio</div><div class="v">15 d 6 h</div><div class="p">18 tickets cerrados</div></div>
+<div class="k"><div class="l">Cobertura preventiva</div><div class="v">62,5 %</div><div class="p">15 de 24 activos</div></div>
+<div class="k"><div class="l">Bajo stock mínimo</div><div class="v">4</div><div class="p">de 11 materiales</div></div>
+</div>
+<div class="tabla"><table><tr><th>MATERIAL BAJO MÍNIMO</th><th style="text-align:right">ACTUAL</th><th style="text-align:right">MÍNIMO</th></tr>
+<tr><td>Cinta aisladora</td><td class="r">1</td><td class="r">12</td></tr>
+<tr><td>Cable unipolar 2,5 mm</td><td class="r">4</td><td class="r">10</td></tr>
+<tr><td>Disyuntor 2x25 A</td><td class="r">1</td><td class="r">3</td></tr></table></div>
+</main></body></html>

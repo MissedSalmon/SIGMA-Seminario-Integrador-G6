@@ -27,6 +27,8 @@ import {
 import CIcon from '@coreui/icons-react';
 import { cilArrowBottom, cilArrowLeft, cilArrowTop, cilPencil } from '@coreui/icons';
 
+import ReferenciaEtapas from '@/componentes/estados/ReferenciaEtapas.js';
+import Dato from '@/componentes/Dato.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
@@ -35,16 +37,6 @@ import EtiquetaEstadoActivo from '@/componentes/activos/EtiquetaEstadoActivo.js'
 import EtiquetaEstadoOT from '@/componentes/ordenes/EtiquetaEstadoOT.js';
 import { obtenerActivo, obtenerHistorialActivo } from '@/servicios/activos.js';
 import { soloFechaLegible } from '@/utils/fechas.js';
-
-/** Un renglón "etiqueta: valor" de la ficha. */
-function Dato({ etiqueta, children }) {
-  return (
-    <div className="mb-3">
-      <div className="text-body-secondary small">{etiqueta}</div>
-      <div>{children ?? '-'}</div>
-    </div>
-  );
-}
 
 /** Texto en gris e itálica para decir que algo no está. */
 function SinDato({ children }) {
@@ -160,6 +152,8 @@ export default function PantallaFichaActivo({ params }) {
           )
         }
       />
+      {/* Que significa el color de cada sello (regla 6). */}
+      <ReferenciaEtapas className="mt-0 mb-3" />
 
       <Aviso mensaje={error} />
 

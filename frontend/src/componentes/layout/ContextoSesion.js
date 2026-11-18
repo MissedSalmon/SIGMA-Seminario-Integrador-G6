@@ -53,7 +53,9 @@ export function ProveedorSesion({ children }) {
   }, [redirigirExpirada]);
 
   useEffect(() => {
-    verificarSesion();
+    // Se pide el perfil apenas termina el efecto: verificarSesion cambia el
+    // estado, y hacerlo dentro del cuerpo del efecto encadena renders de mas.
+    queueMicrotask(verificarSesion);
 
     // Revalidación ante navegación de historial (botón atrás/adelante con bfcache)
     const alMostrarPagina = (evento) => {

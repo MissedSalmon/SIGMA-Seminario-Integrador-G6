@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1440px;height:900px;overflow:hidden;font-family:Inter,sans-serif;color:#0c2733;display:flex;
+background:#f4f7f8;background-image:linear-gradient(#e6edf0 1px,transparent 1px),linear-gradient(90deg,#e6edf0 1px,transparent 1px);background-size:24px 24px}
+.nav{width:232px;background:#0c2733;color:rgba(255,255,255,.72);padding:22px 14px}
+.marca{font-family:'Archivo Narrow';font-weight:700;font-size:28px;letter-spacing:.16em;color:#fff;padding:0 8px 18px}
+.grupo{font-size:11px;font-weight:700;letter-spacing:.08em;color:rgba(255,255,255,.55);margin:16px 8px 6px}
+.it{font-size:14px;padding:8px 10px;border-radius:4px}
+.it.on{background:#0b6b8c;color:#fff;font-weight:600}
+main{flex:1;padding:26px 34px}
+/* El rótulo: casilleros como la cartela de un plano */
+.rot{display:grid;grid-template-columns:2.4fr 1fr 1fr 1fr 1.2fr;border:1.5px solid #0c2733;background:#fff}
+.cas{border-right:1px solid #0c2733;padding:8px 12px}
+.cas:last-child{border-right:0}
+.cas .l{font-family:'Archivo Narrow';font-size:11px;font-weight:600;letter-spacing:.12em;color:#5b6f78}
+.cas .v{font-size:15px;font-weight:600;margin-top:2px}
+.cas.tit .v{font-family:'Archivo Narrow';font-size:30px;font-weight:700;letter-spacing:.02em}
+.acc{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.btn{background:#0b6b8c;color:#fff;border-radius:4px;padding:8px 16px;font-weight:600;font-size:14px}
+.btn.o{background:#fff;color:#0b6b8c;border:1px solid #0b6b8c}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);border:1.5px solid #0c2733;background:#fff;margin-top:16px}
+.k{border-right:1px solid #0c2733;padding:12px 16px}
+.k:last-child{border-right:0}
+.k .l{font-family:'Archivo Narrow';font-size:12px;font-weight:600;letter-spacing:.12em;color:#5b6f78}
+.k .v{font-family:'Archivo Narrow';font-weight:700;font-size:48px;line-height:1.05;margin-top:4px}
+.k .p{font-size:13px;color:#5b6f78}
+.fila{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-top:16px}
+.lam{background:#fff;border:1.5px solid #0c2733}
+.lam .h{display:flex;justify-content:space-between;border-bottom:1px solid #0c2733;padding:8px 14px;font-family:'Archivo Narrow';font-weight:600;letter-spacing:.1em;font-size:13px}
+.lam .h span:last-child{color:#5b6f78}
+.barras{padding:16px 18px;height:330px;display:flex;flex-direction:column;gap:18px}
+.b{display:grid;grid-template-columns:140px 1fr 40px;align-items:center;gap:10px;font-size:13px}
+.b i{height:22px;background:#0b6b8c}
+.b em{font-style:normal;font-family:'Archivo Narrow';font-weight:700;font-size:18px;text-align:right}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-family:'Archivo Narrow';text-align:left;font-size:12px;letter-spacing:.1em;color:#5b6f78;padding:8px 14px;border-bottom:1px solid #0c2733}
+td{padding:11px 14px;border-bottom:1px solid #dfe7ea}
+td.n{text-align:right;font-family:'Archivo Narrow';font-weight:700;font-size:18px}
+</style></head><body>
+<nav class="nav"><div class="marca">SIGMA</div>
+<div class="it on">Panel</div>
+<div class="grupo">MANTENIMIENTO</div><div class="it">Tickets</div><div class="it">Órdenes de trabajo</div><div class="it">Planes de mantenimiento</div><div class="it">Plantillas de tareas</div>
+<div class="grupo">ESTRUCTURA EDILICIA</div><div class="it">Edificios</div><div class="it">Espacios</div><div class="it">Áreas</div>
+<div class="grupo">ACTIVOS E INVENTARIO</div><div class="it">Activos</div><div class="it">Materiales</div><div class="it">Herramientas</div></nav>
+<main>
+<div class="rot">
+<div class="cas tit"><div class="l">PLANILLA</div><div class="v">Panel de control</div></div>
+<div class="cas"><div class="l">ORGANISMO</div><div class="v">UTN-FRRe</div></div>
+<div class="cas"><div class="l">ÁREA</div><div class="v">Infraestructura</div></div>
+<div class="cas"><div class="l">PERÍODO</div><div class="v">Semestre</div></div>
+<div class="cas"><div class="l">ACTUALIZADO</div><div class="v">18/11/2026 17:05</div></div>
+</div>
+<div class="acc"><div class="btn o">Actualizar</div><div class="btn">Exportar PDF</div></div>
+<div class="kpis">
+<div class="k"><div class="l">OPERATIVIDAD</div><div class="v">79,2 %</div><div class="p">19 de 24 en servicio</div></div>
+<div class="k"><div class="l">COBERTURA PREVENTIVA</div><div class="v">62,5 %</div><div class="p">15 de 24 activos</div></div>
+<div class="k"><div class="l">DISPONIBILIDAD TÉCNICA</div><div class="v">100 %</div><div class="p">5 de 5 disponibles</div></div>
+<div class="k"><div class="l">BAJO STOCK MÍNIMO</div><div class="v">4</div><div class="p">de 11 materiales</div></div>
+</div>
+<div class="fila">
+<div class="lam"><div class="h"><span>ACTIVOS EN SERVICIO POR EDIFICIO</span><span>LÁMINA 01</span></div>
+<div class="barras">
+<div class="b"><span>Edificio central</span><i style="width:100%"></i><em>20</em></div>
+<div class="b"><span>Anexo I</span><i style="width:20%"></i><em>4</em></div>
+<div class="b"><span>Tareas: Carlos Perez</span><i style="width:35%"></i><em>7</em></div>
+<div class="b"><span>Tareas: German Gaona</span><i style="width:10%"></i><em>2</em></div>
+</div></div>
+<div class="lam"><div class="h"><span>MATERIALES BAJO STOCK MÍNIMO</span><span>LÁMINA 02</span></div>
+<table><tr><th>MATERIAL</th><th style="text-align:right">ACTUAL</th><th style="text-align:right">MÍNIMO</th></tr>
+<tr><td>Cinta aisladora</td><td class="n">1</td><td class="n">12</td></tr>
+<tr><td>Cable unipolar 2,5 mm</td><td class="n">4</td><td class="n">10</td></tr>
+<tr><td>Disyuntor 2x25 A</td><td class="n">1</td><td class="n">3</td></tr>
+<tr><td>Fichas tomacorriente</td><td class="n">14</td><td class="n">15</td></tr></table></div>
+</div>
+</main></body></html>

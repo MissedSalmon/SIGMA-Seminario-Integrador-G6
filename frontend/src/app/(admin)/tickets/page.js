@@ -18,6 +18,8 @@ import { CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilDescription } from '@coreui/icons';
 
+import ReferenciaEtapas from '@/componentes/estados/ReferenciaEtapas.js';
+import Talon from '@/componentes/Talon.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
@@ -101,7 +103,7 @@ export default function PantallaTickets() {
     {
       clave: 'id',
       encabezado: '#',
-      render: (ticket) => <span className="fw-semibold">{ticket.id}</span>,
+      render: (ticket) => <Talon numero={ticket.id} href={`/tickets/${ticket.id}`} titulo={`Ver el ticket ${ticket.id}`} />,
     },
     {
       clave: 'estado',
@@ -179,6 +181,7 @@ export default function PantallaTickets() {
       <CCard>
         <CCardBody>
           <TablaDatos
+            antesDeLaTabla={<ReferenciaEtapas className="mt-0 mb-3" />}
             filas={tickets}
             claveFila={(ticket) => ticket.id}
             columnas={columnas}

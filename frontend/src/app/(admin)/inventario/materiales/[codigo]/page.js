@@ -31,6 +31,7 @@ import {
 import CIcon from '@coreui/icons-react';
 import { cilArrowLeft, cilPencil, cilSwapVertical } from '@coreui/icons';
 
+import Dato from '@/componentes/Dato.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
@@ -38,16 +39,6 @@ import { Cargando, SinDatos } from '@/componentes/EstadoTabla.js';
 import DialogoAjusteStock from '@/componentes/inventario/DialogoAjusteStock.js';
 import { listarConsumos, listarMovimientos, obtenerItem } from '@/servicios/inventario.js';
 import { soloFechaLegible } from '@/utils/fechas.js';
-
-/** Un renglón "etiqueta: valor" de la ficha. */
-function Dato({ etiqueta, children }) {
-  return (
-    <div className="mb-3">
-      <div className="text-body-secondary small">{etiqueta}</div>
-      <div>{children ?? '-'}</div>
-    </div>
-  );
-}
 
 /** Los tipos de movimiento que suben el stock; el resto lo bajan. */
 const ENTRADAS = ['Ingreso', 'Ingreso manual'];

@@ -31,17 +31,32 @@
   --sigma-teal-borde-suave: #a3c7d4;
   --sigma-teal-enfasis: #074257;
 
-  --sigma-amber: #f08a24;
   --sigma-ink: #0c2733;
 
-  --sigma-fondo: #f4f6f8;
+  --sigma-fondo: #f5f7f8;
   --sigma-superficie: #ffffff;
   --sigma-borde: #e2e6eb;
-  --sigma-texto-secundario: #64748b;
+  /* La linea de formulario: casilleros, talones y tarjetas (mundo «Talonario»). */
+  --sigma-linea: #c3d4da;
+  --sigma-texto-secundario: #5b6f78;
 
-  --sigma-radio-sm: 0.5rem;
-  --sigma-radio-md: 0.75rem;
-  --sigma-radio-lg: 1rem;
+  /*
+    Tonos de los sellos de estado (18/11/2026). Todos con contraste de al
+    menos 4.5:1 sobre blanco. Ninguno es Petroleo: ese color es de las
+    acciones. Las etapas de tickets y OT usan estos mismos tonos (ver
+    componentes/estados/etapas.js) y cada pantalla con sellos lleva su
+    referencia escrita (regla 6).
+  */
+  --sigma-tono-aviso: #8a6100;
+  --sigma-tono-curso: #2b55b0;
+  --sigma-tono-bien: #1a7a47;
+  --sigma-tono-neutro: #5c636a;
+  --sigma-tono-peligro: #b02a37;
+
+  /* Esquinas chicas, de formulario impreso. */
+  --sigma-radio-sm: 0.375rem;
+  --sigma-radio-md: 0.5rem;
+  --sigma-radio-lg: 0.75rem;
 
   --sigma-sombra-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
   --sigma-sombra-md: 0 8px 24px rgba(15, 23, 42, 0.08);
@@ -50,9 +65,9 @@
 /* ---------- 2. Overrides de CoreUI ---------- */
 
 :root {
-  /* Tipografia: Inter (cargada en layout.js con next/font), con la pila de
+  /* Tipografia: Public Sans (cargada en layout.js con next/font), con la pila de
      siempre como respaldo. */
-  --cui-font-sans-serif: var(--sigma-fuente), -apple-system, BlinkMacSystemFont,
+  --cui-font-sans-serif: var(--sigma-fuente, 'Public Sans'), -apple-system, BlinkMacSystemFont,
     'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
   /* Fondo de pagina gris muy claro en vez del blanco de fabrica: asi las
@@ -102,7 +117,8 @@ html {
 
 body {
   color: var(--sigma-ink);
-  letter-spacing: -0.006em;
+  /* Cifras tabulares: los numeros de las columnas quedan alineados. */
+  font-variant-numeric: tabular-nums;
 }
 
 /*
@@ -209,7 +225,7 @@ body {
 }
 
 .card {
-  --cui-card-border-color: var(--sigma-borde);
+  --cui-card-border-color: var(--sigma-linea);
   --cui-card-border-radius: var(--sigma-radio-md);
   --cui-card-cap-bg: transparent;
   box-shadow: var(--sigma-sombra-sm);
@@ -280,7 +296,7 @@ body {
   --cui-sidebar-nav-link-hover-color: #fff;
   --cui-sidebar-nav-link-hover-bg: rgba(255, 255, 255, 0.06);
   --cui-sidebar-nav-link-active-color: #fff;
-  --cui-sidebar-nav-link-active-bg: rgba(var(--sigma-teal-rgb), 0.55);
+  --cui-sidebar-nav-link-active-bg: var(--sigma-teal);
   --cui-sidebar-nav-title-color: rgba(255, 255, 255, 0.65);
   --cui-sidebar-border-color: rgba(255, 255, 255, 0.08);
   border-right: none;
@@ -300,12 +316,36 @@ body {
   line-height: 1.2;
   font-size: 0.92rem;
   font-weight: 500;
-  border-left: 3px solid transparent;
+}
+
+/*
+  La opcion activa: Petroleo solido. Se pone directo (no por la variable de
+  CoreUI) porque el tema oscuro de la barra redefine esa variable y le gana.
+*/
+/*
+  En el celular el menu se abre encima de la pantalla y se toca con el dedo:
+  cada opcion mide al menos 44px de alto. En PC sigue compacto para que
+  entren todas sin scroll.
+*/
+@media (max-width: 767.98px) {
+  .sidebar .nav-link {
+    min-height: 44px;
+  }
+}
+
+/* Los botones que abren y cierran el menu en el celular: 44px para el dedo. */
+.sigma-boton-menu {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .sidebar .nav-link.active {
+  background-color: var(--sigma-teal);
+  color: #fff;
   font-weight: 600;
-  border-left-color: var(--sigma-amber);
 }
 
 .sidebar .nav-title {
@@ -485,7 +525,7 @@ body {
 }
 
 .sigma-obligatorio::after {
-  color: var(--cui-danger, #e55353);
+  color: var(--sigma-tono-peligro);
   content: ' *';
 }
 
@@ -622,7 +662,8 @@ body {
 }
 
 .sigma-campo--error .sigma-campo-opciones {
-  border-left: 3px solid var(--cui-danger, #e55353);
+  border-color: var(--sigma-tono-peligro);
+  box-shadow: 0 0 0 1px var(--sigma-tono-peligro);
 }
 
 /*
@@ -646,11 +687,13 @@ body {
 }
 
 .sigma-campo--error .sigma-seleccion-boton {
-  border-left: 3px solid var(--cui-danger, #e55353);
+  border-color: var(--sigma-tono-peligro);
+  box-shadow: 0 0 0 1px var(--sigma-tono-peligro);
 }
 
 .sigma-campo--ok .sigma-seleccion-boton {
-  border-left: 3px solid var(--cui-success, #1b9e5a);
+  border-color: var(--sigma-tono-bien);
+  box-shadow: 0 0 0 1px var(--sigma-tono-bien);
 }
 
 .sigma-seleccion-menu {
@@ -671,32 +714,35 @@ body {
 /*
   La marca de validacion.
 
-  No se pinta el borde entero ni el fondo: alcanza con una barrita de color al
-  costado izquierdo y el icono al final de la caja. Se lee igual de claro que
-  esta bien y que esta mal, y con varios campos juntos no queda un semaforo.
-  El :focus se repite a proposito: el foco pisa el color de todo el borde, y
-  la barrita tiene que seguir marcando el error mientras se corrige.
+  El borde de la caja toma el tono del estado (verde bien, rojo error) y el
+  icono al final de la caja lo repite, asi el color nunca va solo. Antes era
+  una barrita de 3px al costado izquierdo; se cambio el 18/11/2026 (auditoria
+  de diseño: las rayas laterales de color son un recurso a evitar). El fondo
+  no se pinta. El :focus se repite a proposito: el foco pisa el color del
+  borde y el error tiene que seguir marcado mientras se corrige.
 */
 .sigma-campo--ok .form-control,
 .sigma-campo--ok .form-select,
 .sigma-campo--ok .form-control:focus,
 .sigma-campo--ok .form-select:focus {
-  border-left: 3px solid var(--cui-success, #1b9e5a);
+  border-color: var(--sigma-tono-bien);
+  box-shadow: 0 0 0 1px var(--sigma-tono-bien);
 }
 
 .sigma-campo--ok .sigma-campo-marca {
-  color: var(--cui-success, #1b9e5a);
+  color: var(--sigma-tono-bien);
 }
 
 .sigma-campo--error .form-control,
 .sigma-campo--error .form-select,
 .sigma-campo--error .form-control:focus,
 .sigma-campo--error .form-select:focus {
-  border-left: 3px solid var(--cui-danger, #e55353);
+  border-color: var(--sigma-tono-peligro);
+  box-shadow: 0 0 0 1px var(--sigma-tono-peligro);
 }
 
 .sigma-campo--error .sigma-campo-marca {
-  color: var(--cui-danger, #e55353);
+  color: var(--sigma-tono-peligro);
 }
 
 /*
@@ -817,29 +863,30 @@ body {
 }
 
 /*
-  La barrita de color al costado izquierdo, en lugar de pintar todo el borde.
-  Es la misma decision que en Campo.js: con varios campos juntos, el borde
-  entero de color queda como un semaforo.
+  El borde de la caja en el tono del estado, la misma decision que en
+  Campo.js (18/11/2026).
 
   El :focus-within se repite a proposito: mientras se corrige, el foco pisa el
-  color de todo el borde y la barrita tiene que seguir marcando el error.
+  color del borde y el error tiene que seguir marcado.
 */
 .sigma-fecha--ok .date-input-group,
 .sigma-fecha--ok .date-input-group:focus-within {
-  border-left: 3px solid var(--cui-success, #1b9e5a);
+  border-color: var(--sigma-tono-bien);
+  box-shadow: 0 0 0 1px var(--sigma-tono-bien);
 }
 
 .sigma-fecha--ok .sigma-fecha-marca {
-  color: var(--cui-success, #1b9e5a);
+  color: var(--sigma-tono-bien);
 }
 
 .sigma-fecha--error .date-input-group,
 .sigma-fecha--error .date-input-group:focus-within {
-  border-left: 3px solid var(--cui-danger, #e55353);
+  border-color: var(--sigma-tono-peligro);
+  box-shadow: 0 0 0 1px var(--sigma-tono-peligro);
 }
 
 .sigma-fecha--error .sigma-fecha-marca {
-  color: var(--cui-danger, #e55353);
+  color: var(--sigma-tono-peligro);
 }
 
 /*
@@ -943,23 +990,25 @@ body {
   height: 16px;
 }
 
-/* La barrita de color al costado izquierdo, como en Campo.js y en la fecha. */
+/* El borde del campo en el color del estado, como en Campo.js y en la fecha. */
 .sigma-duracion--ok .date-input-group,
 .sigma-duracion--ok .date-input-group:focus-within {
-  border-left: 3px solid var(--cui-success, #1b9e5a);
+  border-color: var(--sigma-tono-bien);
+  box-shadow: 0 0 0 1px var(--sigma-tono-bien);
 }
 
 .sigma-duracion--ok .sigma-duracion-marca {
-  color: var(--cui-success, #1b9e5a);
+  color: var(--sigma-tono-bien);
 }
 
 .sigma-duracion--error .date-input-group,
 .sigma-duracion--error .date-input-group:focus-within {
-  border-left: 3px solid var(--cui-danger, #e55353);
+  border-color: var(--sigma-tono-peligro);
+  box-shadow: 0 0 0 1px var(--sigma-tono-peligro);
 }
 
 .sigma-duracion--error .sigma-duracion-marca {
-  color: var(--cui-danger, #e55353);
+  color: var(--sigma-tono-peligro);
 }
 
 /*
@@ -1070,23 +1119,25 @@ body {
   height: 16px;
 }
 
-/* La barrita de color al costado izquierdo, como en los demas campos. */
+/* El borde del campo en el color del estado, como en los demas campos. */
 .sigma-numero--ok .number-field__group,
 .sigma-numero--ok .number-field__group:focus-within {
-  border-left: 3px solid var(--cui-success, #1b9e5a);
+  border-color: var(--sigma-tono-bien);
+  box-shadow: 0 0 0 1px var(--sigma-tono-bien);
 }
 
 .sigma-numero--ok .sigma-numero-marca {
-  color: var(--cui-success, #1b9e5a);
+  color: var(--sigma-tono-bien);
 }
 
 .sigma-numero--error .number-field__group,
 .sigma-numero--error .number-field__group:focus-within {
-  border-left: 3px solid var(--cui-danger, #e55353);
+  border-color: var(--sigma-tono-peligro);
+  box-shadow: 0 0 0 1px var(--sigma-tono-peligro);
 }
 
 .sigma-numero--error .sigma-numero-marca {
-  color: var(--cui-danger, #e55353);
+  color: var(--sigma-tono-peligro);
 }
 
 /*
@@ -1156,26 +1207,28 @@ body {
 }
 
 /*
-  La barrita de color al costado izquierdo en lugar de pintar todo el borde, la
-  misma decision que en Campo.js y en la fecha. El :focus se repite porque el
-  foco pisa el color de todo el borde.
+  El borde de la caja en el tono del estado, la misma decision que en
+  Campo.js y en la fecha (18/11/2026). El :focus se repite porque el foco pisa
+  el color del borde.
 */
 .sigma-lista--ok .input,
 .sigma-lista--ok .input:focus {
-  border-left: 3px solid var(--cui-success, #1b9e5a);
+  border-color: var(--sigma-tono-bien);
+  box-shadow: 0 0 0 1px var(--sigma-tono-bien);
 }
 
 .sigma-lista--ok .sigma-lista-marca {
-  color: var(--cui-success, #1b9e5a);
+  color: var(--sigma-tono-bien);
 }
 
 .sigma-lista--error .input,
 .sigma-lista--error .input:focus {
-  border-left: 3px solid var(--cui-danger, #e55353);
+  border-color: var(--sigma-tono-peligro);
+  box-shadow: 0 0 0 1px var(--sigma-tono-peligro);
 }
 
 .sigma-lista--error .sigma-lista-marca {
-  color: var(--cui-danger, #e55353);
+  color: var(--sigma-tono-peligro);
 }
 
 /*
@@ -1289,7 +1342,29 @@ body {
 }
 
 .sigma-campo-mensaje--error {
-  color: var(--cui-danger, #e55353);
+  color: var(--sigma-tono-peligro);
+}
+
+/*
+  Campo validado y con foco: el borde de su estado mas el anillo de foco de
+  siempre, asi se sigue viendo cual es el campo activo (18/11/2026).
+*/
+.sigma-campo--ok .form-control:focus,
+.sigma-campo--ok .form-select:focus,
+.sigma-fecha--ok .date-input-group:focus-within,
+.sigma-duracion--ok .date-input-group:focus-within,
+.sigma-numero--ok .number-field__group:focus-within,
+.sigma-lista--ok .input:focus {
+  box-shadow: 0 0 0 1px var(--sigma-tono-bien), 0 0 0 0.25rem rgba(var(--sigma-teal-rgb), 0.18);
+}
+
+.sigma-campo--error .form-control:focus,
+.sigma-campo--error .form-select:focus,
+.sigma-fecha--error .date-input-group:focus-within,
+.sigma-duracion--error .date-input-group:focus-within,
+.sigma-numero--error .number-field__group:focus-within,
+.sigma-lista--error .input:focus {
+  box-shadow: 0 0 0 1px var(--sigma-tono-peligro), 0 0 0 0.25rem rgba(var(--sigma-teal-rgb), 0.18);
 }
 
 /* ---------- 3. Componentes propios ---------- */
@@ -1343,12 +1418,12 @@ body {
 
 .sigma-toast--exito .sigma-toast-icono {
   background: var(--cui-success-bg-subtle, #d8f3e3);
-  color: var(--cui-success, #1b9e5a);
+  color: var(--sigma-tono-bien);
 }
 
 .sigma-toast--error .sigma-toast-icono {
   background: var(--cui-danger-bg-subtle, #fbdcdc);
-  color: var(--cui-danger, #e55353);
+  color: var(--sigma-tono-peligro);
 }
 
 /* Una notificacion (HU-33): la campana, con el color principal de SIGMA. */
@@ -1471,8 +1546,9 @@ body {
 }
 
 .sigma-kpi-subtext {
-  font-size: clamp(0.68rem, 0.12vw + 0.64rem, 0.76rem);
-  color: var(--cui-tertiary-color, #94a3b8);
+  /* Nunca menos de 0.75rem: en el celular la base es 16px y daria menos de 11px. */
+  font-size: clamp(0.75rem, 0.12vw + 0.7rem, 0.8rem);
+  color: var(--sigma-texto-secundario);
   margin-top: 0.25rem;
 }
 
@@ -1680,19 +1756,20 @@ body {
   border-radius: 0.2rem;
 }
 
+/* Las barras de carga usan los mismos tonos que las etapas de los sellos. */
 .sigma-carga-muestra-pendiente,
 .sigma-carga-barra-pendiente {
-  background-color: var(--sigma-teal);
+  background-color: var(--sigma-tono-aviso);
 }
 
 .sigma-carga-muestra-ejecucion,
 .sigma-carga-barra-ejecucion {
-  background-color: var(--sigma-amber);
+  background-color: var(--sigma-tono-curso);
 }
 
 .sigma-carga-muestra-completada,
 .sigma-carga-barra-completada {
-  background-color: #64748b;
+  background-color: var(--sigma-tono-bien);
 }
 
 .sigma-carga-grafico {
@@ -1848,14 +1925,254 @@ body {
   flex-wrap: wrap;
 }
 
-/* Etiqueta de tipo de espacio (src/componentes/EtiquetaTipo.js). */
+/*
+  Etiqueta de una categoria (tipo de espacio, src/componentes/EtiquetaTipo.js).
+  Va neutra: una categoria no es un estado y no lleva color (regla 6).
+*/
 .sigma-etiqueta {
   display: inline-flex;
   align-items: center;
-  padding: 0.3rem 0.7rem;
-  border-radius: 999px;
-  font-size: 0.825rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  background: #eef3f5;
+  color: var(--sigma-ink);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/*
+  ---------- Mundo «Talonario» ----------
+
+  SIGMA se dibuja como un talonario de ordenes de trabajo: cada registro es un
+  comprobante numerado (el talon), sus datos van en casilleros y su estado es
+  un sello. Ver frontend/DESIGN.md.
+*/
+
+/*
+  El sello: el estado de algo (una OT, un ticket, un activo). Mayusculas
+  espaciadas dentro de un recuadro de linea, en el color del estado. El color
+  lo pone cada componente Etiqueta* con `color`; el texto dice el estado, asi
+  que el color nunca va solo.
+*/
+.sigma-sello {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12rem 0.45rem;
+  border: 1.5px solid currentColor;
+  border-radius: 4px;
+  font-size: 0.72rem;
   font-weight: 700;
+  letter-spacing: 0.07em;
+  line-height: 1.35;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/*
+  El talon: el numero de un registro como identidad. Rotulo chico ("OT N°")
+  arriba del numero en Petroleo. En las tablas va en su forma chica.
+*/
+/* El color de cada sello sale de un tono del sistema, nunca de un valor suelto. */
+.sigma-sello--aviso {
+  color: var(--sigma-tono-aviso);
+}
+
+.sigma-sello--curso {
+  color: var(--sigma-tono-curso);
+}
+
+.sigma-sello--bien {
+  color: var(--sigma-tono-bien);
+}
+
+.sigma-sello--neutro {
+  color: var(--sigma-tono-neutro);
+}
+
+.sigma-sello--peligro {
+  color: var(--sigma-tono-peligro);
+}
+
+/*
+  Un numero que avisa algo malo (stock por debajo del minimo). Lleva
+  !important como las utilidades de Bootstrap: dentro de una tabla, CoreUI
+  pinta el color de cada celda con una regla mas especifica.
+*/
+.sigma-texto-peligro {
+  color: var(--sigma-tono-peligro) !important;
+}
+
+/* Contador sobre fondo de color: el rojo oscuro, que da contraste con blanco. */
+.sigma-contador-peligro {
+  background-color: var(--sigma-tono-peligro);
+  color: #fff;
+}
+
+.sigma-talon {
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+}
+
+.sigma-talon-rotulo {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sigma-texto-secundario);
+}
+
+.sigma-talon-numero {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--sigma-teal);
+}
+
+/*
+  Los talones del panel: cada OT abierta como un comprobante. El talon y el
+  cuerpo se separan con la linea de troquel (punteada), como en el papel.
+*/
+.sigma-talones {
+  display: grid;
+  gap: 0.875rem;
+  grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+}
+
+.sigma-comprobante {
+  display: grid;
+  grid-template-columns: 4.6rem 1fr;
+  background: var(--sigma-superficie);
+  border: 1px solid var(--sigma-linea);
+  border-radius: var(--sigma-radio-md);
+  color: inherit;
+  text-decoration: none;
+  overflow: hidden;
+  transition: border-color 0.15s ease-out, box-shadow 0.15s ease-out;
+}
+
+.sigma-comprobante:hover {
+  border-color: var(--sigma-teal);
+  box-shadow: var(--sigma-sombra-sm);
+  color: inherit;
+}
+
+.sigma-comprobante:focus-visible {
+  outline: 2px solid var(--sigma-teal);
+  outline-offset: 2px;
+}
+
+.sigma-comprobante-talon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  padding: 0.75rem 0.4rem;
+  border-right: 2px dashed var(--sigma-linea);
+  text-align: center;
+}
+
+.sigma-comprobante-talon .sigma-talon-numero {
+  font-size: 1.85rem;
+}
+
+.sigma-comprobante-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.7rem 0.85rem 0.8rem;
+}
+
+.sigma-comprobante-titulo {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Casilleros: un dato por celda, con su rotulo chico arriba. */
+.sigma-casilleros {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(4.5rem, 1fr));
+  border: 1px solid #dfe8eb;
+  border-radius: 4px;
+}
+
+.sigma-casillero {
+  min-width: 0;
+  padding: 0.3rem 0.55rem;
+  border-right: 1px solid #dfe8eb;
+  font-size: 0.9rem;
+}
+
+.sigma-casillero:last-child {
+  border-right: 0;
+}
+
+.sigma-casillero-rotulo {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sigma-texto-secundario);
+}
+
+/* Un dato de una ficha (src/componentes/Dato.js): rotulo de casillero y su valor. */
+.sigma-dato {
+  margin-bottom: 1rem;
+}
+
+.sigma-dato .sigma-casillero-rotulo {
+  margin-bottom: 0.15rem;
+}
+
+.sigma-dato-valor {
+  overflow-wrap: anywhere;
+}
+
+/* El numero del registro en el titulo de su ficha: la identidad, en Petroleo. */
+.sigma-titulo-numero {
+  color: var(--sigma-teal);
+  font-weight: 800;
+}
+
+.sigma-referencia-etapas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 1rem;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--sigma-texto-secundario);
+}
+
+.sigma-referencia-etapas-titulo {
+  font-weight: 600;
+}
+
+.sigma-referencia-etapa {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* La muestra repite la forma del sello: un recuadro de linea en ese color. */
+.sigma-referencia-etapa-muestra {
+  width: 1.1rem;
+  height: 0.75rem;
+  border: 1.5px solid;
+  border-radius: 3px;
+}
+
+.sigma-casillero-valor {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /*
@@ -1865,11 +2182,11 @@ body {
   explicacion no se usa (regla 6 de UI del CLAUDE.md).
 */
 .sigma-fila-bajo-minimo > td {
-  --cui-table-bg-type: color-mix(in srgb, var(--cui-danger, #e55353) 7%, transparent);
+  --cui-table-bg-type: color-mix(in srgb, var(--sigma-tono-peligro) 7%, transparent);
 }
 
 .sigma-stock-bajo {
-  color: var(--cui-danger, #e55353);
+  color: var(--sigma-tono-peligro);
   font-weight: 600;
 }
 
@@ -1886,8 +2203,8 @@ body {
   width: 1.1rem;
   height: 0.8rem;
   border-radius: 3px;
-  background: color-mix(in srgb, var(--cui-danger, #e55353) 7%, transparent);
-  border: 1px solid color-mix(in srgb, var(--cui-danger, #e55353) 45%, transparent);
+  background: color-mix(in srgb, var(--sigma-tono-peligro) 7%, transparent);
+  border: 1px solid color-mix(in srgb, var(--sigma-tono-peligro) 45%, transparent);
 }
 
 /*
@@ -1921,7 +2238,7 @@ body {
   border-radius: 999px;
   background: var(--cui-primary);
   color: #fff;
-  font-size: 0.625rem;
+  font-size: 0.7rem;
   font-weight: 600;
   line-height: 1;
   pointer-events: none;

@@ -122,14 +122,19 @@ export default function BarraLateral() {
       position="fixed"
       visible={barraVisible}
       onVisibleChange={(v) => setBarraVisible(v)}
+      // Region de navegacion: un lector de pantalla puede saltar directo al menu.
+      role="navigation"
+      aria-label="Menú principal"
     >
       <CSidebarHeader className="border-bottom d-flex align-items-center justify-content-between">
         <CSidebarBrand as={Link} href={rutaInicio} className="text-decoration-none">
           <span className="sigma-marca">SIGMA</span>
         </CSidebarBrand>
         <button
-          className="btn btn-link text-white p-0 d-md-none"
+          type="button"
+          className="btn btn-link text-white p-0 d-md-none sigma-boton-menu"
           onClick={() => setBarraVisible(false)}
+          aria-label="Cerrar menú"
         >
           <CIcon icon={cilMenu} size="lg" />
         </button>

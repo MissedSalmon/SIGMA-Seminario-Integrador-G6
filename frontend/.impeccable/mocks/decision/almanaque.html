@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1440px;height:900px;overflow:hidden;font-family:Inter,sans-serif;background:#eef2f3;color:#0c2733;display:flex}
+.nav{width:232px;background:#0c2733;color:rgba(255,255,255,.72);padding:22px 14px}
+.marca{font-family:'Barlow Condensed';font-weight:700;font-size:30px;letter-spacing:.14em;color:#fff;padding:0 8px 18px}
+.grupo{font-size:11px;font-weight:700;letter-spacing:.08em;color:rgba(255,255,255,.55);margin:16px 8px 6px}
+.it{font-size:14px;padding:8px 10px;border-radius:8px}
+.it.on{background:#0b6b8c;color:#fff;font-weight:600}
+main{flex:1;padding:26px 34px}
+.top{display:flex;justify-content:space-between;align-items:baseline}
+h1{font-size:27px;font-weight:700}
+.sub{color:#5b6f78;font-size:14px;margin-top:4px}
+.btn{background:#0b6b8c;color:#fff;border-radius:8px;padding:9px 16px;font-weight:600;font-size:14px}
+/* La tira del almanaque: selector de período y resumen a la vez */
+.alm{margin-top:20px;background:#fff;border:1px solid #c8d9df;border-radius:12px;display:grid;grid-template-columns:repeat(12,1fr)}
+.mes{padding:10px 12px 12px;border-right:1px solid #e2eaed;position:relative}
+.mes:last-child{border-right:0}
+.mes .n{font-family:'Barlow Condensed';font-weight:600;font-size:13px;letter-spacing:.1em;color:#5b6f78}
+.mes .v{font-family:'Barlow Condensed';font-weight:600;font-size:34px;line-height:1;margin-top:4px}
+.mes .pv{font-size:11px;color:#5b6f78;margin-top:6px}
+.mes .barra{height:4px;border-radius:2px;background:#c8d9df;margin-top:8px}
+.mes.sel{background:#e6f0f4}
+.mes.sel .barra{background:#0b6b8c}
+.mes.hoy::after{content:'';position:absolute;left:0;right:0;top:-1px;height:3px;background:#0b6b8c;border-radius:3px 3px 0 0}
+.leyenda{display:flex;gap:18px;font-size:12px;color:#5b6f78;margin:8px 2px 0}
+.leyenda b{display:inline-block;width:14px;height:4px;border-radius:2px;background:#0b6b8c;vertical-align:middle;margin-right:6px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:20px}
+.k{background:#fff;border:1px solid #d7e2e6;border-radius:12px;padding:16px 18px}
+.k .t{font-size:12px;font-weight:600;color:#5b6f78}
+.k .v{font-family:'Barlow Condensed';font-weight:700;font-size:56px;line-height:1;margin-top:6px}
+.k .p{font-size:13px;color:#5b6f78;margin-top:6px}
+.fila{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-top:16px}
+.card{background:#fff;border:1px solid #d7e2e6;border-radius:12px;padding:16px 18px;height:300px}
+.card h2{font-size:15px;font-weight:600}
+.card .s{font-size:12px;color:#5b6f78;margin-top:2px}
+table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
+th{text-align:left;font-size:11px;letter-spacing:.06em;color:#5b6f78;font-weight:700;padding:8px 6px;border-bottom:1px solid #d7e2e6}
+td{padding:10px 6px;border-bottom:1px solid #eef2f3}
+td.num{font-family:'Barlow Condensed';font-weight:600;font-size:20px;text-align:right}
+.pr{display:grid;grid-template-columns:110px repeat(12,1fr);gap:3px;margin-top:14px;font-size:12px;align-items:center}
+.pr .c{height:22px;border-radius:4px;background:#eef2f3}
+.pr .c.x{background:#0b6b8c}
+.pr .c.f{background:#c8d9df}
+</style></head><body>
+<nav class="nav"><div class="marca">SIGMA</div>
+<div class="it on">Panel</div>
+<div class="grupo">MANTENIMIENTO</div><div class="it">Tickets</div><div class="it">Órdenes de trabajo</div><div class="it">Planes de mantenimiento</div><div class="it">Plantillas de tareas</div>
+<div class="grupo">ESTRUCTURA EDILICIA</div><div class="it">Edificios</div><div class="it">Espacios</div><div class="it">Áreas</div>
+<div class="grupo">ACTIVOS E INVENTARIO</div><div class="it">Activos</div><div class="it">Materiales</div><div class="it">Herramientas</div></nav>
+<main>
+<div class="top"><div><h1>Panel de control</h1><div class="sub">Almanaque 2026 · semestre seleccionado: junio a noviembre</div></div><div class="btn">Exportar PDF</div></div>
+<div class="alm">
+<div class="mes"><div class="n">ENE</div><div class="v">0</div><div class="pv">0 preventivas</div><div class="barra"></div></div>
+<div class="mes"><div class="n">FEB</div><div class="v">0</div><div class="pv">0 preventivas</div><div class="barra"></div></div>
+<div class="mes"><div class="n">MAR</div><div class="v">1</div><div class="pv">0 preventivas</div><div class="barra"></div></div>
+<div class="mes"><div class="n">ABR</div><div class="v">0</div><div class="pv">0 preventivas</div><div class="barra"></div></div>
+<div class="mes"><div class="n">MAY</div><div class="v">0</div><div class="pv">2 preventivas</div><div class="barra"></div></div>
+<div class="mes sel"><div class="n">JUN</div><div class="v">0</div><div class="pv">0 preventivas</div><div class="barra"></div></div>
+<div class="mes sel"><div class="n">JUL</div><div class="v">1</div><div class="pv">0 preventivas</div><div class="barra"></div></div>
+<div class="mes sel"><div class="n">AGO</div><div class="v">0</div><div class="pv">0 preventivas</div><div class="barra"></div></div>
+<div class="mes sel"><div class="n">SEP</div><div class="v">21</div><div class="pv">0 preventivas</div><div class="barra"></div></div>
+<div class="mes sel"><div class="n">OCT</div><div class="v">8</div><div class="pv">3 preventivas</div><div class="barra"></div></div>
+<div class="mes sel hoy"><div class="n">NOV</div><div class="v">2</div><div class="pv">4 preventivas</div><div class="barra"></div></div>
+<div class="mes"><div class="n">DIC</div><div class="v">–</div><div class="pv">2 programadas</div><div class="barra"></div></div>
+</div>
+<div class="leyenda"><span>Número grande: tickets del mes</span><span><b></b>Meses del período elegido</span><span>Raya arriba: mes actual</span></div>
+<div class="kpis">
+<div class="k"><div class="t">Operatividad de activos</div><div class="v">79,2 %</div><div class="p">19 de 24 en servicio</div></div>
+<div class="k"><div class="t">Tiempo promedio de resolución</div><div class="v">15 d 6 h</div><div class="p">sobre 18 tickets cerrados</div></div>
+<div class="k"><div class="t">Cobertura preventiva</div><div class="v">62,5 %</div><div class="p">15 de 24 activos con plan</div></div>
+<div class="k"><div class="t">Materiales bajo mínimo</div><div class="v">4</div><div class="p">de 11 materiales</div></div>
+</div>
+<div class="fila">
+<div class="card"><h2>Planes preventivos en el año</h2><div class="s">Cada fila es un plan; cada celda, un mes con OT generada o programada.</div>
+<div class="pr"><span></span><span>E</span><span>F</span><span>M</span><span>A</span><span>M</span><span>J</span><span>J</span><span>A</span><span>S</span><span>O</span><span>N</span><span>D</span>
+<span>Mant. de PCs</span><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c x"></i><i class="c x"></i><i class="c"></i>
+<span>Aires acond.</span><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c x"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c x"></i><i class="c"></i>
+<span>Pintar aulas</span><i class="c"></i><i class="c f"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i>
+<span>prueba</span><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c x"></i><i class="c x"></i><i class="c"></i></div>
+<div class="leyenda"><span><b></b>OT generada</span><span><b style="background:#c8d9df"></b>Programada</span></div></div>
+<div class="card"><h2>Materiales bajo stock mínimo</h2><div class="s">Ordenados por faltante.</div>
+<table><tr><th>MATERIAL</th><th style="text-align:right">ACTUAL</th><th style="text-align:right">MÍNIMO</th></tr>
+<tr><td>Cinta aisladora</td><td class="num">1</td><td class="num">12</td></tr>
+<tr><td>Cable unipolar 2,5 mm</td><td class="num">4</td><td class="num">10</td></tr>
+<tr><td>Disyuntor 2x25 A</td><td class="num">1</td><td class="num">3</td></tr>
+<tr><td>Fichas tomacorriente</td><td class="num">14</td><td class="num">15</td></tr></table></div>
+</div>
+</main></body></html>

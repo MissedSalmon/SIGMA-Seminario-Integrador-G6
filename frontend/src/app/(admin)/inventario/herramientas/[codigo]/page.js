@@ -37,6 +37,7 @@ import {
 import CIcon from '@coreui/icons-react';
 import { cilActionUndo, cilArrowLeft, cilBan, cilCheckCircle, cilPencil, cilUserFollow } from '@coreui/icons';
 
+import Dato from '@/componentes/Dato.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
@@ -52,16 +53,6 @@ import {
   ponerEnServicio,
 } from '@/servicios/inventario.js';
 import { formatearFechaHora, soloFechaLegible } from '@/utils/fechas.js';
-
-/** Un renglón "etiqueta: valor" de la ficha. */
-function Dato({ etiqueta, children }) {
-  return (
-    <div className="mb-3">
-      <div className="text-body-secondary small">{etiqueta}</div>
-      <div>{children ?? '-'}</div>
-    </div>
-  );
-}
 
 /** Texto en gris e itálica para decir que algo no está. */
 function SinDato({ children }) {

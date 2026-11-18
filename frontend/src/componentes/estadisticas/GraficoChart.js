@@ -53,12 +53,12 @@ ChartJS.register(
 );
 
 /*
-  Letra y colores de los ejes: los mismos de SIGMA (Inter y el gris de los
+  Letra y colores de los ejes: los mismos de SIGMA (Public Sans y el gris de los
   textos secundarios), no la Helvetica gris de fábrica de Chart.js.
 */
 ChartJS.defaults.font.family = "var(--sigma-fuente), 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 ChartJS.defaults.font.size = 12;
-ChartJS.defaults.color = '#64748b';
+ChartJS.defaults.color = '#5b6f78';
 ChartJS.defaults.borderColor = '#e2e6eb';
 
 /*
@@ -69,11 +69,17 @@ ChartJS.defaults.borderColor = '#e2e6eb';
   el mismo color que la etiqueta de ese estado en las tablas, así un color
   significa lo mismo en todo el sistema y el gráfico lleva su referencia abajo.
 */
+/*
+  El lienzo de Chart.js no lee variables CSS, por eso van los valores. Son
+  los mismos tonos de globals.css (--sigma-teal y --sigma-tono-*): si cambia
+  uno alla, se cambia tambien aca.
+*/
 export const COLORES_GRAFICO = {
   petroleo: '#0b6b8c',
   petroleoClaro: '#7fb3c8',
-  exito: '#1b9e5a',
-  aviso: '#d4a106',
+  exito: '#1a7a47',
+  aviso: '#8a6100',
+  curso: '#2b55b0',
   peligro: '#b02a37',
   neutro: '#94a3b8',
   neutroClaro: '#cbd5e1',
@@ -82,7 +88,7 @@ export const COLORES_GRAFICO = {
 /** Color de cada estado o prioridad, igual al de su etiqueta en las tablas. */
 const COLOR_POR_NOMBRE = {
   Operativo: COLORES_GRAFICO.exito,
-  'En mantenimiento': COLORES_GRAFICO.petroleo,
+  'En mantenimiento': COLORES_GRAFICO.curso,
   'Fuera de servicio': COLORES_GRAFICO.peligro,
   Retirado: COLORES_GRAFICO.neutro,
   Alta: COLORES_GRAFICO.peligro,

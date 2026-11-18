@@ -16,6 +16,9 @@ import { CButton, CCard, CCardBody, CCardHeader, CCol, CRow, CModal, CModalHeade
 import CIcon from '@coreui/icons-react';
 import { cilArrowLeft, cilExternalLink, cilCheckAlt, cilX, cilPlus, cilDescription } from '@coreui/icons';
 
+import ReferenciaEtapas from '@/componentes/estados/ReferenciaEtapas.js';
+import Talon from '@/componentes/Talon.js';
+import Dato from '@/componentes/Dato.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
@@ -57,16 +60,6 @@ const ESTADOS_SIN_OT = ['Creado', 'Rechazado'];
  * que el activo ya tiene, asi que dejarlo igual es no tocar el desplegable.
  */
 const ESTADOS_DE_ACTIVO = ['Operativo', 'Fuera de servicio'];
-
-/** Un renglon "etiqueta: valor" de la ficha. */
-function Dato({ etiqueta, children }) {
-  return (
-    <div className="mb-3">
-      <div className="text-body-secondary small">{etiqueta}</div>
-      <div>{children ?? '-'}</div>
-    </div>
-  );
-}
 
 /** Texto en gris e italica para decir que algo no esta. */
 function SinDato({ children }) {
@@ -231,9 +224,11 @@ export default function PantallaDetalleTicket({ params }) {
   return (
     <>
       <EncabezadoPagina
-        titulo={ticket ? `Ticket #${ticket.id}` : 'Detalle del ticket'}
+        titulo={ticket ? <>Ticket <span className="sigma-titulo-numero">#{ticket.id}</span></> : 'Detalle del ticket'}
         descripcion={ticket ? ticket.descripcion : undefined}
       />
+      {/* Que significa el color de cada sello (regla 6). */}
+      <ReferenciaEtapas className="mt-0 mb-3" />
 
       <Aviso mensaje={error} />
 
@@ -263,9 +258,6 @@ export default function PantallaDetalleTicket({ params }) {
                   </CCardHeader>
                   <CCardBody>
                     <CRow>
-                      <CCol sm={4}>
-                        <Dato etiqueta="Identificador">#{ticket.id}</Dato>
-                      </CCol>
                       <CCol sm={4}>
                         <Dato etiqueta="Estado">
                           <EtiquetaEstadoTicket estado={ticket.estado} />
@@ -374,8 +366,8 @@ export default function PantallaDetalleTicket({ params }) {
                       {ticket.ot ? (
                         <CRow>
                           <CCol sm={6}>
-                            <Dato etiqueta="Número de OT">
-                              <span className="fw-semibold">#{ticket.ot.id}</span>
+                            <Dato etiqueta="OT N°">
+                              <Talon numero={ticket.ot.id} href={`/ordenes-trabajo/${ticket.ot.id}`} titulo="Ver la orden de trabajo" />
                             </Dato>
                           </CCol>
                           <CCol sm={6}>

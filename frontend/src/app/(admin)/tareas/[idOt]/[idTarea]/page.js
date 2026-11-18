@@ -41,6 +41,8 @@ import {
 import CIcon from '@coreui/icons-react';
 import { cilArrowLeft, cilCheckCircle, cilMediaPlay, cilPlus } from '@coreui/icons';
 
+import ReferenciaEtapas from '@/componentes/estados/ReferenciaEtapas.js';
+import Dato from '@/componentes/Dato.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
@@ -64,16 +66,6 @@ import { formatearFecha, formatearFechaHora, soloFechaLegible } from '@/utils/fe
 
 /** Una tarea en estos estados todavía no empezó: se puede iniciar. */
 const ESTADOS_SIN_EMPEZAR = ['Creada', 'Asignada', 'Pendiente'];
-
-/** Una etiqueta chica arriba y el dato abajo. */
-function Dato({ etiqueta, children }) {
-  return (
-    <div className="mb-3">
-      <div className="text-body-secondary small">{etiqueta}</div>
-      <div>{children ?? '-'}</div>
-    </div>
-  );
-}
 
 /** Texto en gris e itálica para decir que algo no está. */
 function SinDato({ children }) {
@@ -214,6 +206,8 @@ export default function PantallaDetalleMiTarea({ params }) {
   return (
     <>
       <EncabezadoPagina titulo={`Tarea ${idTarea} de la OT #${idOt}`} accionesExtra={acciones} />
+      {/* Que significa el color de cada sello (regla 6). */}
+      <ReferenciaEtapas className="mt-0 mb-3" />
 
       <Aviso mensaje={error} />
 

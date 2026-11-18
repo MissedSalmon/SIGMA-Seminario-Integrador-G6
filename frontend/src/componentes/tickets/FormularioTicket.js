@@ -27,6 +27,7 @@ import { CAlert, CButton, CCard, CCardBody, CFormLabel } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilExternalLink, cilImagePlus, cilTrash, cilWarning } from '@coreui/icons';
 
+import ReferenciaEtapas from '@/componentes/estados/ReferenciaEtapas.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Campo from '@/componentes/formulario/Campo.js';
@@ -321,6 +322,7 @@ export default function FormularioTicket({ onGuardar }) {
                   ))}
                 </ul>
               )}
+              {verTicketsEnProceso && <ReferenciaEtapas />}
             </CAlert>
           )}
 

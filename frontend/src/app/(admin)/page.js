@@ -33,6 +33,7 @@ import {
   cilWarning,
   cilCheckCircle,
   cilClock,
+  cilArrowRight,
 } from '@coreui/icons';
 
 import AvisoPlanesPorVencer from '@/componentes/planes/AvisoPlanesPorVencer.js';
@@ -40,8 +41,8 @@ import Aviso from '@/componentes/Aviso.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
 import CampoFecha from '@/componentes/formulario/CampoFecha.js';
 import GraficoChart, { COLORES_GRAFICO } from '@/componentes/estadisticas/GraficoChart.js';
+import TalonesAbiertos from '@/componentes/ordenes/TalonesAbiertos.js';
 import { obtenerPanelCompleto } from '@/servicios/estadisticas.js';
-import { exportarPanelPdf } from '@/servicios/exportacionPanel.js';
 import { hoyTexto } from '@/utils/fechas.js';
 import { textoTiempo } from '@/utils/duracion.js';
 
@@ -157,10 +158,12 @@ export default function PantallaPanelAdministrador() {
     if (!panelPayload) return;
     setExportando(true);
     try {
+      // jsPDF pesa mucho: se descarga recien cuando alguien exporta.
+      const { exportarPanelPdf } = await import('@/servicios/exportacionPanel.js');
       await exportarPanelPdf(panelPayload);
     } catch (err) {
       console.error('[panel] Error al exportar archivo PDF:', err);
-      setError('No se pudo generar el informe PDF. Verifique la consola para más detalles.');
+      setError('No se pudo generar el informe PDF. Probá de nuevo en un momento.');
     } finally {
       setExportando(false);
     }
@@ -223,6 +226,9 @@ export default function PantallaPanelAdministrador() {
 
       {error && <Aviso mensaje={error} onCerrar={() => setError(null)} />}
 
+      {/* Lo primero que se ve: el trabajo abierto, como talones de un talonario. */}
+      <TalonesAbiertos recarga={metadatos.generadoEn} />
+
       {cargando && !panelPayload ? (
         <Cargando texto="Cargando estadísticas consolidadas del sistema..." />
       ) : (
@@ -282,7 +288,7 @@ export default function PantallaPanelAdministrador() {
                     {(resumen.coberturaPreventiva?.porcentajeActivos ?? 0) < 100 && (
                       <Link
                         href="/planes-mantenimiento"
-                        className="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle text-decoration-none d-inline-flex align-items-center gap-1"
+                        className="sigma-etiqueta text-decoration-none d-inline-flex align-items-center gap-1"
                         title={resumen.coberturaPreventiva?.tiposSinPlan?.length > 0
                           ? `Sin plan vigente: ${resumen.coberturaPreventiva.tiposSinPlan.map((t) => t.nombre).join(', ')}`
                           : 'Gestionar planes de mantenimiento'}
@@ -290,7 +296,7 @@ export default function PantallaPanelAdministrador() {
                         <span>
                           {resumen.coberturaPreventiva?.tiposSinPlan?.length ?? ((resumen.coberturaPreventiva?.totalTipos ?? 0) - (resumen.coberturaPreventiva?.tiposConPlan ?? 0))} sin plan
                         </span>
-                        <span aria-hidden="true">&rarr;</span>
+                        <CIcon icon={cilArrowRight} size="sm" aria-hidden="true" />
                       </Link>
                     )}
                   </div>
@@ -398,11 +404,11 @@ export default function PantallaPanelAdministrador() {
                 <CCard className="shadow-sm h-100">
                   <CCardHeader className="py-2 d-flex align-items-center justify-content-between flex-wrap gap-2">
                     <span className="fw-semibold d-flex align-items-center gap-2">
-                      <CIcon icon={cilWarning} className="text-danger" />
+                      <CIcon icon={cilWarning} className="sigma-texto-peligro" />
                       Materiales bajo stock mínimo
                     </span>
                     {resumen.materialesBajoMinimo?.items?.length > 0 && (
-                      <CBadge color="danger">{resumen.materialesBajoMinimo.items.length}</CBadge>
+                      <CBadge className="sigma-contador-peligro">{resumen.materialesBajoMinimo.items.length}</CBadge>
                     )}
                   </CCardHeader>
                   <CCardBody className="p-3">
@@ -423,7 +429,7 @@ export default function PantallaPanelAdministrador() {
                               <CTableRow key={m.codigo}>
                                 <CTableDataCell className="fw-medium text-nowrap">{m.codigo}</CTableDataCell>
                                 <CTableDataCell>{m.nombre}</CTableDataCell>
-                                <CTableDataCell className="text-end fw-bold text-danger">
+                                <CTableDataCell className="text-end fw-bold sigma-texto-peligro">
                                   {m.stockActual}
                                 </CTableDataCell>
                                 <CTableDataCell className="text-end text-body-secondary">
