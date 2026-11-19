@@ -79,8 +79,6 @@ function FormularioLogin() {
   */
   const [avisoDescartado, setAvisoDescartado] = useState(false);
   const avisoExpirada = searchParams.get('expirada') === 'true' && !avisoDescartado;
-  // Credenciales correctas: cae el sello mientras se abre el sistema.
-  const [autorizado, setAutorizado] = useState(false);
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -102,7 +100,6 @@ function FormularioLogin() {
 
       const user = response.datos;
       const rol = normalizarRol(user?.rol);
-      setAutorizado(true);
 
       if (user.requirePasswordChange) {
         router.push('/configuracion/cambiar-password');
@@ -130,11 +127,6 @@ function FormularioLogin() {
 
   return (
     <div className={estilos.tarjeta}>
-      {autorizado && (
-        <span className={estilos.selloIngreso} role="status">
-          Autorizado
-        </span>
-      )}
       <div className="p-4 p-sm-5">
         {/* Encabezado institucional minimalista */}
         <div className="text-center mb-4">

@@ -151,7 +151,7 @@ export default function BarraLateral() {
 
       <CSidebarFooter className="border-top d-flex flex-column px-3 py-2 gap-1">
         {usuario && (
-          <div className="text-white-50 small" style={{ fontSize: '0.78rem' }}>
+          <div className="sigma-menu-secundario" style={{ fontSize: '0.8rem' }}>
             {usuario.admin_nom_ape || usuario.tecnico_nom_ape || usuario.autorizado_nom_ape || usuario.identificador}
           </div>
         )}
@@ -163,7 +163,7 @@ export default function BarraLateral() {
           style={{ cursor: 'pointer' }}
         >
           <CIcon icon={cilAccountLogout} />
-          <span style={{ fontSize: '0.88rem', fontWeight: 500 }}>Cerrar sesión</span>
+          <span style={{ fontSize: '0.92rem', fontWeight: 500 }}>Cerrar sesión</span>
         </button>
       </CSidebarFooter>
     </CSidebar>

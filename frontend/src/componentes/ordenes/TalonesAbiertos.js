@@ -11,6 +11,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
+import { CButton } from '@coreui/react';
+
+import Aviso from '@/componentes/Aviso.js';
 import EtiquetaEstadoOT from '@/componentes/ordenes/EtiquetaEstadoOT.js';
 import ReferenciaEtapas from '@/componentes/estados/ReferenciaEtapas.js';
 import { listarOrdenes } from '@/servicios/ordenesTrabajo.js';
@@ -20,6 +23,8 @@ const ESTADOS_CERRADOS = ['Finalizada', 'Cancelada'];
 export default function TalonesAbiertos({ cantidad = 3, recarga = 0 }) {
   const [ordenes, setOrdenes] = useState(null);
   const [error, setError] = useState('');
+  // Sube al tocar «Volver a intentar»: vuelve a pedir las OT.
+  const [reintento, setReintento] = useState(0);
 
   useEffect(() => {
     let vigente = true;
@@ -37,28 +42,49 @@ export default function TalonesAbiertos({ cantidad = 3, recarga = 0 }) {
     return () => {
       vigente = false;
     };
-  }, [recarga]);
+  }, [recarga, reintento]);
 
   const abiertas = (ordenes ?? []).slice().sort((a, b) => b.id - a.id);
 
   return (
     <section className="mb-4" aria-labelledby="titulo-talones">
-      {/* Mismo titulo que "Situacion actual", para que las secciones del panel se lean parejas. */}
-      <div className="d-flex align-items-baseline justify-content-between gap-3 mb-3">
-        <h2
-          id="titulo-talones"
-          className="h5 fw-bold text-body-secondary text-uppercase m-0"
-          style={{ letterSpacing: '0.05em' }}
-        >
+      {/* Mismo titulo que las demas secciones del panel (clase sigma-panel-seccion). */}
+      <div className="sigma-panel-seccion-fila">
+        <h2 id="titulo-talones" className="sigma-panel-seccion m-0">
           Órdenes de trabajo abiertas
           {ordenes && <span className="fw-normal ms-2">({abiertas.length})</span>}
         </h2>
-        <Link href="/ordenes-trabajo" className="small fw-semibold text-nowrap">
-          Ver todas
-        </Link>
+        <span className="sigma-talones-ver">
+          {/* Se dice cuales se ven, asi no hay que adivinar por que son esas. */}
+          {abiertas.length > cantidad && (
+            <span className="text-body-secondary">
+              Las {cantidad} más recientes de {abiertas.length}
+            </span>
+          )}
+          <Link href="/ordenes-trabajo" className="fw-semibold text-nowrap sigma-enlace-tocable">
+            Ver todas
+          </Link>
+        </span>
       </div>
 
-      {error && <p className="text-danger small mb-0">No se pudieron cargar las órdenes: {error}</p>}
+      {error && (
+        <>
+          <Aviso mensaje="No se pudieron cargar las órdenes de trabajo abiertas." />
+          <CButton
+            color="primary"
+            variant="outline"
+            size="sm"
+            className="mb-2"
+            onClick={() => {
+              setError('');
+              setOrdenes(null);
+              setReintento((n) => n + 1);
+            }}
+          >
+            Volver a intentar
+          </CButton>
+        </>
+      )}
 
       {!error && ordenes === null && (
         <div className="sigma-talones" aria-busy="true">
@@ -102,7 +128,10 @@ export default function TalonesAbiertos({ cantidad = 3, recarga = 0 }) {
                   </div>
                   <div className="sigma-casillero">
                     <span className="sigma-casillero-rotulo">Prioridad</span>
-                    <span className="sigma-casillero-valor">{orden.prioridad ?? 'Sin tareas'}</span>
+                    {/* Sin tareas no hay prioridad: va un guion, no un texto que parezca una prioridad. */}
+                    <span className="sigma-casillero-valor" title={orden.prioridad ? undefined : 'La OT todavía no tiene tareas'}>
+                      {orden.prioridad ?? '—'}
+                    </span>
                   </div>
                 </div>
                 <div>
@@ -115,7 +144,7 @@ export default function TalonesAbiertos({ cantidad = 3, recarga = 0 }) {
       )}
 
       {/* Que significa el color de cada sello (regla 6). */}
-      {abiertas.length > 0 && <ReferenciaEtapas etapas={['pendiente', 'enCurso']} />}
+      {abiertas.length > 0 && <ReferenciaEtapas etapas={['pendiente', 'enCurso']} de="ot" />}
     </section>
   );
 }

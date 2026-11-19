@@ -220,41 +220,6 @@
   }
 }
 
-/*
-  El sello de ingreso: cuando las credenciales son correctas cae un sello
-  «Autorizado» sobre la tarjeta mientras se abre el sistema. No demora la
-  navegacion: arranca al mismo tiempo.
-*/
-.selloIngreso {
-  position: absolute;
-  top: 38%;
-  left: 50%;
-  z-index: 2;
-  padding: 0.35rem 1rem;
-  border: 3px solid var(--sigma-teal);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--sigma-teal);
-  font-size: 1.5rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  pointer-events: none;
-  transform: translate(-50%, -50%) rotate(-8deg);
-  animation: sellar 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@keyframes sellar {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -50%) rotate(-8deg) scale(1.6);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%) rotate(-8deg) scale(1);
-  }
-}
-
 /* ---------- Menos movimiento ---------- */
 
 @media (prefers-reduced-motion: reduce) {
@@ -271,22 +236,9 @@
   .troquel {
     animation: none;
   }
-
-  .selloIngreso {
-    animation-name: aparecerSello;
-  }
 }
 
 @keyframes aparecer {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes aparecerSello {
   from {
     opacity: 0;
   }

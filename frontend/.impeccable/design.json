@@ -365,11 +365,6 @@
         "purpose": "El aviso de error se despliega."
       },
       {
-        "name": "ingreso-sello",
-        "value": "0.22s",
-        "purpose": "Cae el sello «AUTORIZADO» al ingresar."
-      },
-      {
         "name": "ingreso-fondo",
         "value": "90s linear infinite",
         "purpose": "Columnas de comprobantes que suben; quietas con prefers-reduced-motion, y el resto aparece con fundido."

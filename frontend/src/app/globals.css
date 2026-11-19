@@ -348,8 +348,13 @@ body {
   font-weight: 600;
 }
 
+/*
+  Los titulos de grupo del menu. El color va directo: el tema oscuro de CoreUI
+  redefine la variable y los dejaba en blanco al 38% (3,4:1 de contraste).
+  Blanco al 70% da mas de 7:1 sobre la Tinta (19/11/2026).
+*/
 .sidebar .nav-title {
-  color: var(--cui-sidebar-nav-title-color);
+  color: rgba(255, 255, 255, 0.7);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -1367,6 +1372,203 @@ body {
   box-shadow: 0 0 0 1px var(--sigma-tono-peligro), 0 0 0 0.25rem rgba(var(--sigma-teal-rgb), 0.18);
 }
 
+/*
+  ---------- Panel de control (crítica del 19/11/2026) ----------
+*/
+
+/* Titulo de cada seccion del panel: el mismo en todas, sin estilos a mano. */
+.sigma-panel-seccion {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--sigma-texto-secundario);
+}
+
+.sigma-panel-seccion-fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.sigma-talones-ver {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+/*
+  La franja «Para atender»: casilleros de un mismo formulario, cada uno con su
+  cantidad y un enlace a donde se resuelve.
+*/
+.sigma-pendientes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  margin-bottom: 0.75rem;
+  background: var(--sigma-superficie);
+  border: 1px solid var(--sigma-linea);
+  border-radius: var(--sigma-radio-md);
+  overflow: hidden;
+}
+
+.sigma-pendiente {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-height: 44px;
+  padding: 0.75rem 1rem;
+  border-right: 1px solid #dfe8eb;
+  color: inherit;
+  text-decoration: none;
+  transition: background-color 0.15s ease-out;
+}
+
+.sigma-pendiente:last-child {
+  border-right: 0;
+}
+
+.sigma-pendiente:hover {
+  background: var(--sigma-teal-suave);
+  color: inherit;
+}
+
+.sigma-pendiente:focus-visible {
+  outline: 2px solid var(--sigma-teal);
+  outline-offset: -2px;
+}
+
+.sigma-pendiente-cantidad {
+  font-size: 1.85rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.sigma-pendiente-accion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--sigma-teal);
+}
+
+/*
+  Los indicadores como una sola fila de casilleros de formulario (mundo
+  «Talonario»), en lugar de tarjetas sueltas: una linea los rodea y otra fina
+  los separa.
+*/
+.sigma-kpi-grid {
+  gap: 0;
+  background: var(--sigma-superficie);
+  border: 1px solid var(--sigma-linea);
+  border-radius: var(--sigma-radio-md);
+  overflow: hidden;
+}
+
+.sigma-kpi-grid .sigma-kpi-card {
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  border-right: 1px solid #dfe8eb;
+}
+
+.sigma-kpi-grid .sigma-kpi-card:last-child {
+  border-right: 0;
+}
+
+.sigma-kpi-grid .sigma-kpi-title {
+  min-height: 0;
+}
+
+/* Que mide cada indicador, a la vista (antes vivia sólo en el title). */
+.sigma-kpi-explicacion {
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--sigma-texto-secundario);
+}
+
+/* En una columna, la linea fina separa de arriba a abajo. */
+@media (max-width: 575.98px) {
+  .sigma-kpi-grid .sigma-kpi-card {
+    border-right: 0;
+    border-bottom: 1px solid #dfe8eb;
+  }
+
+  .sigma-kpi-grid .sigma-kpi-card:last-child {
+    border-bottom: 0;
+  }
+
+  .sigma-pendiente {
+    border-right: 0;
+    border-bottom: 1px solid #dfe8eb;
+  }
+
+  .sigma-pendiente:last-child {
+    border-bottom: 0;
+  }
+}
+
+/*
+  El vale de reposicion: la tabla de materiales bajo el minimo. Una linea de
+  troquel separa el encabezado del cuerpo, como un vale para arrancar.
+*/
+.sigma-vale-encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-block: 0.75rem;
+  border-bottom: 2px dashed var(--sigma-linea);
+}
+
+.sigma-vale-tabla th:not(:first-child),
+.sigma-vale-tabla td:not(:first-child) {
+  white-space: nowrap;
+}
+
+/* El pie del menu (nombre de quien entro), con contraste suficiente. */
+.sigma-menu-secundario {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Los segmentos del periodo cortan entre palabras, nunca a mitad de una. */
+.sigma-segmento {
+  overflow-wrap: normal;
+  word-break: keep-all;
+  hyphens: none;
+}
+
+/*
+  Paso 5 (adapt): en el celular todo lo que se toca mide al menos 44px:
+  botones del panel, campana y perfil, botones de icono de las tablas y
+  graficos, y enlaces sueltos como «Ver todas».
+*/
+@media (max-width: 767.98px) {
+  .sigma-panel-acciones .btn,
+  .sigma-segmento,
+  .header .nav-link,
+  .header .dropdown-toggle,
+  .btn-icono {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .sigma-enlace-tocable {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
 /* ---------- 3. Componentes propios ---------- */
 
 /* Toasts de feedback (src/componentes/toast). */
@@ -1478,10 +1680,10 @@ body {
   margin-bottom: 1rem;
 }
 
-/* Tarjetas de estadistica del panel (src/app/page.js). */
+/* Indicadores del panel: una fila de casilleros, sin espacio entre ellos. */
 .sigma-kpi-grid {
   display: grid;
-  gap: clamp(0.75rem, 1vw, 1.25rem);
+  gap: 0;
   grid-template-columns: 1fr;
   margin-bottom: 1.5rem;
 }

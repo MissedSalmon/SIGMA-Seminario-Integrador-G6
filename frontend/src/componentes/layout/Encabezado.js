@@ -274,7 +274,7 @@ export default function Encabezado() {
                 <CIcon icon={cilUser} size="lg" />
               </CDropdownToggle>
               <CDropdownMenu className="pt-0 shadow-sm border" style={{ minWidth: '13rem', borderRadius: 'var(--sigma-radio-md)' }}>
-                <CDropdownHeader className="bg-light fw-semibold py-2 text-secondary" style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <CDropdownHeader className="bg-light fw-semibold py-2 text-secondary" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Mi Cuenta
                 </CDropdownHeader>
                 <CDropdownItem as={Link} href="/perfil" className="d-flex align-items-center gap-2 py-2">

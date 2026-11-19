@@ -240,6 +240,11 @@ Firmes y sobrios.
 - **Casilleros:** una grilla con borde fino; cada celda tiene su rótulo en mayúsculas y el valor abajo, cortado con puntos suspensivos si no entra.
 - **Dato de ficha:** `<Dato>` pone el mismo rótulo de casillero arriba del valor. Si no hay valor muestra un guion.
 
+### Panel: pendientes, indicadores y vale
+- **Para atender:** debajo de los talones, una fila de casilleros con la cantidad de cada pendiente (materiales bajo el mínimo, tipos de activo sin plan, tareas sin terminar) y un enlace en Petróleo a la pantalla donde se resuelve (19/11/2026).
+- **Indicadores:** una sola fila de casilleros dentro de una línea de formulario, separados por una línea fina; cada uno dice qué mide debajo del valor, a la vista. Cifras con coma decimal (`es-AR`).
+- **Vale de reposición:** la tabla de materiales bajo el mínimo va sin colores, con una línea de troquel debajo del encabezado; lo que importa se lee en la columna «Faltan».
+
 ### Cards / Containers
 - **Corner Style:** 0.5rem.
 - **Background:** blanco.
@@ -264,7 +269,7 @@ Firmes y sobrios.
 Public Sans en los ejes, en texto secundario. Una serie sola va en Petróleo: ahí el color no dice nada. Las porciones de estado usan el mismo tono que su sello. El lienzo de Chart.js no lee variables CSS, así que `GraficoChart.js` repite los valores de los tonos: si cambia uno en globals.css, se cambia también ahí.
 
 ### Pantalla de ingreso
-Fondo Tinta con una cuadrícula de formulario muy tenue y columnas de comprobantes que suben despacio (decoración, oculta para lectores de pantalla). La tarjeta llega subiendo (0.6s, `cubic-bezier(0.16, 1, 0.3, 1)`), después se dibuja la línea de troquel (0.45s). El aviso de error se despliega en 0.2s. Con el ingreso correcto cae un sello «AUTORIZADO» (0.22s) sin demorar la navegación. Si el sistema pide menos movimiento, el fondo queda quieto y todo aparece con un fundido.
+Fondo Tinta con una cuadrícula de formulario muy tenue y columnas de comprobantes que suben despacio (decoración, oculta para lectores de pantalla). La tarjeta llega subiendo (0.6s, `cubic-bezier(0.16, 1, 0.3, 1)`), después se dibuja la línea de troquel (0.45s). El aviso de error se despliega en 0.2s. Si el sistema pide menos movimiento, el fondo queda quieto y todo aparece con un fundido.
 
 ## Do's and Don'ts
 
