@@ -61,6 +61,7 @@ import {
   quitarFallaDeTarea,
 } from '@/servicios/tareas.js';
 import { formatearFecha, formatearFechaHora, soloFechaLegible } from '@/utils/fechas.js';
+import { textoDelPiso } from '@/utils/pisos.js';
 
 /** Una tarea en estos estados todavía no empezó: se puede iniciar. */
 const ESTADOS_SIN_EMPEZAR = ['Creada', 'Asignada', 'Pendiente'];
@@ -293,7 +294,7 @@ export default function PantallaDetalleMiTarea({ params }) {
                             <Dato etiqueta="Espacio">
                               {tarea.ubicacion?.espacio || <SinDato>-</SinDato>}
                               {tarea.ubicacion?.piso && (
-                                <span className="text-body-secondary"> (piso {tarea.ubicacion.piso})</span>
+                                <span className="text-body-secondary"> ({textoDelPiso(tarea.ubicacion.piso)})</span>
                               )}
                             </Dato>
                           </CCol>

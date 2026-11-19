@@ -1,5 +1,5 @@
 import { supabase } from '../config/supabase.js';
-import { datoInvalido, noEncontrado } from '../utiles/errores.js';
+import { datoInvalido, noEncontrado, prohibido } from '../utiles/errores.js';
 import * as ordenesTrabajo from './ordenesTrabajo.servicio.js';
 import { ENUM_ESTADO_ACTIVO, ENUM_ESTADO_OT, ENUM_ESTADO_TICKET } from '../utiles/enumerados.js';
 
@@ -205,7 +205,40 @@ export async function obtenerPorId(id, usuario = null) {
   return ticket;
 }
 
+/**
+ * Los activos que el autorizado puede reportar: los de los espacios de sus
+ * áreas, menos los retirados (19/11/2026).
+ */
+export async function activosQuePuedeReportar(legajo) {
+  const { data: areas, error: errorAreas } = await supabase
+    .from('area')
+    .select('espacio_id')
+    .eq('autorizado_legajo', legajo)
+    .not('espacio_id', 'is', null);
+  if (errorAreas) throw new Error(errorAreas.message);
+
+  const espacios = [...new Set((areas ?? []).map((area) => area.espacio_id))];
+  if (espacios.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('activo')
+    .select('activo_codigo, activo_estado, tipo_activo ( tipo_activo_nom )')
+    .in('espacio_id', espacios)
+    .neq('activo_estado', ENUM_ESTADO_ACTIVO.codigo('Retirado'))
+    .order('activo_codigo');
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((activo) => ({
+    codigo: activo.activo_codigo,
+    nombreTipo: activo.tipo_activo?.tipo_activo_nom ?? '',
+  }));
+}
+
 export async function crear(datos, usuario = null) {
+  if (usuario?.rol !== 'autorizado') {
+    throw prohibido('Sólo un usuario autorizado puede registrar tickets.');
+  }
+
   const codigoActivo = limpiar(datos.codigoActivo);
   const idEdificio = datos.idEdificio ? Number(datos.idEdificio) : null;
   const espacioNum = limpiar(datos.espacioNum);
@@ -224,14 +257,14 @@ export async function crear(datos, usuario = null) {
     throw datoInvalido('El modelo de datos actual exige que todo ticket esté asociado a un activo.');
   }
 
-  // Si el usuario es autorizado, usamos su identificador (legajo). Si es admin, puede usar el del form o '0000'
-  const legajoAutorizado = usuario?.rol === 'autorizado'
-    ? usuario.identificador
-    : (datos.autorizadoLegajo || usuario?.identificador || '0000');
+  const permitidos = await activosQuePuedeReportar(usuario.identificador);
+  if (!permitidos.some((activo) => activo.codigo === codigoActivo)) {
+    throw datoInvalido(`El activo ${codigoActivo} no está en tu área: no podés reportarlo.`);
+  }
 
   const { data, error } = await supabase.from('ticket').insert({
     activo_codigo: codigoActivo,
-    autorizado_legajo: legajoAutorizado,
+    autorizado_legajo: usuario.identificador,
     ticket_desc: descripcion,
     ticket_estado: ENUM_ESTADO_TICKET.codigo(ESTADO_INICIAL),
     ticket_evidencia: evidencia

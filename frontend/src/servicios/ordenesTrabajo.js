@@ -104,6 +104,12 @@ export async function registrarFalla(idOrden, idTarea, falla) {
   return data.datos;
 }
 
+/** Una tarea de la OT con lo que se hizo en ella: falla, materiales, herramientas y observaciones. */
+export async function obtenerTareaDeOrden(idOrden, idTarea) {
+  const { data } = await api.get(`/ordenes-trabajo/${idOrden}/tareas/${idTarea}`);
+  return data.datos;
+}
+
 export async function eliminarTarea(idOrden, idTarea) {
   const { data } = await api.delete(`/ordenes-trabajo/${idOrden}/tareas/${idTarea}`);
   return data.datos;

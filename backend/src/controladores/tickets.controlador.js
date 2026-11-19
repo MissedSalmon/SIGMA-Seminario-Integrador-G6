@@ -64,6 +64,12 @@ export async function listarEstados(req, res) {
   res.json({ ok: true, datos: ESTADOS });
 }
 
+/** GET /api/tickets/activos: los activos que el autorizado de la sesión puede reportar. */
+export async function listarActivosReportables(req, res) {
+  const activos = await ticketsServicio.activosQuePuedeReportar(req.usuario.identificador);
+  res.json({ ok: true, datos: activos });
+}
+
 /** GET /api/tickets/5 */
 export async function obtener(req, res) {
   const ticket = await ticketsServicio.obtenerPorId(leerId(req), req.usuario);

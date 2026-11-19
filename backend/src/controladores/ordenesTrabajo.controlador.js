@@ -2,6 +2,7 @@
  * Controlador de ordenes de trabajo (HU-14: crear la OT a partir de un ticket).
  */
 import * as ordenesServicio from '../servicios/ordenesTrabajo.servicio.js';
+import { obtenerDetalleParaAdministrador } from '../servicios/tareas.servicio.js';
 import { ESTADOS, PRIORIDADES } from '../servicios/ordenesTrabajo.servicio.js';
 import { datoInvalido } from '../utiles/errores.js';
 
@@ -128,6 +129,12 @@ export async function agregarTarea(req, res) {
 export async function actualizarTarea(req, res) {
   const orden = await ordenesServicio.actualizarTarea(leerId(req), leerNumeroDeTarea(req), req.body ?? {});
   res.json({ ok: true, datos: orden });
+}
+
+/** GET /api/ordenes-trabajo/5/tareas/2: el detalle de la tarea, con lo que se hizo en ella. */
+export async function obtenerTarea(req, res) {
+  const tarea = await obtenerDetalleParaAdministrador(leerId(req), leerNumeroDeTarea(req));
+  res.json({ ok: true, datos: tarea });
 }
 
 /** DELETE /api/ordenes-trabajo/5/tareas/2 */

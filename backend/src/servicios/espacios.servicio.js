@@ -7,6 +7,18 @@ function limpiar(texto) {
   return limpio === '' ? null : limpio;
 }
 
+/** El piso se guarda como número: 0 planta baja, 1 1er piso, 2 2do piso (19/11/2026). */
+const PISOS = ['0', '1', '2'];
+
+function leerPiso(datos) {
+  const valor = datos.piso ?? datos.espacio_piso;
+  if (valor === null || valor === undefined || String(valor).trim() === '') return null;
+
+  const piso = String(valor).trim();
+  if (!PISOS.includes(piso)) throw datoInvalido('El piso tiene que ser planta baja, 1er piso o 2do piso.');
+  return piso;
+}
+
 export async function obtenerTodos(edificio_id = null) {
   let query = supabase.from('espacio').select(`
     espacio_id,
@@ -71,7 +83,7 @@ export async function obtenerPorId(espacio_id) {
 export async function crear(datos) {
   const edificio = Number(datos.idEdificio);
   const numeroLimpio = limpiar(datos.numero) || limpiar(datos.espacio_num);
-  const pisoLimpio = limpiar(datos.piso) || limpiar(datos.espacio_piso);
+  const pisoLimpio = leerPiso(datos);
   const tipo_espacio_id = datos.idTipoEspacio ? Number(datos.idTipoEspacio) : null;
   const dimensionesLimpio = limpiar(datos.dimensiones);
   const nombreLimpio = limpiar(datos.nombre);
@@ -105,7 +117,7 @@ export async function crear(datos) {
 }
 
 export async function actualizar(espacio_id, datos) {
-  const pisoLimpio = limpiar(datos.piso) || limpiar(datos.espacio_piso);
+  const pisoLimpio = leerPiso(datos);
   const tipo_espacio_id = datos.idTipoEspacio ? Number(datos.idTipoEspacio) : null;
   const dimensionesLimpio = limpiar(datos.dimensiones);
   const nombreLimpio = limpiar(datos.nombre);

@@ -19,6 +19,7 @@ import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarEdificios } from '@/servicios/edificios.js';
 import { listarEspacios, eliminarEspacio } from '@/servicios/espacios.js';
+import { textoDelPiso } from '@/utils/pisos.js';
 
 export default function PantallaEspacios() {
   const { mostrarToast } = useToast();
@@ -53,7 +54,8 @@ export default function PantallaEspacios() {
       try {
         const filas = await listarEspacios(filtroEdificio ? Number(filtroEdificio) : null);
         if (!vigente) return;
-        setEspacios(filas);
+        // El piso viene como número; con el texto al lado, el buscador encuentra "planta baja".
+        setEspacios(filas.map((espacio) => ({ ...espacio, pisoTexto: textoDelPiso(espacio.piso) })));
         setError('');
       } catch (fallo) {
         if (vigente) setError(fallo.message);
@@ -105,7 +107,7 @@ export default function PantallaEspacios() {
     {
       clave: 'piso',
       encabezado: 'Piso',
-      render: (espacio) => <span className="text-body-secondary">{espacio.piso ?? '-'}</span>,
+      render: (espacio) => <span className="text-body-secondary">{espacio.pisoTexto || '-'}</span>,
     },
     {
       clave: 'numero',
@@ -152,7 +154,7 @@ export default function PantallaEspacios() {
             filas={espacios}
             claveFila={(espacio) => `${espacio.idEdificio}-${espacio.espacio_num}`}
             columnas={columnas}
-            buscarPor={['nombre', 'nombreEdificio', 'tipo', 'piso', 'numero']}
+            buscarPor={['nombre', 'nombreEdificio', 'tipo', 'pisoTexto', 'numero']}
             placeholderBusqueda="Buscar por nombre, edificio o tipo"
             filtros={[
               {

@@ -229,6 +229,19 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 >   valores que la de la tarea. La migración quedó como
 >   `20261010120000_datos_enumerados.sql`, para que vaya después de las del 09/10.
 
+> **Decisión del 19/11/2026 (quién registra un ticket):**
+> - **Sólo el usuario autorizado registra tickets.** Es quien reporta el problema y el ticket
+>   guarda su legajo (`ticket.autorizado_legajo`). El administrador no ve el botón «Agregar»
+>   en Tickets y la API le responde 403 (`POST /api/tickets`). Antes podía entrar al formulario,
+>   pero el alta fallaba porque su legajo no es el de un autorizado.
+>   Al guardar, la app lleva al detalle del ticket recién creado.
+> - **El autorizado sólo reporta activos de sus áreas.** El buscador del alta lista los activos
+>   de los espacios de las áreas que tiene a cargo (`area.autorizado_legajo` → `area.espacio_id`),
+>   menos los retirados (`GET /api/tickets/activos`). La API rechaza el alta de cualquier otro
+>   activo. Si sus áreas no tienen espacio o el espacio no tiene activos, el formulario lo avisa.
+>   Así todo ticket nuevo tiene área; los viejos que salen «Sin área» siguen así hasta que se le
+>   asigne un área a su espacio.
+
 > **Decisiones del 13/09/2026 (HU-10, consulta de tickets):**
 > - Los estados del ticket viven en `backend/src/servicios/tickets.servicio.js` (`ESTADOS`) y
 >   se exponen en `GET /api/tickets/estados`. Todo ticket nuevo se guarda como **Creado**.
@@ -247,6 +260,9 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 > - **La OT sale de un ticket VALIDADO y de ninguno otro.** Antes de validarlo no se sabe si
 >   el trabajo se va a hacer; y si el ticket ya avanzó (asignado, en ejecución, cerrado) su OT
 >   ya existe. El botón "Crear OT" del detalle del ticket sólo aparece si está "Validado".
+>   *Cambio del 19/11/2026:* el listado de órdenes de trabajo ya no tiene «Agregar» y se borró
+>   la pantalla `/ordenes-trabajo/agregar`: la OT se genera sola al validar el ticket. Si esa
+>   generación falla, se crea con «Crear OT» desde el detalle del ticket.
 > - **Las tareas se planifican para adelante:** ni el inicio ni el fin previstos pueden ser
 >   anteriores a hoy. Al editar una tarea vieja, la fecha que ya estaba guardada se respeta:
 >   sólo se rechaza si se la cambia por otra que también quedó atrás.
@@ -359,11 +375,15 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 > - **La fecha que se filtra es la prevista de inicio** (`tarea_fecha_ini`, la que carga el
 >   administrador al planificar la OT). Una tarea sin fecha prevista no aparece cuando se
 >   filtra por fecha.
-> - **Orden por defecto** *(cambiado el 25/10/2026)*: por estado, primero lo que el técnico
+> - **Orden por defecto** *(cambiado el 19/11/2026)*: por estado, primero lo que el técnico
 >   tiene entre manos: En ejecución, Asignada, Pendiente, Creada y al final Finalizada y
->   Cancelada. Dentro de cada estado, prioridad más alta primero y después la fecha prevista
->   más cercana (sin fecha, al final). Lo ordena la pantalla, no la API. Antes (22/10/2026) era
->   cronológico de creación, por número de OT y de tarea.
+>   Cancelada. Dentro de cada estado, **la última que le asignaron primero**
+>   (`tec_asig_fecha_asig`), como en la campana. Lo ordena la pantalla, no la API. Antes
+>   (25/10/2026) iba por prioridad y fecha prevista, y una tarea nueva sin fecha prevista
+>   quedaba al final de las asignadas.
+> - **Editar una tarea no cambia su asignación** *(19/11/2026)*: si el técnico sigue siendo el
+>   mismo, la asignación conserva su fecha y su estado. Antes se borraba y se volvía a crear,
+>   y una tarea En curso volvía a figurar como Asignada.
 > - **El estado es la segunda columna** *(25/10/2026)*, después de la prioridad, con la misma
 >   etiqueta (punto de color + texto) que el estado de la OT (`EtiquetaEstadoOT`): la tarea
 >   tiene los mismos estados. El color acompaña; lo que se lee es la palabra.
@@ -427,6 +447,28 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 > - ⬜ **Pendiente de definir:** una tarea a cargo de un **prestador externo** no la puede
 >   finalizar un técnico desde la app. Si una OT tiene una, no se va a cerrar sola hasta que
 >   haya una forma de marcar esa tarea como hecha (la tendría que hacer el administrador).
+
+> **Decisiones del 19/11/2026 (datos de demostración):**
+> - Se limpiaron los datos de la base para mostrar el sistema a clientes. El detalle de cada
+>   cambio está en la guía de datos de demostración, que no está en el repositorio. No se
+>   tocaron los usuarios.
+> - **Número de espacio:** piso y orden separados por un punto. «Aula 1.1» es la primera
+>   del 1er piso; «Oficina 0.2», la segunda de planta baja.
+> - **Piso:** se guarda como número: 0 planta baja, 1 1er piso, 2 2do piso. La columna
+>   `espacio_piso` sigue siendo texto (sin migración por ahora). En el formulario de espacios
+>   se elige de una lista (Planta baja, 1er piso, 2do piso) y las pantallas muestran el nombre
+>   (`frontend/src/utils/pisos.js`). La API rechaza cualquier otro valor; el piso puede quedar
+>   vacío.
+> - **Código de activo:** prefijo del tipo, guion y tres cifras (`AC-004`, `PC-002`,
+>   `EDI-001`). Se renumeraron 16 activos.
+
+> **Decisión del 19/11/2026 (detalle de la tarea para el administrador):**
+> - En el detalle de la OT, cada tarea tiene el ícono de la hoja para ver su detalle
+>   (`/ordenes-trabajo/[id]/tareas/[idTarea]`), también en las OT finalizadas.
+> - Es **sólo de consulta**: lo planificado (tarea estándar, responsable, prioridad, fechas,
+>   duración) y lo que hizo el técnico (falla, materiales, herramientas tomadas para la tarea y
+>   observaciones). La tarea se sigue cambiando con «Editar» y lo ejecutado lo carga el técnico.
+> - API: `GET /api/ordenes-trabajo/:id/tareas/:idTarea`, sólo para el administrador.
 
 > **Decisiones del 25/10/2026 (HU-29, historial de intervenciones por activo):**
 > - **Una intervención es una OT del activo**, no cada tarea. Es **correctiva** si viene de un

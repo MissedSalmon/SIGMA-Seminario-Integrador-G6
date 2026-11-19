@@ -62,6 +62,8 @@ function consultaQueDevuelve(data) {
     order: jest.fn(() => cadena),
     eq: jest.fn(() => cadena),
     in: jest.fn(() => cadena),
+    not: jest.fn(() => cadena),
+    neq: jest.fn(() => cadena),
     gte: jest.fn(() => cadena),
     lte: jest.fn(() => cadena),
     insert: jest.fn(() => cadena),
@@ -222,9 +224,20 @@ describe('obtenerPorId', () => {
   });
 });
 
+/** Las consultas del alta: el área del autorizado, los activos de su espacio y el ticket nuevo. */
+function consultasDelAlta(ticketNuevo) {
+  const consultas = {
+    area: consultaQueDevuelve([{ espacio_id: 3 }]),
+    activo: consultaQueDevuelve([{ activo_codigo: 'AC-001', activo_estado: 1, tipo_activo: null }]),
+    ticket: consultaQueDevuelve(ticketNuevo),
+  };
+  supabase.from.mockImplementation((tabla) => consultas[tabla]);
+  return consultas;
+}
+
 describe('crear', () => {
   test('guarda el ticket nuevo en estado "Creado"', async () => {
-    const consulta = consultaQueDevuelve({
+    const { ticket: consulta } = consultasDelAlta({
       ticket_id: 9,
       activo_codigo: 'AC-001',
       ticket_desc: 'Hace ruido',
@@ -232,11 +245,31 @@ describe('crear', () => {
       ticket_evidencia: null,
       ticket_fecha_alta: '2026-09-13T16:00:00+00:00',
     });
-    supabase.from.mockReturnValue(consulta);
 
-    const nuevo = await crear({ codigoActivo: 'AC-001', descripcion: 'Hace ruido' });
+    const nuevo = await crear(
+      { codigoActivo: 'AC-001', descripcion: 'Hace ruido' },
+      { rol: 'autorizado', identificador: '1234' }
+    );
 
-    expect(consulta.insert).toHaveBeenCalledWith(expect.objectContaining({ ticket_estado: 1 }));
+    expect(consulta.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ ticket_estado: 1, autorizado_legajo: '1234' })
+    );
     expect(nuevo.estado).toBe('Creado');
+  });
+
+  test('el administrador no puede registrar tickets', async () => {
+    await expect(
+      crear({ codigoActivo: 'AC-001', descripcion: 'Hace ruido' }, { rol: 'administrador', identificador: '1' })
+    ).rejects.toMatchObject({ estado: 403 });
+    expect(supabase.from).not.toHaveBeenCalledWith('ticket');
+  });
+
+  test('no deja reportar un activo que no está en el área del autorizado', async () => {
+    const { ticket } = consultasDelAlta(null);
+
+    await expect(
+      crear({ codigoActivo: 'TV-505', descripcion: 'No prende' }, { rol: 'autorizado', identificador: '1234' })
+    ).rejects.toMatchObject({ estado: 400 });
+    expect(ticket.insert).not.toHaveBeenCalled();
   });
 });

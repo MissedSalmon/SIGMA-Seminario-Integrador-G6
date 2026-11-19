@@ -366,7 +366,7 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
                         <CTableHeaderCell>Duración</CTableHeaderCell>
                         <CTableHeaderCell>Estado</CTableHeaderCell>
                         <CTableHeaderCell>Falla</CTableHeaderCell>
-                        {!cerrada && <CTableHeaderCell className="text-end">Acciones</CTableHeaderCell>}
+                        <CTableHeaderCell className="text-end">Acciones</CTableHeaderCell>
                       </CTableRow>
                     </CTableHead>
 
@@ -416,31 +416,44 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
                             )}
                           </CTableDataCell>
 
-                          {!cerrada && (
-                            <CTableDataCell className="text-end text-nowrap">
-                              <BotonEnlace
-                                href={`/ordenes-trabajo/${orden.id}/tareas/${tarea.idTarea}/editar`}
-                                color="secondary"
-                                variante="outline"
-                                tamano="sm"
-                                className="me-2"
-                                title="Editar la tarea"
-                                aria-label={`Editar la tarea ${tarea.idTarea}`}
-                              >
-                                <CIcon icon={cilPencil} size="sm" />
-                              </BotonEnlace>
-                              <CButton
-                                color="danger"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setTareaAEliminar(tarea)}
-                                title="Eliminar la tarea"
-                                aria-label={`Eliminar la tarea ${tarea.idTarea}`}
-                              >
-                                <CIcon icon={cilTrash} size="sm" />
-                              </CButton>
-                            </CTableDataCell>
-                          )}
+                          <CTableDataCell className="text-end text-nowrap">
+                            <BotonEnlace
+                              href={`/ordenes-trabajo/${orden.id}/tareas/${tarea.idTarea}`}
+                              color="secondary"
+                              variante="outline"
+                              tamano="sm"
+                              className={cerrada ? undefined : 'me-2'}
+                              title="Ver el detalle de la tarea"
+                              aria-label={`Ver el detalle de la tarea ${tarea.idTarea}`}
+                            >
+                              <CIcon icon={cilDescription} size="sm" />
+                            </BotonEnlace>
+                            {!cerrada && (
+                              <>
+                                <BotonEnlace
+                                  href={`/ordenes-trabajo/${orden.id}/tareas/${tarea.idTarea}/editar`}
+                                  color="secondary"
+                                  variante="outline"
+                                  tamano="sm"
+                                  className="me-2"
+                                  title="Editar la tarea"
+                                  aria-label={`Editar la tarea ${tarea.idTarea}`}
+                                >
+                                  <CIcon icon={cilPencil} size="sm" />
+                                </BotonEnlace>
+                                <CButton
+                                  color="danger"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setTareaAEliminar(tarea)}
+                                  title="Eliminar la tarea"
+                                  aria-label={`Eliminar la tarea ${tarea.idTarea}`}
+                                >
+                                  <CIcon icon={cilTrash} size="sm" />
+                                </CButton>
+                              </>
+                            )}
+                          </CTableDataCell>
                         </CTableRow>
                       ))}
                     </CTableBody>

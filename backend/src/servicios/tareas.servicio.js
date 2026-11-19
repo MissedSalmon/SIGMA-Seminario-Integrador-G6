@@ -32,7 +32,7 @@ import {
 } from '../utiles/enumerados.js';
 import * as inventario from './inventario.servicio.js';
 import { observacionesDeLaTarea } from './observaciones.servicio.js';
-import { guardarFalla, validarDatosFalla } from './ordenesTrabajo.servicio.js';
+import { guardarFalla, obtenerPorId as obtenerOrden, validarDatosFalla } from './ordenesTrabajo.servicio.js';
 
 /** De mas urgente a menos: con este orden se ofrecen en el filtro. */
 export const PRIORIDADES = ENUM_PRIORIDAD.textos;
@@ -64,6 +64,7 @@ const COLUMNAS = `
   ot_id,
   tarea_id,
   tec_asig_estado,
+  tec_asig_fecha_asig,
   tarea_ot!inner (
     tarea_id,
     tarea_desc,
@@ -123,6 +124,7 @@ function aTarea(fila) {
     pendiente: !ESTADOS_TERMINADOS.includes(estado),
     prioridad: ENUM_PRIORIDAD.texto(tarea.tarea_prioridad) ?? 'Media',
     fechaPrevista: soloElDia(tarea.tarea_fecha_ini),
+    fechaAsignacion: fila.tec_asig_fecha_asig ?? null,
     fechaFinPrevista: soloElDia(tarea.tarea_fecha_fin),
     codigoActivo: activo?.activo_codigo ?? null,
     activo: activo
@@ -245,6 +247,63 @@ export async function obtenerUnaDelTecnico(legajo, idOt, idTarea) {
     materiales: await materialesDeLaTarea(idOt, idTarea),
     observaciones: await observacionesDeLaTarea(idOt, idTarea),
     falla: await fallaDeLaTarea(idOt, idTarea),
+  };
+}
+
+/** Las herramientas que se tomaron para la tarea, con quién y hasta cuándo. */
+async function herramientasDeLaTarea(idOt, idTarea) {
+  const { data, error } = await supabase
+    .from('tecnico_utiliza_herramienta')
+    .select('herr_cod, tec_herr_fecha_prest, tec_herr_fecha_dev, herramienta ( herr_nom ), tecnico ( tecnico_nom_ape )')
+    .eq('ot_id', idOt)
+    .eq('tarea_id', idTarea)
+    .order('tec_herr_fecha_prest', { ascending: false });
+
+  // Sin la migracion 20261022120000 los prestamos no tienen tarea: no hay nada que mostrar.
+  if (error && FALTA_COLUMNA.includes(error.code)) return [];
+  if (error) throw errorDeBase(error, 'de las herramientas de la tarea');
+
+  return (data ?? []).map((fila) => ({
+    codigo: fila.herr_cod,
+    nombre: fila.herramienta?.herr_nom ?? fila.herr_cod,
+    tecnico: fila.tecnico?.tecnico_nom_ape ?? '',
+    desde: fila.tec_herr_fecha_prest,
+    hasta: fila.tec_herr_fecha_dev ?? null,
+  }));
+}
+
+/**
+ * Una tarea vista por el administrador desde la OT: lo planificado y lo que se
+ * hizo (falla, materiales, herramientas y observaciones). Es sólo de consulta.
+ */
+export async function obtenerDetalleParaAdministrador(idOt, idTarea) {
+  const orden = await obtenerOrden(idOt);
+  const tarea = orden.tareas.find((item) => item.idTarea === idTarea);
+  if (!tarea) throw noEncontrado(`La orden de trabajo ${idOt} no tiene la tarea ${idTarea}.`);
+
+  const [materiales, herramientas, observaciones, falla] = await Promise.all([
+    materialesDeLaTarea(idOt, idTarea),
+    herramientasDeLaTarea(idOt, idTarea),
+    observacionesDeLaTarea(idOt, idTarea),
+    fallaDeLaTarea(idOt, idTarea),
+  ]);
+
+  return {
+    ...tarea,
+    falla,
+    materiales,
+    herramientas,
+    observaciones,
+    ot: {
+      id: orden.id,
+      estado: orden.estado,
+      descripcion: orden.descripcion,
+      origen: orden.origen,
+      idTicket: orden.idTicket,
+      nombrePlan: orden.nombrePlan,
+    },
+    activo: orden.activo,
+    nombreArea: orden.nombreArea,
   };
 }
 

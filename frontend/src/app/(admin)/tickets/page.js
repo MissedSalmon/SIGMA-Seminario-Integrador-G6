@@ -22,6 +22,7 @@ import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
+import { useSesion } from '@/componentes/layout/ContextoSesion.js';
 import EtiquetaEstadoTicket from '@/componentes/tickets/EtiquetaEstadoTicket.js';
 import { listarActivos } from '@/servicios/activos.js';
 import { listarAreas } from '@/servicios/areas.js';
@@ -29,6 +30,10 @@ import { listarTickets, listarEstadosDeTicket } from '@/servicios/tickets.js';
 import { formatearFechaHora, inicioDelDia, finDelDia } from '@/utils/fechas.js';
 
 export default function PantallaTickets() {
+  // El ticket lo registra el autorizado, que es quien reporta el problema (19/11/2026).
+  const { usuario } = useSesion();
+  const accionAgregar = usuario?.rol === 'autorizado' ? { direccion: '/tickets/agregar' } : undefined;
+
   const [tickets, setTickets] = useState([]);
 
   // Lo que hay para elegir en los desplegables. Se carga una sola vez.
@@ -166,7 +171,7 @@ export default function PantallaTickets() {
       <EncabezadoPagina
         titulo="Tickets"
         descripcion="Las solicitudes de mantenimiento, de la más reciente a la más antigua."
-        accion={{ direccion: '/tickets/agregar' }}
+        accion={accionAgregar}
       />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
@@ -226,7 +231,7 @@ export default function PantallaTickets() {
                 : 'Todavía no hay tickets registrados.'
             }
             accionVacio={
-              hayFiltros ? undefined : { direccion: '/tickets/agregar' }
+              hayFiltros ? undefined : accionAgregar
             }
           />
         </CCardBody>

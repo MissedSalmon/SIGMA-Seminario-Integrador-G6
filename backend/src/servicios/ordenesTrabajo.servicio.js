@@ -780,6 +780,16 @@ async function proximoNumeroDeTarea(idOt) {
 
 /** Deja como unico tecnico de la tarea al que se paso (o a ninguno). */
 async function asignarTecnico(idOt, idTarea, legajoTecnico) {
+  // Si sigue el mismo técnico, la asignación queda como está: conserva su fecha y su estado.
+  const { data: actual, error: errorActual } = await supabase
+    .from('tecnico_asignado_tarea_ot')
+    .select('tecnico_legajo')
+    .eq('ot_id', idOt)
+    .eq('tarea_id', idTarea)
+    .maybeSingle();
+  if (errorActual) throw new Error(errorActual.message);
+  if (legajoTecnico && actual && String(actual.tecnico_legajo) === String(legajoTecnico)) return;
+
   const { error: errorBorrado } = await supabase
     .from('tecnico_asignado_tarea_ot')
     .delete()

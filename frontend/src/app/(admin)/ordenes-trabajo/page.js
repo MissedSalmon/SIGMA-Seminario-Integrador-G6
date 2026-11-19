@@ -183,7 +183,8 @@ export default function PantallaOrdenesTrabajo() {
 
   return (
     <>
-      <EncabezadoPagina titulo="Órdenes de trabajo" accion={{ direccion: '/ordenes-trabajo/agregar' }} />
+      {/* Sin «Agregar»: la OT se genera sola al validar el ticket (19/11/2026). */}
+      <EncabezadoPagina titulo="Órdenes de trabajo" />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
 

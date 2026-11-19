@@ -128,6 +128,12 @@ function armarMigas(direccion) {
     const padre = acumulada;
     acumulada += `/${tramo}`;
 
+    // El detalle de una tarea de la OT (/ordenes-trabajo/5/tareas/2) termina en su número.
+    if (/^\d+$/.test(tramo) && tramos[indice - 1] === 'tareas' && indice === tramos.length - 1) {
+      migas.push({ texto: `Tarea ${tramo}`, direccion: acumulada, ultima: true });
+      return;
+    }
+
     if (/^\d+$/.test(tramo) || tramos[indice + 1] === 'editar') return;
 
     // "Inventario" es el grupo del menu, no una pantalla: no tiene una

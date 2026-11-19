@@ -4,6 +4,7 @@
  */
 import { Router } from 'express';
 import * as ordenes from '../controladores/ordenesTrabajo.controlador.js';
+import { soloAdministrador } from '../middlewares/soloAdministrador.js';
 
 const router = Router();
 
@@ -20,6 +21,7 @@ router.put('/:id', ordenes.actualizar);
 
 // Las tareas de la OT: son parte de la OT, no un modulo aparte.
 router.post('/:id/tareas', ordenes.agregarTarea);
+router.get('/:id/tareas/:idTarea', soloAdministrador, ordenes.obtenerTarea);
 router.put('/:id/tareas/:idTarea', ordenes.actualizarTarea);
 router.put('/:id/tareas/:idTarea/falla', ordenes.registrarFalla);
 router.delete('/:id/tareas/:idTarea', ordenes.eliminarTarea);
