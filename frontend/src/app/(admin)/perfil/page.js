@@ -1,165 +1,139 @@
 'use client';
 
+/**
+ * /perfil - los datos de la cuenta de quien inicio sesion.
+ *
+ * Se dibuja como una credencial del mundo «Talonario» (ver frontend/DESIGN.md):
+ * a la izquierda el talon con el legajo, que es la identidad de la persona;
+ * a la derecha el nombre, el rol y los datos de contacto en casilleros. Abajo,
+ * la seguridad de la cuenta (cambiar la contraseña).
+ */
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import {
-  CButton,
-  CCard,
-  CCardBody,
-  CCardHeader,
-  CSpinner,
-} from '@coreui/react';
+import { CButton } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilUser, cilLockLocked } from '@coreui/icons';
+import { cilLockLocked } from '@coreui/icons';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
+import Aviso from '@/componentes/Aviso.js';
 import DialogoCambiarContrasena from '@/componentes/usuarios/CambioContrasena.js';
 import { obtenerPerfil } from '@/servicios/auth.js';
+import { normalizarRol } from '@/utils/roles.js';
+
+/** Como se nombra cada rol en pantalla. */
+const NOMBRE_ROL = {
+  administrador: 'Administrador',
+  tecnico: 'Técnico',
+  autorizado: 'Usuario autorizado',
+};
+
+/**
+ * El primer dato que exista, entre los nombres que puede traer el perfil. Un
+ * guion suelto cuenta como vacio: el administrador inicial se cargo asi.
+ */
+function primero(perfil, claves) {
+  for (const clave of claves) {
+    const valor = String(perfil[clave] ?? '').trim();
+    if (valor && valor !== '-') return valor;
+  }
+  return null;
+}
+
+/** Un casillero de la credencial: rotulo arriba, valor abajo. */
+function Casillero({ rotulo, children }) {
+  return (
+    <div className="sigma-casillero">
+      <span className="sigma-casillero-rotulo">{rotulo}</span>
+      <span className="sigma-casillero-valor" title={typeof children === 'string' ? children : undefined}>
+        {children}
+      </span>
+    </div>
+  );
+}
 
 export default function PerfilPage() {
-  const router = useRouter();
   const [perfil, setPerfil] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [cargando, setCargando] = useState(true);
   const [cambiandoContrasena, setCambiandoContrasena] = useState(false);
 
   useEffect(() => {
-    const fetchPerfil = async () => {
-      try {
-        const res = await obtenerPerfil();
-        if (res.ok) {
-          setPerfil(res.datos);
-        }
-      } catch (error) {
-        console.error('Error al obtener perfil:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchPerfil();
+    obtenerPerfil()
+      .then((res) => {
+        if (res.ok) setPerfil(res.datos);
+      })
+      .catch((error) => console.error('Error al obtener perfil:', error))
+      .finally(() => setCargando(false));
   }, []);
 
-  if (isLoading) {
+  if (cargando) {
     return (
-      <div>
+      <>
         <EncabezadoPagina titulo="Mi perfil" />
-        <div className="d-flex align-items-center gap-2 text-secondary p-4">
-          <CSpinner size="sm" />
-          <span>Cargando perfil...</span>
+        <div className="sigma-credencial" aria-busy="true">
+          <div className="sigma-credencial-talon" />
+          <div className="sigma-credencial-cuerpo">
+            <div className="sigma-esqueleto-linea w-50 mb-3" />
+            <div className="sigma-esqueleto-linea w-75" />
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   if (!perfil) {
     return (
-      <div>
+      <>
         <EncabezadoPagina titulo="Mi perfil" />
-        <div className="alert alert-danger" role="alert">
-          No se pudo cargar la información del perfil.
-        </div>
-      </div>
+        <Aviso mensaje="No se pudo cargar la información del perfil. Recargá la página para volver a intentar." />
+      </>
     );
   }
 
-  const nombreUsuario =
-    perfil.admin_nom_ape ||
-    perfil.tecnico_nom_ape ||
-    perfil.autorizado_nom_ape ||
-    perfil.adminNomYApe ||
-    perfil.tecnicoNomYApe ||
-    perfil.autorizadoNomYApe;
-
-  const legajoUsuario =
-    perfil.admin_legajo ||
-    perfil.tecnico_legajo ||
-    perfil.autorizado_legajo ||
-    perfil.adminLegajo ||
-    perfil.tecnicoLegajo ||
-    perfil.autorizadoLegajo ||
-    perfil.identificador;
-
-  const telefonoUsuario =
-    perfil.admin_tel ||
-    perfil.tecnico_tel ||
-    perfil.autorizado_tel;
+  const nombre = primero(perfil, ['admin_nom_ape', 'tecnico_nom_ape', 'autorizado_nom_ape', 'adminNomYApe', 'tecnicoNomYApe', 'autorizadoNomYApe']);
+  const legajo = primero(perfil, ['admin_legajo', 'tecnico_legajo', 'autorizado_legajo', 'adminLegajo', 'tecnicoLegajo', 'autorizadoLegajo', 'identificador']);
+  const telefono = primero(perfil, ['admin_tel', 'tecnico_tel', 'autorizado_tel']);
+  const rol = normalizarRol(perfil.rol);
 
   return (
-    <div>
+    <>
       <EncabezadoPagina titulo="Mi perfil" />
 
-      <CCard
-        className="shadow-sm border mb-4"
-        style={{
-          maxWidth: '44rem',
-          borderRadius: 'var(--sigma-radio-md)',
-          borderColor: 'var(--sigma-borde)',
-        }}
-      >
-        <CCardHeader className="bg-white py-3 border-bottom d-flex align-items-center gap-2">
-          <CIcon icon={cilUser} className="text-primary" />
-          <strong style={{ color: 'var(--sigma-ink)' }}>Datos de la cuenta</strong>
-        </CCardHeader>
+      <section className="sigma-credencial" aria-label="Datos de la cuenta">
+        <div className="sigma-credencial-talon">
+          <span className="sigma-talon-rotulo">Legajo</span>
+          <span className="sigma-talon-numero">{legajo ?? '-'}</span>
+        </div>
 
-        <CCardBody className="p-4">
-          <div className="row g-3 mb-4">
-            <div className="col-12 col-md-6">
-              <span className="text-secondary small d-block">Identificador / Legajo</span>
-              <strong style={{ color: 'var(--sigma-ink)', fontSize: '1.05rem' }}>
-                {legajoUsuario}
-              </strong>
-            </div>
+        <div className="sigma-credencial-cuerpo">
+          <div className="sigma-credencial-titular">
+            <h2 className="sigma-credencial-nombre">{nombre || legajo}</h2>
+            {/* El rol es una categoria, no un estado: va en la etiqueta neutra. */}
+            <span className="sigma-etiqueta">{NOMBRE_ROL[rol] ?? perfil.rol}</span>
+          </div>
 
-            <div className="col-12 col-md-6">
-              <span className="text-secondary small d-block">Rol en el sistema</span>
-              <span
-                className="badge bg-primary-subtle text-primary-emphasis text-capitalize px-2 py-1"
-                style={{ fontSize: '0.9rem' }}
-              >
-                {perfil.rol}
-              </span>
-            </div>
-
-            {nombreUsuario && (
-              <div className="col-12 col-md-6">
-                <span className="text-secondary small d-block">Nombre y Apellido</span>
-                <span style={{ color: 'var(--sigma-ink)' }}>{nombreUsuario}</span>
-              </div>
-            )}
-
-            {telefonoUsuario && (
-              <div className="col-12 col-md-6">
-                <span className="text-secondary small d-block">Teléfono de contacto</span>
-                <span style={{ color: 'var(--sigma-ink)' }}>{telefonoUsuario}</span>
-              </div>
-            )}
-
-            {perfil.autorizado_email && (
-              <div className="col-12 col-md-6">
-                <span className="text-secondary small d-block">Correo electrónico</span>
-                <span style={{ color: 'var(--sigma-ink)' }}>{perfil.autorizado_email}</span>
-              </div>
-            )}
-
+          <div className="sigma-casilleros">
+            <Casillero rotulo="Teléfono">{telefono || 'Sin cargar'}</Casillero>
+            {perfil.autorizado_email && <Casillero rotulo="Correo electrónico">{perfil.autorizado_email}</Casillero>}
             {perfil.tecnico_disponibilidad && (
-              <div className="col-12 col-md-6">
-                <span className="text-secondary small d-block">Disponibilidad</span>
-                <span style={{ color: 'var(--sigma-ink)' }}>{perfil.tecnico_disponibilidad}</span>
-              </div>
+              <Casillero rotulo="Disponibilidad">{perfil.tecnico_disponibilidad}</Casillero>
             )}
           </div>
+        </div>
+      </section>
 
-          <hr className="my-4" style={{ borderColor: 'var(--sigma-borde)' }} />
-
-          <div className="d-flex flex-wrap gap-2">
-            <CButton type="button" color="primary" onClick={() => setCambiandoContrasena(true)}>
-              <CIcon icon={cilLockLocked} className="me-2" />
-              Cambiar contraseña
-            </CButton>
-          </div>
-        </CCardBody>
-      </CCard>
+      <section className="sigma-credencial-seguridad" aria-labelledby="titulo-seguridad">
+        <div>
+          <h2 id="titulo-seguridad" className="sigma-seccion-titulo border-0 p-0 mb-1">
+            Seguridad
+          </h2>
+          <p className="text-body-secondary mb-0">La contraseña con la que entrás a SIGMA.</p>
+        </div>
+        <CButton type="button" color="primary" variant="outline" onClick={() => setCambiandoContrasena(true)}>
+          <CIcon icon={cilLockLocked} className="me-2" />
+          Cambiar contraseña
+        </CButton>
+      </section>
 
       {cambiandoContrasena && <DialogoCambiarContrasena onCerrar={() => setCambiandoContrasena(false)} />}
-    </div>
+    </>
   );
 }

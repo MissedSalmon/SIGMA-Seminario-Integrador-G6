@@ -2093,6 +2093,99 @@ body {
   white-space: nowrap;
 }
 
+/*
+  La credencial de «Mi perfil»: el talon lleva el legajo (la identidad de la
+  persona) y el cuerpo el nombre, el rol y los datos en casilleros.
+*/
+.sigma-credencial {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  max-width: 46rem;
+  margin-bottom: 1rem;
+  background: var(--sigma-superficie);
+  border: 1px solid var(--sigma-linea);
+  border-radius: var(--sigma-radio-md);
+  overflow: hidden;
+}
+
+.sigma-credencial-talon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  min-height: 8rem;
+  padding: 1rem 0.5rem;
+  border-right: 2px dashed var(--sigma-linea);
+  background: var(--sigma-fondo);
+  text-align: center;
+}
+
+.sigma-credencial-talon .sigma-talon-numero {
+  font-size: 1.85rem;
+  overflow-wrap: anywhere;
+}
+
+.sigma-credencial-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1.25rem 1.5rem;
+}
+
+.sigma-credencial-titular {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.sigma-credencial-nombre {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+/* La seguridad de la cuenta, separada de los datos. */
+.sigma-credencial-seguridad {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 46rem;
+  padding: 1rem 1.5rem;
+  background: var(--sigma-superficie);
+  border: 1px solid var(--sigma-linea);
+  border-radius: var(--sigma-radio-md);
+}
+
+/* En el celular el talon pasa arriba, como el encabezado de la credencial. */
+@media (max-width: 575.98px) {
+  .sigma-credencial {
+    grid-template-columns: 1fr;
+  }
+
+  .sigma-credencial-talon {
+    flex-direction: row;
+    gap: 0.6rem;
+    min-height: 0;
+    padding: 0.75rem 1rem;
+    border-right: 0;
+    border-bottom: 2px dashed var(--sigma-linea);
+  }
+
+  .sigma-credencial-talon .sigma-talon-numero {
+    font-size: 1.5rem;
+  }
+
+  .sigma-credencial-cuerpo,
+  .sigma-credencial-seguridad {
+    padding: 1rem;
+  }
+}
+
 /* Casilleros: un dato por celda, con su rotulo chico arriba. */
 .sigma-casilleros {
   display: grid;
