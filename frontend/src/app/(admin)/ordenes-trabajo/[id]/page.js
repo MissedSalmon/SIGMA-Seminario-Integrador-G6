@@ -188,7 +188,18 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
 
   return (
     <>
-      <EncabezadoPagina titulo={orden ? <>Orden de trabajo <span className="sigma-titulo-numero">#{orden.id}</span></> : 'Orden de trabajo'} />
+      <EncabezadoPagina titulo={
+          orden ? (
+            <span className="sigma-titulo-con-sello">
+              <span>
+                Orden de trabajo <span className="sigma-titulo-numero">#{orden.id}</span>
+              </span>
+              <EtiquetaEstadoOT estado={orden.estado} />
+            </span>
+          ) : (
+            'Orden de trabajo'
+          )
+        } />
       {/* Que significa el color de cada sello (regla 6). */}
       <ReferenciaEtapas className="mt-0 mb-3" />
 
@@ -213,11 +224,6 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
                   </CCardHeader>
                   <CCardBody>
                     <CRow>
-                      <CCol sm={4}>
-                        <Dato etiqueta="Estado">
-                          <EtiquetaEstadoOT estado={orden.estado} />
-                        </Dato>
-                      </CCol>
                       <CCol sm={4}>
                         <Dato etiqueta="Prioridad">
                           <div className="d-flex align-items-center gap-2">

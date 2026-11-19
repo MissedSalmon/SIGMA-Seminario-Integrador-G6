@@ -224,7 +224,18 @@ export default function PantallaDetalleTicket({ params }) {
   return (
     <>
       <EncabezadoPagina
-        titulo={ticket ? <>Ticket <span className="sigma-titulo-numero">#{ticket.id}</span></> : 'Detalle del ticket'}
+        titulo={
+          ticket ? (
+            <span className="sigma-titulo-con-sello">
+              <span>
+                Ticket <span className="sigma-titulo-numero">#{ticket.id}</span>
+              </span>
+              <EtiquetaEstadoTicket estado={ticket.estado} />
+            </span>
+          ) : (
+            'Detalle del ticket'
+          )
+        }
         descripcion={ticket ? ticket.descripcion : undefined}
       />
       {/* Que significa el color de cada sello (regla 6). */}
@@ -258,11 +269,6 @@ export default function PantallaDetalleTicket({ params }) {
                   </CCardHeader>
                   <CCardBody>
                     <CRow>
-                      <CCol sm={4}>
-                        <Dato etiqueta="Estado">
-                          <EtiquetaEstadoTicket estado={ticket.estado} />
-                        </Dato>
-                      </CCol>
                       <CCol sm={4}>
                         <Dato etiqueta="Fecha de alta">{formatearFechaHora(ticket.fechaAlta)}</Dato>
                       </CCol>

@@ -436,6 +436,9 @@ body {
   font-size: 1.25rem;
   font-weight: 600;
   min-width: 0;
+  /* Una ruta larga baja de renglon en vez de montarse sobre la campana. */
+  flex-wrap: wrap;
+  row-gap: 0.1rem;
 }
 
 /* En el celular la ruta va más chica: si no, con tres tramos ya no entra en un renglón. */
@@ -1634,6 +1637,53 @@ body {
   color: var(--cui-primary);
 }
 
+/*
+  El sello del aviso de exito: un recuadro de linea en el verde de «bien»,
+  un poco girado, que cae en 0.2s. Con menos movimiento aparece quieto.
+*/
+.sigma-toast-sello {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border: 2px solid var(--sigma-tono-bien);
+  border-radius: 5px;
+  color: var(--sigma-tono-bien);
+  transform: rotate(-8deg);
+  animation: sigma-sellar 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes sigma-sellar {
+  from {
+    opacity: 0;
+    transform: rotate(-8deg) scale(1.5);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-8deg) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sigma-toast-sello {
+    animation: none;
+  }
+}
+
+/* El titulo de una ficha con su sello de estado al lado. */
+.sigma-titulo-con-sello {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+}
+
+.sigma-titulo-con-sello .sigma-sello {
+  font-size: 0.8rem;
+}
+
 .sigma-toast-cerrar {
   margin-left: auto;
   background: none;
@@ -1668,16 +1718,63 @@ body {
   padding: 3rem 1.5rem;
 }
 
-.sigma-estado-vacio-icono {
-  width: 3.5rem;
-  height: 3.5rem;
-  border-radius: 999px;
-  background: var(--sigma-teal-suave);
-  color: var(--sigma-teal);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 1rem;
+/*
+  El talonario en blanco del estado vacio: un dibujo de linea con los colores
+  del sistema. Al aparecer, la hoja de adelante se asienta sobre la de atras
+  (un solo movimiento, corto); con menos movimiento queda quieta.
+*/
+.sigma-talonario-vacio {
+  display: block;
+  margin: 0 auto 1rem;
+  overflow: visible;
+}
+
+.sigma-talonario-vacio-atras {
+  fill: var(--sigma-fondo);
+  stroke: var(--sigma-linea);
+  stroke-width: 1.5;
+}
+
+.sigma-talonario-vacio-hoja {
+  fill: var(--sigma-superficie);
+  stroke: var(--sigma-linea);
+  stroke-width: 1.5;
+  transform-box: fill-box;
+  animation: sigma-hoja-asentar 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.sigma-talonario-vacio-troquel {
+  stroke: var(--sigma-linea);
+  stroke-width: 2;
+  stroke-dasharray: 4 4;
+}
+
+.sigma-talonario-vacio-rotulo,
+.sigma-talonario-vacio-renglon {
+  fill: #e3ebee;
+}
+
+/* El numero del talon, vacio: todavia no hay ningun registro. */
+.sigma-talonario-vacio-numero {
+  fill: none;
+  stroke: var(--sigma-teal);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+
+@keyframes sigma-hoja-asentar {
+  from {
+    transform: translate(6px, -6px);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sigma-talonario-vacio-hoja {
+    animation: none;
+  }
 }
 
 /* Indicadores del panel: una fila de casilleros, sin espacio entre ellos. */

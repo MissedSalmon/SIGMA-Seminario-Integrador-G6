@@ -17,6 +17,7 @@ import Encabezado from './Encabezado.js';
 import PieDePagina from './PieDePagina.js';
 import { ProveedorToast } from '@/componentes/toast/ContextoToast.js';
 import Toast from '@/componentes/toast/Toast.js';
+import IrAlPrimerError from '@/componentes/formulario/IrAlPrimerError.js';
 
 export default function LayoutAdmin({ children }) {
   return (
@@ -39,6 +40,7 @@ export default function LayoutAdmin({ children }) {
           </div>
 
           <Toast />
+          <IrAlPrimerError />
         </ProveedorLayout>
       </ProveedorSesion>
     </ProveedorToast>

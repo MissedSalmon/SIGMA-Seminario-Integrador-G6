@@ -21,7 +21,11 @@ export default function Toast() {
     <div className="sigma-toast-contenedor">
       {toasts.map((toast) => (
         <div key={toast.id} className={`sigma-toast sigma-toast--${toast.tipo}`} role="status">
-          <span className="sigma-toast-icono">
+          {/*
+            Lo guardado se «sella», como un comprobante: el icono de exito es
+            un sello que cae. Los demas avisos llevan su icono de siempre.
+          */}
+          <span className={toast.tipo === 'exito' ? 'sigma-toast-sello' : 'sigma-toast-icono'} aria-hidden="true">
             <CIcon icon={ICONOS[toast.tipo] ?? cilCheckCircle} size="sm" />
           </span>
           <span className="flex-grow-1">{toast.mensaje}</span>

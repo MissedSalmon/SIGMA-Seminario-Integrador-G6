@@ -69,7 +69,7 @@ import { CButton, CButtonGroup, CFormInput, CTable, CTableBody, CTableDataCell, 
 import CIcon from '@coreui/icons-react';
 import { cilChevronLeft, cilChevronRight, cilSearch, cilX } from '@coreui/icons';
 
-import { EsqueletoFilas, SinDatos } from '@/componentes/EstadoTabla.js';
+import { EsqueletoFilas, SinDatos, SinResultados } from '@/componentes/EstadoTabla.js';
 import CampoFecha from '@/componentes/formulario/CampoFecha.js';
 import CampoLista from '@/componentes/formulario/CampoLista.js';
 
@@ -199,20 +199,45 @@ export default function TablaDatos({
           )}
         </div>
 
-        {/* Mientras carga no hay cantidad que mostrar: "0 resultados" engañaría. */}
+        {/*
+          Mientras carga no hay cantidad que mostrar: "0 resultados" engañaría.
+          Con algo escrito en el buscador se dice cuantos quedan de cuantos
+          ("3 de 33"), asi se sabe que la lista esta recortada.
+        */}
         <span className="sigma-tabla-conteo" aria-live="polite">
           {cargando
             ? 'Cargando…'
-            : `${filasFiltradas.length} ${filasFiltradas.length === 1 ? 'resultado' : 'resultados'}`}
+            : busqueda.trim() && filasFiltradas.length !== filas.length
+              ? `${filasFiltradas.length} de ${filas.length}`
+              : `${filasFiltradas.length} ${filasFiltradas.length === 1 ? 'resultado' : 'resultados'}`}
         </span>
       </div>
 
       {antesDeLaTabla}
 
-      {!cargando && filas.length === 0 ? (
+      {/*
+        Sin registros y sin filtros: todavia no se cargo nada (talonario en
+        blanco). Con filtros o busqueda y sin resultados: se dice que se busco
+        y se ofrece la salida, en lugar de decir que no hay datos cargados.
+      */}
+      {!cargando && filas.length === 0 && !hayFiltrosAplicados ? (
         <SinDatos texto={textoVacio} />
       ) : !cargando && filasFiltradas.length === 0 ? (
-        <SinDatos texto="No se encontró ningún resultado para la búsqueda." />
+        <SinResultados
+          busqueda={busqueda.trim()}
+          alBorrarBusqueda={() => {
+            setBusqueda('');
+            setPaginaPedida(1);
+          }}
+          alQuitarFiltros={
+            alLimpiar && hayFiltrosAplicados
+              ? () => {
+                  alLimpiar();
+                  setPaginaPedida(1);
+                }
+              : undefined
+          }
+        />
       ) : (
         <>
           <CTable hover responsive align="middle" className="mb-0">

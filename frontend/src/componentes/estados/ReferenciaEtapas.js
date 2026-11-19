@@ -30,7 +30,9 @@ export default function ReferenciaEtapas({ etapas = Object.keys(ETAPAS), de, cla
     <div className={`sigma-referencia-etapas ${className}`} aria-label="Referencia de colores de los estados">
       <span className="sigma-referencia-etapas-titulo">Referencia:</span>
       {etapas.map((clave) => {
-        const estados = mapa ? estadosDe(mapa, clave) : '';
+        const lista = mapa ? estadosDe(mapa, clave) : '';
+        // Si el estado se llama igual que la etapa («Cerrado»), no se repite.
+        const estados = lista === ETAPAS[clave].texto ? '' : lista;
         return (
           <span key={clave} className="sigma-referencia-etapa">
             <span className="sigma-referencia-etapa-muestra" style={{ borderColor: ETAPAS[clave].color }} aria-hidden="true" />
