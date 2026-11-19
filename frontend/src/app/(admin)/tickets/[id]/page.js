@@ -18,6 +18,7 @@ import { cilArrowLeft, cilExternalLink, cilCheckAlt, cilX, cilPlus, cilDescripti
 
 import ReferenciaEtapas from '@/componentes/estados/ReferenciaEtapas.js';
 import Talon from '@/componentes/Talon.js';
+import LineaEtapasTicket from '@/componentes/tickets/LineaEtapasTicket.js';
 import Dato from '@/componentes/Dato.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
@@ -241,6 +242,9 @@ export default function PantallaDetalleTicket({ params }) {
       {/* Que significa el color de cada sello (regla 6). */}
       <ReferenciaEtapas className="mt-0 mb-3" />
 
+      {/* En que punto del ciclo esta el ticket, para quien lo reporto y para el administrador. */}
+      {ticket && <LineaEtapasTicket estado={ticket.estado} />}
+
       <Aviso mensaje={error} />
 
       {cargando ? (
@@ -279,7 +283,7 @@ export default function PantallaDetalleTicket({ params }) {
                     {ticket.estado === 'Rechazado' && ticket.motivoRechazo && (
                       <div className="mt-3 p-3 bg-danger bg-opacity-10 border border-danger rounded">
                         <div className="text-danger fw-semibold small mb-1">Motivo del rechazo</div>
-                        <div className="text-danger" style={{ whiteSpace: 'pre-wrap' }}>{ticket.motivoRechazo}</div>
+                        <div style={{ whiteSpace: 'pre-wrap' }}>{ticket.motivoRechazo}</div>
                       </div>
                     )}
                   </CCardBody>

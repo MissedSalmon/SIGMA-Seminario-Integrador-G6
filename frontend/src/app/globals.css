@@ -2485,6 +2485,130 @@ body {
   }
 }
 
+/*
+  La linea de etapas de un ticket (src/componentes/tickets/LineaEtapasTicket.js).
+  Casilleros del mismo ancho; la raya de arriba es gruesa en los pasos
+  alcanzados. Sin colores: el texto de cada paso dice si ya paso, si es el de
+  ahora o si falta.
+*/
+.sigma-linea-etapas {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 0.35rem;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  list-style: none;
+}
+
+.sigma-linea-etapa {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+  padding-top: 0.5rem;
+  border-top: 2px solid var(--sigma-linea);
+}
+
+.sigma-linea-etapa--hecho,
+.sigma-linea-etapa--ahora {
+  border-top: 4px solid var(--sigma-ink);
+  padding-top: calc(0.5rem - 2px);
+}
+
+.sigma-linea-etapa-numero {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--sigma-texto-secundario);
+}
+
+.sigma-linea-etapa-texto {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.sigma-linea-etapa--falta .sigma-linea-etapa-texto {
+  font-weight: 400;
+  color: var(--sigma-texto-secundario);
+}
+
+.sigma-linea-etapa-situacion {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sigma-texto-secundario);
+}
+
+.sigma-linea-etapa--ahora .sigma-linea-etapa-situacion {
+  color: var(--sigma-ink);
+}
+
+/* En el celular la linea se lee de arriba a abajo. */
+@media (max-width: 575.98px) {
+  .sigma-linea-etapas {
+    grid-auto-flow: row;
+    gap: 0;
+  }
+
+  .sigma-linea-etapa {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 0.6rem;
+    padding: 0.4rem 0 0.4rem 0.75rem;
+    border-top: 0;
+    border-left: 2px solid var(--sigma-linea);
+  }
+
+  .sigma-linea-etapa--hecho,
+  .sigma-linea-etapa--ahora {
+    border-top: 0;
+    /* El riel tiene el mismo ancho en todos los pasos: los alcanzados van en tinta. */
+    border-left-color: var(--sigma-ink);
+    padding-top: 0.4rem;
+  }
+
+  .sigma-linea-etapa-situacion {
+    margin-left: auto;
+  }
+}
+
+/*
+  La accion principal de una pantalla del tecnico (Iniciar / Finalizar tarea).
+  En la PC va en el encabezado. En el celular queda fija abajo, a todo el
+  ancho, donde llega el pulgar; el contenido deja lugar para no quedar tapado.
+*/
+@media (max-width: 767.98px) {
+  .sigma-accion-principal {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1020;
+    align-items: stretch !important;
+    padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+    background: var(--sigma-superficie);
+    border-top: 1px solid var(--sigma-linea);
+    box-shadow: 0 -4px 12px rgba(12, 39, 51, 0.08);
+  }
+
+  .sigma-accion-principal > span,
+  .sigma-accion-principal .btn {
+    display: block;
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .sigma-accion-principal .text-end {
+    text-align: left !important;
+    max-width: none !important;
+  }
+
+  .sigma-espacio-accion {
+    padding-bottom: 5.5rem;
+  }
+}
+
 /* Casilleros: un dato por celda, con su rotulo chico arriba. */
 .sigma-casilleros {
   display: grid;
