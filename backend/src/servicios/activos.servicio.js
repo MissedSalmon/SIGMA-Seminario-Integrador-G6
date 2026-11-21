@@ -53,6 +53,14 @@ const COLUMNAS = `
   )
 `;
 
+/** El nombre del espacio, igual que en espacios.servicio.js: "Aula 101". */
+function nombreDeEspacio(espacio) {
+  if (!espacio) return '';
+  return espacio.tipo_espacio
+    ? `${espacio.tipo_espacio.tipo_espacio_nom} ${espacio.espacio_num}`
+    : `Espacio ${espacio.espacio_num}`;
+}
+
 function aActivo(fila) {
   return {
     codigo: fila.activo_codigo,

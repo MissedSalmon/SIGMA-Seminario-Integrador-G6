@@ -108,7 +108,7 @@ export default function PantallaTickets() {
     {
       clave: 'id',
       encabezado: '#',
-      render: (ticket) => <Talon numero={ticket.id} href={`/tickets/${ticket.id}`} titulo={`Ver el ticket ${ticket.id}`} />,
+      render: (ticket) => <Talon numero={ticket.id} />,
     },
     {
       clave: 'estado',
