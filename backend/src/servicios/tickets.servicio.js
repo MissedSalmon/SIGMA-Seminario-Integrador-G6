@@ -2,6 +2,7 @@ import { supabase } from '../config/supabase.js';
 import { datoInvalido, noEncontrado, prohibido } from '../utiles/errores.js';
 import * as ordenesTrabajo from './ordenesTrabajo.servicio.js';
 import { ENUM_ESTADO_ACTIVO, ENUM_ESTADO_OT, ENUM_ESTADO_TICKET } from '../utiles/enumerados.js';
+import { nombreDelEspacio } from '../utiles/espacios.js';
 
 /**
  * Los estados por los que pasa un ticket (ver .claude/contexto/dominio.md).
@@ -50,6 +51,7 @@ const COLUMNAS = `
     espacio (
       espacio_id,
       espacio_num,
+      tipo_espacio ( tipo_espacio_nom ),
       edificio (
         edificio_nom
       ),
@@ -113,6 +115,7 @@ function aTicket(fila) {
           estado: ENUM_ESTADO_ACTIVO.texto(activo.activo_estado) ?? '',
           nombreEdificio: espacio?.edificio?.edificio_nom ?? '',
           espacio_num: espacio?.espacio_num ?? '',
+          nombreEspacio: nombreDelEspacio(espacio),
         }
       : null,
     idArea: area?.area_id ?? null,

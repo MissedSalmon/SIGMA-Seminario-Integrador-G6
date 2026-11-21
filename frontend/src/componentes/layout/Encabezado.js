@@ -82,7 +82,7 @@ const NOMBRES = {
   '/especialidades': 'Especialidades',
   '/prestadores': 'Listado de prestadores',
   '/prestadores/tipos': 'Tipos de prestador',
-  '/autorizados': 'Usuarios autorizados',
+  '/autorizados': 'Solicitantes',
   '/notificaciones': 'Notificaciones',
   '/perfil': 'Mi perfil',
   '/configuracion': 'Configuración',

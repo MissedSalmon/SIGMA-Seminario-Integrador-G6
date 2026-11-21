@@ -1,6 +1,7 @@
 import { supabase } from '../config/supabase.js';
 import { datoInvalido, noEncontrado, conflicto } from '../utiles/errores.js';
 import { ENUM_ESTADO_ACTIVO } from '../utiles/enumerados.js';
+import { nombreDelEspacio } from '../utiles/espacios.js';
 import { generarOtsPreventivas } from './programacionPreventiva.servicio.js';
 
 // En la base el estado es un numero; la traduccion esta en utiles/enumerados.js.
@@ -45,6 +46,7 @@ const COLUMNAS = `
   ),
   espacio (
     espacio_num,
+    tipo_espacio ( tipo_espacio_nom ),
     edificio (
       edificio_nom
     )
@@ -59,7 +61,7 @@ function aActivo(fila) {
     idEdificio: fila.edificio_id,
     espacio_id: fila.espacio_id,
     espacio_num: fila.espacio ? fila.espacio.espacio_num : '',
-    nombreEspacio: fila.espacio ? fila.espacio.espacio_num : '',
+    nombreEspacio: nombreDelEspacio(fila.espacio),
     nombreEdificio: fila.espacio && fila.espacio.edificio ? fila.espacio.edificio.edificio_nom : '',
     fechaAlta: fila.activo_fecha_alta,
     fechaUltimoMantenimiento: fila.activo_fecha_ult_maint,

@@ -211,8 +211,9 @@ export default function FormularioTicket({ onGuardar }) {
         evidencia: direccionFoto,
       });
 
-      mostrarToast({ tipo: 'exito', mensaje: 'Se registró el ticket.' });
-      router.push(`/tickets/${nuevo.id}`);
+      // Vuelve al listado, donde el ticket nuevo queda primero (21/11/2026).
+      mostrarToast({ tipo: 'exito', mensaje: `Se registró el ticket #${nuevo.id}.` });
+      router.push('/tickets');
     } catch (fallo) {
       setError(fallo.message);
     } finally {

@@ -13,12 +13,14 @@
  *   - Mientras está en ejecución puede cargar la falla que encontró. Es
  *     opcional: se puede finalizar sin falla (10/11/2026).
  *   - "Finalizar tarea": pasa a Finalizada. Si era la última de la OT, la OT
- *     se finaliza sola y el ticket se cierra (HU-26).
+ *     se finaliza sola y el ticket se cierra (HU-26). Después vuelve al listado
+ *     de tareas asignadas (21/11/2026).
  *
  * La OT y el activo no llevan enlace: sus pantallas son del administrador y el
  * técnico no tiene acceso.
  */
 import { use, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   CButton,
   CCard,
@@ -77,6 +79,7 @@ function SinDato({ children }) {
 export default function PantallaDetalleMiTarea({ params }) {
   const { idOt, idTarea } = use(params);
   const { mostrarToast } = useToast();
+  const router = useRouter();
 
   const [tarea, setTarea] = useState(null);
   const [herramientas, setHerramientas] = useState({ mias: [], disponibles: [] });
@@ -134,17 +137,15 @@ export default function PantallaDetalleMiTarea({ params }) {
     setErrorVentana('');
     try {
       const respuesta = await finalizarTarea(idOt, idTarea);
-      setTarea(respuesta.tarea);
-      setVentana(null);
       mostrarToast({
         tipo: 'exito',
         mensaje: respuesta.ordenFinalizada
           ? `La tarea quedó finalizada. Era la última: la OT #${idOt} se finalizó y el ticket se cerró.`
           : 'La tarea quedó finalizada.',
       });
+      router.push('/tareas');
     } catch (fallo) {
       setErrorVentana(fallo.message);
-    } finally {
       setProcesando(false);
     }
   }

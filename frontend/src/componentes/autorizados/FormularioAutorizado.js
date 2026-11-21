@@ -155,7 +155,7 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar, vol
         tipo: 'exito',
         mensaje: editando
           ? `Se guardaron los cambios de "${nombre}".`
-          : `Se agregó el usuario autorizado "${nombre}". Su usuario y su contraseña provisoria son el legajo.`,
+          : `Se agregó el solicitante "${nombre}". Su usuario y su contraseña provisoria son el legajo.`,
       });
 
       router.push(volverA);
