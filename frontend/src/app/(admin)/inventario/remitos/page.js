@@ -20,7 +20,7 @@ import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { listarRemitos, listarTiposComprobante } from '@/servicios/remitos.js';
-import { soloFechaLegible } from '@/utils/fechas.js';
+import { aFechaCalendario, soloFechaLegible } from '@/utils/fechas.js';
 
 export default function PantallaRemitos() {
   const [remitos, setRemitos] = useState([]);
@@ -29,6 +29,12 @@ export default function PantallaRemitos() {
   const [filtroComprobante, setFiltroComprobante] = useState('');
   const [filtroDesde, setFiltroDesde] = useState('');
   const [filtroHasta, setFiltroHasta] = useState('');
+  const maximoDesde = filtroHasta
+    ? aFechaCalendario(filtroHasta)?.subtract({ days: 1 }).toString() ?? ''
+    : '';
+  const minimoHasta = filtroDesde
+    ? aFechaCalendario(filtroDesde)?.add({ days: 1 }).toString() ?? ''
+    : '';
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
@@ -165,8 +171,20 @@ export default function PantallaRemitos() {
                 alCambiar: setFiltroComprobante,
                 opciones: tiposComprobante.map((tipo) => ({ valor: tipo, texto: tipo })),
               },
-              { etiqueta: 'Desde', tipo: 'fecha', valor: filtroDesde, alCambiar: setFiltroDesde },
-              { etiqueta: 'Hasta', tipo: 'fecha', valor: filtroHasta, alCambiar: setFiltroHasta },
+              {
+                etiqueta: 'Desde',
+                tipo: 'fecha',
+                valor: filtroDesde,
+                alCambiar: setFiltroDesde,
+                maximo: maximoDesde,
+              },
+              {
+                etiqueta: 'Hasta',
+                tipo: 'fecha',
+                valor: filtroHasta,
+                alCambiar: setFiltroHasta,
+                minimo: minimoHasta,
+              },
             ]}
             alLimpiar={limpiarFiltros}
             cargando={cargando}
