@@ -153,8 +153,11 @@ export default function PantallaCargaTrabajo() {
     },
   ];
 
-  const maximoCargaActiva = Math.max(1, ...tecnicos.map((tecnico) => tecnico.cargaActiva));
-  const maximoCompletadas = Math.max(1, ...tecnicos.map((tecnico) => tecnico.completadas));
+  const tecnicosConCarga = tecnicos.filter(
+    (tecnico) => tecnico.pendientes > 0 || tecnico.enEjecucion > 0 || tecnico.completadas > 0
+  );
+  const maximoCargaActiva = Math.max(1, ...tecnicosConCarga.map((tecnico) => tecnico.cargaActiva));
+  const maximoCompletadas = Math.max(1, ...tecnicosConCarga.map((tecnico) => tecnico.completadas));
 
   const graficos = (
     <section className="sigma-carga-graficos" aria-label="Gráficos de carga de trabajo">
@@ -169,7 +172,7 @@ export default function PantallaCargaTrabajo() {
           <h2>Carga activa</h2>
           <p>Pendientes y en ejecución, ordenadas por técnico.</p>
         </figcaption>
-        {tecnicos.map((tecnico) => {
+        {tecnicosConCarga.map((tecnico) => {
           const anchoPendientes = (tecnico.pendientes / maximoCargaActiva) * 100;
           const anchoEjecucion = (tecnico.enEjecucion / maximoCargaActiva) * 100;
 
@@ -190,7 +193,7 @@ export default function PantallaCargaTrabajo() {
             </div>
           );
         })}
-        {tecnicos.length === 0 && !cargando && (
+        {tecnicosConCarga.length === 0 && !cargando && (
           <p className="text-body-secondary mb-0">No hay datos para graficar.</p>
         )}
       </figure>
@@ -200,7 +203,7 @@ export default function PantallaCargaTrabajo() {
           <h2>Tareas completadas</h2>
           <p>Comparación por técnico en el mismo período.</p>
         </figcaption>
-        {tecnicos.map((tecnico) => {
+        {tecnicosConCarga.map((tecnico) => {
           const anchoCompletadas = (tecnico.completadas / maximoCompletadas) * 100;
 
           return (
@@ -219,7 +222,7 @@ export default function PantallaCargaTrabajo() {
             </div>
           );
         })}
-        {tecnicos.length === 0 && !cargando && (
+        {tecnicosConCarga.length === 0 && !cargando && (
           <p className="text-body-secondary mb-0">No hay datos para graficar.</p>
         )}
       </figure>
@@ -240,7 +243,7 @@ export default function PantallaCargaTrabajo() {
       <CCard>
         <CCardBody>
           <TablaDatos
-            filas={tecnicos}
+            filas={tecnicosConCarga}
             claveFila={(tecnico) => tecnico.legajo}
             columnas={columnas}
             buscarPor={['nombre', 'legajo']}
@@ -276,8 +279,8 @@ export default function PantallaCargaTrabajo() {
             cargando={cargando}
             textoVacio={
               filtroEspecialidad || filtroDesde || filtroHasta
-                ? 'No hay técnicos que coincidan con los filtros.'
-                : 'Todavía no hay técnicos cargados.'
+                ? 'No hay técnicos con tareas que coincidan con esos filtros.'
+                : 'No hay técnicos con tareas para mostrar.'
             }
           />
         </CCardBody>
