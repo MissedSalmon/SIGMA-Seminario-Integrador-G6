@@ -30,9 +30,8 @@ function limpiar(texto) {
  * El ticket con todo lo que se muestra: el activo (con su tipo y su
  * ubicacion), quien lo registro y la OT si ya se genero.
  *
- * El area no esta en el ticket: se deduce de donde esta el activo
- * (area.espacio_id), decision del 13/09/2026. Como varias areas pueden
- * compartir un espacio, viene como lista.
+ * El area no esta en el ticket: es la del espacio del activo
+ * (espacio.area_id). Un espacio tiene un area como maximo (21/11/2026).
  */
 const COLUMNAS = `
   ticket_id,
@@ -85,7 +84,7 @@ const COLUMNAS_CON_AREA = COLUMNAS.replace('\n  activo (', '\n  activo!inner (')
 function aTicket(fila) {
   const activo = fila.activo ?? null;
   const espacio = activo?.espacio ?? null;
-  const areas = espacio?.area ?? [];
+  const area = espacio?.area ?? null;
   const autorizado = fila.autorizado ?? null;
   // Un ticket tiene a lo sumo una OT, pero la relacion viene como lista.
   const ot = Array.isArray(fila.orden_trabajo) ? fila.orden_trabajo[0] ?? null : fila.orden_trabajo;
@@ -116,8 +115,8 @@ function aTicket(fila) {
           espacio_num: espacio?.espacio_num ?? '',
         }
       : null,
-    idArea: areas[0]?.area_id ?? null,
-    nombreArea: areas.map((area) => area.area_nom).join(' / '),
+    idArea: area?.area_id ?? null,
+    nombreArea: area?.area_nom ?? '',
     registradoPor: autorizado
       ? { legajo: autorizado.autorizado_legajo, nombre: autorizado.autorizado_nom_ape }
       : { legajo: fila.autorizado_legajo, nombre: '' },
@@ -206,18 +205,17 @@ export async function obtenerPorId(id, usuario = null) {
 }
 
 /**
- * Los activos que el autorizado puede reportar: los de los espacios de sus
- * áreas, menos los retirados (19/11/2026).
+ * Los activos que el autorizado puede reportar: los de todos los espacios de
+ * su área, menos los retirados (19/11/2026; varios espacios desde el 21/11/2026).
  */
 export async function activosQuePuedeReportar(legajo) {
-  const { data: areas, error: errorAreas } = await supabase
-    .from('area')
-    .select('espacio_id')
-    .eq('autorizado_legajo', legajo)
-    .not('espacio_id', 'is', null);
-  if (errorAreas) throw new Error(errorAreas.message);
+  const { data: suyos, error: errorEspacios } = await supabase
+    .from('espacio')
+    .select('espacio_id, area!inner ( autorizado_legajo )')
+    .eq('area.autorizado_legajo', legajo);
+  if (errorEspacios) throw new Error(errorEspacios.message);
 
-  const espacios = [...new Set((areas ?? []).map((area) => area.espacio_id))];
+  const espacios = (suyos ?? []).map((espacio) => espacio.espacio_id);
   if (espacios.length === 0) return [];
 
   const { data, error } = await supabase

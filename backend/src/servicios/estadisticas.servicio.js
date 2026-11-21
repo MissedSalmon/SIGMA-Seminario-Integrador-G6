@@ -11,17 +11,17 @@ import { ENUM_ESTADO_TICKET } from '../utiles/enumerados.js';
  * Reglas (ver .claude/contexto/dominio.md, decisión del 07/11/2026):
  * - Cuenta las fallas con tarea y activo. Las filas viejas que sólo tenían OT
  *   no tienen activo, así que no se sabe de qué área son: quedan afuera.
- * - El área de una falla es la del espacio de su activo (area.espacio_id),
+ * - El área de una falla es la del espacio de su activo (espacio.area_id),
  *   igual que el área de un ticket. Si el espacio no tiene área, va a
  *   "Sin área", que se muestra siempre al final.
- * - Si varias áreas comparten el espacio, la falla cuenta para cada una.
+ * - Un espacio tiene un área como máximo (21/11/2026): cada falla cuenta una
+ *   sola vez. Un área puede tener espacios en varios edificios.
  * - Cuentan las fallas de OT correctivas y preventivas. "Tickets" son los
  *   tickets distintos detrás de esas fallas: una falla de una OT preventiva
  *   no tiene ticket.
  * - El período se aplica sobre la fecha en que se registró la falla.
  * - Sólo aparecen las áreas con al menos una falla en el período.
- * - El porcentaje de un área es sobre el total de fallas del período. Si dos
- *   áreas comparten un espacio, la suma puede pasar el 100 %.
+ * - El porcentaje de un área es sobre el total de fallas del período.
  */
 
 const COLUMNAS = `
@@ -95,18 +95,10 @@ function aIncidencia(fila) {
   };
 }
 
-/** Las áreas de una falla: las de su espacio, o "Sin área". */
-function areasDe(fila) {
-  const espacio = fila.activo?.espacio ?? null;
-  const areas = espacio?.area ?? [];
-  if (areas.length === 0) {
-    return [{ idArea: null, nombreArea: SIN_AREA, nombreEdificio: espacio?.edificio?.edificio_nom ?? '' }];
-  }
-  return areas.map((area) => ({
-    idArea: area.area_id,
-    nombreArea: area.area_nom,
-    nombreEdificio: espacio?.edificio?.edificio_nom ?? '',
-  }));
+/** El área de una falla: la de su espacio, o "Sin área". */
+function areaDe(fila) {
+  const area = fila.activo?.espacio?.area ?? null;
+  return area ? { idArea: area.area_id, nombreArea: area.area_nom } : { idArea: null, nombreArea: SIN_AREA };
 }
 
 function compararRanking(a, b) {
@@ -161,22 +153,22 @@ export async function obtenerAreasConMayorIncidencia(filtros = {}) {
     const incidencia = aIncidencia(fila);
     fallasDistintas.add(incidencia.idFalla);
 
-    for (const area of areasDe(fila)) {
-      const clave = area.idArea ?? 'sin-area';
-      if (!porArea.has(clave)) {
-        porArea.set(clave, { ...area, tickets: new Set(), tipos: new Map(), incidencias: [] });
-      }
-      const grupo = porArea.get(clave);
-      grupo.incidencias.push(incidencia);
-      grupo.tipos.set(incidencia.tipo, (grupo.tipos.get(incidencia.tipo) ?? 0) + 1);
-      if (incidencia.ticket) grupo.tickets.add(incidencia.ticket.id);
+    const area = areaDe(fila);
+    const clave = area.idArea ?? 'sin-area';
+    if (!porArea.has(clave)) {
+      porArea.set(clave, { ...area, edificios: new Set(), tickets: new Set(), tipos: new Map(), incidencias: [] });
     }
+    const grupo = porArea.get(clave);
+    grupo.incidencias.push(incidencia);
+    if (incidencia.nombreEdificio) grupo.edificios.add(incidencia.nombreEdificio);
+    grupo.tipos.set(incidencia.tipo, (grupo.tipos.get(incidencia.tipo) ?? 0) + 1);
+    if (incidencia.ticket) grupo.tickets.add(incidencia.ticket.id);
   }
 
   const ranking = [...porArea.values()].map((grupo) => ({
     idArea: grupo.idArea,
     nombreArea: grupo.nombreArea,
-    nombreEdificio: grupo.nombreEdificio,
+    nombreEdificio: [...grupo.edificios].sort((a, b) => a.localeCompare(b, 'es')).join(' / '),
     cantidadFallas: grupo.incidencias.length,
     cantidadTickets: grupo.tickets.size,
     // Sobre el total de fallas del período, con un decimal.

@@ -229,6 +229,28 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 >   valores que la de la tarea. La migración quedó como
 >   `20261010120000_datos_enumerados.sql`, para que vaya después de las del 09/10.
 
+> **Decisión del 21/11/2026 (un área tiene varios espacios):**
+> - **Cada espacio es de un área como máximo, y un área puede tener muchos espacios**, incluso
+>   en varios edificios. Se tomó la propuesta del 18/11/2026 (`Propuesta-areas-y-espacios.pdf`).
+>   Ejemplo: la Secretaría de Asuntos Universitarios con varias oficinas, o Bedelía con todas las
+>   aulas. Un espacio común (pasillo, baño) puede quedar **«Sin área»**.
+> - La relación la guarda el espacio (`espacio.area_id`). El área ya no tiene `espacio_id` ni
+>   `edificio_id`: su edificio sale de sus espacios, y si están en varios se muestran todos
+>   («Anexo I / Edificio Central»). Migración `20261121200000_espacio_pertenece_a_un_area.sql`,
+>   **escrita pero sin aplicar**: hay que correr `npm run db:push` junto con este código.
+> - **Los espacios se eligen en el formulario del área**, con la selección múltiple. La lista
+>   ofrece sólo los espacios libres y los que ya son de esa área; la API rechaza un espacio que
+>   es de otra. El área puede quedar sin espacios. El listado de áreas muestra edificio y cantidad
+>   de espacios; el de espacios, una columna «Área» que sólo se puede ver.
+> - **El solicitante reporta los activos de todos los espacios de su área.**
+> - Como un espacio tiene un área como máximo, **cada ticket y cada falla cuentan para una sola
+>   área** en las estadísticas (HU-34 y tiempos de resolución): los porcentajes suman 100 %.
+> - Un solicitante es responsable de un área como máximo: la base lo exige con
+>   `uq_area_autorizado`.
+> - Al eliminar un área, sus espacios quedan sin área.
+> - ⬜ **Pendiente de confirmar** con el Secretario de Infraestructura si un espacio puede ser de
+>   dos áreas a la vez. Si pasa, la idea es crear un área común (por ejemplo «Aulas compartidas»).
+
 > **Decisión del 19/11/2026 (quién registra un ticket):**
 > - **Sólo el usuario autorizado registra tickets.** Es quien reporta el problema y el ticket
 >   guarda su legajo (`ticket.autorizado_legajo`). El administrador no ve el botón «Agregar»
@@ -236,7 +258,8 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 >   pero el alta fallaba porque su legajo no es el de un autorizado.
 >   Al guardar, la app lleva al detalle del ticket recién creado.
 > - **El autorizado sólo reporta activos de sus áreas.** El buscador del alta lista los activos
->   de los espacios de las áreas que tiene a cargo (`area.autorizado_legajo` → `area.espacio_id`),
+>   de los espacios de las áreas que tiene a cargo (`area.autorizado_legajo` → `espacio.area_id`
+>   desde el 21/11/2026),
 >   menos los retirados (`GET /api/tickets/activos`). La API rechaza el alta de cualquier otro
 >   activo. Si sus áreas no tienen espacio o el espacio no tiene activos, el formulario lo avisa.
 >   Así todo ticket nuevo tiene área; los viejos que salen «Sin área» siguen así hasta que se le
@@ -247,7 +270,8 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 >   se exponen en `GET /api/tickets/estados`. Todo ticket nuevo se guarda como **Creado**.
 >   Los primeros tickets quedaron guardados como `ABIERTO` (default viejo de la tabla): el
 >   backend los lee y los filtra como "Creado". No se cambió la base.
-> - **El área de un ticket es la del espacio donde está el activo** (`area.espacio_id`).
+> - **El área de un ticket es la del espacio donde está el activo** (`espacio.area_id` desde el
+>   21/11/2026; antes, `area.espacio_id`).
 >   El ticket no tiene FK a área. Si el espacio no tiene área asignada, el ticket se muestra
 >   "Sin área".
 
@@ -513,8 +537,8 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 >   Las fallas viejas que sólo estaban asociadas a la OT (sin tarea ni activo) no cuentan,
 >   porque no se sabe de qué área son.
 > - **El área de una falla es la del espacio de su activo**, igual que la de un ticket. Si el
->   espacio no tiene área, la falla va a **«Sin área»**, que se muestra siempre al final. Si
->   dos áreas comparten el espacio, la falla cuenta para las dos.
+>   espacio no tiene área, la falla va a **«Sin área»**, que se muestra siempre al final. Desde
+>   el 21/11/2026 un espacio tiene un área como máximo: cada falla cuenta una sola vez.
 > - Cuentan las fallas de OT **correctivas y preventivas**. La columna «Tickets» es la cantidad
 >   de tickets distintos: una falla preventiva no tiene ticket, y un ticket con dos tareas
 >   diagnosticadas suma dos fallas pero un ticket.
@@ -557,8 +581,8 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 >   pantalla lo escribe con las dos unidades más grandes: «2 d 4 h», «3 h 30 min», «25 min»,
 >   y al lado en horas con un decimal.
 > - **Promedio general:** cada ticket cuenta una vez.
-> - **Por área:** el área del espacio del activo, como en la HU-34. Si dos áreas comparten el
->   espacio, el ticket cuenta para las dos. Sin espacio o sin área: **«Sin área»**.
+> - **Por área:** el área del espacio del activo, como en la HU-34. Desde el 21/11/2026 cada
+>   ticket cuenta para una sola área. Sin espacio o sin área: **«Sin área»**.
 > - **Por tipo de activo:** el tipo del activo del ticket.
 > - **Por técnico:** el ticket cuenta para **cada técnico** que tuvo una asignación no
 >   cancelada en una tarea no cancelada de su OT (un técnico con dos tareas cuenta una vez).

@@ -38,7 +38,7 @@ function filaTicket(cambios = {}) {
         espacio_id: 2,
         espacio_num: '1',
         edificio: { edificio_nom: 'Edificio central' },
-        area: [{ area_id: 4, area_nom: 'Secretaria' }],
+        area: { area_id: 4, area_nom: 'Secretaria' },
       },
     },
     autorizado: { autorizado_legajo: '1234', autorizado_nom_ape: 'Martin Guimenez' },
@@ -203,7 +203,7 @@ describe('obtenerPorId', () => {
             activo_codigo: 'AC-001',
             activo_estado: 1, // Operativo
             tipo_activo: { tipo_activo_nom: 'Aires' },
-            espacio: { espacio_id: 3, espacio_num: '11', edificio: { edificio_nom: 'Central' }, area: [] },
+            espacio: { espacio_id: 3, espacio_num: '11', edificio: { edificio_nom: 'Central' }, area: null },
           },
         })
       )
@@ -224,10 +224,10 @@ describe('obtenerPorId', () => {
   });
 });
 
-/** Las consultas del alta: el área del autorizado, los activos de su espacio y el ticket nuevo. */
+/** Las consultas del alta: los espacios del área del autorizado, sus activos y el ticket nuevo. */
 function consultasDelAlta(ticketNuevo) {
   const consultas = {
-    area: consultaQueDevuelve([{ espacio_id: 3 }]),
+    espacio: consultaQueDevuelve([{ espacio_id: 3 }, { espacio_id: 8 }]),
     activo: consultaQueDevuelve([{ activo_codigo: 'AC-001', activo_estado: 1, tipo_activo: null }]),
     ticket: consultaQueDevuelve(ticketNuevo),
   };
@@ -255,6 +255,15 @@ describe('crear', () => {
       expect.objectContaining({ ticket_estado: 1, autorizado_legajo: '1234' })
     );
     expect(nuevo.estado).toBe('Creado');
+  });
+
+  test('busca los activos en todos los espacios del área del autorizado', async () => {
+    const { espacio, activo } = consultasDelAlta({ ticket_id: 9, ticket_estado: 1 });
+
+    await crear({ codigoActivo: 'AC-001', descripcion: 'Hace ruido' }, { rol: 'autorizado', identificador: '1234' });
+
+    expect(espacio.eq).toHaveBeenCalledWith('area.autorizado_legajo', '1234');
+    expect(activo.in).toHaveBeenCalledWith('espacio_id', [3, 8]);
   });
 
   test('el administrador no puede registrar tickets', async () => {

@@ -20,7 +20,7 @@ const BEDELIA = { area_id: 3, area_nom: 'Bedelía' };
 let siguienteId = 1;
 
 /** Una fila de la tabla falla como la devuelve Supabase. */
-function falla({ tipo, areas = [], ticket = null, plan = null, ot = 10, fecha = '2026-10-01T12:00:00Z' }) {
+function falla({ tipo, area = null, edificio = 'Central', ticket = null, plan = null, ot = 10, fecha = '2026-10-01T12:00:00Z' }) {
   return {
     falla_id: siguienteId++,
     ot_id: ot,
@@ -32,7 +32,7 @@ function falla({ tipo, areas = [], ticket = null, plan = null, ot = 10, fecha = 
     activo: {
       activo_codigo: 'AC-1',
       tipo_activo: { tipo_activo_nom: 'Aire acondicionado' },
-      espacio: { espacio_id: 5, espacio_num: '101', edificio: { edificio_nom: 'Central' }, area: areas },
+      espacio: { espacio_id: 5, espacio_num: '101', edificio: { edificio_nom: edificio }, area },
     },
     orden_trabajo: {
       ot_id: ot,
@@ -71,9 +71,9 @@ afterEach(() => {
 describe('obtenerAreasConMayorIncidencia', () => {
   test('ordena las áreas por cantidad de fallas, de mayor a menor', async () => {
     fallasRegistradas([
-      falla({ tipo: 'Eléctrica', areas: [BIBLIOTECA], ticket: 1 }),
-      falla({ tipo: 'Eléctrica', areas: [LABORATORIO], ticket: 2 }),
-      falla({ tipo: 'Sanitaria', areas: [LABORATORIO], ticket: 3 }),
+      falla({ tipo: 'Eléctrica', area: BIBLIOTECA, ticket: 1 }),
+      falla({ tipo: 'Eléctrica', area: LABORATORIO, ticket: 2 }),
+      falla({ tipo: 'Sanitaria', area: LABORATORIO, ticket: 3 }),
     ]);
 
     const ranking = await obtenerAreasConMayorIncidencia();
@@ -89,10 +89,10 @@ describe('obtenerAreasConMayorIncidencia', () => {
 
   test('cuenta tickets distintos y desglosa por tipo de falla', async () => {
     fallasRegistradas([
-      falla({ tipo: 'Eléctrica', areas: [LABORATORIO], ticket: 1 }),
-      falla({ tipo: 'Sanitaria', areas: [LABORATORIO], ticket: 1 }),
-      falla({ tipo: 'Eléctrica', areas: [LABORATORIO], ticket: 2 }),
-      falla({ tipo: 'Mecánica', areas: [LABORATORIO], plan: 7, ot: 20 }),
+      falla({ tipo: 'Eléctrica', area: LABORATORIO, ticket: 1 }),
+      falla({ tipo: 'Sanitaria', area: LABORATORIO, ticket: 1 }),
+      falla({ tipo: 'Eléctrica', area: LABORATORIO, ticket: 2 }),
+      falla({ tipo: 'Mecánica', area: LABORATORIO, plan: 7, ot: 20 }),
     ]);
 
     const [area] = await obtenerAreasConMayorIncidencia();
@@ -112,12 +112,12 @@ describe('obtenerAreasConMayorIncidencia', () => {
 
   test('un empate en fallas se desempata por tickets y después por nombre', async () => {
     fallasRegistradas([
-      falla({ tipo: 'Eléctrica', areas: [LABORATORIO], ticket: 1 }),
-      falla({ tipo: 'Eléctrica', areas: [LABORATORIO], ticket: 1 }),
-      falla({ tipo: 'Eléctrica', areas: [BIBLIOTECA], ticket: 2 }),
-      falla({ tipo: 'Eléctrica', areas: [BIBLIOTECA], ticket: 3 }),
-      falla({ tipo: 'Eléctrica', areas: [BEDELIA], ticket: 4 }),
-      falla({ tipo: 'Eléctrica', areas: [BEDELIA], ticket: 5 }),
+      falla({ tipo: 'Eléctrica', area: LABORATORIO, ticket: 1 }),
+      falla({ tipo: 'Eléctrica', area: LABORATORIO, ticket: 1 }),
+      falla({ tipo: 'Eléctrica', area: BIBLIOTECA, ticket: 2 }),
+      falla({ tipo: 'Eléctrica', area: BIBLIOTECA, ticket: 3 }),
+      falla({ tipo: 'Eléctrica', area: BEDELIA, ticket: 4 }),
+      falla({ tipo: 'Eléctrica', area: BEDELIA, ticket: 5 }),
     ]);
 
     const ranking = await obtenerAreasConMayorIncidencia();
@@ -127,9 +127,9 @@ describe('obtenerAreasConMayorIncidencia', () => {
 
   test('las fallas de un espacio sin área van a "Sin área", siempre al final', async () => {
     fallasRegistradas([
-      falla({ tipo: 'Eléctrica', areas: [], ticket: 1 }),
-      falla({ tipo: 'Eléctrica', areas: [], ticket: 2 }),
-      falla({ tipo: 'Eléctrica', areas: [BIBLIOTECA], ticket: 3 }),
+      falla({ tipo: 'Eléctrica', ticket: 1 }),
+      falla({ tipo: 'Eléctrica', ticket: 2 }),
+      falla({ tipo: 'Eléctrica', area: BIBLIOTECA, ticket: 3 }),
     ]);
 
     const ranking = await obtenerAreasConMayorIncidencia();
@@ -140,22 +140,25 @@ describe('obtenerAreasConMayorIncidencia', () => {
     ]);
   });
 
-  test('si dos áreas comparten el espacio, la falla cuenta para las dos', async () => {
-    fallasRegistradas([falla({ tipo: 'Eléctrica', areas: [LABORATORIO, BIBLIOTECA], ticket: 1 })]);
-
-    const ranking = await obtenerAreasConMayorIncidencia();
-
-    expect(ranking.map((area) => [area.nombreArea, area.cantidadFallas])).toEqual([
-      ['Biblioteca', 1],
-      ['Laboratorio', 1],
+  test('un área con espacios en varios edificios los muestra todos, y cada falla cuenta una vez', async () => {
+    fallasRegistradas([
+      falla({ tipo: 'Eléctrica', area: BEDELIA, edificio: 'Central', ticket: 1 }),
+      falla({ tipo: 'Eléctrica', area: BEDELIA, edificio: 'Anexo I', ticket: 2 }),
+      falla({ tipo: 'Eléctrica', area: BEDELIA, edificio: 'Central', ticket: 3 }),
     ]);
+
+    const [area] = await obtenerAreasConMayorIncidencia();
+
+    expect(area.nombreEdificio).toBe('Anexo I / Central');
+    expect(area.cantidadFallas).toBe(3);
+    expect(area.porcentaje).toBe(100);
   });
 
   test('el porcentaje es sobre el total de fallas, con un decimal', async () => {
     fallasRegistradas([
-      falla({ tipo: 'Eléctrica', areas: [LABORATORIO], ticket: 1 }),
-      falla({ tipo: 'Eléctrica', areas: [LABORATORIO], ticket: 2 }),
-      falla({ tipo: 'Eléctrica', areas: [BIBLIOTECA], ticket: 3 }),
+      falla({ tipo: 'Eléctrica', area: LABORATORIO, ticket: 1 }),
+      falla({ tipo: 'Eléctrica', area: LABORATORIO, ticket: 2 }),
+      falla({ tipo: 'Eléctrica', area: BIBLIOTECA, ticket: 3 }),
     ]);
 
     const ranking = await obtenerAreasConMayorIncidencia();
@@ -188,7 +191,7 @@ describe('obtenerAreasConMayorIncidencia', () => {
 
   test('trae todas las fallas aunque pasen las 1000 filas de un pedido', async () => {
     fallasRegistradas(
-      Array.from({ length: 1500 }, (_, i) => falla({ tipo: 'Eléctrica', areas: [LABORATORIO], ticket: i + 1 }))
+      Array.from({ length: 1500 }, (_, i) => falla({ tipo: 'Eléctrica', area: LABORATORIO, ticket: i + 1 }))
     );
 
     const ranking = await obtenerAreasConMayorIncidencia();

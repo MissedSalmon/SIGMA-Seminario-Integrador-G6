@@ -125,6 +125,10 @@ en los **issues de GitHub**, y el modelo de datos en `supabase/migrations/`.
   (`GET /api/estadisticas/tiempos-resolucion`). Se calcula en la base con la función
   `estadistica_tiempos_resolucion` (migración `20261109120000`, **hay que aplicarla con
   `npm run db:push`**). Ver [dominio.md](.claude/contexto/dominio.md).
+- **Un área con varios espacios (21/11/2026):** cada espacio es de un área como máximo y los
+  espacios se eligen en el formulario del área; el solicitante reporta los activos de todos
+  ellos. Migración `20261121200000_espacio_pertenece_a_un_area.sql`, **sin aplicar: hay que
+  correr `npm run db:push` junto con este código**. Ver [dominio.md](.claude/contexto/dominio.md).
 - **El proyecto en Supabase** y la conexión con **Vercel** en producción.
 
 *(Nota: La base de datos ya fue refactorizada e integrada con Supabase CLI en la carpeta `supabase/migrations/`)*

@@ -342,7 +342,7 @@ function aOrden(fila, asignaciones = []) {
   const mantenimientoPreventivo = fila.mantenimiento_preventivo ?? null;
   const activo = fila.activo ?? ticket?.activo ?? mantenimientoPreventivo?.activo ?? null;
   const espacio = activo?.espacio ?? null;
-  const areas = espacio?.area ?? [];
+  const area = espacio?.area ?? null;
   const autorizado = ticket?.autorizado ?? null;
 
   /*
@@ -393,7 +393,7 @@ function aOrden(fila, asignaciones = []) {
           espacio_num: espacio?.espacio_num ?? '',
         }
       : null,
-    nombreArea: areas.map((area) => area.area_nom).join(' / '),
+    nombreArea: area?.area_nom ?? '',
     registradoPor: autorizado
       ? { legajo: autorizado.autorizado_legajo, nombre: autorizado.autorizado_nom_ape }
       : null,

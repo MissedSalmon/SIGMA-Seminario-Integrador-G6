@@ -77,14 +77,15 @@ export default function PantallaAreas() {
       render: (area) => <span className="fw-semibold">{area.nombre}</span>,
     },
     {
-      clave: 'espacio',
-      encabezado: 'Espacio',
-      render: (area) => <span className="text-body-secondary">{area.nombreEspacio}</span>,
-    },
-    {
+      // Un área puede tener espacios en varios edificios: van todos (21/11/2026).
       clave: 'edificio',
       encabezado: 'Edificio',
-      render: (area) => <span className="text-body-secondary">{area.nombreEdificio}</span>,
+      render: (area) => <span className="text-body-secondary">{area.nombreEdificio || '-'}</span>,
+    },
+    {
+      clave: 'espacios',
+      encabezado: 'Espacios',
+      render: (area) => <span className="text-body-secondary">{area.espacios.length}</span>,
     },
     {
       clave: 'acciones',
@@ -129,8 +130,8 @@ export default function PantallaAreas() {
             filas={areas}
             claveFila={(area) => area.idArea}
             columnas={columnas}
-            buscarPor={['nombre', 'nombreEspacio', 'nombreEdificio']}
-            placeholderBusqueda="Buscar por nombre, espacio o edificio"
+            buscarPor={['nombre', 'nombreEdificio']}
+            placeholderBusqueda="Buscar por nombre o edificio"
             cargando={cargando}
             textoVacio="Todavía no hay áreas cargadas."
           />
@@ -146,6 +147,11 @@ export default function PantallaAreas() {
         <p className="mb-0">
           Se va a eliminar el area <strong>{aEliminar?.nombre}</strong>.
         </p>
+        {aEliminar?.espacios.length > 0 && (
+          <p className="text-body-secondary mt-2 mb-0">
+            Sus {aEliminar.espacios.length} espacios quedan sin área.
+          </p>
+        )}
       </DialogoEliminar>
     </>
   );

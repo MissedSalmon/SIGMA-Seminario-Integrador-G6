@@ -3,13 +3,14 @@
 /**
  * Formulario de alta y de edicion de un area funcional (HU-3).
  *
- * El area se ubica en un espacio, asi que el desplegable muestra los espacios
- * con su edificio adelante ("Edificio Central - Aula 1"), que es como los
- * distingue la gente de infraestructura.
+ * Un area tiene varios espacios, incluso en distintos edificios, y cada
+ * espacio es de un area como maximo (21/11/2026). Por eso la lista ofrece los
+ * espacios libres y los que ya son de esta area; los de otra area no aparecen.
+ * Cada espacio se muestra con su edificio adelante ("Edificio Central - Aula 1"),
+ * que es como los distingue la gente de infraestructura.
  *
  * No pide el responsable del area a proposito: el usuario autorizado es el que
- * apunta a su area, no al reves (contexto.md, pregunta abierta 4). Se asigna
- * al dar de alta al usuario, en el Sprint 6.
+ * apunta a su area, no al reves. Se asigna al dar de alta al solicitante.
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -18,6 +19,7 @@ import { CCard, CCardBody } from '@coreui/react';
 import Aviso from '@/componentes/Aviso.js';
 import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Campo from '@/componentes/formulario/Campo.js';
+import SeleccionMultiple from '@/componentes/formulario/SeleccionMultiple.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarEspacios } from '@/servicios/espacios.js';
@@ -28,7 +30,7 @@ export default function FormularioArea({ area = null, onGuardar }) {
   const editando = Boolean(area);
 
   const [nombre, setNombre] = useState(area?.nombre ?? '');
-  const [idEspacio, setIdEspacio] = useState(area?.idEspacio ?? '');
+  const [espaciosElegidos, setEspaciosElegidos] = useState(area?.idsEspacios ?? []);
 
   const [espacios, setEspacios] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -47,9 +49,8 @@ export default function FormularioArea({ area = null, onGuardar }) {
   const errores = useMemo(() => {
     const encontrados = {};
     if (!nombre.trim()) encontrados.nombre = 'El nombre es obligatorio.';
-    if (!idEspacio) encontrados.idEspacio = 'Elegí el espacio donde funciona el área.';
     return encontrados;
-  }, [nombre, idEspacio]);
+  }, [nombre]);
 
   const hayErrores = Object.keys(errores).length > 0;
 
@@ -62,7 +63,7 @@ export default function FormularioArea({ area = null, onGuardar }) {
     setGuardando(true);
 
     try {
-      await onGuardar({ nombre: nombre.trim(), idEspacio });
+      await onGuardar({ nombre: nombre.trim(), idsEspacios: espaciosElegidos });
       mostrarToast({
         tipo: 'exito',
         mensaje: editando
@@ -87,19 +88,13 @@ export default function FormularioArea({ area = null, onGuardar }) {
     );
   }
 
-  if (espacios.length === 0) {
-    return (
-      <Aviso
-        color="warning"
-        mensaje="Primero hay que cargar por lo menos un espacio: toda área funciona en uno."
-      />
-    );
-  }
-
-  const opcionesEspacios = espacios.map((espacio) => ({
-    valor: espacio.idEspacio,
-    texto: `${espacio.nombreEdificio} - ${espacio.nombre}`,
-  }));
+  const opcionesEspacios = espacios
+    .filter((espacio) => !espacio.idArea || espacio.idArea === area?.idArea)
+    .map((espacio) => ({
+      valor: espacio.idEspacio,
+      texto: `${espacio.nombreEdificio} - ${espacio.nombre}`,
+    }))
+    .sort((a, b) => a.texto.localeCompare(b.texto, 'es'));
 
   return (
     <CCard>
@@ -115,26 +110,25 @@ export default function FormularioArea({ area = null, onGuardar }) {
               etiqueta="Nombre"
               valor={nombre}
               alCambiar={setNombre}
-              placeholder="Departamento de Sistemas"
+              placeholder="Secretaría de Asuntos Universitarios"
               obligatorio
               maxLength={100}
-              ancho={22}
+              ancho={30}
               revisado={revisado}
               error={errores.nombre}
             />
 
-            <Campo
-              id="idEspacio"
-              etiqueta="Espacio donde funciona"
-              tipo="lista"
-              valor={idEspacio}
-              alCambiar={setIdEspacio}
+            <SeleccionMultiple
+              id="espacios"
+              etiqueta="Espacios"
               opciones={opcionesEspacios}
-              placeholder="Elegir espacio"
-              obligatorio
-              ancho={22}
+              elegidos={espaciosElegidos}
+              alCambiar={setEspaciosElegidos}
+              textoTodas="Todos los espacios"
+              textoCantidad={(cantidad) => `${cantidad} espacios`}
+              placeholder={opcionesEspacios.length === 0 ? 'No hay espacios libres' : 'Elegir espacios'}
+              ancho={30}
               revisado={revisado}
-              error={errores.idEspacio}
             />
           </div>
 

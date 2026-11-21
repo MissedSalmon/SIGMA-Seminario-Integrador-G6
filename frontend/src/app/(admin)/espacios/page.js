@@ -115,6 +115,12 @@ export default function PantallaEspacios() {
       render: (espacio) => <span className="text-body-secondary">{espacio.numero ?? '-'}</span>,
     },
     {
+      // Sólo se ve: el área se elige desde el formulario del área (21/11/2026).
+      clave: 'area',
+      encabezado: 'Área',
+      render: (espacio) => <span className="text-body-secondary">{espacio.nombreArea || 'Sin área'}</span>,
+    },
+    {
       clave: 'acciones',
       encabezado: 'Acciones',
       alinearDerecha: true,
@@ -154,8 +160,8 @@ export default function PantallaEspacios() {
             filas={espacios}
             claveFila={(espacio) => `${espacio.idEdificio}-${espacio.espacio_num}`}
             columnas={columnas}
-            buscarPor={['nombre', 'nombreEdificio', 'tipo', 'pisoTexto', 'numero']}
-            placeholderBusqueda="Buscar por nombre, edificio o tipo"
+            buscarPor={['nombre', 'nombreEdificio', 'tipo', 'pisoTexto', 'numero', 'nombreArea']}
+            placeholderBusqueda="Buscar por nombre, edificio, tipo o área"
             filtros={[
               {
                 etiqueta: 'Edificio',

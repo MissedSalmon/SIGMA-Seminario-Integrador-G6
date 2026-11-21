@@ -27,11 +27,15 @@ export async function obtenerTodos(edificio_id = null) {
     tipo_espacio_id,
     espacio_piso,
     espacio_dim,
+    area_id,
     edificio (
       edificio_nom
     ),
     tipo_espacio (
       tipo_espacio_nom
+    ),
+    area (
+      area_nom
     )
   `);
   
@@ -53,7 +57,9 @@ export async function obtenerTodos(edificio_id = null) {
     tipo: espacio.tipo_espacio ? espacio.tipo_espacio.tipo_espacio_nom : '',
     nombre: espacio.tipo_espacio ? `${espacio.tipo_espacio.tipo_espacio_nom} ${espacio.espacio_num}` : `Espacio ${espacio.espacio_num}`,
     dimensiones: espacio.espacio_dim || '',
-    nombreEdificio: espacio.edificio ? espacio.edificio.edificio_nom : '(edificio eliminado)'
+    nombreEdificio: espacio.edificio ? espacio.edificio.edificio_nom : '(edificio eliminado)',
+    idArea: espacio.area_id ?? null,
+    nombreArea: espacio.area?.area_nom ?? ''
   }));
 }
 
