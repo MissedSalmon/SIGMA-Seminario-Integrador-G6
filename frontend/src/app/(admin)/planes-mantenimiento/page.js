@@ -8,6 +8,7 @@ import { CButtonGroup, CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilDescription, cilPencil, cilTrash } from '@coreui/icons';
 
+import Talon from '@/componentes/Talon.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
@@ -88,7 +89,7 @@ export default function PantallaPlanesMantenimiento() {
     {
       clave: 'id',
       encabezado: '#',
-      render: (plan) => <span className="fw-semibold">{plan.id}</span>,
+      render: (plan) => <Talon numero={plan.id} href={`/planes-mantenimiento/${plan.id}`} titulo={`Ver el plan ${plan.id}`} />,
     },
     {
       clave: 'nombre',
@@ -121,7 +122,7 @@ export default function PantallaPlanesMantenimiento() {
     },
     {
       clave: 'acciones',
-      encabezado: 'Acción',
+      encabezado: 'Acciones',
       alinearDerecha: true,
       render: (plan) => (
         <CButtonGroup size="sm">

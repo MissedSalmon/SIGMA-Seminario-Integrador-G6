@@ -44,6 +44,7 @@ import {
 import CIcon from '@coreui/icons-react';
 import { cilChartPie, cilDescription, cilSearch, cilX } from '@coreui/icons';
 
+import ReferenciaEtapas from '@/componentes/estados/ReferenciaEtapas.js';
 import Aviso from '@/componentes/Aviso.js';
 import { Cargando, SinDatos } from '@/componentes/EstadoTabla.js';
 import CampoLista from '@/componentes/formulario/CampoLista.js';
@@ -558,6 +559,7 @@ function DetalleArea({ area, onCerrar }) {
             </CTable>
           </>
         )}
+        <ReferenciaEtapas />
       </CModalBody>
     </CModal>
   );

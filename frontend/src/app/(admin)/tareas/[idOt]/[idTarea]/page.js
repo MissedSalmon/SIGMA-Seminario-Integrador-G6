@@ -41,6 +41,9 @@ import {
 import CIcon from '@coreui/icons-react';
 import { cilArrowLeft, cilCheckCircle, cilMediaPlay, cilPlus } from '@coreui/icons';
 
+import ReferenciaEtapas from '@/componentes/estados/ReferenciaEtapas.js';
+import Dato from '@/componentes/Dato.js';
+import Talon from '@/componentes/Talon.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
@@ -60,21 +63,11 @@ import {
   obtenerMiTarea,
   quitarFallaDeTarea,
 } from '@/servicios/tareas.js';
-import { formatearFecha, formatearFechaHora, soloFechaLegible } from '@/utils/fechas.js';
+import { formatearFecha, formatearFechaHora, hoyTexto, soloFechaLegible } from '@/utils/fechas.js';
 import { textoDelPiso } from '@/utils/pisos.js';
 
 /** Una tarea en estos estados todavía no empezó: se puede iniciar. */
 const ESTADOS_SIN_EMPEZAR = ['Creada', 'Asignada', 'Pendiente'];
-
-/** Una etiqueta chica arriba y el dato abajo. */
-function Dato({ etiqueta, children }) {
-  return (
-    <div className="mb-3">
-      <div className="text-body-secondary small">{etiqueta}</div>
-      <div>{children ?? '-'}</div>
-    </div>
-  );
-}
 
 /** Texto en gris e itálica para decir que algo no está. */
 function SinDato({ children }) {
@@ -173,7 +166,9 @@ export default function PantallaDetalleMiTarea({ params }) {
   const sinEmpezar = tarea && ESTADOS_SIN_EMPEZAR.includes(tarea.estado);
   const enEjecucion = tarea?.estado === 'En ejecución';
 
-  const hoy = new Date().toISOString().slice(0, 10);
+  // El dia de la maquina, no el de UTC: despues de las 21 en Argentina UTC ya es manana,
+  // y una tarea preventiva se podria iniciar un dia antes.
+  const hoy = hoyTexto();
   const esPreventiva = tarea?.ot?.origen === 'Mantenimiento preventivo';
   let motivoBloqueoInicio = null;
   if (esPreventiva) {
@@ -184,8 +179,10 @@ export default function PantallaDetalleMiTarea({ params }) {
     }
   }
 
+  // En el celular la accion principal queda fija abajo, al alcance del pulgar
+  // (clase sigma-accion-principal en globals.css). En la PC va en el encabezado.
   const acciones = tarea && (sinEmpezar || enEjecucion) && (
-    <div className="d-flex flex-column align-items-end">
+    <div className="sigma-accion-principal d-flex flex-column align-items-end">
       {sinEmpezar && (
         <span title={motivoBloqueoInicio || undefined}>
           <CButton
@@ -214,7 +211,19 @@ export default function PantallaDetalleMiTarea({ params }) {
 
   return (
     <>
-      <EncabezadoPagina titulo={`Tarea ${idTarea} de la OT #${idOt}`} accionesExtra={acciones} />
+      <EncabezadoPagina
+        titulo={
+          <span className="sigma-titulo-con-sello">
+            <span>
+              Tarea {idTarea} de la OT <span className="sigma-titulo-numero">#{idOt}</span>
+            </span>
+            {tarea && <EtiquetaEstadoOT estado={tarea.estado} />}
+          </span>
+        }
+        accionesExtra={acciones}
+      />
+      {/* Que significa el color de cada sello (regla 6). */}
+      <ReferenciaEtapas de="ot" className="mt-0 mb-3" estados={[tarea?.estado]} />
 
       <Aviso mensaje={error} />
 
@@ -236,9 +245,6 @@ export default function PantallaDetalleMiTarea({ params }) {
                         <Dato etiqueta="Prioridad">
                           <EtiquetaPrioridad prioridad={tarea.prioridad} />
                         </Dato>
-                      </CCol>
-                      <CCol sm={6}>
-                        <Dato etiqueta="Estado">{tarea.estado}</Dato>
                       </CCol>
                       <CCol sm={6}>
                         <Dato etiqueta="Fecha prevista de inicio">
@@ -311,7 +317,9 @@ export default function PantallaDetalleMiTarea({ params }) {
                   <CCardBody>
                     {tarea.ot ? (
                       <>
-                        <Dato etiqueta="Número">#{tarea.ot.id}</Dato>
+                        <Dato etiqueta="Número">
+                          <Talon numero={tarea.ot.id} />
+                        </Dato>
                         <Dato etiqueta="Descripción">{tarea.ot.descripcion}</Dato>
                         <CRow>
                           <CCol sm={6}>
@@ -478,7 +486,8 @@ export default function PantallaDetalleMiTarea({ params }) {
         )
       )}
 
-      <div className="mt-2 mb-4">
+      {/* Lugar para que la accion fija del celular no tape el final de la pantalla. */}
+      <div className={`mt-2 mb-4${acciones ? ' sigma-espacio-accion' : ''}`}>
         <BotonEnlace href="/tareas" color="secondary" variante="outline">
           <CIcon icon={cilArrowLeft} className="me-2" />
           Volver al listado

@@ -89,20 +89,20 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar, vol
 
     if (!String(legajo).trim()) encontrados.legajo = 'El legajo es obligatorio.';
     if (!nombre.trim()) encontrados.nombre = 'El nombre y apellido es obligatorio.';
-    if (!idArea) encontrados.idArea = 'Hay que elegir el area de la que es responsable.';
+    if (!idArea) encontrados.idArea = 'Hay que elegir el área de la que es responsable.';
 
     const digitosDni = soloDigitos(dni);
     if (digitosDni && (digitosDni.length < 7 || digitosDni.length > 8)) {
-      encontrados.dni = 'El DNI tiene 7 u 8 digitos.';
+      encontrados.dni = 'El DNI tiene 7 u 8 dígitos.';
     }
 
     const digitosCuil = soloDigitos(cuil);
     if (digitosCuil && digitosCuil.length !== 11) {
-      encontrados.cuil = 'El CUIL tiene 11 digitos.';
+      encontrados.cuil = 'El CUIL tiene 11 dígitos.';
     }
 
     if (email.trim() && !email.includes('@')) {
-      encontrados.email = 'Revisa el email: falta el @ o esta incompleto.';
+      encontrados.email = 'Revisá el email: falta el @ o está incompleto.';
     }
 
     /*
@@ -112,7 +112,7 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar, vol
      */
     const digitosTelefono = digitosDelTelefono(telefono);
     if (digitosTelefono && digitosTelefono.length !== LARGO_TELEFONO) {
-      encontrados.telefono = `El telefono tiene ${LARGO_TELEFONO} digitos y este tiene ${digitosTelefono.length}.`;
+      encontrados.telefono = `El teléfono tiene ${LARGO_TELEFONO} dígitos y este tiene ${digitosTelefono.length}.`;
     }
 
     if (!fechaNacimiento) {
@@ -120,7 +120,7 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar, vol
     } else if (fechaNacimiento > hoyTexto()) {
       encontrados.fechaNacimiento = 'La fecha no puede ser posterior a hoy.';
     } else if (fechaNacimiento > fechaMinimaNacimiento) {
-      encontrados.fechaNacimiento = `Tiene que tener ${EDAD_MINIMA} anios cumplidos: con esa fecha todavia no los cumplio.`;
+      encontrados.fechaNacimiento = `Tiene que tener ${EDAD_MINIMA} años cumplidos: con esa fecha todavía no los cumplió.`;
     }
 
     return encontrados;
@@ -276,7 +276,7 @@ export default function FormularioAutorizado({ autorizado = null, onGuardar, vol
             />
           </div>
 
-          <h2 className="sigma-seccion-titulo">Area a cargo</h2>
+          <h2 className="sigma-seccion-titulo">Área a cargo</h2>
 
           <div className="sigma-campos mb-4">
             <Campo

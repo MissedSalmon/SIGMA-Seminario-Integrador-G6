@@ -30,8 +30,6 @@ import {
   CDropdownMenu,
   CDropdownItem
 } from '@coreui/react';
-import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
 
 
 const ESTADOS = ['Operativo', 'En mantenimiento', 'Fuera de servicio', 'Retirado'];
@@ -120,6 +118,8 @@ export default function PantallaActivos() {
   
 
   const exportarActivos = async () => {
+    // ExcelJS pesa mucho: se descarga recien cuando alguien exporta.
+    const [{ default: ExcelJS }, { saveAs }] = await Promise.all([import('exceljs'), import('file-saver')]);
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Activos');
     
@@ -281,7 +281,7 @@ export default function PantallaActivos() {
             textoVacio={
               hayFiltros
                 ? 'No hay activos que cumplan con esos filtros.'
-                : 'Todavia no hay activos cargados.'
+                : 'Todavía no hay activos cargados.'
             }
           />
         </CCardBody>

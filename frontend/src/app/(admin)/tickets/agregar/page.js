@@ -21,7 +21,7 @@ export default function PantallaRegistrarTicket() {
 
   return (
     <>
-      <EncabezadoPagina titulo="Registrar ticket" />
+      <EncabezadoPagina titulo="Agregar ticket" />
       <FormularioTicket onGuardar={registrarTicket} />
     </>
   );

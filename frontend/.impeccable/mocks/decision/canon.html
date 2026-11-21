@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1440px;height:900px;overflow:hidden;font-family:Inter,sans-serif;background:#f8fafc;color:#0f172a;display:flex}
+.nav{width:240px;background:#fff;border-right:1px solid #e2e8f0;padding:22px 14px}
+.marca{font-weight:700;font-size:20px;color:#0b6b8c;padding:0 8px 20px}
+.grupo{font-size:11px;font-weight:600;color:#64748b;margin:16px 8px 6px;letter-spacing:.06em}
+.it{font-size:14px;padding:8px 10px;border-radius:8px;color:#475569}
+.it.on{background:#e6f0f4;color:#0b6b8c;font-weight:600}
+main{flex:1;padding:28px 36px}
+.top{display:flex;justify-content:space-between;align-items:center}
+h1{font-size:24px;font-weight:700}
+.btn{background:#0b6b8c;color:#fff;border-radius:8px;padding:9px 16px;font-weight:600;font-size:14px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:22px}
+.k{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px}
+.k .t{font-size:13px;color:#64748b}
+.k .v{font-size:32px;font-weight:700;margin-top:8px}
+.k .p{font-size:13px;color:#64748b;margin-top:4px}
+.fila{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-top:16px}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px;height:300px}
+.card h2{font-size:15px;font-weight:600}
+.bars{display:flex;align-items:flex-end;gap:14px;height:210px;margin-top:20px;border-bottom:1px solid #e2e8f0}
+.bars i{flex:1;background:#0b6b8c;border-radius:4px 4px 0 0}
+.don{width:170px;height:170px;border-radius:50%;margin:30px auto 0;background:conic-gradient(#0b6b8c 0 79%,#94a3b8 79% 100%);position:relative}
+.don::after{content:'';position:absolute;inset:34px;background:#fff;border-radius:50%}
+table{width:100%;border-collapse:collapse;margin-top:16px;font-size:14px;background:#fff;border:1px solid #e2e8f0;border-radius:12px}
+th{text-align:left;font-size:12px;color:#64748b;font-weight:600;padding:12px 16px;border-bottom:1px solid #e2e8f0}
+td{padding:12px 16px;border-bottom:1px solid #f1f5f9}
+</style></head><body>
+<nav class="nav"><div class="marca">SIGMA</div>
+<div class="it on">Panel</div>
+<div class="grupo">MANTENIMIENTO</div><div class="it">Tickets</div><div class="it">Órdenes de trabajo</div><div class="it">Planes de mantenimiento</div>
+<div class="grupo">ESTRUCTURA EDILICIA</div><div class="it">Edificios</div><div class="it">Espacios</div><div class="it">Áreas</div>
+<div class="grupo">ACTIVOS</div><div class="it">Activos</div><div class="it">Materiales</div></nav>
+<main>
+<div class="top"><h1>Panel de control</h1><div class="btn">Exportar PDF</div></div>
+<div class="kpis">
+<div class="k"><div class="t">Operatividad de activos</div><div class="v">79,2 %</div><div class="p">19 de 24 en servicio</div></div>
+<div class="k"><div class="t">Cobertura preventiva</div><div class="v">62,5 %</div><div class="p">15 de 24 activos</div></div>
+<div class="k"><div class="t">Disponibilidad técnica</div><div class="v">100 %</div><div class="p">5 de 5 disponibles</div></div>
+<div class="k"><div class="t">Materiales bajo mínimo</div><div class="v">4</div><div class="p">de 11 materiales</div></div>
+</div>
+<div class="fila">
+<div class="card"><h2>Tickets por mes</h2><div class="bars"><i style="height:4%"></i><i style="height:4%"></i><i style="height:8%"></i><i style="height:4%"></i><i style="height:100%"></i><i style="height:40%"></i><i style="height:12%"></i></div></div>
+<div class="card"><h2>Activos según su estado</h2><div class="don"></div></div>
+</div>
+<table><tr><th>Material</th><th>Actual</th><th>Mínimo</th></tr>
+<tr><td>Cinta aisladora</td><td>1</td><td>12</td></tr>
+<tr><td>Cable unipolar 2,5 mm</td><td>4</td><td>10</td></tr></table>
+</main></body></html>

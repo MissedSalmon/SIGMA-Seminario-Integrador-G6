@@ -1,0 +1,516 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-18T20:45:06.015Z",
+  "title": "Design System: SIGMA",
+  "extensions": {
+    "colorMeta": {
+      "petroleo": {
+        "role": "primary",
+        "displayName": "Petróleo",
+        "canonical": "#0b6b8c",
+        "tonalRamp": [
+          "oklch(15% 0.094 228.9)",
+          "oklch(27% 0.094 228.9)",
+          "oklch(39% 0.094 228.9)",
+          "oklch(51% 0.094 228.9)",
+          "oklch(63% 0.094 228.9)",
+          "oklch(75% 0.094 228.9)",
+          "oklch(85% 0.06 228.9)",
+          "oklch(95% 0.06 228.9)"
+        ]
+      },
+      "petroleo-hover": {
+        "role": "primary",
+        "displayName": "Petróleo hover",
+        "canonical": "#0a5e7c",
+        "tonalRamp": [
+          "oklch(15% 0.086 229.6)",
+          "oklch(27% 0.086 229.6)",
+          "oklch(39% 0.086 229.6)",
+          "oklch(51% 0.086 229.6)",
+          "oklch(63% 0.086 229.6)",
+          "oklch(75% 0.086 229.6)",
+          "oklch(85% 0.06 229.6)",
+          "oklch(95% 0.06 229.6)"
+        ]
+      },
+      "petroleo-activo": {
+        "role": "primary",
+        "displayName": "Petróleo activo",
+        "canonical": "#09536d",
+        "tonalRamp": [
+          "oklch(15% 0.078 228.8)",
+          "oklch(27% 0.078 228.8)",
+          "oklch(39% 0.078 228.8)",
+          "oklch(51% 0.078 228.8)",
+          "oklch(63% 0.078 228.8)",
+          "oklch(75% 0.078 228.8)",
+          "oklch(85% 0.06 228.8)",
+          "oklch(95% 0.06 228.8)"
+        ]
+      },
+      "petroleo-suave": {
+        "role": "primary",
+        "displayName": "Petróleo suave",
+        "canonical": "#e6f0f4",
+        "tonalRamp": [
+          "oklch(15% 0.012 223.5)",
+          "oklch(27% 0.012 223.5)",
+          "oklch(39% 0.012 223.5)",
+          "oklch(51% 0.012 223.5)",
+          "oklch(63% 0.012 223.5)",
+          "oklch(75% 0.012 223.5)",
+          "oklch(85% 0.012 223.5)",
+          "oklch(95% 0.012 223.5)"
+        ]
+      },
+      "petroleo-borde-suave": {
+        "role": "primary",
+        "displayName": "Petróleo borde suave",
+        "canonical": "#a3c7d4",
+        "tonalRamp": [
+          "oklch(15% 0.043 221.8)",
+          "oklch(27% 0.043 221.8)",
+          "oklch(39% 0.043 221.8)",
+          "oklch(51% 0.043 221.8)",
+          "oklch(63% 0.043 221.8)",
+          "oklch(75% 0.043 221.8)",
+          "oklch(85% 0.043 221.8)",
+          "oklch(95% 0.043 221.8)"
+        ]
+      },
+      "petroleo-enfasis": {
+        "role": "primary",
+        "displayName": "Petróleo énfasis",
+        "canonical": "#074257",
+        "tonalRamp": [
+          "oklch(15% 0.066 228.5)",
+          "oklch(27% 0.066 228.5)",
+          "oklch(39% 0.066 228.5)",
+          "oklch(51% 0.066 228.5)",
+          "oklch(63% 0.066 228.5)",
+          "oklch(75% 0.066 228.5)",
+          "oklch(85% 0.06 228.5)",
+          "oklch(95% 0.06 228.5)"
+        ]
+      },
+      "tinta": {
+        "role": "neutral",
+        "displayName": "Tinta",
+        "canonical": "#0c2733",
+        "tonalRamp": [
+          "oklch(15% 0.04 230.2)",
+          "oklch(27% 0.04 230.2)",
+          "oklch(39% 0.04 230.2)",
+          "oklch(51% 0.04 230.2)",
+          "oklch(63% 0.04 230.2)",
+          "oklch(75% 0.04 230.2)",
+          "oklch(85% 0.04 230.2)",
+          "oklch(95% 0.04 230.2)"
+        ]
+      },
+      "fondo": {
+        "role": "neutral",
+        "displayName": "Fondo de formulario",
+        "canonical": "#f5f7f8",
+        "tonalRamp": [
+          "oklch(15% 0.003 228.8)",
+          "oklch(27% 0.003 228.8)",
+          "oklch(39% 0.003 228.8)",
+          "oklch(51% 0.003 228.8)",
+          "oklch(63% 0.003 228.8)",
+          "oklch(75% 0.003 228.8)",
+          "oklch(85% 0.003 228.8)",
+          "oklch(95% 0.003 228.8)"
+        ]
+      },
+      "superficie": {
+        "role": "neutral",
+        "displayName": "Superficie",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "oklch(15% 0 89.9)",
+          "oklch(27% 0 89.9)",
+          "oklch(39% 0 89.9)",
+          "oklch(51% 0 89.9)",
+          "oklch(63% 0 89.9)",
+          "oklch(75% 0 89.9)",
+          "oklch(85% 0 89.9)",
+          "oklch(95% 0 89.9)"
+        ]
+      },
+      "borde": {
+        "role": "neutral",
+        "displayName": "Borde",
+        "canonical": "#e2e6eb",
+        "tonalRamp": [
+          "oklch(15% 0.008 253.9)",
+          "oklch(27% 0.008 253.9)",
+          "oklch(39% 0.008 253.9)",
+          "oklch(51% 0.008 253.9)",
+          "oklch(63% 0.008 253.9)",
+          "oklch(75% 0.008 253.9)",
+          "oklch(85% 0.008 253.9)",
+          "oklch(95% 0.008 253.9)"
+        ]
+      },
+      "linea": {
+        "role": "neutral",
+        "displayName": "Línea de formulario",
+        "canonical": "#c3d4da",
+        "tonalRamp": [
+          "oklch(15% 0.02 220.9)",
+          "oklch(27% 0.02 220.9)",
+          "oklch(39% 0.02 220.9)",
+          "oklch(51% 0.02 220.9)",
+          "oklch(63% 0.02 220.9)",
+          "oklch(75% 0.02 220.9)",
+          "oklch(85% 0.02 220.9)",
+          "oklch(95% 0.02 220.9)"
+        ]
+      },
+      "linea-casillero": {
+        "role": "neutral",
+        "displayName": "Línea de casillero",
+        "canonical": "#dfe8eb",
+        "tonalRamp": [
+          "oklch(15% 0.01 219.6)",
+          "oklch(27% 0.01 219.6)",
+          "oklch(39% 0.01 219.6)",
+          "oklch(51% 0.01 219.6)",
+          "oklch(63% 0.01 219.6)",
+          "oklch(75% 0.01 219.6)",
+          "oklch(85% 0.01 219.6)",
+          "oklch(95% 0.01 219.6)"
+        ]
+      },
+      "texto-secundario": {
+        "role": "neutral",
+        "displayName": "Texto secundario",
+        "canonical": "#5b6f78",
+        "tonalRamp": [
+          "oklch(15% 0.028 226.9)",
+          "oklch(27% 0.028 226.9)",
+          "oklch(39% 0.028 226.9)",
+          "oklch(51% 0.028 226.9)",
+          "oklch(63% 0.028 226.9)",
+          "oklch(75% 0.028 226.9)",
+          "oklch(85% 0.028 226.9)",
+          "oklch(95% 0.028 226.9)"
+        ]
+      },
+      "etiqueta-neutra": {
+        "role": "neutral",
+        "displayName": "Etiqueta neutra",
+        "canonical": "#eef3f5",
+        "tonalRamp": [
+          "oklch(15% 0.006 223.5)",
+          "oklch(27% 0.006 223.5)",
+          "oklch(39% 0.006 223.5)",
+          "oklch(51% 0.006 223.5)",
+          "oklch(63% 0.006 223.5)",
+          "oklch(75% 0.006 223.5)",
+          "oklch(85% 0.006 223.5)",
+          "oklch(95% 0.006 223.5)"
+        ]
+      },
+      "etapa-pendiente": {
+        "role": "tertiary",
+        "displayName": "Falta empezar",
+        "canonical": "#8a6100",
+        "tonalRamp": [
+          "oklch(15% 0.108 79.7)",
+          "oklch(27% 0.108 79.7)",
+          "oklch(39% 0.108 79.7)",
+          "oklch(51% 0.108 79.7)",
+          "oklch(63% 0.108 79.7)",
+          "oklch(75% 0.108 79.7)",
+          "oklch(85% 0.06 79.7)",
+          "oklch(95% 0.06 79.7)"
+        ]
+      },
+      "etapa-en-curso": {
+        "role": "tertiary",
+        "displayName": "En curso",
+        "canonical": "#2b55b0",
+        "tonalRamp": [
+          "oklch(15% 0.153 263.2)",
+          "oklch(27% 0.153 263.2)",
+          "oklch(39% 0.153 263.2)",
+          "oklch(51% 0.153 263.2)",
+          "oklch(63% 0.153 263.2)",
+          "oklch(75% 0.153 263.2)",
+          "oklch(85% 0.06 263.2)",
+          "oklch(95% 0.06 263.2)"
+        ]
+      },
+      "etapa-terminado": {
+        "role": "tertiary",
+        "displayName": "Terminado",
+        "canonical": "#1a7a47",
+        "tonalRamp": [
+          "oklch(15% 0.118 154.5)",
+          "oklch(27% 0.118 154.5)",
+          "oklch(39% 0.118 154.5)",
+          "oklch(51% 0.118 154.5)",
+          "oklch(63% 0.118 154.5)",
+          "oklch(75% 0.118 154.5)",
+          "oklch(85% 0.06 154.5)",
+          "oklch(95% 0.06 154.5)"
+        ]
+      },
+      "etapa-cerrado": {
+        "role": "tertiary",
+        "displayName": "Cerrado",
+        "canonical": "#5c636a",
+        "tonalRamp": [
+          "oklch(15% 0.014 248.1)",
+          "oklch(27% 0.014 248.1)",
+          "oklch(39% 0.014 248.1)",
+          "oklch(51% 0.014 248.1)",
+          "oklch(63% 0.014 248.1)",
+          "oklch(75% 0.014 248.1)",
+          "oklch(85% 0.014 248.1)",
+          "oklch(95% 0.014 248.1)"
+        ]
+      },
+      "etapa-cancelado": {
+        "role": "tertiary",
+        "displayName": "Cancelado o rechazado",
+        "canonical": "#b02a37",
+        "tonalRamp": [
+          "oklch(15% 0.17 20.9)",
+          "oklch(27% 0.17 20.9)",
+          "oklch(39% 0.17 20.9)",
+          "oklch(51% 0.17 20.9)",
+          "oklch(63% 0.17 20.9)",
+          "oklch(75% 0.17 20.9)",
+          "oklch(85% 0.06 20.9)",
+          "oklch(95% 0.06 20.9)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Título de pantalla",
+        "purpose": "Título de cada pantalla; en una ficha lleva el número del registro en Petróleo, peso 800."
+      },
+      "numero-talon": {
+        "displayName": "Número de talón",
+        "purpose": "El número de un registro como su identidad; 1.15rem en tablas."
+      },
+      "title": {
+        "displayName": "Título de sección",
+        "purpose": "Títulos de sección dentro de una tarjeta, con línea de borde abajo."
+      },
+      "body": {
+        "displayName": "Cuerpo",
+        "purpose": "Tablas, valores y formularios. Base de 17px, 16px en celular."
+      },
+      "rotulo": {
+        "displayName": "Rótulo",
+        "purpose": "Nombre de un casillero o talón, en mayúsculas y texto secundario."
+      },
+      "sello": {
+        "displayName": "Sello",
+        "purpose": "El estado, en mayúsculas dentro de un recuadro de línea."
+      }
+    },
+    "shadows": [
+      {
+        "name": "apoyo",
+        "value": "0 1px 2px rgba(15, 23, 42, 0.06)",
+        "purpose": "Tarjetas en reposo y comprobante con el mouse encima."
+      },
+      {
+        "name": "flotante",
+        "value": "0 8px 24px rgba(15, 23, 42, 0.08)",
+        "purpose": "Ventanas, avisos y listas desplegables."
+      },
+      {
+        "name": "ingreso",
+        "value": "0 24px 60px rgba(4, 18, 24, 0.45)",
+        "purpose": "Sólo la tarjeta de ingreso sobre Tinta."
+      },
+      {
+        "name": "foco-campo",
+        "value": "0 0 0 0.25rem rgba(11, 107, 140, 0.18)",
+        "purpose": "Anillo de foco de los campos."
+      }
+    ],
+    "motion": [
+      {
+        "name": "comprobante-hover",
+        "value": "0.15s ease-out",
+        "purpose": "Borde y sombra del comprobante."
+      },
+      {
+        "name": "ease-llegada",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Curva de las llegadas en la pantalla de ingreso."
+      },
+      {
+        "name": "ingreso-tarjeta",
+        "value": "0.6s",
+        "purpose": "La tarjeta de ingreso llega subiendo 18px."
+      },
+      {
+        "name": "ingreso-troquel",
+        "value": "0.45s, retraso 0.35s",
+        "purpose": "La línea de troquel se dibuja de izquierda a derecha."
+      },
+      {
+        "name": "ingreso-error",
+        "value": "0.2s ease-out",
+        "purpose": "El aviso de error se despliega."
+      },
+      {
+        "name": "ingreso-fondo",
+        "value": "90s linear infinite",
+        "purpose": "Columnas de comprobantes que suben; quietas con prefers-reduced-motion, y el resto aparece con fundido."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "celular",
+        "value": "576px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "992px"
+      },
+      {
+        "name": "xl",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Botón principal",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Acción principal: «Agregar», «Guardar».",
+      "html": "<button class=\"ds-btn-primary\">Guardar</button>",
+      "css": ":host{--sigma-teal:#0b6b8c;--sigma-teal-hover:#0a5e7c;--sigma-teal-activo:#09536d;--sigma-ink:#0c2733;--sigma-fondo:#f5f7f8;--sigma-superficie:#fff;--sigma-borde:#e2e6eb;--sigma-linea:#c3d4da;--sigma-texto-secundario:#5b6f78;--sigma-radio-sm:0.375rem;--sigma-radio-md:0.5rem;font-family:\"Public Sans\",system-ui,sans-serif;font-variant-numeric:tabular-nums;color:#0c2733} .ds-btn-primary{background:var(--sigma-teal);color:#fff;border:1px solid var(--sigma-teal);border-radius:var(--sigma-radio-sm);padding:0.375rem 1rem;font-family:inherit;font-size:1rem;font-weight:600;cursor:pointer;transition:background .15s}.ds-btn-primary:hover{background:var(--sigma-teal-hover);border-color:var(--sigma-teal-hover)}.ds-btn-primary:active{background:var(--sigma-teal-activo)}.ds-btn-primary:focus-visible{outline:none;box-shadow:0 0 0 .25rem rgba(11,107,140,.25)}"
+    },
+    {
+      "name": "Botón de línea",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Acción secundaria como «Actualizar» o «Cancelar».",
+      "html": "<button class=\"ds-btn-outline\">Cancelar</button>",
+      "css": ":host{--sigma-teal:#0b6b8c;--sigma-teal-hover:#0a5e7c;--sigma-teal-activo:#09536d;--sigma-ink:#0c2733;--sigma-fondo:#f5f7f8;--sigma-superficie:#fff;--sigma-borde:#e2e6eb;--sigma-linea:#c3d4da;--sigma-texto-secundario:#5b6f78;--sigma-radio-sm:0.375rem;--sigma-radio-md:0.5rem;font-family:\"Public Sans\",system-ui,sans-serif;font-variant-numeric:tabular-nums;color:#0c2733} .ds-btn-outline{background:#fff;color:var(--sigma-teal);border:1px solid var(--sigma-teal);border-radius:var(--sigma-radio-sm);padding:0.375rem 1rem;font-family:inherit;font-size:1rem;font-weight:600;cursor:pointer;transition:background .15s,color .15s}.ds-btn-outline:hover{background:var(--sigma-teal);color:#fff}.ds-btn-outline:focus-visible{outline:none;box-shadow:0 0 0 .25rem rgba(11,107,140,.25)}"
+    },
+    {
+      "name": "Campo de texto",
+      "kind": "input",
+      "refersTo": "campo",
+      "description": "Caja de formulario con ancho según su contenido; debajo sólo el error.",
+      "html": "<label class=\"ds-campo\"><span class=\"ds-campo-etiqueta\">Descripción</span><input class=\"ds-input\" value=\"Proyector sin imagen\"></label>",
+      "css": ":host{--sigma-teal:#0b6b8c;--sigma-teal-hover:#0a5e7c;--sigma-teal-activo:#09536d;--sigma-ink:#0c2733;--sigma-fondo:#f5f7f8;--sigma-superficie:#fff;--sigma-borde:#e2e6eb;--sigma-linea:#c3d4da;--sigma-texto-secundario:#5b6f78;--sigma-radio-sm:0.375rem;--sigma-radio-md:0.5rem;font-family:\"Public Sans\",system-ui,sans-serif;font-variant-numeric:tabular-nums;color:#0c2733} .ds-campo{display:flex;flex-direction:column;gap:.375rem;max-width:22rem}.ds-campo-etiqueta{font-weight:600;font-size:.95rem}.ds-input{border:1px solid var(--sigma-borde);border-radius:var(--sigma-radio-sm);padding:.375rem .75rem;font:inherit;color:inherit;background:#fff}.ds-input:focus{outline:none;border-color:var(--sigma-teal);box-shadow:0 0 0 .25rem rgba(11,107,140,.18)}"
+    },
+    {
+      "name": "Sello de estado",
+      "kind": "chip",
+      "refersTo": "sello",
+      "description": "El estado en el color de su etapa, siempre con la referencia escrita al lado.",
+      "html": "<div class=\"ds-fila\"><span class=\"ds-sello\" style=\"color:#8a6100\">Creada</span><span class=\"ds-sello\" style=\"color:#2b55b0\">En ejecución</span><span class=\"ds-sello\" style=\"color:#1a7a47\">Finalizada</span><span class=\"ds-sello\" style=\"color:#5c636a\">Cerrado</span><span class=\"ds-sello\" style=\"color:#b02a37\">Cancelada</span></div><div class=\"ds-ref\"><strong>Referencia:</strong><span><i style=\"border-color:#8a6100\"></i>Falta empezar</span><span><i style=\"border-color:#2b55b0\"></i>En curso</span><span><i style=\"border-color:#1a7a47\"></i>Terminado</span><span><i style=\"border-color:#5c636a\"></i>Cerrado</span><span><i style=\"border-color:#b02a37\"></i>Cancelado o rechazado</span></div>",
+      "css": ":host{--sigma-teal:#0b6b8c;--sigma-teal-hover:#0a5e7c;--sigma-teal-activo:#09536d;--sigma-ink:#0c2733;--sigma-fondo:#f5f7f8;--sigma-superficie:#fff;--sigma-borde:#e2e6eb;--sigma-linea:#c3d4da;--sigma-texto-secundario:#5b6f78;--sigma-radio-sm:0.375rem;--sigma-radio-md:0.5rem;font-family:\"Public Sans\",system-ui,sans-serif;font-variant-numeric:tabular-nums;color:#0c2733} .ds-fila{display:flex;gap:.5rem;flex-wrap:wrap}.ds-sello{display:inline-flex;padding:.12rem .45rem;border:1.5px solid currentColor;border-radius:4px;font-size:.72rem;font-weight:700;letter-spacing:.07em;line-height:1.35;text-transform:uppercase;white-space:nowrap}.ds-ref{display:flex;flex-wrap:wrap;align-items:center;gap:.35rem 1rem;margin-top:.75rem;font-size:.85rem;color:var(--sigma-texto-secundario)}.ds-ref strong{font-weight:600}.ds-ref span{display:inline-flex;align-items:center;gap:.4rem}.ds-ref i{width:1.1rem;height:.75rem;border:1.5px solid;border-radius:3px}"
+    },
+    {
+      "name": "Etiqueta de categoría",
+      "kind": "chip",
+      "refersTo": "etiqueta-categoria",
+      "description": "Una categoría, neutra y sin color.",
+      "html": "<span class=\"ds-etiqueta\">Laboratorio</span>",
+      "css": ":host{--sigma-teal:#0b6b8c;--sigma-teal-hover:#0a5e7c;--sigma-teal-activo:#09536d;--sigma-ink:#0c2733;--sigma-fondo:#f5f7f8;--sigma-superficie:#fff;--sigma-borde:#e2e6eb;--sigma-linea:#c3d4da;--sigma-texto-secundario:#5b6f78;--sigma-radio-sm:0.375rem;--sigma-radio-md:0.5rem;font-family:\"Public Sans\",system-ui,sans-serif;font-variant-numeric:tabular-nums;color:#0c2733} .ds-etiqueta{display:inline-flex;padding:.2rem .55rem;border-radius:4px;background:#eef3f5;color:var(--sigma-ink);font-size:.85rem;font-weight:600}"
+    },
+    {
+      "name": "Comprobante",
+      "kind": "card",
+      "refersTo": "comprobante",
+      "description": "Una OT abierta: talón numerado, línea de troquel, casilleros y sello.",
+      "html": "<a class=\"ds-comprobante\" href=\"#\"><div class=\"ds-talon\"><span class=\"ds-rotulo\">OT N°</span><span class=\"ds-numero\">47</span></div><div class=\"ds-cuerpo\"><div class=\"ds-titulo\">Proyector sin imagen</div><div class=\"ds-casilleros\"><div class=\"ds-casillero\"><span class=\"ds-rotulo\">Activo</span>PROY-001</div><div class=\"ds-casillero\"><span class=\"ds-rotulo\">Prioridad</span>Media</div></div><span class=\"ds-sello\">Creada</span></div></a>",
+      "css": ":host{--sigma-teal:#0b6b8c;--sigma-teal-hover:#0a5e7c;--sigma-teal-activo:#09536d;--sigma-ink:#0c2733;--sigma-fondo:#f5f7f8;--sigma-superficie:#fff;--sigma-borde:#e2e6eb;--sigma-linea:#c3d4da;--sigma-texto-secundario:#5b6f78;--sigma-radio-sm:0.375rem;--sigma-radio-md:0.5rem;font-family:\"Public Sans\",system-ui,sans-serif;font-variant-numeric:tabular-nums;color:#0c2733} .ds-comprobante{display:grid;grid-template-columns:4.6rem 1fr;max-width:22rem;background:#fff;border:1px solid var(--sigma-linea);border-radius:var(--sigma-radio-md);color:inherit;text-decoration:none;overflow:hidden;transition:border-color .15s ease-out,box-shadow .15s ease-out}.ds-comprobante:hover{border-color:var(--sigma-teal);box-shadow:0 1px 2px rgba(15,23,42,.06)}.ds-comprobante:focus-visible{outline:2px solid var(--sigma-teal);outline-offset:2px}.ds-talon{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.15rem;padding:.75rem .4rem;border-right:2px dashed var(--sigma-linea);line-height:1.05;text-align:center}.ds-rotulo{display:block;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--sigma-texto-secundario)}.ds-numero{font-size:1.85rem;font-weight:800;color:var(--sigma-teal)}.ds-cuerpo{display:flex;flex-direction:column;gap:.5rem;min-width:0;padding:.7rem .85rem .8rem}.ds-titulo{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ds-casilleros{display:grid;grid-template-columns:repeat(auto-fit,minmax(4.5rem,1fr));border:1px solid #dfe8eb;border-radius:4px}.ds-casillero{padding:.3rem .55rem;border-right:1px solid #dfe8eb;font-size:.9rem}.ds-casillero:last-child{border-right:0}.ds-sello{align-self:flex-start;padding:.12rem .45rem;border:1.5px solid #8a6100;color:#8a6100;border-radius:4px;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase}"
+    },
+    {
+      "name": "Menú lateral",
+      "kind": "nav",
+      "refersTo": "menu",
+      "description": "Menú en Tinta con la opción activa en Petróleo sólido.",
+      "html": "<nav class=\"ds-menu\"><div class=\"ds-marca\">SIGMA</div><div class=\"ds-grupo\">Mantenimiento</div><a class=\"ds-op ds-activa\" href=\"#\">Tickets</a><a class=\"ds-op\" href=\"#\">Órdenes de trabajo</a><a class=\"ds-op\" href=\"#\">Planes de mantenimiento</a></nav>",
+      "css": ":host{--sigma-teal:#0b6b8c;--sigma-teal-hover:#0a5e7c;--sigma-teal-activo:#09536d;--sigma-ink:#0c2733;--sigma-fondo:#f5f7f8;--sigma-superficie:#fff;--sigma-borde:#e2e6eb;--sigma-linea:#c3d4da;--sigma-texto-secundario:#5b6f78;--sigma-radio-sm:0.375rem;--sigma-radio-md:0.5rem;font-family:\"Public Sans\",system-ui,sans-serif;font-variant-numeric:tabular-nums;color:#0c2733} .ds-menu{display:flex;flex-direction:column;width:15rem;padding:.75rem 0;background:var(--sigma-ink)}.ds-marca{color:#fff;font-size:1.4rem;font-weight:700;letter-spacing:.16em;padding:0 1rem .5rem}.ds-grupo{color:rgba(255,255,255,.65);font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:.4rem 1rem;margin-top:.85rem}.ds-op{margin:.05rem .5rem;padding:.45rem .75rem;border-radius:var(--sigma-radio-sm);color:rgba(255,255,255,.72);font-size:.92rem;font-weight:500;text-decoration:none}.ds-op:hover{color:#fff;background:rgba(255,255,255,.06)}.ds-op:focus-visible{outline:2px solid #fff;outline-offset:-2px}.ds-activa,.ds-activa:hover{background:var(--sigma-teal);color:#fff;font-weight:600}"
+    },
+    {
+      "name": "Dato de ficha",
+      "kind": "custom",
+      "refersTo": "casillero",
+      "description": "Rótulo de casillero arriba del valor en una ficha; ficha con número en Petróleo.",
+      "html": "<div class=\"ds-ficha\"><h2 class=\"ds-titulo-ficha\">Ticket <span>#34</span></h2><div class=\"ds-datos\"><div><div class=\"ds-rotulo\">Fecha de alta</div><div>11/11/2026, 16:23</div></div><div><div class=\"ds-rotulo\">Código</div><div>PROY-001</div></div></div></div>",
+      "css": ":host{--sigma-teal:#0b6b8c;--sigma-teal-hover:#0a5e7c;--sigma-teal-activo:#09536d;--sigma-ink:#0c2733;--sigma-fondo:#f5f7f8;--sigma-superficie:#fff;--sigma-borde:#e2e6eb;--sigma-linea:#c3d4da;--sigma-texto-secundario:#5b6f78;--sigma-radio-sm:0.375rem;--sigma-radio-md:0.5rem;font-family:\"Public Sans\",system-ui,sans-serif;font-variant-numeric:tabular-nums;color:#0c2733} .ds-ficha{max-width:24rem}.ds-titulo-ficha{font-size:1.65rem;font-weight:700;letter-spacing:-.01em;margin:0 0 1rem}.ds-titulo-ficha span{color:var(--sigma-teal);font-weight:800}.ds-datos{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.ds-rotulo{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--sigma-texto-secundario);margin-bottom:.15rem}"
+    }
+  ],
+  "narrative": {
+    "northStar": "El Talonario de órdenes de trabajo",
+    "overview": "SIGMA se dibuja como un talonario de órdenes de trabajo. Cada OT y cada ticket es un comprobante numerado. El número manda: va grande, en Petróleo, con un rótulo chico arriba («OT N°»). Los datos van en casilleros, como en un formulario preimpreso: un rótulo chico en mayúsculas y el valor abajo. El estado es un sello: una palabra en mayúsculas dentro de un recuadro de línea.\n\nEs una herramienta de trabajo para la Secretaría de Infraestructura. La pantalla es densa y ordenada. Fondo gris azulado frío, superficies blancas con línea de formulario, menú en Tinta. El color se usa poco y siempre con un significado escrito en la misma pantalla.\n\nEl mundo se apoya en la plantilla de CoreUI. Los colores de CoreUI se pisan desde `globals.css` con las variables `--sigma-*`; no se escriben colores sueltos en los componentes.",
+    "keyCharacteristics": [
+      "El número de cada registro es su identidad: talón en Petróleo.",
+      "Datos en casilleros con rótulo chico arriba.",
+      "Estado como sello de línea, en el color de su etapa, con la referencia escrita al lado.",
+      "Categorías en gris neutro, sin color.",
+      "Public Sans con cifras tabulares en todo el sistema.",
+      "Esquinas chicas, de formulario impreso."
+    ],
+    "rules": [
+      {
+        "name": "The Referencia Escrita Rule",
+        "body": "Un color en un texto o en un sello sólo se usa si la misma pantalla dice qué significa. Toda pantalla con sellos de tickets u OT muestra la «Referencia:» de etapas. Es la regla más importante del proyecto.",
+        "section": "colors"
+      },
+      {
+        "name": "The Petróleo Es Acción Rule",
+        "body": "Petróleo es para acciones, enlaces, foco, números de registro y la opción activa del menú. Ningún sello de estado va en Petróleo.",
+        "section": "colors"
+      },
+      {
+        "name": "The Categoría Neutra Rule",
+        "body": "Una categoría (tipo de espacio, tipo de activo) no es un estado: va en la etiqueta gris neutra, sin color.",
+        "section": "colors"
+      },
+      {
+        "name": "The Cifra Tabular Rule",
+        "body": "Los números siempre van con cifras tabulares (`font-variant-numeric: tabular-nums`). No se desactiva en ningún componente.",
+        "section": "typography"
+      },
+      {
+        "name": "The Línea Antes Que Sombra Rule",
+        "body": "Un contenedor se marca con su línea de formulario. La sombra sólo apoya; nunca reemplaza al borde.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** poner la referencia escrita de cada color en la misma pantalla. Con sellos de tickets u OT, usar `<ReferenciaEtapas>`.",
+      "**Do** mostrar el estado como sello: mayúsculas espaciadas en un recuadro de línea de 1.5px, en el color de su etapa.",
+      "**Do** mostrar el número de cada registro como talón en Petróleo, peso 800, con cifras tabulares.",
+      "**Do** mostrar los datos de una ficha con `<Dato>`: rótulo chico en mayúsculas arriba, valor abajo.",
+      "**Do** marcar cada contenedor con la línea de formulario y esquinas chicas (4px a 0.5rem).",
+      "**Do** sacar los colores de las variables `--sigma-*` (estados: `--sigma-tono-*`), nunca escribirlos sueltos.",
+      "**Do** llamar «Agregar» al botón de alta y cerrar con «Guardar» y «Cancelar», en ese orden."
+    ],
+    "donts": [
+      "**Don't** pintar un sello de estado en Petróleo; Petróleo es de las acciones, los enlaces, el foco, los números y la opción activa del menú.",
+      "**Don't** usar un color en texto o sello sin su referencia escrita en la pantalla.",
+      "**Don't** dar color a una categoría; va en la etiqueta neutra.",
+      "**Don't** usar sellos con fondo lleno ni pastillas redondeadas para los estados.",
+      "**Don't** reemplazar la línea de formulario por una sombra fuerte.",
+      "**Don't** usar `<select>`, `CFormSelect`, `react-select` ni `<input type=\"date\">`; usar `<Campo>` y `<SeleccionMultiple>`.",
+      "**Don't** poner una línea de ayuda debajo de un campo; abajo va sólo el error.",
+      "**Don't** apagar las cifras tabulares ni cambiar Public Sans por otra letra."
+    ]
+  }
+}

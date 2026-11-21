@@ -15,7 +15,7 @@ export function soloAdministradorActivo(req, res, next) {
   soloAdministrador(req, res, async () => {
     try {
       if (!(await esAdministradorActivo(req.usuario?.usuarioId))) {
-        return res.status(403).json({ ok: false, mensaje: 'No tienes permisos para realizar esta acción' });
+        return res.status(403).json({ ok: false, mensaje: 'No tenés permisos para hacer esta acción.' });
       }
       next();
     } catch (error) {

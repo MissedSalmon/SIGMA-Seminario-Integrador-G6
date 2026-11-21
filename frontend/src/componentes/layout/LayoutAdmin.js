@@ -17,6 +17,7 @@ import Encabezado from './Encabezado.js';
 import PieDePagina from './PieDePagina.js';
 import { ProveedorToast } from '@/componentes/toast/ContextoToast.js';
 import Toast from '@/componentes/toast/Toast.js';
+import IrAlPrimerError from '@/componentes/formulario/IrAlPrimerError.js';
 
 export default function LayoutAdmin({ children }) {
   return (
@@ -28,16 +29,18 @@ export default function LayoutAdmin({ children }) {
           <div className="wrapper d-flex flex-column min-vh-100">
             <Encabezado />
 
-            <div className="body flex-grow-1">
+            {/* La region principal: el contenido de cada pantalla. */}
+            <main id="contenido" className="body flex-grow-1">
               <CContainer className="px-4" fluid>
                 {children}
               </CContainer>
-            </div>
+            </main>
 
             <PieDePagina />
           </div>
 
           <Toast />
+          <IrAlPrimerError />
         </ProveedorLayout>
       </ProveedorSesion>
     </ProveedorToast>

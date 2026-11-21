@@ -140,7 +140,7 @@ export default function PantallaPlantillas() {
             ]}
             alLimpiar={() => setFiltroEspecialidad('')}
             cargando={cargando}
-            textoVacio="Todavia no hay plantillas de tareas cargadas."
+            textoVacio="Todavía no hay plantillas de tareas cargadas."
           />
         </CCardBody>
       </CCard>

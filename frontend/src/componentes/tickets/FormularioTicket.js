@@ -28,6 +28,7 @@ import { CAlert, CButton, CCard, CCardBody, CFormLabel } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilExternalLink, cilImagePlus, cilTrash, cilWarning } from '@coreui/icons';
 
+import ReferenciaEtapas from '@/componentes/estados/ReferenciaEtapas.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Campo from '@/componentes/formulario/Campo.js';
@@ -170,7 +171,7 @@ export default function FormularioTicket({ onGuardar }) {
       return;
     }
     if (archivo.size > TAMANO_MAXIMO) {
-      setErrorFoto(`La foto pesa ${pesoLegible(archivo.size)} y el maximo son 5 MB.`);
+      setErrorFoto(`La foto pesa ${pesoLegible(archivo.size)} y el máximo son 5 MB.`);
       return;
     }
 
@@ -230,8 +231,6 @@ export default function FormularioTicket({ onGuardar }) {
         <Aviso mensaje={error} onCerrar={() => setError('')} />
 
         <form noValidate onSubmit={manejarEnvio}>
-          <h2 className="sigma-seccion-titulo"></h2>
-
           <div className="sigma-campos mb-4">
             <Campo
               id="fechaDeHoy"
@@ -319,6 +318,9 @@ export default function FormularioTicket({ onGuardar }) {
                     </li>
                   ))}
                 </ul>
+              )}
+              {verTicketsEnProceso && (
+                <ReferenciaEtapas de="ticket" estados={ticketsEnProceso.map((ticket) => ticket.estado)} />
               )}
             </CAlert>
           )}

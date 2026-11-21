@@ -643,7 +643,7 @@ export function generarDocumentoPdf(payloadPanel) {
       doc.setFontSize(7);
       const anchoMarca = doc.getTextWidth('SIGMA');
       escribir('SIGMA', M, 13, { tam: 7, estilo: 'bold', color: COLOR.azul });
-      escribir('Informe del Panel de Control', M + anchoMarca + 3, 13, { tam: 7, color: COLOR.gris });
+      escribir('Informe del panel de control', M + anchoMarca + 3, 13, { tam: 7, color: COLOR.gris });
       escribir(periodo, M + ANCHO_UTIL, 13, { tam: 7, color: COLOR.gris, align: 'right' });
       linea(M, 16, M + ANCHO_UTIL, 16);
     }

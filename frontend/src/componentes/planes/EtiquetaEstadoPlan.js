@@ -8,18 +8,18 @@
  *   verde = Activo: el plan sigue generando órdenes de trabajo.
  *   gris  = Dado de baja: ya no genera; las OT que generó no se tocan.
  */
-const ESTILOS = {
-  Activo: { fondo: 'var(--cui-success-bg-subtle, #d8f3e3)', texto: 'var(--cui-success-text-emphasis, #1b9e5a)' },
-  'Dado de baja': { fondo: 'var(--cui-secondary-bg-subtle, #e7e8ea)', texto: 'var(--cui-secondary-text-emphasis, #4f5d73)' },
+/** El tono del sello de cada estado (ver --sigma-tono-* en globals.css). */
+const TONOS = {
+  Activo: 'bien',
+  'Dado de baja': 'neutro',
 };
 
 export default function EtiquetaEstadoPlan({ activo }) {
   const estado = activo ? 'Activo' : 'Dado de baja';
-  const estilo = ESTILOS[estado];
+  const tono = TONOS[estado];
 
   return (
-    <span className="sigma-etiqueta text-nowrap" style={{ backgroundColor: estilo.fondo, color: estilo.texto }}>
-      <span aria-hidden="true" style={{ marginRight: '0.35rem' }}>●</span>
+    <span className={`sigma-sello sigma-sello--${tono}`}>
       {estado}
     </span>
   );

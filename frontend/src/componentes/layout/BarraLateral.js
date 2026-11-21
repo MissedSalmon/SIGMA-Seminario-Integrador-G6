@@ -122,14 +122,19 @@ export default function BarraLateral() {
       position="fixed"
       visible={barraVisible}
       onVisibleChange={(v) => setBarraVisible(v)}
+      // Region de navegacion: un lector de pantalla puede saltar directo al menu.
+      role="navigation"
+      aria-label="Menú principal"
     >
       <CSidebarHeader className="border-bottom d-flex align-items-center justify-content-between">
         <CSidebarBrand as={Link} href={rutaInicio} className="text-decoration-none">
           <span className="sigma-marca">SIGMA</span>
         </CSidebarBrand>
         <button
-          className="btn btn-link text-white p-0 d-md-none"
+          type="button"
+          className="btn btn-link text-white p-0 d-md-none sigma-boton-menu"
           onClick={() => setBarraVisible(false)}
+          aria-label="Cerrar menú"
         >
           <CIcon icon={cilMenu} size="lg" />
         </button>
@@ -146,7 +151,7 @@ export default function BarraLateral() {
 
       <CSidebarFooter className="border-top d-flex flex-column px-3 py-2 gap-1">
         {usuario && (
-          <div className="text-white-50 small" style={{ fontSize: '0.78rem' }}>
+          <div className="sigma-menu-secundario" style={{ fontSize: '0.8rem' }}>
             {usuario.admin_nom_ape || usuario.tecnico_nom_ape || usuario.autorizado_nom_ape || usuario.identificador}
           </div>
         )}
@@ -158,7 +163,7 @@ export default function BarraLateral() {
           style={{ cursor: 'pointer' }}
         >
           <CIcon icon={cilAccountLogout} />
-          <span style={{ fontSize: '0.88rem', fontWeight: 500 }}>Cerrar sesión</span>
+          <span style={{ fontSize: '0.92rem', fontWeight: 500 }}>Cerrar sesión</span>
         </button>
       </CSidebarFooter>
     </CSidebar>

@@ -44,6 +44,8 @@ import {
 import CIcon from '@coreui/icons-react';
 import { cilArrowLeft, cilDescription, cilPencil, cilPlus, cilTrash } from '@coreui/icons';
 
+import ReferenciaEtapas from '@/componentes/estados/ReferenciaEtapas.js';
+import Dato from '@/componentes/Dato.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
@@ -65,16 +67,6 @@ import { comoHoraMinuto } from '@/utils/duracion.js';
 
 /** Una OT en estos estados ya no se planifica. */
 const ESTADOS_CERRADOS = ['Finalizada', 'Cancelada'];
-
-/** Un renglón "etiqueta: valor" de la ficha. */
-function Dato({ etiqueta, children }) {
-  return (
-    <div className="mb-3">
-      <div className="text-body-secondary small">{etiqueta}</div>
-      <div>{children ?? '-'}</div>
-    </div>
-  );
-}
 
 /** Texto en gris e itálica para decir que algo no está. */
 function SinDato({ children }) {
@@ -196,7 +188,20 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
 
   return (
     <>
-      <EncabezadoPagina titulo={orden ? `Orden de trabajo #${orden.id}` : 'Orden de trabajo'} />
+      <EncabezadoPagina titulo={
+          orden ? (
+            <span className="sigma-titulo-con-sello">
+              <span>
+                Orden de trabajo <span className="sigma-titulo-numero">#{orden.id}</span>
+              </span>
+              <EtiquetaEstadoOT estado={orden.estado} />
+            </span>
+          ) : (
+            'Orden de trabajo'
+          )
+        } />
+      {/* Que significa el color de cada sello (regla 6). */}
+      <ReferenciaEtapas className="mt-0 mb-3" de="ot" estados={[orden?.estado]} />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
 
@@ -219,11 +224,6 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
                   </CCardHeader>
                   <CCardBody>
                     <CRow>
-                      <CCol sm={4}>
-                        <Dato etiqueta="Estado">
-                          <EtiquetaEstadoOT estado={orden.estado} />
-                        </Dato>
-                      </CCol>
                       <CCol sm={4}>
                         <Dato etiqueta="Prioridad">
                           <div className="d-flex align-items-center gap-2">

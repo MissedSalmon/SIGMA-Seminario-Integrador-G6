@@ -18,6 +18,8 @@ import { CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilDescription } from '@coreui/icons';
 
+import ReferenciaEtapas from '@/componentes/estados/ReferenciaEtapas.js';
+import Talon from '@/componentes/Talon.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
@@ -106,7 +108,7 @@ export default function PantallaTickets() {
     {
       clave: 'id',
       encabezado: '#',
-      render: (ticket) => <span className="fw-semibold">{ticket.id}</span>,
+      render: (ticket) => <Talon numero={ticket.id} href={`/tickets/${ticket.id}`} titulo={`Ver el ticket ${ticket.id}`} />,
     },
     {
       clave: 'estado',
@@ -116,6 +118,7 @@ export default function PantallaTickets() {
     {
       clave: 'fechaAlta',
       encabezado: 'Fecha de alta',
+      ocultarDebajoDe: 'md',
       render: (ticket) => <span className="text-body-secondary">{formatearFechaHora(ticket.fechaAlta)}</span>,
     },
     {
@@ -127,12 +130,15 @@ export default function PantallaTickets() {
           {ticket.activo?.nombreTipo && (
             <span className="text-body-secondary"> — {ticket.activo.nombreTipo}</span>
           )}
+          {/* En el celular la columna de la fecha no se ve: va acá abajo. */}
+          <div className="d-md-none small text-body-secondary">{formatearFechaHora(ticket.fechaAlta)}</div>
         </>
       ),
     },
     {
       clave: 'area',
       encabezado: 'Área',
+      ocultarDebajoDe: 'lg',
       render: (ticket) =>
         ticket.nombreArea ? (
           <span className="text-body-secondary">{ticket.nombreArea}</span>
@@ -143,6 +149,7 @@ export default function PantallaTickets() {
     {
       clave: 'registradoPor',
       encabezado: 'Registrado por',
+      ocultarDebajoDe: 'lg',
       render: (ticket) => (
         <span className="text-body-secondary">
           {ticket.registradoPor?.nombre || ticket.registradoPor?.legajo || '-'}
@@ -179,6 +186,7 @@ export default function PantallaTickets() {
       <CCard>
         <CCardBody>
           <TablaDatos
+            antesDeLaTabla={<ReferenciaEtapas className="mt-0 mb-3" de="ticket" estados={tickets.map((ticket) => ticket.estado)} />}
             filas={tickets}
             claveFila={(ticket) => ticket.id}
             columnas={columnas}

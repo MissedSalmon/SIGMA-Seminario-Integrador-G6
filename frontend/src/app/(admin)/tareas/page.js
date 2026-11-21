@@ -15,10 +15,12 @@
  * - Cada fila lleva al detalle de la tarea (activo, ubicación y OT).
  */
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilDescription } from '@coreui/icons';
 
+import ReferenciaEtapas from '@/componentes/estados/ReferenciaEtapas.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
@@ -128,7 +130,20 @@ export default function PantallaMisTareas() {
     {
       clave: 'descripcion',
       encabezado: 'Tarea',
-      render: (tarea) => <span className="fw-semibold">{tarea.descripcion}</span>,
+      // La descripcion es el enlace a la tarea: en el celular es lo mas facil de tocar.
+      // Debajo de 992px el activo y la ubicacion van aca, porque sus columnas se ocultan.
+      render: (tarea) => (
+        <>
+          <Link href={`/tareas/${tarea.idOt}/${tarea.idTarea}`} className="fw-semibold sigma-enlace-tocable">
+            {tarea.descripcion}
+          </Link>
+          {(tarea.activo || tarea.ubicacion) && (
+            <div className="d-lg-none text-body-secondary small">
+              {[tarea.activo?.codigo, tarea.ubicacion?.edificio, tarea.ubicacion?.espacio].filter(Boolean).join(' · ')}
+            </div>
+          )}
+        </>
+      ),
     },
     {
       clave: 'fechaPrevista',
@@ -143,6 +158,7 @@ export default function PantallaMisTareas() {
     {
       clave: 'activo',
       encabezado: 'Activo',
+      ocultarDebajoDe: 'lg',
       render: (tarea) =>
         tarea.activo ? (
           <>
@@ -158,6 +174,7 @@ export default function PantallaMisTareas() {
     {
       clave: 'ubicacion',
       encabezado: 'Ubicación',
+      ocultarDebajoDe: 'lg',
       render: (tarea) =>
         tarea.ubicacion ? (
           <span className="text-body-secondary">
@@ -170,6 +187,7 @@ export default function PantallaMisTareas() {
     {
       clave: 'ot',
       encabezado: 'OT',
+      ocultarDebajoDe: 'md',
       render: (tarea) => <span className="text-body-secondary text-nowrap">#{tarea.idOt}</span>,
     },
     {
@@ -199,6 +217,7 @@ export default function PantallaMisTareas() {
       <CCard>
         <CCardBody>
           <TablaDatos
+            antesDeLaTabla={<ReferenciaEtapas de="ot" className="mt-0 mb-3" estados={tareas.map((tarea) => tarea.estado)} />}
             filas={tareas}
             claveFila={(tarea) => `${tarea.idOt}-${tarea.idTarea}`}
             columnas={columnas}

@@ -5,13 +5,17 @@
  * solo viste el campo de fecha) y al final globals.css, que es donde
  * ajustamos los colores de SIGMA sobre la plantilla.
  */
-import { Inter } from 'next/font/google';
+import { Public_Sans } from 'next/font/google';
 
 import '@coreui/coreui/dist/css/coreui.min.css';
 import './heroui.css';
 import './globals.css';
 
-const inter = Inter({
+/*
+ * Public Sans: una grotesca de trabajo, como la de los formularios preimpresos
+ * (ver frontend/DESIGN.md, mundo «Talonario»).
+ */
+const fuente = Public_Sans({
   subsets: ['latin'],
   variable: '--sigma-fuente',
 });
@@ -23,7 +27,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="es" className={inter.variable} data-scroll-behavior="smooth">
+    <html lang="es" className={fuente.variable} data-scroll-behavior="smooth">
       <body>
         {children}
       </body>

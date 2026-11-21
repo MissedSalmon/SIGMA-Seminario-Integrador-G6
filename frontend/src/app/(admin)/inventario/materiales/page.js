@@ -162,7 +162,7 @@ export default function PantallaMateriales() {
               setFiltroStock('');
             }}
             cargando={cargando}
-            textoVacio="Todavia no hay materiales cargados."
+            textoVacio="Todavía no hay materiales cargados."
           />
 
           {materiales.some((fila) => fila.bajoMinimo) && (

@@ -118,7 +118,7 @@ export default function PantallaTiposInventario() {
             ]}
             alLimpiar={() => setClase('')}
             cargando={cargando}
-            textoVacio="Todavia no hay tipos cargados."
+            textoVacio="Todavía no hay tipos cargados."
           />
         </CCardBody>
       </CCard>

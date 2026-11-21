@@ -60,7 +60,7 @@ export default function FormularioTecnico({ tecnico = null, onGuardar, volverA =
     if (!String(legajo).trim()) encontrados.legajo = 'El legajo es obligatorio.';
     if (!nombre.trim()) encontrados.nombre = 'El nombre es obligatorio.';
     if (especialidadesElegidas.length === 0) {
-      encontrados.especialidades = 'Elegi al menos una especialidad.';
+      encontrados.especialidades = 'Elegí al menos una especialidad.';
     }
 
     /*
@@ -70,7 +70,7 @@ export default function FormularioTecnico({ tecnico = null, onGuardar, volverA =
      */
     const digitosTelefono = digitosDelTelefono(telefono);
     if (digitosTelefono && digitosTelefono.length !== LARGO_TELEFONO) {
-      encontrados.telefono = `El telefono tiene ${LARGO_TELEFONO} digitos y este tiene ${digitosTelefono.length}.`;
+      encontrados.telefono = `El teléfono tiene ${LARGO_TELEFONO} dígitos y este tiene ${digitosTelefono.length}.`;
     }
 
     return encontrados;
@@ -179,7 +179,7 @@ export default function FormularioTecnico({ tecnico = null, onGuardar, volverA =
             {especialidades.length === 0 ? (
               <Aviso
                 color="warning"
-                mensaje="Todavia no hay especialidades cargadas: hace falta al menos una para poder dar de alta un tecnico."
+                mensaje="Todavía no hay especialidades cargadas: hace falta al menos una para poder dar de alta un tecnico."
               />
             ) : (
               <SeleccionMultiple

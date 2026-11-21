@@ -37,7 +37,7 @@ export const protegerPorRol = (rolesPermitidos) => {
     }
 
     if (!rolesPermitidos.includes(req.usuario.rol)) {
-      return res.status(403).json({ ok: false, mensaje: 'No tienes permisos para realizar esta acción' });
+      return res.status(403).json({ ok: false, mensaje: 'No tenés permisos para hacer esta acción.' });
     }
 
     // Regla de negocio: Si requiere cambio de contraseña, bloquear acceso a todo menos cambiar contraseña

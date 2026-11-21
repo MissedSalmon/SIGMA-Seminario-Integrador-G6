@@ -17,6 +17,8 @@ import { CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilDescription } from '@coreui/icons';
 
+import ReferenciaEtapas from '@/componentes/estados/ReferenciaEtapas.js';
+import Talon from '@/componentes/Talon.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
@@ -102,7 +104,7 @@ export default function PantallaOrdenesTrabajo() {
     {
       clave: 'id',
       encabezado: '#',
-      render: (orden) => <span className="fw-semibold">{orden.id}</span>,
+      render: (orden) => <Talon numero={orden.id} href={`/ordenes-trabajo/${orden.id}`} titulo={`Ver la orden de trabajo ${orden.id}`} />,
     },
     {
       clave: 'estado',
@@ -191,6 +193,7 @@ export default function PantallaOrdenesTrabajo() {
       <CCard>
         <CCardBody>
           <TablaDatos
+            antesDeLaTabla={<ReferenciaEtapas className="mt-0 mb-3" de="ot" estados={ordenes.map((orden) => orden.estado)} />}
             filas={ordenes}
             claveFila={(orden) => orden.id}
             columnas={columnas}

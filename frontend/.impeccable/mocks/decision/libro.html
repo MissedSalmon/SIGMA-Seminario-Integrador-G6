@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1440px;height:900px;overflow:hidden;font-family:'Public Sans',sans-serif;background:#f3f6f7;color:#0c2733;display:flex;font-variant-numeric:tabular-nums}
+.nav{width:232px;background:#0c2733;color:rgba(255,255,255,.74);padding:22px 14px}
+.marca{font-weight:800;font-size:22px;letter-spacing:.2em;color:#fff;padding:0 8px 18px}
+.grupo{font-size:11px;font-weight:700;letter-spacing:.08em;color:rgba(255,255,255,.55);margin:16px 8px 6px}
+.it{font-size:14px;padding:8px 10px;border-radius:6px}
+.it.on{background:#0b6b8c;color:#fff;font-weight:600}
+main{flex:1;padding:26px 34px;display:grid;grid-template-columns:1fr 430px;gap:24px}
+h1{font-size:26px;font-weight:800;letter-spacing:-.01em}
+.sub{font-size:13px;color:#5b6f78;margin-top:4px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);margin-top:18px;background:#fff;border:1px solid #d3dfe3;border-radius:10px}
+.k{padding:14px 16px;border-right:1px solid #e3ebee}
+.k:last-child{border-right:0}
+.k .t{font-size:12px;color:#5b6f78;font-weight:600}
+.k .v{font-size:34px;font-weight:800;margin-top:4px;letter-spacing:-.02em}
+.k .p{font-size:12px;color:#5b6f78}
+/* Tira de etapas a escala fija */
+.etapas{margin-top:18px;background:#fff;border:1px solid #d3dfe3;border-radius:10px;padding:14px 16px}
+.etapas h2,.libro h2{font-size:15px;font-weight:700}
+.tira{display:grid;grid-template-columns:repeat(5,1fr);margin-top:12px;gap:4px}
+.et{border-top:4px solid #b9cdd4;padding-top:8px}
+.et.a{border-top-color:#0b6b8c}
+.et .n{font-size:28px;font-weight:800}
+.et .l{font-size:12px;color:#5b6f78;font-weight:600}
+.tabla{margin-top:18px;background:#fff;border:1px solid #d3dfe3;border-radius:10px;padding:14px 16px}
+table{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
+th{text-align:left;font-size:11px;letter-spacing:.06em;color:#5b6f78;padding:8px 6px;border-bottom:1px solid #d3dfe3}
+td{padding:10px 6px;border-bottom:1px solid #edf2f4}
+td.r{text-align:right}
+/* El libro de novedades */
+.libro{background:#fff;border:1px solid #d3dfe3;border-radius:10px;padding:16px 0 0;height:848px;overflow:hidden}
+.libro h2{padding:0 18px}
+.libro .s{font-size:12px;color:#5b6f78;padding:2px 18px 10px;border-bottom:1px solid #d3dfe3}
+.as{display:grid;grid-template-columns:62px 1fr;border-bottom:1px solid #edf2f4}
+.fo{background:#f3f6f7;border-right:1px solid #d3dfe3;padding:12px 8px;text-align:right;font-weight:800;font-size:15px;color:#0b6b8c}
+.fo small{display:block;font-size:10px;color:#5b6f78;font-weight:600;letter-spacing:.06em}
+.cu{padding:11px 16px}
+.cu .q{font-size:14px;font-weight:600}
+.cu .d{font-size:12px;color:#5b6f78;margin-top:3px;display:flex;justify-content:space-between}
+.sello{display:inline-block;border:1.5px solid #0b6b8c;color:#0b6b8c;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:800;letter-spacing:.08em;margin-left:6px;vertical-align:1px}
+</style></head><body>
+<nav class="nav"><div class="marca">SIGMA</div>
+<div class="it on">Panel</div>
+<div class="grupo">MANTENIMIENTO</div><div class="it">Tickets</div><div class="it">Órdenes de trabajo</div><div class="it">Planes de mantenimiento</div><div class="it">Plantillas de tareas</div>
+<div class="grupo">ESTRUCTURA EDILICIA</div><div class="it">Edificios</div><div class="it">Espacios</div><div class="it">Áreas</div>
+<div class="grupo">ACTIVOS E INVENTARIO</div><div class="it">Activos</div><div class="it">Materiales</div><div class="it">Herramientas</div></nav>
+<main>
+<section>
+<h1>Panel de control</h1><div class="sub">Actualizado el 18/11/2026 a las 17:05 · Semestre</div>
+<div class="kpis">
+<div class="k"><div class="t">Operatividad</div><div class="v">79,2 %</div><div class="p">19 de 24 en servicio</div></div>
+<div class="k"><div class="t">Resolución promedio</div><div class="v">15 d 6 h</div><div class="p">18 tickets cerrados</div></div>
+<div class="k"><div class="t">Cobertura preventiva</div><div class="v">62,5 %</div><div class="p">15 de 24 activos</div></div>
+<div class="k"><div class="t">Bajo stock mínimo</div><div class="v">4</div><div class="p">de 11 materiales</div></div>
+</div>
+<div class="etapas"><h2>Dónde está el trabajo hoy</h2>
+<div class="tira">
+<div class="et"><div class="n">3</div><div class="l">Tickets creados</div></div>
+<div class="et"><div class="n">2</div><div class="l">Validados</div></div>
+<div class="et a"><div class="n">9</div><div class="l">OT en curso</div></div>
+<div class="et a"><div class="n">14</div><div class="l">Tareas pendientes</div></div>
+<div class="et"><div class="n">18</div><div class="l">Cerrados en el período</div></div>
+</div></div>
+<div class="tabla"><h2 style="font-size:15px;font-weight:700">Materiales bajo stock mínimo</h2>
+<table><tr><th>MATERIAL</th><th style="text-align:right">ACTUAL</th><th style="text-align:right">MÍNIMO</th><th style="text-align:right">FALTA</th></tr>
+<tr><td>Cinta aisladora</td><td class="r">1</td><td class="r">12</td><td class="r">11</td></tr>
+<tr><td>Cable unipolar 2,5 mm</td><td class="r">4</td><td class="r">10</td><td class="r">6</td></tr>
+<tr><td>Disyuntor 2x25 A</td><td class="r">1</td><td class="r">3</td><td class="r">2</td></tr>
+<tr><td>Fichas tomacorriente</td><td class="r">14</td><td class="r">15</td><td class="r">1</td></tr></table></div>
+</section>
+<aside class="libro"><h2>Libro de novedades</h2><div class="s">Los últimos asientos, del más nuevo al más viejo.</div>
+<div class="as"><div class="fo"><small>TICKET</small>34</div><div class="cu"><div class="q">Validado: proyector PROY-001 se ve borroso <span class="sello">VALIDADO</span></div><div class="d"><span>Juan Alegre · Edificio central, Aula 11</span><span>11/11 16:23</span></div></div></div>
+<div class="as"><div class="fo"><small>OT</small>47</div><div class="cu"><div class="q">Generada desde el ticket 34</div><div class="d"><span>Sistema · sin tareas cargadas</span><span>11/11 16:23</span></div></div></div>
+<div class="as"><div class="fo"><small>OT</small>45</div><div class="cu"><div class="q">Preventiva «Mantenimiento de PCs» <span class="sello">EN CURSO</span></div><div class="d"><span>German Gaona · 3 tareas</span><span>08/11 07:00</span></div></div></div>
+<div class="as"><div class="fo"><small>TAREA</small>9·2</div><div class="cu"><div class="q">Finalizada: cambio de capacitor</div><div class="d"><span>Carlos Perez · AC-001</span><span>07/11 15:40</span></div></div></div>
+<div class="as"><div class="fo"><small>TICKET</small>33</div><div class="cu"><div class="q">Cerrado: aire Ac-999 no enfría <span class="sello">CERRADO</span></div><div class="d"><span>Laboratorios Química</span><span>10/11 23:25</span></div></div></div>
+<div class="as"><div class="fo"><small>PLAN</small>6</div><div class="cu"><div class="q">Generó la OT 44 para AC-002</div><div class="d"><span>Mantenimiento general · semestral</span><span>06/11 07:00</span></div></div></div>
+<div class="as"><div class="fo"><small>STOCK</small>MAT</div><div class="cu"><div class="q">Cinta aisladora quedó bajo el mínimo</div><div class="d"><span>Quedan 1 de 12</span><span>05/11 11:12</span></div></div></div>
+<div class="as"><div class="fo"><small>TICKET</small>32</div><div class="cu"><div class="q">Cerrado: AC-EJ29 pierde agua</div><div class="d"><span>Leandro Maldonado</span><span>24/10 09:00</span></div></div></div>
+<div class="as"><div class="fo"><small>OT</small>41</div><div class="cu"><div class="q">Finalizada: 4 tareas cumplidas</div><div class="d"><span>Cierre automático</span><span>22/10 18:02</span></div></div></div>
+</aside>
+</main></body></html>

@@ -16,6 +16,10 @@ import { CButton, CCard, CCardBody, CCardHeader, CCol, CRow, CModal, CModalHeade
 import CIcon from '@coreui/icons-react';
 import { cilArrowLeft, cilExternalLink, cilCheckAlt, cilX, cilPlus, cilDescription } from '@coreui/icons';
 
+import ReferenciaEtapas from '@/componentes/estados/ReferenciaEtapas.js';
+import Talon from '@/componentes/Talon.js';
+import LineaEtapasTicket from '@/componentes/tickets/LineaEtapasTicket.js';
+import Dato from '@/componentes/Dato.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
@@ -57,16 +61,6 @@ const ESTADOS_SIN_OT = ['Creado', 'Rechazado'];
  * que el activo ya tiene, asi que dejarlo igual es no tocar el desplegable.
  */
 const ESTADOS_DE_ACTIVO = ['Operativo', 'Fuera de servicio'];
-
-/** Un renglon "etiqueta: valor" de la ficha. */
-function Dato({ etiqueta, children }) {
-  return (
-    <div className="mb-3">
-      <div className="text-body-secondary small">{etiqueta}</div>
-      <div>{children ?? '-'}</div>
-    </div>
-  );
-}
 
 /** Texto en gris e italica para decir que algo no esta. */
 function SinDato({ children }) {
@@ -183,7 +177,7 @@ export default function PantallaDetalleTicket({ params }) {
 
   async function handleRechazar() {
     if (!motivoRechazo.trim()) {
-      setErrorRechazo('Debes indicar un motivo de rechazo.');
+      setErrorRechazo('Tenés que indicar un motivo de rechazo.');
       return;
     }
     setProcesando(true);
@@ -231,9 +225,25 @@ export default function PantallaDetalleTicket({ params }) {
   return (
     <>
       <EncabezadoPagina
-        titulo={ticket ? `Ticket #${ticket.id}` : 'Detalle del ticket'}
+        titulo={
+          ticket ? (
+            <span className="sigma-titulo-con-sello">
+              <span>
+                Ticket <span className="sigma-titulo-numero">#{ticket.id}</span>
+              </span>
+              <EtiquetaEstadoTicket estado={ticket.estado} />
+            </span>
+          ) : (
+            'Detalle del ticket'
+          )
+        }
         descripcion={ticket ? ticket.descripcion : undefined}
       />
+      {/* Que significa el color de cada sello (regla 6). */}
+      <ReferenciaEtapas className="mt-0 mb-3" de="ticket" estados={[ticket?.estado]} />
+
+      {/* En que punto del ciclo esta el ticket, para quien lo reporto y para el administrador. */}
+      {ticket && <LineaEtapasTicket estado={ticket.estado} />}
 
       <Aviso mensaje={error} />
 
@@ -264,14 +274,6 @@ export default function PantallaDetalleTicket({ params }) {
                   <CCardBody>
                     <CRow>
                       <CCol sm={4}>
-                        <Dato etiqueta="Identificador">#{ticket.id}</Dato>
-                      </CCol>
-                      <CCol sm={4}>
-                        <Dato etiqueta="Estado">
-                          <EtiquetaEstadoTicket estado={ticket.estado} />
-                        </Dato>
-                      </CCol>
-                      <CCol sm={4}>
                         <Dato etiqueta="Fecha de alta">{formatearFechaHora(ticket.fechaAlta)}</Dato>
                       </CCol>
                     </CRow>
@@ -281,7 +283,7 @@ export default function PantallaDetalleTicket({ params }) {
                     {ticket.estado === 'Rechazado' && ticket.motivoRechazo && (
                       <div className="mt-3 p-3 bg-danger bg-opacity-10 border border-danger rounded">
                         <div className="text-danger fw-semibold small mb-1">Motivo del rechazo</div>
-                        <div className="text-danger" style={{ whiteSpace: 'pre-wrap' }}>{ticket.motivoRechazo}</div>
+                        <div style={{ whiteSpace: 'pre-wrap' }}>{ticket.motivoRechazo}</div>
                       </div>
                     )}
                   </CCardBody>
@@ -374,8 +376,8 @@ export default function PantallaDetalleTicket({ params }) {
                       {ticket.ot ? (
                         <CRow>
                           <CCol sm={6}>
-                            <Dato etiqueta="Número de OT">
-                              <span className="fw-semibold">#{ticket.ot.id}</span>
+                            <Dato etiqueta="OT N°">
+                              <Talon numero={ticket.ot.id} href={`/ordenes-trabajo/${ticket.ot.id}`} titulo="Ver la orden de trabajo" />
                             </Dato>
                           </CCol>
                           <CCol sm={6}>

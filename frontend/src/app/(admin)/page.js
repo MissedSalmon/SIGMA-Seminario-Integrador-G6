@@ -11,7 +11,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
-  CBadge,
   CButton,
   CCard,
   CCardBody,
@@ -30,18 +29,18 @@ import CIcon from '@coreui/icons-react';
 import {
   cilCloudDownload,
   cilReload,
-  cilWarning,
   cilCheckCircle,
   cilClock,
+  cilArrowRight,
 } from '@coreui/icons';
 
 import AvisoPlanesPorVencer from '@/componentes/planes/AvisoPlanesPorVencer.js';
 import Aviso from '@/componentes/Aviso.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
 import CampoFecha from '@/componentes/formulario/CampoFecha.js';
-import GraficoChart from '@/componentes/estadisticas/GraficoChart.js';
+import GraficoChart, { COLORES_GRAFICO } from '@/componentes/estadisticas/GraficoChart.js';
+import TalonesAbiertos from '@/componentes/ordenes/TalonesAbiertos.js';
 import { obtenerPanelCompleto } from '@/servicios/estadisticas.js';
-import { exportarPanelPdf } from '@/servicios/exportacionPanel.js';
 import { hoyTexto } from '@/utils/fechas.js';
 import { textoTiempo } from '@/utils/duracion.js';
 
@@ -57,17 +56,50 @@ const PRESETS_PERIODO = [
 /** "2026-10-11" -> "11/10/2026", sin pasar por Date (que lo leería en UTC y restaría un día). */
 const fechaCorta = (texto) => texto.split('-').reverse().join('/');
 
+/**
+ * Resta dias a una fecha "2026-10-11" trabajando con la fecha local. Antes
+ * pasaba por new Date("2026-10-11"), que la lee en UTC y en Argentina la
+ * corria un dia para atras.
+ */
 function restarDias(fechaStr, dias) {
-  const d = new Date(fechaStr);
-  d.setDate(d.getDate() - dias);
-  return d.toISOString().slice(0, 10);
+  const [anio, mes, dia] = fechaStr.split('-').map(Number);
+  const d = new Date(anio, mes - 1, dia - dias);
+  const dos = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`;
 }
 
-function TituloSeccion({ children }) {
+/** Un numero con coma decimal, como se escribe en Argentina ("79,2"). */
+const numero = (valor, decimales = 1) =>
+  Number(valor ?? 0).toLocaleString('es-AR', { maximumFractionDigits: decimales });
+
+/** Un porcentaje con coma decimal, o un guion si no hay dato. */
+const porcentaje = (valor) => (valor != null ? `${numero(valor)} %` : '-');
+
+/** "1 retirado" / "3 retirados". */
+const contar = (cantidad, singular, plural) => `${cantidad ?? 0} ${(cantidad ?? 0) === 1 ? singular : plural}`;
+
+function TituloSeccion({ id, children }) {
   return (
-    <h2 className="h5 fw-bold text-body-secondary text-uppercase mb-3" style={{ letterSpacing: '0.05em' }}>
+    <h2 id={id} className="sigma-panel-seccion">
       {children}
     </h2>
+  );
+}
+
+/**
+ * Un pendiente de la franja «Para atender»: un casillero con su cantidad que
+ * lleva a la pantalla donde se resuelve.
+ */
+function Pendiente({ rotulo, cantidad, accion, href }) {
+  return (
+    <Link href={href} className="sigma-pendiente">
+      <span className="sigma-casillero-rotulo">{rotulo}</span>
+      <span className="sigma-pendiente-cantidad">{cantidad}</span>
+      <span className="sigma-pendiente-accion">
+        {accion}
+        <CIcon icon={cilArrowRight} size="sm" aria-hidden="true" />
+      </span>
+    </Link>
   );
 }
 
@@ -157,10 +189,12 @@ export default function PantallaPanelAdministrador() {
     if (!panelPayload) return;
     setExportando(true);
     try {
+      // jsPDF pesa mucho: se descarga recien cuando alguien exporta.
+      const { exportarPanelPdf } = await import('@/servicios/exportacionPanel.js');
       await exportarPanelPdf(panelPayload);
     } catch (err) {
       console.error('[panel] Error al exportar archivo PDF:', err);
-      setError('No se pudo generar el informe PDF. Verifique la consola para más detalles.');
+      setError('No se pudo generar el informe PDF. Probá de nuevo en un momento.');
     } finally {
       setExportando(false);
     }
@@ -176,6 +210,10 @@ export default function PantallaPanelAdministrador() {
   const cargaTec = datos.cargaTecnicos ?? {};
   const areas = datos.areasIncidencia ?? {};
   const rankingAreas = Array.isArray(areas) ? areas : (areas.ranking ?? []);
+  const cobertura = resumen.coberturaPreventiva ?? {};
+  const tiposSinPlan = cobertura.tiposSinPlan?.length ?? Math.max(0, (cobertura.totalTipos ?? 0) - (cobertura.tiposConPlan ?? 0));
+  const materialesBajos = resumen.materialesBajoMinimo?.items ?? [];
+  const ticketsCerradosDelPeriodo = evolucion.porEstado?.find((e) => e.id === 6)?.cantidad ?? 0;
 
   const fechaFrescura = metadatos.generadoEn
     ? new Intl.DateTimeFormat('es-AR', {
@@ -189,7 +227,7 @@ export default function PantallaPanelAdministrador() {
     <>
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-3">
         <div>
-          <h1 className="sigma-titulo mb-1">Panel de Control</h1>
+          <h1 className="sigma-titulo mb-1">Panel de control</h1>
           {metadatos.generadoEn && (
             <div className="small text-body-secondary">
               Actualizado: <strong>{fechaFrescura}</strong> (UTC-3)
@@ -199,7 +237,7 @@ export default function PantallaPanelAdministrador() {
 
         <div className="sigma-panel-acciones">
           <CButton
-            color="secondary"
+            color="primary"
             variant="outline"
             disabled={cargando}
             onClick={() => cargarDatos(desde, hasta)}
@@ -219,9 +257,41 @@ export default function PantallaPanelAdministrador() {
         </div>
       </div>
 
-      <AvisoPlanesPorVencer />
-
       {error && <Aviso mensaje={error} onCerrar={() => setError(null)} />}
+
+      {/* Lo primero que se ve: el trabajo abierto, como talones de un talonario. */}
+      <TalonesAbiertos recarga={metadatos.generadoEn} />
+
+      {/*
+        Lo que necesita una decision hoy. Cada casillero lleva a la pantalla
+        donde se resuelve; los numeros salen del mismo resumen del panel.
+      */}
+      {panelPayload && (
+        <section className="mb-4" aria-labelledby="titulo-pendientes">
+          <TituloSeccion id="titulo-pendientes">Para atender</TituloSeccion>
+          <div className="sigma-pendientes">
+            <Pendiente
+              rotulo="Materiales bajo el mínimo"
+              cantidad={materialesBajos.length}
+              accion="Ver materiales"
+              href="/inventario/materiales"
+            />
+            <Pendiente
+              rotulo="Tipos de activo sin plan"
+              cantidad={tiposSinPlan}
+              accion="Ver planes"
+              href="/planes-mantenimiento"
+            />
+            <Pendiente
+              rotulo="Tareas sin terminar"
+              cantidad={cargaTec.totalTareasActivas ?? 0}
+              accion="Ver carga de trabajo"
+              href="/tecnicos/carga-trabajo"
+            />
+          </div>
+          <AvisoPlanesPorVencer />
+        </section>
+      )}
 
       {cargando && !panelPayload ? (
         <Cargando texto="Cargando estadísticas consolidadas del sistema..." />
@@ -230,46 +300,33 @@ export default function PantallaPanelAdministrador() {
           <section className="mb-5">
             <TituloSeccion>Situación actual</TituloSeccion>
 
-            <div className="sigma-kpi-grid sigma-kpi-grid--4">
-              <div className="sigma-kpi-card border-start-primary">
+            <div className="sigma-kpi-grid sigma-kpi-grid--3">
+              <div className="sigma-kpi-card">
                 <div>
-                  <div className="sigma-kpi-title" title="Operatividad de activos en servicio">
-                    Operatividad de activos
-                  </div>
-                  <div className="sigma-kpi-value text-body">
-                    {resumen.operatividad?.porcentaje != null ? `${resumen.operatividad.porcentaje} %` : '-'}
-                  </div>
+                  <div className="sigma-kpi-title">Operatividad de activos</div>
+                  <div className="sigma-kpi-value text-body">{porcentaje(resumen.operatividad?.porcentaje)}</div>
+                  <div className="sigma-kpi-explicacion">Activos operativos sobre los que están en servicio.</div>
                 </div>
                 <div className="sigma-kpi-footer">
                   <div>
                     <strong>{resumen.operatividad?.operativos ?? 0}</strong> de {resumen.operatividad?.enServicio ?? 0} en servicio
                   </div>
                   <div className="sigma-kpi-subtext">
-                    {resumen.operatividad?.retirados ?? 0} retirados (Total: {resumen.operatividad?.totalActivos ?? 0})
+                    {contar(resumen.operatividad?.retirados, 'retirado', 'retirados')} de {resumen.operatividad?.totalActivos ?? 0} en total
                   </div>
                 </div>
               </div>
 
-              <div className={`sigma-kpi-card ${
-                (resumen.coberturaPreventiva?.porcentajeActivos ?? 0) === 100 ? 'border-start-success' : 'border-start-primary'
-              }`}>
+              <div className="sigma-kpi-card">
                 <div>
-                  <div
-                    className="sigma-kpi-title"
-                    title="Activos en servicio cuyo tipo tiene un plan preventivo vigente"
-                  >
-                    Cobertura preventiva
-                  </div>
-                  <div className={`sigma-kpi-value ${
-                    (resumen.coberturaPreventiva?.porcentajeActivos ?? 0) === 100 ? 'text-success' : 'text-body'
-                  }`}>
-                    {resumen.coberturaPreventiva?.porcentajeActivos != null ? `${resumen.coberturaPreventiva.porcentajeActivos} %` : '-'}
-                  </div>
+                  <div className="sigma-kpi-title">Cobertura preventiva</div>
+                  <div className="sigma-kpi-value text-body">{porcentaje(cobertura.porcentajeActivos)}</div>
+                  <div className="sigma-kpi-explicacion">Activos en servicio cuyo tipo tiene un plan vigente.</div>
                 </div>
                 <div className="sigma-kpi-footer">
                   <div>
                     {(resumen.coberturaPreventiva?.porcentajeActivos ?? 0) === 100 ? (
-                      <span className="text-success fw-semibold">
+                      <span className="fw-semibold">
                         <CIcon icon={cilCheckCircle} className="me-1" />
                         Todos los activos cubiertos ({resumen.coberturaPreventiva?.totalActivosEnServicio ?? 0})
                       </span>
@@ -279,63 +336,25 @@ export default function PantallaPanelAdministrador() {
                       </>
                     )}
                   </div>
-                  <div className="sigma-kpi-subtext d-flex align-items-center justify-content-between gap-1 flex-wrap">
-                    <span>
-                      {resumen.coberturaPreventiva?.tiposConPlan ?? 0} tipos de activo con plan
-                    </span>
-                    {(resumen.coberturaPreventiva?.porcentajeActivos ?? 0) < 100 && (
-                      <Link
-                        href="/planes-mantenimiento"
-                        className="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle text-decoration-none d-inline-flex align-items-center gap-1"
-                        title={resumen.coberturaPreventiva?.tiposSinPlan?.length > 0
-                          ? `Sin plan vigente: ${resumen.coberturaPreventiva.tiposSinPlan.map((t) => t.nombre).join(', ')}`
-                          : 'Gestionar planes de mantenimiento'}
-                      >
-                        <span>
-                          {resumen.coberturaPreventiva?.tiposSinPlan?.length ?? ((resumen.coberturaPreventiva?.totalTipos ?? 0) - (resumen.coberturaPreventiva?.tiposConPlan ?? 0))} sin plan
-                        </span>
-                        <span aria-hidden="true">&rarr;</span>
-                      </Link>
+                  <div className="sigma-kpi-subtext">
+                    {contar(cobertura.tiposConPlan, 'tipo de activo con plan', 'tipos de activo con plan')}
+                    {/* Los tipos sin plan se leen en pantalla, no sólo al pasar el mouse. */}
+                    {cobertura.tiposSinPlan?.length > 0 && (
+                      <> · sin plan: {cobertura.tiposSinPlan.map((t) => t.nombre).join(', ')}</>
                     )}
                   </div>
                 </div>
               </div>
 
-              <div className="sigma-kpi-card border-start-secondary">
+              <div className="sigma-kpi-card">
                 <div>
-                  <div className="sigma-kpi-title" title="Disponibilidad del plantel técnico">
-                    Disponibilidad técnica
-                  </div>
-                  <div className="sigma-kpi-value text-body">
-                    {resumen.disponibilidadTecnicos?.porcentaje != null ? `${resumen.disponibilidadTecnicos.porcentaje} %` : '-'}
-                  </div>
+                  <div className="sigma-kpi-title">Disponibilidad técnica</div>
+                  <div className="sigma-kpi-value text-body">{porcentaje(resumen.disponibilidadTecnicos?.porcentaje)}</div>
+                  <div className="sigma-kpi-explicacion">Técnicos que pueden tomar tareas nuevas.</div>
                 </div>
                 <div className="sigma-kpi-footer">
                   <div>
                     <strong>{resumen.disponibilidadTecnicos?.disponibles ?? 0}</strong> de {resumen.disponibilidadTecnicos?.totalTecnicos ?? 0} disponibles
-                  </div>
-                </div>
-              </div>
-
-              <div className={`sigma-kpi-card ${
-                (resumen.materialesBajoMinimo?.bajoMinimo ?? 0) > 0 ? 'border-start-danger' : 'border-start-success'
-              }`}>
-                <div>
-                  <div className="sigma-kpi-title" title="Materiales por debajo del stock mínimo">
-                    Materiales bajo stock mínimo
-                  </div>
-                  <div className={`sigma-kpi-value ${
-                    (resumen.materialesBajoMinimo?.bajoMinimo ?? 0) > 0 ? 'text-danger' : 'text-success'
-                  }`}>
-                    {resumen.materialesBajoMinimo?.bajoMinimo ?? 0}
-                  </div>
-                </div>
-                <div className="sigma-kpi-footer">
-                  <div>
-                    de <strong>{resumen.materialesBajoMinimo?.totalMateriales ?? 0}</strong> materiales registrados
-                  </div>
-                  <div className="sigma-kpi-subtext">
-                    {resumen.materialesBajoMinimo?.porcentaje ?? 0} % del inventario
                   </div>
                 </div>
               </div>
@@ -355,11 +374,10 @@ export default function PantallaPanelAdministrador() {
                       {
                         label: 'Activos en servicio',
                         data: activos.porEdificio?.map((e) => e.cantidad) ?? [],
-                        backgroundColor: '#321fdb',
                       },
                     ],
                   }}
-                  altura={320}
+                  altura={Math.max(180, (activos.porEdificio?.length ?? 0) * 48 + 70)}
                 />
               </CCol>
 
@@ -377,7 +395,7 @@ export default function PantallaPanelAdministrador() {
                       },
                     ],
                   }}
-                  altura={320}
+                  altura={240}
                 />
               </CCol>
             </CRow>
@@ -396,7 +414,6 @@ export default function PantallaPanelAdministrador() {
                       {
                         label: 'Tareas pendientes',
                         data: cargaTec.porTecnico?.map((t) => t.tareasActivas) ?? [],
-                        backgroundColor: '#f9b115',
                       },
                     ],
                   }}
@@ -405,53 +422,43 @@ export default function PantallaPanelAdministrador() {
               </CCol>
 
               <CCol xs={12} lg={6}>
-                <CCard className="shadow-sm h-100">
-                  <CCardHeader className="py-2 d-flex align-items-center justify-content-between flex-wrap gap-2">
-                    <span className="fw-semibold d-flex align-items-center gap-2">
-                      <CIcon icon={cilWarning} className="text-danger" />
-                      Materiales bajo stock mínimo
-                    </span>
-                    {resumen.materialesBajoMinimo?.items?.length > 0 && (
-                      <CBadge color="danger">{resumen.materialesBajoMinimo.items.length}</CBadge>
-                    )}
+                {/*
+                  El vale de reposicion: los materiales que hay que pedir. Va sin
+                  colores; lo que importa se lee en la columna «Faltan».
+                */}
+                <CCard className="sigma-vale h-100">
+                  <CCardHeader className="sigma-vale-encabezado">
+                    <span className="fw-semibold">Materiales bajo stock mínimo</span>
+                    <span className="sigma-etiqueta">{contar(materialesBajos.length, 'material', 'materiales')}</span>
                   </CCardHeader>
                   <CCardBody className="p-3">
-                    {resumen.materialesBajoMinimo?.items?.length > 0 ? (
-                      <div className="table-responsive">
-                        <CTable striped hover small className="align-middle mb-0">
-                          <CTableHead className="table-light">
-                            <CTableRow>
-                              <CTableHeaderCell>Código</CTableHeaderCell>
-                              <CTableHeaderCell>Material</CTableHeaderCell>
-                              <CTableHeaderCell className="text-end">Actual</CTableHeaderCell>
-                              <CTableHeaderCell className="text-end">Mínimo</CTableHeaderCell>
-                              <CTableHeaderCell className="text-end">Faltante</CTableHeaderCell>
+                    {materialesBajos.length > 0 ? (
+                      <CTable small className="align-middle mb-0 sigma-vale-tabla">
+                        <CTableHead>
+                          <CTableRow>
+                            <CTableHeaderCell>Material</CTableHeaderCell>
+                            <CTableHeaderCell className="text-end">Hay</CTableHeaderCell>
+                            <CTableHeaderCell className="text-end">Mínimo</CTableHeaderCell>
+                            <CTableHeaderCell className="text-end">Faltan</CTableHeaderCell>
+                          </CTableRow>
+                        </CTableHead>
+                        <CTableBody>
+                          {materialesBajos.map((m) => (
+                            <CTableRow key={m.codigo}>
+                              <CTableDataCell>
+                                <div className="fw-medium">{m.nombre}</div>
+                                <div className="small text-body-secondary text-nowrap">{m.codigo}</div>
+                              </CTableDataCell>
+                              <CTableDataCell className="text-end">{m.stockActual}</CTableDataCell>
+                              <CTableDataCell className="text-end text-body-secondary">{m.stockMinimo}</CTableDataCell>
+                              <CTableDataCell className="text-end fw-bold">{m.faltante}</CTableDataCell>
                             </CTableRow>
-                          </CTableHead>
-                          <CTableBody>
-                            {resumen.materialesBajoMinimo.items.map((m) => (
-                              <CTableRow key={m.codigo}>
-                                <CTableDataCell className="fw-medium">{m.codigo}</CTableDataCell>
-                                <CTableDataCell>{m.nombre}</CTableDataCell>
-                                <CTableDataCell className="text-end fw-bold text-danger">
-                                  {m.stockActual}
-                                </CTableDataCell>
-                                <CTableDataCell className="text-end text-body-secondary">
-                                  {m.stockMinimo}
-                                </CTableDataCell>
-                                <CTableDataCell className="text-end">
-                                  <span className="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle fw-semibold">
-                                    +{m.faltante}
-                                  </span>
-                                </CTableDataCell>
-                              </CTableRow>
-                            ))}
-                          </CTableBody>
-                        </CTable>
-                      </div>
+                          ))}
+                        </CTableBody>
+                      </CTable>
                     ) : (
-                      <div className="text-body-secondary small py-3">
-                        <CIcon icon={cilCheckCircle} className="text-success me-1" />
+                      <div className="text-body-secondary py-3">
+                        <CIcon icon={cilCheckCircle} className="me-1" aria-hidden="true" />
                         No hay materiales con stock por debajo del mínimo.
                       </div>
                     )}
@@ -508,42 +515,43 @@ export default function PantallaPanelAdministrador() {
                 )}
 
                 {cargando && <CSpinner size="sm" className="sigma-periodo-cargando" aria-label="Cargando" />}
+                {/* Avisa a los lectores de pantalla cuando cambian los datos del período. */}
+                <span className="visually-hidden" aria-live="polite">
+                  {cargando ? 'Cargando los datos del período…' : `Datos del período ${rangoElegido}.`}
+                </span>
               </CCardBody>
             </CCard>
 
             <div className="sigma-kpi-grid sigma-kpi-grid--3">
-              <div className="sigma-kpi-card border-start-secondary">
+              <div className="sigma-kpi-card">
                 <div>
-                  <div className="sigma-kpi-title" title="Tiempo promedio de resolución de los tickets cerrados en el período">
-                    Tiempo promedio de resolución
-                  </div>
-                  <div className="sigma-kpi-value text-body">
-                    {textoTiempo(tiempos.general?.promedioSegundos)}
-                  </div>
+                  <div className="sigma-kpi-title">Tiempo promedio de resolución</div>
+                  <div className="sigma-kpi-value text-body">{textoTiempo(tiempos.general?.promedioSegundos)}</div>
+                  <div className="sigma-kpi-explicacion">Desde el alta hasta el cierre de cada ticket.</div>
                 </div>
                 <div className="sigma-kpi-footer">
-                  <strong>{tiempos.general?.cantidadTickets ?? 0}</strong> tickets cerrados
+                  Sobre <strong>{tiempos.general?.cantidadTickets ?? 0}</strong>{' '}
+                  {(tiempos.general?.cantidadTickets ?? 0) === 1 ? 'ticket cerrado' : 'tickets cerrados'} en el período
                 </div>
               </div>
 
-              <div className="sigma-kpi-card border-start-secondary">
+              <div className="sigma-kpi-card">
                 <div>
-                  <div className="sigma-kpi-title" title="Tickets dados de alta en el período">
-                    Tickets registrados
-                  </div>
+                  <div className="sigma-kpi-title">Tickets registrados</div>
                   <div className="sigma-kpi-value text-body">{evolucion.totalTicketsPeriodo ?? 0}</div>
+                  <div className="sigma-kpi-explicacion">Dados de alta en el período.</div>
                 </div>
                 <div className="sigma-kpi-footer">
-                  <strong>{evolucion.porEstado?.find((e) => e.id === 6)?.cantidad ?? 0}</strong> ya cerrados
+                  De estos, <strong>{ticketsCerradosDelPeriodo}</strong>{' '}
+                  {ticketsCerradosDelPeriodo === 1 ? 'ya se cerró' : 'ya se cerraron'}
                 </div>
               </div>
 
-              <div className="sigma-kpi-card border-start-secondary">
+              <div className="sigma-kpi-card">
                 <div>
-                  <div className="sigma-kpi-title" title="Órdenes de trabajo dadas de alta en el período">
-                    Órdenes de trabajo
-                  </div>
+                  <div className="sigma-kpi-title">Órdenes de trabajo</div>
                   <div className="sigma-kpi-value text-body">{ordenes.porOrigen?.total ?? 0}</div>
+                  <div className="sigma-kpi-explicacion">Dadas de alta en el período.</div>
                 </div>
                 <div className="sigma-kpi-footer">
                   <strong>{ordenes.porOrigen?.correctivas ?? 0}</strong> correctivas · <strong>{ordenes.porOrigen?.preventivas ?? 0}</strong> preventivas
@@ -564,14 +572,14 @@ export default function PantallaPanelAdministrador() {
                       {
                         label: 'Tickets creados',
                         data: evolucion.evolucion?.map((e) => e.ticketsCreados) ?? [],
-                        borderColor: '#321fdb',
-                        backgroundColor: 'rgba(50, 31, 219, 0.1)',
+                        borderColor: COLORES_GRAFICO.petroleo,
+                        backgroundColor: COLORES_GRAFICO.petroleo,
                       },
                       {
                         label: 'Tickets cerrados',
                         data: evolucion.evolucion?.map((e) => e.ticketsCerrados) ?? [],
-                        borderColor: '#2eb85c',
-                        backgroundColor: 'rgba(46, 184, 92, 0.1)',
+                        borderColor: COLORES_GRAFICO.exito,
+                        backgroundColor: COLORES_GRAFICO.exito,
                       },
                     ],
                   }}
@@ -591,7 +599,6 @@ export default function PantallaPanelAdministrador() {
                       {
                         label: 'Cantidad de tickets',
                         data: evolucion.porEstado?.map((e) => e.cantidad) ?? [],
-                        backgroundColor: '#39f',
                       },
                     ],
                   }}
@@ -601,7 +608,7 @@ export default function PantallaPanelAdministrador() {
             </CRow>
 
             <CRow className="g-3 mb-3">
-              <CCol xs={12} lg={6}>
+              <CCol xs={12} lg={7}>
                 <GraficoChart
                   id="grafico-areas-incidencias"
                   tipo="bar"
@@ -615,36 +622,15 @@ export default function PantallaPanelAdministrador() {
                       {
                         label: 'Fallas registradas',
                         data: rankingAreas.slice(0, 8).map((a) => a.cantidadFallas ?? a.fallas) ?? [],
-                        backgroundColor: '#e55353',
                       },
                     ],
                   }}
-                  altura={320}
+                  altura={Math.max(200, Math.min(rankingAreas.length, 8) * 44 + 70)}
                 />
               </CCol>
 
-              <CCol xs={12} sm={6} lg={3}>
-                <GraficoChart
-                  id="grafico-ordenes-origen"
-                  tipo="doughnut"
-                  titulo="Órdenes de trabajo por tipo"
-                  subtitulo="Comparación entre órdenes correctivas y preventivas."
-                  data={{
-                    labels: ['Correctivas', 'Preventivas'],
-                    datasets: [
-                      {
-                        data: [
-                          ordenes.porOrigen?.correctivas ?? 0,
-                          ordenes.porOrigen?.preventivas ?? 0,
-                        ],
-                      },
-                    ],
-                  }}
-                  altura={320}
-                />
-              </CCol>
-
-              <CCol xs={12} sm={6} lg={3}>
+              {/* Correctivas y preventivas ya se leen en el indicador «Órdenes de trabajo». */}
+              <CCol xs={12} lg={5}>
                 <GraficoChart
                   id="grafico-ordenes-prioridad"
                   tipo="doughnut"
@@ -658,7 +644,7 @@ export default function PantallaPanelAdministrador() {
                       },
                     ],
                   }}
-                  altura={320}
+                  altura={280}
                 />
               </CCol>
             </CRow>
@@ -666,7 +652,7 @@ export default function PantallaPanelAdministrador() {
             <CCard className="shadow-sm">
               <CCardHeader className="py-2 d-flex align-items-center justify-content-between flex-wrap gap-2">
                 <span className="fw-semibold d-flex align-items-center gap-2">
-                  <CIcon icon={cilClock} className="text-info" />
+                  <CIcon icon={cilClock} aria-hidden="true" />
                   Tiempos promedio de resolución por área
                 </span>
                 {tiempos.porArea?.length > 0 && (
@@ -676,8 +662,8 @@ export default function PantallaPanelAdministrador() {
               <CCardBody className="p-3">
                 {tiempos.porArea?.length > 0 ? (
                   <div className="table-responsive">
-                    <CTable striped hover small className="align-middle mb-0">
-                      <CTableHead className="table-light">
+                    <CTable hover small className="align-middle mb-0">
+                      <CTableHead>
                         <CTableRow>
                           <CTableHeaderCell>Área</CTableHeaderCell>
                           <CTableHeaderCell>Edificio</CTableHeaderCell>
@@ -691,7 +677,7 @@ export default function PantallaPanelAdministrador() {
                             <CTableDataCell className="fw-medium">{a.nombre}</CTableDataCell>
                             <CTableDataCell className="text-body-secondary">{a.edificio || '-'}</CTableDataCell>
                             <CTableDataCell className="text-end">{a.cantidadTickets}</CTableDataCell>
-                            <CTableDataCell className="text-end fw-bold text-info">
+                            <CTableDataCell className="text-end fw-semibold">
                               {textoTiempo(a.promedioSegundos)}
                             </CTableDataCell>
                           </CTableRow>
