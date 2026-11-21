@@ -29,14 +29,14 @@ export default function PantallaEditarAutorizado({ params }) {
   return (
     <>
       <EncabezadoPagina
-        titulo="Editar usuario autorizado"
+        titulo="Editar solicitante"
         descripcion={autorizado ? autorizado.nombre : undefined}
       />
 
       <Aviso mensaje={error} />
 
       {cargando ? (
-        <Cargando texto="Cargando el usuario autorizado..." />
+        <Cargando texto="Cargando el solicitante..." />
       ) : (
         autorizado && (
           <FormularioAutorizado

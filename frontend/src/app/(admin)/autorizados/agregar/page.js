@@ -11,7 +11,7 @@ export default function PantallaAgregarAutorizado() {
   return (
     <>
       <EncabezadoPagina
-        titulo="Agregar usuario autorizado"
+        titulo="Agregar solicitante"
         descripcion="Los campos marcados con * son obligatorios."
       />
       <FormularioAutorizado onGuardar={crearAutorizado} />

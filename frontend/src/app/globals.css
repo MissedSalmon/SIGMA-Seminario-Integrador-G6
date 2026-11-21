@@ -922,17 +922,23 @@ body {
 
 /* Del alto de un control "sm" de CoreUI, para no desalinear la barra. */
 .sigma-fecha--compacto .date-input-group {
-  /* Igual de angosta que los desplegables de al lado: ver .sigma-lista--compacto. */
-  width: calc(10ch + 3.25rem);
+  /*
+    La caja mide lo que ocupa la fecha mas el almanaque. Antes tenia un ancho
+    fijo y la fecha (que en HeroUI estira con flex-1) dejaba un hueco grande
+    entre el texto y el icono del calendario.
+  */
+  width: fit-content;
   height: calc(1.5em + 0.5rem + 2px);
   font-size: 0.875rem;
 }
 
-/* Abajo de 40rem HeroUI pasa la fecha a 16px para que el celular no haga zoom: la caja crece con ella. */
-@media (max-width: 39.99rem) {
-  .sigma-fecha--compacto .date-input-group {
-    width: calc(10ch + 5rem);
-  }
+.sigma-fecha--compacto .date-input-group__input {
+  flex: 0 0 auto;
+  padding-right: 0.25rem;
+}
+
+.sigma-fecha--compacto .date-input-group__suffix {
+  padding-right: 0.25rem;
 }
 
 /*
