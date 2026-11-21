@@ -226,11 +226,15 @@ describe('obtenerHistorial', () => {
     const tareaDeLa19 = intervenciones[0].tareas.find((una) => una.idTarea === 1);
     const tareaDeLa12 = intervenciones[1].tareas[0];
 
-    expect(tareaDeLa19.materiales).toEqual([{ codigo: 'MAT-010', nombre: 'Lámpara LED 12 W', cantidad: 2 }]);
+    expect(tareaDeLa19.materiales).toEqual([
+      { codigo: 'MAT-010', nombre: 'Lámpara LED 12 W', unidadMedida: 'unidad', cantidad: 2 },
+    ]);
     expect(tareaDeLa19.observaciones).toEqual([
       { id: 3, texto: 'Se cambió el portalámpara', autor: 'German Gaona', fecha: '2026-10-14T19:49:00+00:00' },
     ]);
-    expect(tareaDeLa12.materiales).toEqual([{ codigo: 'MAT-003', nombre: 'Cinta aisladora', cantidad: 1 }]);
+    expect(tareaDeLa12.materiales).toEqual([
+      { codigo: 'MAT-003', nombre: 'Cinta aisladora', unidadMedida: 'unidad', cantidad: 1 },
+    ]);
     expect(tareaDeLa12.observaciones).toEqual([]);
   });
 

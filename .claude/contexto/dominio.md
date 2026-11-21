@@ -675,6 +675,7 @@ Agrupadas por tema, para tener el mapa general:
 | **Disponibilidad** | Indica si el técnico puede tomar tareas nuevas. Junto con el tipo de trabajo define a quién se le asigna. |
 | **Edificio** | Construcción de la facultad. Contiene espacios. |
 | **Egreso** | Salida de un material o herramienta del depósito. Baja el stock. |
+| **Unidad de medida** | Cada material usa una opción fija: par, unidad, metro, pulgada, kilogramo, litro o metro cuadrado. Las cantidades siguen siendo enteras (21/11/2026). |
 | **Espacio** | Lugar dentro de un edificio: aula, laboratorio, oficina, pasillo. |
 | **Evidencia** | Fotos que se adjuntan a un ticket o a una OT. |
 | **Falla** | Clasificación del problema: eléctrica, mecánica, estructural, sanitaria. Se registra en la tarea de la OT. |

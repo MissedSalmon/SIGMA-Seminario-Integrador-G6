@@ -191,18 +191,19 @@ export default function PantallaFichaItem({ params }) {
                     </Dato>
                   </CCol>
                   <CCol sm={6} lg={3}>
-                    <Dato etiqueta="Stock mínimo">{item.stockMinimo}</Dato>
+                    <Dato etiqueta="Unidad de medida">{item.unidadMedida}</Dato>
+                    <Dato etiqueta="Stock mínimo">{item.stockMinimo} {item.unidadMedida}</Dato>
                   </CCol>
                   <CCol sm={6} lg={3}>
                     <Dato etiqueta="Stock actual">
                       {/* El rojo se explica al lado: está por debajo del mínimo. */}
                       {item.bajoMinimo ? (
                         <>
-                          <span className="sigma-stock-bajo">{item.stockActual}</span>
+                          <span className="sigma-stock-bajo">{item.stockActual} {item.unidadMedida}</span>
                           <span className="text-body-secondary small"> — por debajo del mínimo</span>
                         </>
                       ) : (
-                        <span className="fw-semibold">{item.stockActual}</span>
+                        <span className="fw-semibold">{item.stockActual} {item.unidadMedida}</span>
                       )}
                     </Dato>
                   </CCol>
@@ -240,7 +241,7 @@ export default function PantallaFichaItem({ params }) {
                             <CTableDataCell>
                               <span className="fw-semibold">{soloFechaLegible(consumo.fecha)}</span>
                             </CTableDataCell>
-                            <CTableDataCell>{consumo.cantidad}</CTableDataCell>
+                            <CTableDataCell>{consumo.cantidad} {item.unidadMedida}</CTableDataCell>
                             <CTableDataCell>{consumo.tarea}</CTableDataCell>
                             <CTableDataCell>
                               <BotonEnlace
@@ -301,7 +302,7 @@ export default function PantallaFichaItem({ params }) {
                               */}
                               <span className="text-body-secondary">
                                 {ENTRADAS.includes(movimiento.tipo) ? '+' : '−'}
-                                {movimiento.cantidad}
+                                {movimiento.cantidad} {item.unidadMedida}
                               </span>
                             </CTableDataCell>
                             <CTableDataCell>

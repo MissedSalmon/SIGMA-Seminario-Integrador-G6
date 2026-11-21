@@ -74,7 +74,7 @@ export default function PantallaMaterialesUtilizados() {
           <span className="fw-semibold">{fila.codigo}</span>
           <span className="text-body-secondary"> — {fila.nombre}</span>
           <div className="d-md-none text-body-secondary small">
-            Cantidad: {fila.cantidad} · {formatearFecha(fila.fecha)}
+            Cantidad: {fila.cantidad} {fila.unidadMedida} · {formatearFecha(fila.fecha)}
           </div>
         </>
       ),
@@ -83,7 +83,7 @@ export default function PantallaMaterialesUtilizados() {
       clave: 'cantidad',
       encabezado: 'Cantidad',
       ocultarDebajoDe: 'md',
-      render: (fila) => fila.cantidad,
+      render: (fila) => `${fila.cantidad} ${fila.unidadMedida}`,
     },
     {
       clave: 'fecha',

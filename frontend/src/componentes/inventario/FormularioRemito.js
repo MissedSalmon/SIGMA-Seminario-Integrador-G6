@@ -202,6 +202,7 @@ export default function FormularioRemito({ onGuardar }) {
             clave: renglon.clave,
             codigo: renglon.codigo,
             nombre: item?.nombre ?? renglon.codigo,
+            unidadMedida: item?.unidadMedida ?? null,
             // Las herramientas no llevan stock: les queda en null.
             stockActual: item?.stockActual ?? null,
             cantidad,
@@ -255,7 +256,7 @@ export default function FormularioRemito({ onGuardar }) {
   // El catalogo entero: es lo unico que se puede ingresar.
   const opcionesItems = catalogo.map((item) => ({
     valor: item.codigo,
-    texto: `${item.codigo} — ${item.nombre}`,
+    texto: `${item.codigo} — ${item.nombre}${item.unidadMedida ? ` (${item.unidadMedida})` : ''}`,
   }));
 
   if (catalogoVacio) {
@@ -388,14 +389,16 @@ export default function FormularioRemito({ onGuardar }) {
 
                       <CTableDataCell className="text-center">
                         <span className="text-body-secondary">
-                          {item?.stockActual ?? '-'}
+                          {item?.stockActual == null
+                            ? '-'
+                            : `${item.stockActual} ${item.unidadMedida ?? ''}`}
                         </span>
                       </CTableDataCell>
 
                       <CTableDataCell>
                         <Campo
                           id={`cantidad-${renglon.clave}`}
-                          etiqueta="Cantidad"
+                          etiqueta={`Cantidad${item?.unidadMedida ? ` (${item.unidadMedida})` : ''}`}
                           tipo="numero"
                           valor={renglon.cantidad}
                           alCambiar={(valor) => cambiarRenglon(renglon.clave, 'cantidad', valor)}
@@ -500,13 +503,16 @@ export default function FormularioRemito({ onGuardar }) {
                       <span className="fw-semibold">{renglon.codigo}</span>
                       <span className="text-body-secondary"> — {renglon.nombre}</span>
                     </CTableDataCell>
-                    <CTableDataCell>+{renglon.cantidad}</CTableDataCell>
+                    <CTableDataCell>
+                      +{renglon.cantidad} {renglon.unidadMedida ?? ''}
+                    </CTableDataCell>
                     <CTableDataCell className="text-body-secondary">
                       {renglon.stockActual === null ? (
                         '-'
                       ) : (
                         <>
-                          {renglon.stockActual} → <strong>{renglon.stockNuevo}</strong>
+                          {renglon.stockActual} → <strong>{renglon.stockNuevo}</strong>{' '}
+                          {renglon.unidadMedida ?? ''}
                         </>
                       )}
                     </CTableDataCell>

@@ -141,10 +141,23 @@ beforeEach(() => {
 describe('Servicios analíticos del Panel (BE-03)', () => {
   test('obtenerResumenGeneral devuelve KPIs y lista de materiales críticos', async () => {
     supabase.rpc.mockResolvedValueOnce({ data: MOCK_RESUMEN_GENERAL, error: null });
+    supabase.from.mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      in: jest.fn().mockReturnThis(),
+      then: (resolve) =>
+        resolve({
+          data: [
+            { mat_cod: 'MAT-01', mat_unidad_medida: 'metro' },
+            { mat_cod: 'MAT-02', mat_unidad_medida: 'litro' },
+          ],
+          error: null,
+        }),
+    });
     const res = await obtenerResumenGeneral();
     expect(supabase.rpc).toHaveBeenCalledWith('estadistica_resumen_general');
     expect(res.operatividad.porcentaje).toBe(94.7);
     expect(res.materialesBajoMinimo.items).toHaveLength(2);
+    expect(res.materialesBajoMinimo.items.map((item) => item.unidadMedida)).toEqual(['metro', 'litro']);
   });
 
   test('obtenerDistribucionActivos devuelve estados y edificios con totales', async () => {
@@ -211,6 +224,7 @@ describe('Servicios analíticos del Panel (BE-03)', () => {
       lte: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
       range: jest.fn().mockReturnThis(),
+      in: jest.fn().mockReturnThis(),
       then: (resolve) => resolve({ data: [], error: null }),
     });
 
@@ -305,6 +319,7 @@ describe('Rutas HTTP del Panel (BE-01, BE-02): Autorización exclusiva administr
       lte: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
       range: jest.fn().mockReturnThis(),
+      in: jest.fn().mockReturnThis(),
       then: (resolve) => resolve({ data: [], error: null }),
     });
 

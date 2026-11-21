@@ -20,7 +20,7 @@ async function delAdministrador() {
     notificaciones: alertas.map((alerta) => ({
       clave: `stock-${alerta.codigo}`,
       titulo: `Stock bajo: ${alerta.nombre}`,
-      detalle: `Quedan ${alerta.stockActual} · mínimo ${alerta.stockMinimo}`,
+      detalle: `Quedan ${alerta.stockActual} ${alerta.unidadMedida || 'unidad'} · mínimo ${alerta.stockMinimo} ${alerta.unidadMedida || 'unidad'}`,
       enlace: `/inventario/materiales/${encodeURIComponent(alerta.codigo)}`,
     })),
   };

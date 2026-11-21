@@ -63,14 +63,14 @@ const COLUMNAS = `
  * Los datos de cada codigo, sea material o herramienta. El catalogo vive en dos
  * tablas y el codigo es unico entre las dos, asi que no hay una clave foranea
  * que las una: se buscan por separado. Devuelve un Map
- * codigo -> { nombre, clase, stockActual }. Las herramientas no llevan stock.
+ * codigo -> { nombre, clase, unidadMedida, stockActual }. Las herramientas no llevan stock.
  */
 async function detallesDeItems(codigos) {
   const detalles = new Map();
   if (codigos.length === 0) return detalles;
 
   const [materiales, herramientas] = await Promise.all([
-    supabase.from('material').select('mat_cod, mat_nom, mat_stock_actual').in('mat_cod', codigos),
+    supabase.from('material').select('mat_cod, mat_nom, mat_stock_actual, mat_unidad_medida').in('mat_cod', codigos),
     supabase.from('herramienta').select('herr_cod, herr_nom').in('herr_cod', codigos),
   ]);
 
@@ -81,11 +81,12 @@ async function detallesDeItems(codigos) {
     detalles.set(fila.mat_cod, {
       nombre: fila.mat_nom,
       clase: 'Material',
+      unidadMedida: fila.mat_unidad_medida || 'unidad',
       stockActual: Number(fila.mat_stock_actual ?? 0),
     });
   }
   for (const fila of herramientas.data) {
-    detalles.set(fila.herr_cod, { nombre: fila.herr_nom, clase: 'Herramienta', stockActual: null });
+    detalles.set(fila.herr_cod, { nombre: fila.herr_nom, clase: 'Herramienta', unidadMedida: null, stockActual: null });
   }
 
   return detalles;
@@ -97,6 +98,7 @@ function aRenglon(fila, detalles) {
     codigo: fila.inventarioitemcod,
     nombre: detalle?.nombre ?? '',
     clase: detalle?.clase ?? '',
+    unidadMedida: detalle?.unidadMedida ?? null,
     stockActual: detalle?.stockActual ?? null,
     cantidad: fila.remito_item_cant,
   };

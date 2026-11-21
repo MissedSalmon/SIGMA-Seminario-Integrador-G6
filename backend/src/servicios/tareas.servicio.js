@@ -213,7 +213,7 @@ export async function obtenerDelTecnico(legajo, filtros = {}) {
 async function materialesDeLaTarea(idOt, idTarea) {
   const { data, error } = await supabase
     .from('tarea_ot_consume_material')
-    .select('mat_cod, tamat_cant, tamat_fecha_cons, material ( mat_nom )')
+    .select('mat_cod, tamat_cant, tamat_fecha_cons, material ( mat_nom, mat_unidad_medida )')
     .eq('ot_id', idOt)
     .eq('tarea_id', idTarea)
     .order('tamat_fecha_cons', { ascending: false });
@@ -223,6 +223,7 @@ async function materialesDeLaTarea(idOt, idTarea) {
   return (data ?? []).map((fila) => ({
     codigo: fila.mat_cod,
     nombre: fila.material?.mat_nom ?? fila.mat_cod,
+    unidadMedida: fila.material?.mat_unidad_medida ?? 'unidad',
     cantidad: Number(fila.tamat_cant),
     fecha: fila.tamat_fecha_cons,
   }));
@@ -650,6 +651,7 @@ export async function listarMateriales() {
   return materiales.map((material) => ({
     codigo: material.codigo,
     nombre: material.nombre,
+    unidadMedida: material.unidadMedida,
     stock: material.stockActual,
   }));
 }
@@ -826,7 +828,7 @@ export async function historialMateriales(legajo) {
 
   const { data, error } = await supabase
     .from('tarea_ot_consume_material')
-    .select(`ot_id, tarea_id, mat_cod, tamat_cant, tamat_fecha_cons, material ( mat_nom ), ${TAREA_DEL_HISTORIAL}`)
+    .select(`ot_id, tarea_id, mat_cod, tamat_cant, tamat_fecha_cons, material ( mat_nom, mat_unidad_medida ), ${TAREA_DEL_HISTORIAL}`)
     .in('ot_id', ordenes)
     .order('tamat_fecha_cons', { ascending: false });
   if (error) throw errorDeBase(error, 'de los materiales usados');
@@ -837,6 +839,7 @@ export async function historialMateriales(legajo) {
       fecha: fila.tamat_fecha_cons,
       codigo: fila.mat_cod,
       nombre: fila.material?.mat_nom ?? fila.mat_cod,
+      unidadMedida: fila.material?.mat_unidad_medida ?? 'unidad',
       cantidad: Number(fila.tamat_cant),
       idOt: fila.ot_id,
       idTarea: fila.tarea_id,

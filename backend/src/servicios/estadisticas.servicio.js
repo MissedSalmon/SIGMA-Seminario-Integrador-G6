@@ -367,6 +367,21 @@ export async function obtenerResumenGeneral() {
   const { data, error } = await supabase.rpc('estadistica_resumen_general');
   if (error) throw errorDeBase(error, 'del resumen general del panel');
 
+  const itemsCriticos = data?.materialesBajoMinimo?.items ?? [];
+  if (itemsCriticos.length > 0) {
+    const { data: materiales, error: errorMateriales } = await supabase
+      .from('material')
+      .select('mat_cod, mat_unidad_medida')
+      .in('mat_cod', itemsCriticos.map((item) => item.codigo));
+    if (errorMateriales) throw errorDeBase(errorMateriales, 'de las unidades de medida del panel');
+
+    const unidades = new Map((materiales ?? []).map((material) => [material.mat_cod, material.mat_unidad_medida || 'unidad']));
+    data.materialesBajoMinimo.items = itemsCriticos.map((item) => ({
+      ...item,
+      unidadMedida: unidades.get(item.codigo) ?? 'unidad',
+    }));
+  }
+
   // Identificar los tipos de activo sin plan preventivo vigente (brechas accionables)
   if (data?.coberturaPreventiva) {
     try {

@@ -44,7 +44,7 @@ export default function DialogoMaterial({ idOt, idTarea, onCerrar, onGuardado })
   const conStock = materiales.filter((material) => material.stock > 0);
   const opciones = conStock.map((material) => ({
     valor: material.codigo,
-    texto: `${material.codigo} — ${material.nombre} (quedan ${material.stock})`,
+    texto: `${material.codigo} — ${material.nombre} (quedan ${material.stock} ${material.unidadMedida})`,
   }));
 
   const elegido = materiales.find((material) => material.codigo === codigo) ?? null;
@@ -58,7 +58,7 @@ export default function DialogoMaterial({ idOt, idTarea, onCerrar, onGuardado })
   } else if (!Number.isInteger(Number(texto)) || Number(texto) <= 0) {
     errores.cantidad = 'Tiene que ser un número entero mayor que cero.';
   } else if (stock !== null && Number(texto) > stock) {
-    errores.cantidad = `Quedan ${stock}: no podés usar más.`;
+    errores.cantidad = `Quedan ${stock} ${elegido?.unidadMedida ?? 'unidad'}: no podés usar más.`;
   }
   const hayErrores = Object.keys(errores).length > 0;
 
@@ -113,7 +113,7 @@ export default function DialogoMaterial({ idOt, idTarea, onCerrar, onGuardado })
             />
             <Campo
               id="cantidad"
-              etiqueta="Cantidad usada"
+              etiqueta={`Cantidad usada (${elegido?.unidadMedida ?? 'unidad'})`}
               tipo="numero"
               valor={cantidad}
               alCambiar={setCantidad}
@@ -126,7 +126,7 @@ export default function DialogoMaterial({ idOt, idTarea, onCerrar, onGuardado })
             />
             {elegido && !errores.cantidad && (
               <p className="mb-0 text-body-secondary">
-                Stock: {stock} → <strong>{stock - Number(texto)}</strong>
+                Stock: {stock} → <strong>{stock - Number(texto)}</strong> {elegido.unidadMedida}
               </p>
             )}
           </>

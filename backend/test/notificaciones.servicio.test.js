@@ -29,7 +29,7 @@ afterEach(() => {
 describe('obtenerDelUsuario', () => {
   test('el administrador recibe las alertas de stock minimo', async () => {
     obtenerAlertasStock.mockResolvedValue([
-      { codigo: 'CA-1', nombre: 'Cable', stockActual: 2, stockMinimo: 10, faltante: 8 },
+      { codigo: 'CA-1', nombre: 'Cable', unidadMedida: 'metro', stockActual: 2, stockMinimo: 10, faltante: 8 },
     ]);
 
     const resultado = await obtenerDelUsuario({ rol: 'administrador', identificador: 'admin' });
@@ -40,7 +40,7 @@ describe('obtenerDelUsuario', () => {
         {
           clave: 'stock-CA-1',
           titulo: 'Stock bajo: Cable',
-          detalle: 'Quedan 2 · mínimo 10',
+          detalle: 'Quedan 2 metro · mínimo 10 metro',
           enlace: '/inventario/materiales/CA-1',
         },
       ],

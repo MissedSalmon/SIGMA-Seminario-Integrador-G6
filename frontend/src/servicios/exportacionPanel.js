@@ -619,7 +619,13 @@ export function generarDocumentoPdf(payloadPanel) {
       { titulo: 'Faltante', ancho: 22, alinear: 'right' },
     ],
     filas: (materiales.items ?? []).map((m) => ({
-      celdas: [m.codigo, m.nombre, numero(m.stockActual), numero(m.stockMinimo), numero(m.faltante)],
+      celdas: [
+        m.codigo,
+        m.nombre,
+        `${numero(m.stockActual)} ${m.unidadMedida ?? ''}`.trim(),
+        `${numero(m.stockMinimo)} ${m.unidadMedida ?? ''}`.trim(),
+        `${numero(m.faltante)} ${m.unidadMedida ?? ''}`.trim(),
+      ],
     })),
     vacio: 'Ningún material está por debajo de su stock mínimo.',
   });

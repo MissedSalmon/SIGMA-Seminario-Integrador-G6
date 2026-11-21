@@ -33,6 +33,8 @@ import Campo from '@/componentes/formulario/Campo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarTiposInventario } from '@/servicios/inventario.js';
 
+const UNIDADES_MEDIDA = ['par', 'unidad', 'metro', 'pulgada', 'kilogramo', 'litro', 'metro cuadrado'];
+
 /** "Se agrego el material" / "Se agrego la herramienta". */
 function elArticulo(clase) {
   return clase === 'Herramienta' ? 'la herramienta' : 'el material';
@@ -53,6 +55,7 @@ export default function FormularioMaterialHerramienta({ clase, articulo = null, 
   const [codigo, setCodigo] = useState(articulo?.codigo ?? '');
   const [nombre, setNombre] = useState(articulo?.nombre ?? '');
   const [descripcion, setDescripcion] = useState(articulo?.descripcion ?? '');
+  const [unidadMedida, setUnidadMedida] = useState(articulo?.unidadMedida ?? 'unidad');
   const [idTipo, setIdTipo] = useState(articulo?.idTipo ?? '');
   const [stockMinimo, setStockMinimo] = useState(articulo?.stockMinimo ?? '');
 
@@ -80,13 +83,14 @@ export default function FormularioMaterialHerramienta({ clase, articulo = null, 
 
     if (!codigo.trim()) encontrados.codigo = 'El código es obligatorio y no se puede repetir.';
     if (!nombre.trim()) encontrados.nombre = 'El nombre es obligatorio.';
+    if (esMaterial && !UNIDADES_MEDIDA.includes(unidadMedida)) encontrados.unidadMedida = 'Elegí la unidad de medida.';
     if (!idTipo) encontrados.idTipo = 'Elegí la categoría.';
     if (esMaterial && String(stockMinimo).trim() === '') {
       encontrados.stockMinimo = 'Indicá desde qué cantidad hay que reponer.';
     }
 
     return encontrados;
-  }, [codigo, nombre, idTipo, esMaterial, stockMinimo]);
+  }, [codigo, nombre, unidadMedida, idTipo, esMaterial, stockMinimo]);
 
   const hayErrores = Object.keys(errores).length > 0;
 
@@ -102,6 +106,7 @@ export default function FormularioMaterialHerramienta({ clase, articulo = null, 
         codigo: codigo.trim(),
         nombre: nombre.trim(),
         descripcion: descripcion.trim(),
+        unidadMedida: esMaterial ? unidadMedida : null,
         clase,
         idTipo: Number(idTipo),
         stockMinimo: esMaterial ? Number(stockMinimo) : null,
@@ -125,6 +130,7 @@ export default function FormularioMaterialHerramienta({ clase, articulo = null, 
     valor: tipo.idTipo,
     texto: tipo.nombre,
   }));
+  const opcionesUnidades = UNIDADES_MEDIDA.map((unidad) => ({ valor: unidad, texto: unidad }));
 
   return (
     <CCard>
@@ -174,6 +180,22 @@ export default function FormularioMaterialHerramienta({ clase, articulo = null, 
               revisado={revisado}
               error={errores.nombre}
             />
+
+            {esMaterial && (
+              <Campo
+                id="unidadMedida"
+                etiqueta="Unidad de medida"
+                tipo="lista"
+                valor={unidadMedida}
+                alCambiar={setUnidadMedida}
+                opciones={opcionesUnidades}
+                placeholder="Elegir unidad"
+                obligatorio
+                ancho={18}
+                revisado={revisado}
+                error={errores.unidadMedida}
+              />
+            )}
 
             {/* El estado solo existe para una herramienta: un material no lo tiene. */}
             {editando && !esMaterial && (

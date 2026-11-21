@@ -80,12 +80,21 @@ export default function PantallaMateriales() {
       encabezado: 'Categoría',
       render: (fila) => <span className="text-body-secondary">{fila.nombreTipo || '-'}</span>,
     },
-    { clave: 'stockMinimo', encabezado: 'Stock mínimo', render: (fila) => fila.stockMinimo },
+    {
+      clave: 'stockMinimo',
+      encabezado: 'Stock mínimo',
+      render: (fila) => fila.stockMinimo,
+    },
     {
       clave: 'stockActual',
       encabezado: 'Stock actual',
       render: (fila) =>
         fila.bajoMinimo ? <span className="sigma-stock-bajo">{fila.stockActual}</span> : fila.stockActual,
+    },
+    {
+      clave: 'unidadMedida',
+      encabezado: 'Unidad de medida',
+      render: (fila) => fila.unidadMedida,
     },
     {
       clave: 'acciones',

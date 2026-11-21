@@ -57,9 +57,21 @@ function AlertasDeStock() {
       encabezado: 'Categoría',
       render: (fila) => <span className="text-body-secondary">{fila.nombreTipo || '-'}</span>,
     },
-    { clave: 'stockActual', encabezado: 'Stock actual', render: (fila) => fila.stockActual },
-    { clave: 'stockMinimo', encabezado: 'Stock mínimo', render: (fila) => fila.stockMinimo },
-    { clave: 'faltante', encabezado: 'Falta', render: (fila) => <span className="fw-semibold">{fila.faltante}</span> },
+    {
+      clave: 'stockActual',
+      encabezado: 'Stock actual',
+      render: (fila) => `${fila.stockActual} ${fila.unidadMedida}`,
+    },
+    {
+      clave: 'stockMinimo',
+      encabezado: 'Stock mínimo',
+      render: (fila) => `${fila.stockMinimo} ${fila.unidadMedida}`,
+    },
+    {
+      clave: 'faltante',
+      encabezado: 'Falta',
+      render: (fila) => <span className="fw-semibold">{fila.faltante} {fila.unidadMedida}</span>,
+    },
     {
       clave: 'acciones',
       encabezado: 'Acciones',
