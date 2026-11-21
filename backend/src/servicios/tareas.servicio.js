@@ -22,6 +22,7 @@
  */
 import { supabase } from '../config/supabase.js';
 import { conflicto, datoInvalido, errorDeBase, noEncontrado } from '../utiles/errores.js';
+import { nombreDelEspacio } from '../utiles/espacios.js';
 import {
   ENUM_ESTADO_ACTIVO,
   ENUM_ESTADO_ASIGNACION_TECNICO,
@@ -91,13 +92,6 @@ const COLUMNAS = `
  */
 function soloElDia(valor) {
   return valor ? String(valor).slice(0, 10) : null;
-}
-
-/** "Aula 11", o "Espacio 11" si el espacio no tiene tipo. */
-function nombreDelEspacio(espacio) {
-  return espacio.tipo_espacio
-    ? `${espacio.tipo_espacio.tipo_espacio_nom} ${espacio.espacio_num}`
-    : `Espacio ${espacio.espacio_num}`;
 }
 
 /**

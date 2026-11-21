@@ -248,6 +248,15 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 > - Un solicitante es responsable de un área como máximo: la base lo exige con
 >   `uq_area_autorizado`.
 > - Al eliminar un área, sus espacios quedan sin área.
+> - **El área de un ticket se calcula con el espacio de hoy, no se guarda.** Si un espacio cambia
+>   de área, sus tickets viejos pasan a la nueva, en el listado y en las estadísticas.
+> - **El nombre de un espacio es su tipo y su número** («Aula 1.1»): la base no guarda un nombre
+>   propio y no hace falta. Se arma en `backend/src/utiles/espacios.js` y se muestra en activos,
+>   tickets y órdenes de trabajo.
+> - **Datos de prueba en la base (21/11/2026):** área **Bedelía** con las tres aulas (Aula 1.1 y
+>   Aula 1.6 del Edificio Central, Aula 0.2 del Anexo I; el Aula 1.1 era de Electromecánica, que
+>   quedó sin espacios), solicitante **Bedelía Prueba** (legajo 7001) y su ticket **#43**. El
+>   mismo caso está automatizado en `backend/test/reglas.bedelia.test.js`.
 > - ⬜ **Pendiente de confirmar** con el Secretario de Infraestructura si un espacio puede ser de
 >   dos áreas a la vez. Si pasa, la idea es crear un área común (por ejemplo «Aulas compartidas»).
 
@@ -256,7 +265,8 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 >   guarda su legajo (`ticket.autorizado_legajo`). El administrador no ve el botón «Agregar»
 >   en Tickets y la API le responde 403 (`POST /api/tickets`). Antes podía entrar al formulario,
 >   pero el alta fallaba porque su legajo no es el de un autorizado.
->   Al guardar, la app lleva al detalle del ticket recién creado.
+>   Al guardar, la app vuelve al listado de tickets, donde el nuevo queda primero (21/11/2026;
+>   antes llevaba al detalle del ticket).
 > - **El autorizado sólo reporta activos de sus áreas.** El buscador del alta lista los activos
 >   de los espacios de las áreas que tiene a cargo (`area.autorizado_legajo` → `espacio.area_id`
 >   desde el 21/11/2026),
@@ -421,7 +431,8 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 > - **El técnico ejecuta la tarea desde su detalle.** "Iniciar tarea" la pasa de Creada,
 >   Asignada o Pendiente a **En ejecución**; "Finalizar tarea" la pasa de En ejecución a
 >   **Finalizada** (la HU dice "Completada": es el mismo estado, que en el diccionario se llama
->   Finalizada). Las dos piden confirmación.
+>   Finalizada). Las dos piden confirmación. Al finalizar, la app vuelve a «Tareas asignadas»
+>   (21/11/2026).
 > - **Al iniciar**, se mueve en cadena lo que corresponde, y sólo hacia adelante: la
 >   asignación del técnico pasa a En curso, la OT a En ejecución (si estaba Creada o
 >   Asignada), el ticket a En ejecución (si estaba Validado o Asignado) y el **activo a En
@@ -458,7 +469,8 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 >   fecha va sin la hora; los filtros "Desde" y "Hasta" toman el día en la hora local.
 > - **Herramientas utilizadas: una fila por préstamo** *(25/10/2026)*, cada vez que la tomó,
 >   como materiales tiene una fila por consumo. Columnas Herramienta, Estado, Desde, Hasta,
->   Tarea y Acción ("Devolver", sólo en la que tiene todavía). El estado va con una etiqueta
+>   Tarea y Acción ("Devolver", sólo en la que tiene todavía; se sacó el 10/11/2026 y volvió el
+>   21/11/2026). El estado va con una etiqueta
 >   (punto + texto, como el de la OT): **celeste = En uso** (la tiene a su nombre y la puede
 >   devolver) y **gris = Devuelta** (ya no la tiene; queda como historial). Primero las En uso. Reemplaza a
 >   la fila por herramienta con las columnas "Último uso" y "Veces" y la ventana "Ver OT"

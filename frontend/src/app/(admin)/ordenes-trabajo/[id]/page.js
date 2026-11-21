@@ -294,7 +294,7 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
                         <CCol sm={6}>
                           <Dato etiqueta="Ubicación">
                             {orden.activo.nombreEdificio || orden.activo.espacio_num
-                              ? `${orden.activo.nombreEdificio} — Espacio ${orden.activo.espacio_num}`
+                              ? `${orden.activo.nombreEdificio} — ${orden.activo.nombreEspacio}`
                               : '-'}
                           </Dato>
                         </CCol>

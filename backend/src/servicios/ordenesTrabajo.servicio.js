@@ -9,6 +9,7 @@ import {
   ENUM_ESTADO_TICKET,
   ENUM_PRIORIDAD,
 } from '../utiles/enumerados.js';
+import { nombreDelEspacio } from '../utiles/espacios.js';
 
 /**
  * Ordenes de trabajo (HU-14: crear la OT a partir de un ticket).
@@ -186,6 +187,7 @@ const COLUMNAS = `
     tipo_activo ( tipo_activo_nom ),
     espacio (
       espacio_num,
+      tipo_espacio ( tipo_espacio_nom ),
       edificio ( edificio_nom ),
       area ( area_id, area_nom )
     )
@@ -201,6 +203,7 @@ const COLUMNAS = `
       tipo_activo ( tipo_activo_nom ),
       espacio (
         espacio_num,
+        tipo_espacio ( tipo_espacio_nom ),
         edificio ( edificio_nom ),
         area ( area_id, area_nom )
       )
@@ -221,6 +224,7 @@ const COLUMNAS = `
       ),
       espacio (
         espacio_num,
+        tipo_espacio ( tipo_espacio_nom ),
         edificio (
           edificio_nom
         ),
@@ -391,6 +395,7 @@ function aOrden(fila, asignaciones = []) {
           nombreTipo: activo.tipo_activo?.tipo_activo_nom ?? '',
           nombreEdificio: espacio?.edificio?.edificio_nom ?? '',
           espacio_num: espacio?.espacio_num ?? '',
+          nombreEspacio: nombreDelEspacio(espacio),
         }
       : null,
     nombreArea: area?.area_nom ?? '',

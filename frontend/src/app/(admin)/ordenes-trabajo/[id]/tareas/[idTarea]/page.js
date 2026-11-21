@@ -285,7 +285,7 @@ export default function PantallaDetalleTareaOT({ params }) {
                             </Dato>
                           </CCol>
                           <CCol sm={6}>
-                            <Dato etiqueta="Espacio">{tarea.activo.espacio_num || <SinDato>-</SinDato>}</Dato>
+                            <Dato etiqueta="Espacio">{tarea.activo.nombreEspacio || <SinDato>-</SinDato>}</Dato>
                           </CCol>
                         </CRow>
                         <Dato etiqueta="Área">{tarea.nombreArea || <SinDato>Sin área</SinDato>}</Dato>
