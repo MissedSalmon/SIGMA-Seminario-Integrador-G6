@@ -23,7 +23,7 @@ import { normalizarRol } from '@/utils/roles.js';
 const NOMBRE_ROL = {
   administrador: 'Administrador',
   tecnico: 'Técnico',
-  autorizado: 'Usuario autorizado',
+  autorizado: 'Solicitante',
 };
 
 /**

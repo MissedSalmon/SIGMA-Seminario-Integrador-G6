@@ -160,8 +160,8 @@ export default function PantallaAutorizados() {
             cargando={cargando}
             textoVacio={
               filtroArea || filtroEstado
-                ? 'No hay usuarios autorizados con ese filtro.'
-                : 'Todavía no hay usuarios autorizados cargados.'
+                ? 'No hay solicitantes con ese filtro.'
+                : 'Todavía no hay solicitantes cargados.'
             }
             accionVacio={filtroArea || filtroEstado ? undefined : { direccion: '/autorizados/agregar' }}
           />

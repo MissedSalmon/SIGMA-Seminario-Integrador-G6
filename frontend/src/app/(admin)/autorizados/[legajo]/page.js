@@ -40,7 +40,7 @@ export default function PantallaFichaAutorizado({ params }) {
   return (
     <>
       <EncabezadoPagina
-        titulo={autorizado ? autorizado.nombre : 'Usuario autorizado'}
+        titulo={autorizado ? autorizado.nombre : 'Solicitante'}
         accionesExtra={
           autorizado && (
             <AccionesFicha
@@ -51,7 +51,7 @@ export default function PantallaFichaAutorizado({ params }) {
               avisoEliminar={
                 <>
                   <p className="mb-0">
-                    Se va a eliminar al usuario autorizado <strong>{autorizado.nombre}</strong>.
+                    Se va a eliminar al solicitante <strong>{autorizado.nombre}</strong>.
                   </p>
                   <p className="text-body-secondary mt-2 mb-0">
                     Sólo se puede eliminar si nunca registró nada: si ya cargó tickets, desactivalo. El
@@ -69,7 +69,7 @@ export default function PantallaFichaAutorizado({ params }) {
       <Aviso mensaje={error} onCerrar={() => setError('')} />
 
       {cargando ? (
-        <Cargando texto="Cargando el usuario autorizado..." />
+        <Cargando texto="Cargando el solicitante..." />
       ) : (
         autorizado && (
           <CCard className="mb-4">
