@@ -50,6 +50,9 @@ const COLUMNAS = `
     espacio (
       espacio_id,
       espacio_num,
+      tipo_espacio (
+        tipo_espacio_nom
+      ),
       edificio (
         edificio_nom
       ),
@@ -113,6 +116,11 @@ function aTicket(fila) {
           estado: ENUM_ESTADO_ACTIVO.texto(activo.activo_estado) ?? '',
           nombreEdificio: espacio?.edificio?.edificio_nom ?? '',
           espacio_num: espacio?.espacio_num ?? '',
+          nombreEspacio: espacio
+            ? espacio.tipo_espacio
+              ? `${espacio.tipo_espacio.tipo_espacio_nom} ${espacio.espacio_num}`
+              : `Espacio ${espacio.espacio_num}`
+            : '',
         }
       : null,
     idArea: area?.area_id ?? null,

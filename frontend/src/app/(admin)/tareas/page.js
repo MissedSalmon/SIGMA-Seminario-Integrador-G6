@@ -15,7 +15,6 @@
  * - Cada fila lleva al detalle de la tarea (activo, ubicación y OT).
  */
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilDescription } from '@coreui/icons';
@@ -130,13 +129,11 @@ export default function PantallaMisTareas() {
     {
       clave: 'descripcion',
       encabezado: 'Tarea',
-      // La descripcion es el enlace a la tarea: en el celular es lo mas facil de tocar.
+      // La descripcion es solo texto: a la tarea se entra con el boton de la columna Accion.
       // Debajo de 992px el activo y la ubicacion van aca, porque sus columnas se ocultan.
       render: (tarea) => (
         <>
-          <Link href={`/tareas/${tarea.idOt}/${tarea.idTarea}`} className="fw-semibold sigma-enlace-tocable">
-            {tarea.descripcion}
-          </Link>
+          <span className="fw-semibold">{tarea.descripcion}</span>
           {(tarea.activo || tarea.ubicacion) && (
             <div className="d-lg-none text-body-secondary small">
               {[tarea.activo?.codigo, tarea.ubicacion?.edificio, tarea.ubicacion?.espacio].filter(Boolean).join(' · ')}

@@ -307,8 +307,8 @@ export default function PantallaDetalleTicket({ params }) {
                         </CCol>
                         <CCol sm={12}>
                           <Dato etiqueta="Ubicación">
-                            {ticket.activo.nombreEdificio || ticket.activo.espacio_num
-                              ? `${ticket.activo.nombreEdificio} — Espacio ${ticket.activo.espacio_num}`
+                            {ticket.activo.nombreEdificio || ticket.activo.nombreEspacio
+                              ? `${ticket.activo.nombreEdificio} — ${ticket.activo.nombreEspacio}`
                               : '-'}
                           </Dato>
                         </CCol>
