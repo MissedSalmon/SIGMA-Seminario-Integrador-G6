@@ -322,7 +322,9 @@ export default function FormularioTicket({ onGuardar }) {
                   ))}
                 </ul>
               )}
-              {verTicketsEnProceso && <ReferenciaEtapas />}
+              {verTicketsEnProceso && (
+                <ReferenciaEtapas de="ticket" estados={ticketsEnProceso.map((ticket) => ticket.estado)} />
+              )}
             </CAlert>
           )}
 

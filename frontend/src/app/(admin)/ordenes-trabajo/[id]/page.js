@@ -201,7 +201,7 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
           )
         } />
       {/* Que significa el color de cada sello (regla 6). */}
-      <ReferenciaEtapas className="mt-0 mb-3" />
+      <ReferenciaEtapas className="mt-0 mb-3" de="ot" estados={[orden?.estado]} />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
 

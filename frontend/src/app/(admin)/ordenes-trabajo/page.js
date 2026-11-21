@@ -192,7 +192,7 @@ export default function PantallaOrdenesTrabajo() {
       <CCard>
         <CCardBody>
           <TablaDatos
-            antesDeLaTabla={<ReferenciaEtapas className="mt-0 mb-3" de="ot" />}
+            antesDeLaTabla={<ReferenciaEtapas className="mt-0 mb-3" de="ot" estados={ordenes.map((orden) => orden.estado)} />}
             filas={ordenes}
             claveFila={(orden) => orden.id}
             columnas={columnas}

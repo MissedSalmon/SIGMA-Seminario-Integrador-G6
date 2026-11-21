@@ -240,7 +240,7 @@ export default function PantallaDetalleTicket({ params }) {
         descripcion={ticket ? ticket.descripcion : undefined}
       />
       {/* Que significa el color de cada sello (regla 6). */}
-      <ReferenciaEtapas className="mt-0 mb-3" />
+      <ReferenciaEtapas className="mt-0 mb-3" de="ticket" estados={[ticket?.estado]} />
 
       {/* En que punto del ciclo esta el ticket, para quien lo reporto y para el administrador. */}
       {ticket && <LineaEtapasTicket estado={ticket.estado} />}

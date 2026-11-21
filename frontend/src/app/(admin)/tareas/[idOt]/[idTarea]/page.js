@@ -222,7 +222,7 @@ export default function PantallaDetalleMiTarea({ params }) {
         accionesExtra={acciones}
       />
       {/* Que significa el color de cada sello (regla 6). */}
-      <ReferenciaEtapas de="ot" className="mt-0 mb-3" />
+      <ReferenciaEtapas de="ot" className="mt-0 mb-3" estados={[tarea?.estado]} />
 
       <Aviso mensaje={error} />
 

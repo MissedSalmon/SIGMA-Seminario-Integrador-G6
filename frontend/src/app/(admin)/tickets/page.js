@@ -181,7 +181,7 @@ export default function PantallaTickets() {
       <CCard>
         <CCardBody>
           <TablaDatos
-            antesDeLaTabla={<ReferenciaEtapas className="mt-0 mb-3" de="ticket" />}
+            antesDeLaTabla={<ReferenciaEtapas className="mt-0 mb-3" de="ticket" estados={tickets.map((ticket) => ticket.estado)} />}
             filas={tickets}
             claveFila={(ticket) => ticket.id}
             columnas={columnas}
