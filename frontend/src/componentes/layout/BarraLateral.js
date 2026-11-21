@@ -19,23 +19,21 @@
  * se arma el <ul> a mano y el acordeon lo llevamos nosotros, mas abajo.
  */
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
   CSidebar,
   CSidebarBrand,
-  CSidebarFooter,
   CSidebarHeader,
   CNavItem,
   CNavLink,
   CNavTitle,
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilMenu, cilAccountLogout } from '@coreui/icons';
+import { cilMenu } from '@coreui/icons';
 
 import { navegacion } from './navegacion.js';
 import { useLayout } from './ContextoLayout.js';
 import { useSesion } from './ContextoSesion.js';
-import { logout } from '@/servicios/auth.js';
 import { normalizarRol, inicioPorRol } from '@/utils/roles.js';
 
 /** Devuelve true si el item debe mostrarse al rol dado. Sin propiedad roles = visible para todos. */
@@ -78,7 +76,6 @@ function buscarActiva(direccionActual, direcciones) {
 }
 
 export default function BarraLateral() {
-  const router = useRouter();
   const { barraVisible, setBarraVisible } = useLayout();
   const { usuario } = useSesion();
   const rol = normalizarRol(usuario?.rol ?? null);
@@ -88,16 +85,6 @@ export default function BarraLateral() {
   // Solo se calculan las direcciones de los items que el usuario puede ver.
   const opcionesVisibles = navegacion.filter((opcion) => visible(opcion, rol));
   const direccionActiva = buscarActiva(direccionActual, juntarDirecciones(opcionesVisibles));
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-    } finally {
-      window.location.replace('/login');
-    }
-  };
 
   /** El enlace directo de una opcion. */
   function enlace(opcion) {
@@ -148,24 +135,6 @@ export default function BarraLateral() {
           return enlace(opcion);
         })}
       </ul>
-
-      <CSidebarFooter className="border-top d-flex flex-column px-3 py-2 gap-1">
-        {usuario && (
-          <div className="sigma-menu-secundario" style={{ fontSize: '0.8rem' }}>
-            {usuario.admin_nom_ape || usuario.tecnico_nom_ape || usuario.autorizado_nom_ape || usuario.identificador}
-          </div>
-        )}
-        <button
-          type="button"
-          className="btn btn-link text-white-50 text-decoration-none d-flex align-items-center gap-2 p-1 border-0"
-          onClick={handleLogout}
-          title="Cerrar sesión"
-          style={{ cursor: 'pointer' }}
-        >
-          <CIcon icon={cilAccountLogout} />
-          <span style={{ fontSize: '0.92rem', fontWeight: 500 }}>Cerrar sesión</span>
-        </button>
-      </CSidebarFooter>
     </CSidebar>
   );
 }
