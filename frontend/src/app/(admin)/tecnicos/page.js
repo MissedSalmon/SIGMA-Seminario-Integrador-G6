@@ -25,13 +25,14 @@ import {
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { listarEspecialidades } from '@/servicios/especialidades.js';
 import { listarTecnicos, eliminarTecnico } from '@/servicios/tecnicos.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 export default function PantallaTecnicos() {
   const [tecnicos, setTecnicos] = useState([]);
   const [especialidades, setEspecialidades] = useState([]);
-  const [filtroEspecialidad, setFiltroEspecialidad] = useState('');
-  const [filtroDisponibilidad, setFiltroDisponibilidad] = useState('');
-  const [filtroEstado, setFiltroEstado] = useState('');
+  const [filtroEspecialidad, setFiltroEspecialidad] = useFiltroPersistente('especialidad', '');
+  const [filtroDisponibilidad, setFiltroDisponibilidad] = useFiltroPersistente('disponibilidad', '');
+  const [filtroEstado, setFiltroEstado] = useFiltroPersistente('estado', '');
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');

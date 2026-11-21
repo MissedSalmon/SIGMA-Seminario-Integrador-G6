@@ -42,6 +42,7 @@ import GraficoChart, { COLORES_GRAFICO } from '@/componentes/estadisticas/Grafic
 import TalonesAbiertos from '@/componentes/ordenes/TalonesAbiertos.js';
 import { obtenerPanelCompleto } from '@/servicios/estadisticas.js';
 import { hoyTexto } from '@/utils/fechas.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 import { textoTiempo } from '@/utils/duracion.js';
 
 const PRESETS_PERIODO = [
@@ -104,9 +105,9 @@ function Pendiente({ rotulo, cantidad, accion, href }) {
 }
 
 export default function PantallaPanelAdministrador() {
-  const [preset, setPreset] = useState('180d');
-  const [desde, setDesde] = useState(() => restarDias(hoyTexto(), 180));
-  const [hasta, setHasta] = useState(() => hoyTexto());
+  const [preset, setPreset] = useFiltroPersistente('preset', '180d');
+  const [desde, setDesde] = useFiltroPersistente('desde', restarDias(hoyTexto(), 180));
+  const [hasta, setHasta] = useFiltroPersistente('hasta', hoyTexto());
 
   const [panelPayload, setPanelPayload] = useState(null);
   const [cargando, setCargando] = useState(true);

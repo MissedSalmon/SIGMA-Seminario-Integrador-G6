@@ -22,6 +22,7 @@ import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { eliminarItem, listarItems } from '@/servicios/inventario.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 /* El filtro de stock: separa los que hay que reponer de los demas. */
 const BAJO_MINIMO = 'Por debajo del mínimo';
@@ -30,8 +31,8 @@ const SUFICIENTE = 'Suficiente';
 export default function PantallaMateriales() {
   const { mostrarToast } = useToast();
   const [materiales, setMateriales] = useState([]);
-  const [categoria, setCategoria] = useState('');
-  const [filtroStock, setFiltroStock] = useState('');
+  const [categoria, setCategoria] = useFiltroPersistente('categoria', '');
+  const [filtroStock, setFiltroStock] = useFiltroPersistente('stock', '');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [aEliminar, setAEliminar] = useState(null);

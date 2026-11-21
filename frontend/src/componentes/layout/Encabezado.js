@@ -43,6 +43,7 @@ import { useLayout } from './ContextoLayout.js';
 import { useSesion } from './ContextoSesion.js';
 import CampanaNotificaciones, { olvidarAvisadas, ROLES_CON_NOTIFICACIONES } from './CampanaNotificaciones.js';
 import { logout } from '@/servicios/auth.js';
+import { olvidarFiltrosGuardados } from '@/utils/filtros.js';
 import { inicioPorRol } from '@/utils/roles.js';
 import DialogoCambiarContrasena from '@/componentes/usuarios/CambioContrasena.js';
 
@@ -230,6 +231,7 @@ export default function Encabezado() {
       console.error('Error al cerrar sesión:', error);
     } finally {
       olvidarAvisadas?.();
+      olvidarFiltrosGuardados();
       window.location.replace('/login');
     }
   };

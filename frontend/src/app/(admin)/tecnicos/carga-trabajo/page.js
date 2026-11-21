@@ -14,6 +14,7 @@ import BotonEnlace from '@/componentes/BotonEnlace.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { listarEspecialidades } from '@/servicios/especialidades.js';
 import { listarCargaTrabajo } from '@/servicios/tecnicos.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 function direccionDetalle(legajo, desde, hasta) {
   const parametros = new URLSearchParams();
@@ -26,9 +27,9 @@ function direccionDetalle(legajo, desde, hasta) {
 export default function PantallaCargaTrabajo() {
   const [tecnicos, setTecnicos] = useState([]);
   const [especialidades, setEspecialidades] = useState([]);
-  const [filtroEspecialidad, setFiltroEspecialidad] = useState('');
-  const [filtroDesde, setFiltroDesde] = useState('');
-  const [filtroHasta, setFiltroHasta] = useState('');
+  const [filtroEspecialidad, setFiltroEspecialidad] = useFiltroPersistente('especialidad', '');
+  const [filtroDesde, setFiltroDesde] = useFiltroPersistente('desde', '');
+  const [filtroHasta, setFiltroHasta] = useFiltroPersistente('hasta', '');
   const [cargando, setCargando] = useState(true);
   const [errorEspecialidades, setErrorEspecialidades] = useState('');
   const [errorCarga, setErrorCarga] = useState('');

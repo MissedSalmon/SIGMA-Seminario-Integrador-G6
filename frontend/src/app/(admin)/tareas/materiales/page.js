@@ -20,15 +20,16 @@ import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import TareaDelHistorial from '@/componentes/tareas/TareaDelHistorial.js';
 import { listarHistorialMateriales } from '@/servicios/tareas.js';
 import { diaLocal, formatearFecha } from '@/utils/fechas.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 export default function PantallaMaterialesUtilizados() {
   const [filas, setFilas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
-  const [filtroMaterial, setFiltroMaterial] = useState('');
-  const [filtroDesde, setFiltroDesde] = useState('');
-  const [filtroHasta, setFiltroHasta] = useState('');
+  const [filtroMaterial, setFiltroMaterial] = useFiltroPersistente('material', '');
+  const [filtroDesde, setFiltroDesde] = useFiltroPersistente('desde', '');
+  const [filtroHasta, setFiltroHasta] = useFiltroPersistente('hasta', '');
 
   useEffect(() => {
     listarHistorialMateriales()
