@@ -183,7 +183,7 @@ export default function PantallaActivos() {
             href={`/activos/${encodeURIComponent(activo.codigo)}`}
             variante="ghost"
             className="btn-icono"
-            title="Ver la ficha y el historial de intervenciones"
+            title={`Ver detalle de ${activo.codigo}`}
           >
             <CIcon icon={cilDescription} />
           </BotonEnlace>
@@ -194,7 +194,7 @@ export default function PantallaActivos() {
                 href={`/activos/${encodeURIComponent(activo.codigo)}/editar`}
                 variante="ghost"
                 className="btn-icono"
-                title="Editar"
+                title={`Editar ${activo.codigo}`}
               >
                 <CIcon icon={cilPencil} />
               </BotonEnlace>
@@ -203,7 +203,7 @@ export default function PantallaActivos() {
                 color="danger"
                 className="btn-icono"
                 onClick={() => setADarDeBaja(activo)}
-                title="Dar de baja"
+                title={`Dar de baja ${activo.codigo}`}
               >
                 <CIcon icon={cilTrash} />
               </CButton>

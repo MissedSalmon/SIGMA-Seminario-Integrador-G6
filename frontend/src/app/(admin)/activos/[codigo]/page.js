@@ -16,6 +16,10 @@ import {
   CCardBody,
   CCardHeader,
   CCol,
+  CDropdown,
+  CDropdownItem,
+  CDropdownMenu,
+  CDropdownToggle,
   CRow,
   CTable,
   CTableBody,
@@ -25,17 +29,19 @@ import {
   CTableRow,
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilArrowBottom, cilArrowLeft, cilArrowTop, cilPencil } from '@coreui/icons';
+import { cilArrowBottom, cilArrowLeft, cilArrowTop, cilPencil, cilTrash } from '@coreui/icons';
 
 import ReferenciaEtapas from '@/componentes/estados/ReferenciaEtapas.js';
 import Dato from '@/componentes/Dato.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
+import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import { Cargando, SinDatos } from '@/componentes/EstadoTabla.js';
 import EtiquetaEstadoActivo from '@/componentes/activos/EtiquetaEstadoActivo.js';
 import EtiquetaEstadoOT from '@/componentes/ordenes/EtiquetaEstadoOT.js';
-import { obtenerActivo, obtenerHistorialActivo } from '@/servicios/activos.js';
+import { useToast } from '@/componentes/toast/ContextoToast.js';
+import { darDeBajaActivo, obtenerActivo, obtenerHistorialActivo } from '@/servicios/activos.js';
 import { soloFechaLegible } from '@/utils/fechas.js';
 
 /** Texto en gris e itálica para decir que algo no está. */
@@ -117,6 +123,27 @@ export default function PantallaFichaActivo({ params }) {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [recientesPrimero, setRecientesPrimero] = useState(true);
+  const { mostrarToast } = useToast();
+  const [confirmandoBaja, setConfirmandoBaja] = useState(false);
+  const [dandoDeBaja, setDandoDeBaja] = useState(false);
+
+  async function confirmarBaja() {
+    setDandoDeBaja(true);
+    setError('');
+    try {
+      await darDeBajaActivo(activo.codigo);
+      mostrarToast({
+        tipo: 'exito',
+        mensaje: `Se dio de baja el activo "${activo.codigo}". Queda como Retirado.`,
+      });
+      setActivo(await obtenerActivo(codigoActivo));
+    } catch (fallo) {
+      setError(fallo.message);
+    } finally {
+      setConfirmandoBaja(false);
+      setDandoDeBaja(false);
+    }
+  }
 
   // La API ya las manda de la más reciente a la más antigua.
   const intervenciones = useMemo(() => {
@@ -141,17 +168,52 @@ export default function PantallaFichaActivo({ params }) {
         accionesExtra={
           activo &&
           activo.estado !== 'Retirado' && (
-            <BotonEnlace
-              href={`/activos/${encodeURIComponent(activo.codigo)}/editar`}
-              color="secondary"
-              variante="outline"
-            >
-              <CIcon icon={cilPencil} className="me-2" />
-              Editar
-            </BotonEnlace>
+            <>
+              <BotonEnlace
+                href={`/activos/${encodeURIComponent(activo.codigo)}/editar`}
+                color="secondary"
+                variante="outline"
+              >
+                <CIcon icon={cilPencil} className="me-2" />
+                Editar
+              </BotonEnlace>
+              <CDropdown placement="bottom-end">
+                <CDropdownToggle color="secondary" variant="outline">
+                  Opciones
+                </CDropdownToggle>
+                <CDropdownMenu className="shadow-sm border" style={{ minWidth: '14rem' }}>
+                  <CDropdownItem
+                    as="button"
+                    className="d-flex align-items-center gap-2 py-2 text-danger"
+                    onClick={() => setConfirmandoBaja(true)}
+                  >
+                    <CIcon icon={cilTrash} />
+                    Dar de baja
+                  </CDropdownItem>
+                </CDropdownMenu>
+              </CDropdown>
+            </>
           )
         }
       />
+
+      <DialogoEliminar
+        visible={confirmandoBaja}
+        titulo="Confirmar la baja"
+        texto="Dar de baja"
+        textoProcesando="Dando de baja..."
+        eliminando={dandoDeBaja}
+        onConfirmar={confirmarBaja}
+        onCancelar={() => setConfirmandoBaja(false)}
+      >
+        <p className="mb-0">
+          Se va a dar de baja el activo <strong>{activo?.codigo}</strong>.
+        </p>
+        <p className="text-body-secondary mt-2 mb-0">
+          Pasa a estado <strong>Retirado</strong> y deja de estar disponible, pero no se elimina:
+          se conserva su historial de intervenciones.
+        </p>
+      </DialogoEliminar>
       {/* Que significa el color de cada sello (regla 6). */}
       <ReferenciaEtapas className="mt-0 mb-3" de="ot" estados={intervenciones.map((intervencion) => intervencion.estado)} />
 

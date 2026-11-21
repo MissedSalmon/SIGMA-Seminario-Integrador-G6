@@ -14,12 +14,17 @@
  * remito ni de una tarea; queda en el historial como Ingreso manual o Egreso manual.
  */
 import { use, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
-  CButton,
   CCard,
   CCardBody,
   CCardHeader,
   CCol,
+  CDropdown,
+  CDropdownDivider,
+  CDropdownItem,
+  CDropdownMenu,
+  CDropdownToggle,
   CRow,
   CTable,
   CTableBody,
@@ -29,15 +34,17 @@ import {
   CTableRow,
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilArrowLeft, cilPencil, cilSwapVertical } from '@coreui/icons';
+import { cilArrowLeft, cilPencil, cilSwapVertical, cilTrash } from '@coreui/icons';
 
 import Dato from '@/componentes/Dato.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
+import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import { Cargando, SinDatos } from '@/componentes/EstadoTabla.js';
 import DialogoAjusteStock from '@/componentes/inventario/DialogoAjusteStock.js';
-import { listarConsumos, listarMovimientos, obtenerItem } from '@/servicios/inventario.js';
+import { useToast } from '@/componentes/toast/ContextoToast.js';
+import { eliminarItem, listarConsumos, listarMovimientos, obtenerItem } from '@/servicios/inventario.js';
 import { soloFechaLegible } from '@/utils/fechas.js';
 
 /** Los tipos de movimiento que suben el stock; el resto lo bajan. */
@@ -60,6 +67,23 @@ export default function PantallaFichaItem({ params }) {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [ajustando, setAjustando] = useState(false);
+  const router = useRouter();
+  const { mostrarToast } = useToast();
+  const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
+
+  async function confirmarEliminar() {
+    setEliminando(true);
+    try {
+      await eliminarItem(item.codigo);
+      mostrarToast({ tipo: 'exito', mensaje: `Se eliminó "${item.nombre}".` });
+      router.push('/inventario/materiales');
+    } catch (fallo) {
+      setError(fallo.message);
+      setConfirmandoEliminar(false);
+      setEliminando(false);
+    }
+  }
 
   async function alAjustar(actualizado) {
     setAjustando(false);
@@ -91,10 +115,6 @@ export default function PantallaFichaItem({ params }) {
         accionesExtra={
           item && (
             <>
-              <CButton color="secondary" variant="outline" onClick={() => setAjustando(true)}>
-                <CIcon icon={cilSwapVertical} className="me-2" />
-                Modificar stock
-              </CButton>
               <BotonEnlace
                 href={`/inventario/materiales/${encodeURIComponent(item.codigo)}/editar`}
                 color="secondary"
@@ -103,10 +123,48 @@ export default function PantallaFichaItem({ params }) {
                 <CIcon icon={cilPencil} className="me-2" />
                 Editar
               </BotonEnlace>
+              <CDropdown placement="bottom-end">
+                <CDropdownToggle color="secondary" variant="outline">
+                  Opciones
+                </CDropdownToggle>
+                <CDropdownMenu className="shadow-sm border" style={{ minWidth: '14rem' }}>
+                  <CDropdownItem
+                    as="button"
+                    className="d-flex align-items-center gap-2 py-2"
+                    onClick={() => setAjustando(true)}
+                  >
+                    <CIcon icon={cilSwapVertical} />
+                    Modificar stock
+                  </CDropdownItem>
+                  <CDropdownDivider className="my-1" />
+                  <CDropdownItem
+                    as="button"
+                    className="d-flex align-items-center gap-2 py-2 text-danger"
+                    onClick={() => setConfirmandoEliminar(true)}
+                  >
+                    <CIcon icon={cilTrash} />
+                    Eliminar
+                  </CDropdownItem>
+                </CDropdownMenu>
+              </CDropdown>
             </>
           )
         }
       />
+
+      <DialogoEliminar
+        visible={confirmandoEliminar}
+        eliminando={eliminando}
+        onConfirmar={confirmarEliminar}
+        onCancelar={() => setConfirmandoEliminar(false)}
+      >
+        <p className="mb-0">
+          Se va a eliminar <strong>{item?.nombre}</strong>.
+        </p>
+        <p className="text-body-secondary mt-2 mb-0">
+          Solo se puede eliminar si no tiene ingresos ni consumos registrados.
+        </p>
+      </DialogoEliminar>
 
       <Aviso mensaje={error} />
 

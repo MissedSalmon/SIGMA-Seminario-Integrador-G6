@@ -3,16 +3,31 @@
 /**
  * Detalle de una tarea de la OT para el administrador (19/11/2026).
  *
- * Es sólo de consulta: lo planificado y lo que hizo el técnico (falla,
- * materiales, herramientas y observaciones). La tarea se cambia desde
- * "Editar" en el detalle de la OT, y lo ejecutado lo carga el técnico.
+ * Lo planificado y lo que hizo el técnico (falla, materiales, herramientas y
+ * observaciones). Lo ejecutado lo carga el técnico.
+ *
+ * Las acciones van arriba, como en las fichas de técnicos y solicitantes:
+ * «Editar» a la vista y el resto en «Opciones». La tarea de un prestador
+ * externo la inicia y la finaliza el administrador desde acá, porque el
+ * prestador no entra al sistema (21/11/2026).
  */
-import { use, useEffect, useState } from 'react';
+import { use, useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   CCard,
   CCardBody,
   CCardHeader,
   CCol,
+  CDropdown,
+  CDropdownDivider,
+  CDropdownItem,
+  CDropdownMenu,
+  CDropdownToggle,
+  CModal,
+  CModalBody,
+  CModalFooter,
+  CModalHeader,
+  CModalTitle,
   CRow,
   CTable,
   CTableBody,
@@ -22,17 +37,25 @@ import {
   CTableRow,
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilArrowLeft } from '@coreui/icons';
+import { cilArrowLeft, cilCheckCircle, cilMediaPlay, cilPencil, cilTrash } from '@coreui/icons';
 import Link from 'next/link';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
+import BotonesAccion from '@/componentes/BotonesAccion.js';
+import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
 import EtiquetaEstadoOT from '@/componentes/ordenes/EtiquetaEstadoOT.js';
 import EtiquetaPrioridad from '@/componentes/ordenes/EtiquetaPrioridad.js';
 import ObservacionesTarea from '@/componentes/tareas/ObservacionesTarea.js';
-import { obtenerTareaDeOrden } from '@/servicios/ordenesTrabajo.js';
+import { useToast } from '@/componentes/toast/ContextoToast.js';
+import {
+  eliminarTarea,
+  finalizarTareaDePrestador,
+  iniciarTareaDePrestador,
+  obtenerTareaDeOrden,
+} from '@/servicios/ordenesTrabajo.js';
 import { formatearFecha, formatearFechaHora, soloFechaLegible } from '@/utils/fechas.js';
 import { comoHoraMinuto } from '@/utils/duracion.js';
 
@@ -50,31 +73,129 @@ function SinDato({ children }) {
   return <span className="text-body-tertiary fst-italic">{children}</span>;
 }
 
+const ESTADOS_SIN_EMPEZAR = ['Creada', 'Asignada', 'Pendiente'];
+
 export default function PantallaDetalleTareaOT({ params }) {
   const { id, idTarea } = use(params);
+  const router = useRouter();
+  const { mostrarToast } = useToast();
 
   const [tarea, setTarea] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
+  // La ventana abierta: 'iniciar', 'finalizar' o 'eliminar'.
+  const [ventana, setVentana] = useState(null);
+  const [procesando, setProcesando] = useState(false);
+  const [errorVentana, setErrorVentana] = useState('');
+
+  const pedir = useCallback(
+    () =>
+      obtenerTareaDeOrden(id, idTarea)
+        .then(setTarea)
+        .catch((fallo) => setError(fallo.message)),
+    [id, idTarea]
+  );
+
   useEffect(() => {
-    let vigente = true;
+    pedir().finally(() => setCargando(false));
+  }, [pedir]);
 
-    obtenerTareaDeOrden(id, idTarea)
-      .then((datos) => vigente && setTarea(datos))
-      .catch((fallo) => vigente && setError(fallo.message))
-      .finally(() => vigente && setCargando(false));
+  const sinEmpezar = tarea && ESTADOS_SIN_EMPEZAR.includes(tarea.estado);
+  const otAbierta = tarea && !['Finalizada', 'Cancelada'].includes(tarea.ot.estado);
+  const dePrestador = tarea?.responsable?.tipo === 'Prestador';
+  const puedeIniciar = otAbierta && dePrestador && sinEmpezar;
+  const puedeFinalizar = otAbierta && dePrestador && (sinEmpezar || tarea.estado === 'En ejecución');
 
-    return () => {
-      vigente = false;
-    };
-  }, [id, idTarea]);
+  function abrir(cual) {
+    setErrorVentana('');
+    setVentana(cual);
+  }
 
-  const sinEmpezar = tarea && ['Creada', 'Asignada', 'Pendiente'].includes(tarea.estado);
+  function cerrar() {
+    if (!procesando) setVentana(null);
+  }
+
+  async function confirmarMovimiento() {
+    setProcesando(true);
+    setErrorVentana('');
+    try {
+      if (ventana === 'iniciar') {
+        await iniciarTareaDePrestador(id, idTarea);
+        mostrarToast({ tipo: 'exito', mensaje: 'La tarea quedó en ejecución.' });
+      } else {
+        const { ordenFinalizada } = await finalizarTareaDePrestador(id, idTarea);
+        mostrarToast({
+          tipo: 'exito',
+          mensaje: ordenFinalizada
+            ? `La tarea quedó finalizada. Era la última: la OT #${id} se finalizó y el ticket se cerró.`
+            : 'La tarea quedó finalizada.',
+        });
+      }
+      await pedir();
+      setVentana(null);
+    } catch (fallo) {
+      setErrorVentana(fallo.message);
+    } finally {
+      setProcesando(false);
+    }
+  }
+
+  async function confirmarEliminar() {
+    setProcesando(true);
+    try {
+      await eliminarTarea(id, idTarea);
+      mostrarToast({ tipo: 'exito', mensaje: `Se eliminó la tarea ${idTarea}.` });
+      router.push(`/ordenes-trabajo/${id}`);
+    } catch (fallo) {
+      setError(fallo.message);
+      setVentana(null);
+      setProcesando(false);
+    }
+  }
+
+  const acciones = otAbierta && (
+    <>
+      <BotonEnlace href={`/ordenes-trabajo/${id}/tareas/${idTarea}/editar`} color="secondary" variante="outline">
+        <CIcon icon={cilPencil} className="me-2" />
+        Editar
+      </BotonEnlace>
+
+      <CDropdown placement="bottom-end">
+        <CDropdownToggle color="secondary" variant="outline">
+          Opciones
+        </CDropdownToggle>
+        <CDropdownMenu className="shadow-sm border" style={{ minWidth: '14rem' }}>
+          {puedeIniciar && (
+            <CDropdownItem as="button" className="d-flex align-items-center gap-2 py-2" onClick={() => abrir('iniciar')}>
+              <CIcon icon={cilMediaPlay} />
+              Iniciar tarea
+            </CDropdownItem>
+          )}
+          {puedeFinalizar && (
+            <CDropdownItem as="button" className="d-flex align-items-center gap-2 py-2" onClick={() => abrir('finalizar')}>
+              <CIcon icon={cilCheckCircle} />
+              Finalizar tarea
+            </CDropdownItem>
+          )}
+          {(puedeIniciar || puedeFinalizar) && <CDropdownDivider className="my-1" />}
+          {/* En rojo y separado: rojo = no se puede deshacer. */}
+          <CDropdownItem
+            as="button"
+            className="d-flex align-items-center gap-2 py-2 text-danger"
+            onClick={() => abrir('eliminar')}
+          >
+            <CIcon icon={cilTrash} />
+            Eliminar
+          </CDropdownItem>
+        </CDropdownMenu>
+      </CDropdown>
+    </>
+  );
 
   return (
     <>
-      <EncabezadoPagina titulo={`Tarea ${idTarea} de la OT #${id}`} />
+      <EncabezadoPagina titulo={`Tarea ${idTarea} de la OT #${id}`} accionesExtra={acciones} />
 
       <Aviso mensaje={error} />
 
@@ -310,6 +431,42 @@ export default function PantallaDetalleTareaOT({ params }) {
           </>
         )
       )}
+
+      <CModal visible={ventana === 'iniciar' || ventana === 'finalizar'} onClose={cerrar} alignment="center">
+        <CModalHeader>
+          <CModalTitle>{ventana === 'iniciar' ? 'Iniciar la tarea' : 'Finalizar la tarea'}</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          <Aviso mensaje={errorVentana} />
+          <p className="mb-0">
+            La tarea de <strong>{tarea?.responsable?.nombre}</strong> pasa a{' '}
+            <strong>{ventana === 'iniciar' ? 'En ejecución' : 'Finalizada'}</strong>.
+          </p>
+        </CModalBody>
+        <CModalFooter>
+          <BotonesAccion
+            texto={ventana === 'iniciar' ? 'Iniciar' : 'Finalizar'}
+            textoProcesando={ventana === 'iniciar' ? 'Iniciando...' : 'Finalizando...'}
+            procesando={procesando}
+            alAceptar={confirmarMovimiento}
+            alCancelar={cerrar}
+          />
+        </CModalFooter>
+      </CModal>
+
+      <DialogoEliminar
+        visible={ventana === 'eliminar'}
+        titulo="Eliminar la tarea"
+        eliminando={procesando}
+        onConfirmar={confirmarEliminar}
+        onCancelar={cerrar}
+      >
+        {tarea && (
+          <p className="mb-0">
+            Se va a eliminar la tarea <strong>{idTarea}</strong> de esta orden: &quot;{tarea.descripcion}&quot;.
+          </p>
+        )}
+      </DialogoEliminar>
 
       <div className="mt-2 mb-4">
         <BotonEnlace href={`/ordenes-trabajo/${id}`} color="secondary" variante="outline">

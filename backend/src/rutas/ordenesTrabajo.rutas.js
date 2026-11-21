@@ -26,4 +26,8 @@ router.put('/:id/tareas/:idTarea', ordenes.actualizarTarea);
 router.put('/:id/tareas/:idTarea/falla', ordenes.registrarFalla);
 router.delete('/:id/tareas/:idTarea', ordenes.eliminarTarea);
 
+// El prestador no entra al sistema: sus tareas las mueve el administrador.
+router.post('/:id/tareas/:idTarea/iniciar', soloAdministrador, ordenes.iniciarTareaDePrestador);
+router.post('/:id/tareas/:idTarea/finalizar', soloAdministrador, ordenes.finalizarTareaDePrestador);
+
 export default router;

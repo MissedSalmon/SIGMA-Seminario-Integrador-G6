@@ -464,7 +464,13 @@ export async function iniciarTarea(legajo, idOt, idTarea) {
 
   await cambiarEstadoTarea(idOt, idTarea, ESTADOS_SIN_EMPEZAR, 'En ejecución');
   await cambiarAsignacion(legajo, idOt, idTarea, 'En curso');
+  await arrastrarInicio(idOt);
 
+  return obtenerUnaDelTecnico(legajo, idOt, idTarea);
+}
+
+/** Lo que mueve empezar una tarea, la haga un técnico o un prestador: OT, ticket y activo. */
+async function arrastrarInicio(idOt) {
   const orden = await ordenConActivo(idOt);
 
   const { error: errorOrden } = await supabase
@@ -491,8 +497,6 @@ export async function iniciarTarea(legajo, idOt, idTarea) {
       .neq('activo_estado', ENUM_ESTADO_ACTIVO.codigo('Retirado'));
     if (error) throw errorDeBase(error, 'del activo');
   }
-
-  return obtenerUnaDelTecnico(legajo, idOt, idTarea);
 }
 
 /**
@@ -579,6 +583,62 @@ export async function finalizarTarea(legajo, idOt, idTarea) {
   const ordenFinalizada = await finalizarOrdenSiTermino(idOt);
 
   return { tarea: await obtenerUnaDelTecnico(legajo, idOt, idTarea), ordenFinalizada };
+}
+
+/*
+ * Tareas de un prestador externo (21/11/2026). El prestador no entra al
+ * sistema, así que las inicia y las finaliza el administrador desde la OT.
+ */
+
+/** El estado de la tarea, si es de un prestador y su OT sigue abierta. */
+async function estadoDeTareaDePrestador(idOt, idTarea) {
+  const { data, error } = await supabase
+    .from('tarea_ot')
+    .select('tarea_estado, prestador_serv_id, orden_trabajo ( ot_estado )')
+    .eq('ot_id', idOt)
+    .eq('tarea_id', idTarea)
+    .maybeSingle();
+
+  if (error) throw errorDeBase(error, 'de la tarea');
+  if (!data) throw noEncontrado(`La orden de trabajo ${idOt} no tiene la tarea ${idTarea}.`);
+  if (!data.prestador_serv_id) {
+    throw conflicto('La tarea la hace un técnico: la inicia y la finaliza él desde sus tareas.');
+  }
+
+  const estadoOt = ENUM_ESTADO_OT.texto(data.orden_trabajo?.ot_estado);
+  if (ESTADOS_OT_CERRADOS.includes(estadoOt)) {
+    throw conflicto(`La orden de trabajo #${idOt} está ${estadoOt.toLowerCase()}: ya no se trabaja.`);
+  }
+
+  return ENUM_ESTADO_TAREA.texto(data.tarea_estado) ?? 'Creada';
+}
+
+export async function iniciarTareaDePrestador(idOt, idTarea) {
+  const estado = await estadoDeTareaDePrestador(idOt, idTarea);
+
+  if (estado === 'En ejecución') throw conflicto('La tarea ya está en ejecución.');
+  if (!ESTADOS_SIN_EMPEZAR.includes(estado)) {
+    throw conflicto(`La tarea está ${estado.toLowerCase()}: ya no se puede iniciar.`);
+  }
+
+  await cambiarEstadoTarea(idOt, idTarea, ESTADOS_SIN_EMPEZAR, 'En ejecución');
+  await arrastrarInicio(idOt);
+}
+
+/**
+ * Se puede finalizar sin haberla iniciado: muchas veces el administrador se
+ * entera del trabajo recién cuando el prestador terminó.
+ *
+ * Devuelve true si con ella se cerró la OT.
+ */
+export async function finalizarTareaDePrestador(idOt, idTarea) {
+  const estado = await estadoDeTareaDePrestador(idOt, idTarea);
+  const sinTerminar = [...ESTADOS_SIN_EMPEZAR, 'En ejecución'];
+
+  if (!sinTerminar.includes(estado)) throw conflicto(`La tarea ya está ${estado.toLowerCase()}.`);
+
+  await cambiarEstadoTarea(idOt, idTarea, sinTerminar, 'Finalizada');
+  return finalizarOrdenSiTermino(idOt);
 }
 
 /* ---------------------------------------------------------------- Materiales */

@@ -11,11 +11,14 @@
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
-  CButton,
   CCard,
   CCardBody,
   CCardHeader,
   CCol,
+  CDropdown,
+  CDropdownItem,
+  CDropdownMenu,
+  CDropdownToggle,
   CRow,
   CTable,
   CTableBody,
@@ -93,10 +96,21 @@ export default function PantallaDetallePlanMantenimiento({ params }) {
                 <CIcon icon={cilPencil} className="me-2" />
                 Editar
               </BotonEnlace>
-              <CButton color="secondary" variant="outline" onClick={() => setModalBaja(true)}>
-                <CIcon icon={cilTrash} className="me-2" />
-                Dar de baja
-              </CButton>
+              <CDropdown placement="bottom-end">
+                <CDropdownToggle color="secondary" variant="outline">
+                  Opciones
+                </CDropdownToggle>
+                <CDropdownMenu className="shadow-sm border" style={{ minWidth: '14rem' }}>
+                  <CDropdownItem
+                    as="button"
+                    className="d-flex align-items-center gap-2 py-2 text-danger"
+                    onClick={() => setModalBaja(true)}
+                  >
+                    <CIcon icon={cilTrash} />
+                    Dar de baja
+                  </CDropdownItem>
+                </CDropdownMenu>
+              </CDropdown>
             </>
           )
         }

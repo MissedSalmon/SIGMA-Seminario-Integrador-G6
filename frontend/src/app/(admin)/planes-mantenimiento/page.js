@@ -4,7 +4,7 @@
  * /planes-mantenimiento - listado de planes de mantenimiento preventivo (Sprint 5).
  */
 import { useEffect, useState } from 'react';
-import { CButtonGroup, CCard, CCardBody } from '@coreui/react';
+import { CButton, CButtonGroup, CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilDescription, cilPencil, cilTrash } from '@coreui/icons';
 
@@ -130,7 +130,7 @@ export default function PantallaPlanesMantenimiento() {
             href={`/planes-mantenimiento/${plan.id}`}
             variante="ghost"
             className="btn-icono"
-            title="Ver detalle del plan"
+            title={`Ver detalle de ${plan.nombre}`}
           >
             <CIcon icon={cilDescription} />
           </BotonEnlace>
@@ -140,18 +140,19 @@ export default function PantallaPlanesMantenimiento() {
                 href={`/planes-mantenimiento/${plan.id}/editar`}
                 variante="ghost"
                 className="btn-icono"
-                title="Editar plan"
+                title={`Editar ${plan.nombre}`}
               >
                 <CIcon icon={cilPencil} />
               </BotonEnlace>
-              <BotonEnlace
+              <CButton
+                variant="ghost"
+                color="danger"
+                className="btn-icono"
                 onClick={() => setADarDeBaja(plan)}
-                variante="ghost"
-                className="btn-icono text-danger"
-                title="Dar de baja plan"
+                title={`Dar de baja ${plan.nombre}`}
               >
                 <CIcon icon={cilTrash} />
-              </BotonEnlace>
+              </CButton>
             </>
           )}
         </CButtonGroup>

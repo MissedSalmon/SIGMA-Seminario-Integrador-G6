@@ -97,7 +97,7 @@ export default function PantallaMateriales() {
             href={`/inventario/materiales/${encodeURIComponent(fila.codigo)}`}
             variante="ghost"
             className="btn-icono"
-            title="Ver la ficha y el historial de movimientos"
+            title={`Ver detalle de ${fila.nombre}`}
           >
             <CIcon icon={cilDescription} />
           </BotonEnlace>
@@ -105,7 +105,7 @@ export default function PantallaMateriales() {
             href={`/inventario/materiales/${encodeURIComponent(fila.codigo)}/editar`}
             variante="ghost"
             className="btn-icono"
-            title="Editar"
+            title={`Editar ${fila.nombre}`}
           >
             <CIcon icon={cilPencil} />
           </BotonEnlace>
@@ -114,7 +114,7 @@ export default function PantallaMateriales() {
             color="danger"
             className="btn-icono"
             onClick={() => setAEliminar(fila)}
-            title="Eliminar"
+            title={`Eliminar ${fila.nombre}`}
           >
             <CIcon icon={cilTrash} />
           </CButton>

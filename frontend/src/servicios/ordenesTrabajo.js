@@ -114,3 +114,16 @@ export async function eliminarTarea(idOrden, idTarea) {
   const { data } = await api.delete(`/ordenes-trabajo/${idOrden}/tareas/${idTarea}`);
   return data.datos;
 }
+
+/* Las tareas de un prestador externo: las inicia y las finaliza el administrador. */
+
+export async function iniciarTareaDePrestador(idOrden, idTarea) {
+  const { data } = await api.post(`/ordenes-trabajo/${idOrden}/tareas/${idTarea}/iniciar`);
+  return data.datos;
+}
+
+/** Devuelve la OT y si con esta tarea se finalizó. */
+export async function finalizarTareaDePrestador(idOrden, idTarea) {
+  const { data } = await api.post(`/ordenes-trabajo/${idOrden}/tareas/${idTarea}/finalizar`);
+  return { orden: data.datos, ordenFinalizada: data.ordenFinalizada };
+}

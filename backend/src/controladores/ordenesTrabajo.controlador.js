@@ -4,6 +4,7 @@
 import * as ordenesServicio from '../servicios/ordenesTrabajo.servicio.js';
 import { obtenerDetalleParaAdministrador } from '../servicios/tareas.servicio.js';
 import { ESTADOS, PRIORIDADES } from '../servicios/ordenesTrabajo.servicio.js';
+import * as tareasServicio from '../servicios/tareas.servicio.js';
 import { datoInvalido } from '../utiles/errores.js';
 
 function leerId(req) {
@@ -143,6 +144,24 @@ export async function eliminarTarea(req, res) {
   const orden = await ordenesServicio.eliminarTarea(leerId(req), idTarea);
 
   res.json({ ok: true, datos: orden, mensaje: `Se eliminó la tarea ${idTarea}.` });
+}
+
+/** POST /api/ordenes-trabajo/5/tareas/2/iniciar (sólo tareas de un prestador) */
+export async function iniciarTareaDePrestador(req, res) {
+  const id = leerId(req);
+  const idTarea = leerNumeroDeTarea(req);
+  await tareasServicio.iniciarTareaDePrestador(id, idTarea);
+
+  res.json({ ok: true, datos: await ordenesServicio.obtenerPorId(id) });
+}
+
+/** POST /api/ordenes-trabajo/5/tareas/2/finalizar (sólo tareas de un prestador) */
+export async function finalizarTareaDePrestador(req, res) {
+  const id = leerId(req);
+  const idTarea = leerNumeroDeTarea(req);
+  const ordenFinalizada = await tareasServicio.finalizarTareaDePrestador(id, idTarea);
+
+  res.json({ ok: true, datos: await ordenesServicio.obtenerPorId(id), ordenFinalizada });
 }
 
 /** PUT /api/ordenes-trabajo/5/tareas/2/falla */

@@ -444,9 +444,19 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 >   columnas de fechas, estado, cantidad y acción se esconden y su dato pasa abajo de la
 >   herramienta o del material. En herramientas, "Desde" y "Hasta" recién aparecen en
 >   pantallas grandes (desde 1200 px): con el menú lateral abierto no entran las seis columnas.
-> - ⬜ **Pendiente de definir:** una tarea a cargo de un **prestador externo** no la puede
->   finalizar un técnico desde la app. Si una OT tiene una, no se va a cerrar sola hasta que
->   haya una forma de marcar esa tarea como hecha (la tendría que hacer el administrador).
+> - ✅ **Tareas de un prestador externo (21/11/2026):** el prestador no entra al sistema, así
+>   que su tarea la mueve el **administrador** desde la ficha de la tarea
+>   (`/ordenes-trabajo/:id/tareas/:idTarea`), en el desplegable «Opciones». En la tabla de
+>   tareas de la OT cada fila tiene sólo «Ver detalle» y «Editar», como las listas de
+>   técnicos y solicitantes; «Eliminar» también pasó a «Opciones» de la ficha.
+>   - **Iniciar:** la tarea pasa a En ejecución y arrastra lo mismo que cuando la inicia un
+>     técnico (OT y ticket a En ejecución, activo a En mantenimiento).
+>   - **Finalizar:** la tarea pasa a Finalizada. **Se puede finalizar sin haberla iniciado**,
+>     porque muchas veces el administrador se entera recién cuando el prestador terminó. Si era
+>     la última, se aplica el cierre automático de la HU-26.
+>   - Una tarea de un técnico no se mueve desde la OT: la sigue iniciando y finalizando él.
+>   - Direcciones: `POST /api/ordenes-trabajo/:id/tareas/:idTarea/iniciar` y `/finalizar`,
+>     sólo administrador.
 
 > **Decisiones del 19/11/2026 (datos de demostración):**
 > - Se limpiaron los datos de la base para mostrar el sistema a clientes. El detalle de cada
