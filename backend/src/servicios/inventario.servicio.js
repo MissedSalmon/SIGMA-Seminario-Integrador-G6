@@ -9,6 +9,7 @@ import { controlarTecnicoActivo } from './usuarios.servicio.js';
  * el codigo es unico entre las dos.
  */
 const CLASES = ['Material', 'Herramienta'];
+const UNIDADES_MEDIDA = ['par', 'unidad', 'metro', 'pulgada', 'kilogramo', 'litro', 'metro cuadrado'];
 
 function texto(valor) {
   if (typeof valor !== 'string') return null;
@@ -37,6 +38,7 @@ function aMaterial(fila) {
     codigo: fila.mat_cod,
     nombre: fila.mat_nom,
     descripcion: fila.mat_desc || '',
+    unidadMedida: fila.mat_unidad_medida || 'unidad',
     idTipo: fila.inventariotipoid,
     nombreTipo: fila.inventariotipo?.inventariotiponom || '',
     clase: 'Material',
@@ -234,6 +236,7 @@ export async function obtenerAlertasStock() {
       codigo: material.codigo,
       nombre: material.nombre,
       nombreTipo: material.nombreTipo,
+      unidadMedida: material.unidadMedida,
       stockActual: material.stockActual,
       stockMinimo: material.stockMinimo,
       faltante: material.stockMinimo - material.stockActual,
@@ -245,12 +248,16 @@ function leerDatos(datos) {
   const nombre = texto(datos.nombre);
   const clase = leerClase(datos.clase);
   const descripcion = texto(datos.descripcion);
+  const unidadMedida = texto(datos.unidadMedida);
   const idTipo = Number(datos.idTipo);
   const hayMinimo = datos.stockMinimo !== '' && datos.stockMinimo != null;
   const stockMinimo = hayMinimo ? Number(datos.stockMinimo) : null;
 
   if (!nombre) throw datoInvalido('El nombre es obligatorio.');
   if (!Number.isInteger(idTipo)) throw datoInvalido('Hay que indicar un tipo.');
+  if (clase === 'Material' && !UNIDADES_MEDIDA.includes(unidadMedida)) {
+    throw datoInvalido('Elegí una unidad de medida válida para el material.');
+  }
   if (clase === 'Material' && (!Number.isInteger(stockMinimo) || stockMinimo < 0)) {
     throw datoInvalido('El stock mínimo del material es obligatorio y no puede ser negativo.');
   }
@@ -258,7 +265,7 @@ function leerDatos(datos) {
     throw datoInvalido('Una herramienta no lleva stock mínimo.');
   }
 
-  return { nombre, clase, descripcion, idTipo, stockMinimo };
+  return { nombre, clase, descripcion, unidadMedida, idTipo, stockMinimo };
 }
 
 export async function crearItem(datos) {
@@ -279,6 +286,7 @@ export async function crearItem(datos) {
         mat_cod: codigo,
         mat_nom: item.nombre,
         mat_desc: item.descripcion,
+        mat_unidad_medida: item.unidadMedida,
         inventariotipoid: item.idTipo,
         mat_stock_actual: 0,
         mat_stock_min: item.stockMinimo,
@@ -310,6 +318,7 @@ export async function actualizarItem(codigo, datos) {
       .update({
         mat_nom: item.nombre,
         mat_desc: item.descripcion,
+        mat_unidad_medida: item.unidadMedida,
         inventariotipoid: item.idTipo,
         mat_stock_min: item.stockMinimo,
       })

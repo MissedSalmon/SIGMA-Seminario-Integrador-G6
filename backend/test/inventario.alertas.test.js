@@ -14,7 +14,7 @@ const { supabase } = await import('../src/config/supabase.js');
 const { obtenerAlertasStock } = await import('../src/servicios/inventario.servicio.js');
 
 /** Una fila de la tabla material como la devuelve Supabase. */
-function material(codigo, nombre, actual, minimo) {
+function material(codigo, nombre, actual, minimo, unidad = 'unidad') {
   return {
     mat_cod: codigo,
     mat_nom: nombre,
@@ -23,6 +23,7 @@ function material(codigo, nombre, actual, minimo) {
     inventariotipo: { inventariotiponom: 'Electricidad' },
     mat_stock_actual: actual,
     mat_stock_min: minimo,
+    mat_unidad_medida: unidad,
   };
 }
 
@@ -53,7 +54,7 @@ describe('obtenerAlertasStock', () => {
   });
 
   test('dice cuanto falta para llegar al minimo', async () => {
-    depositoCon([material('CA-1', 'Cable', 2, 10)]);
+    depositoCon([material('CA-1', 'Cable', 2, 10, 'metro')]);
 
     const [alerta] = await obtenerAlertasStock();
 
@@ -61,6 +62,7 @@ describe('obtenerAlertasStock', () => {
       codigo: 'CA-1',
       nombre: 'Cable',
       nombreTipo: 'Electricidad',
+      unidadMedida: 'metro',
       stockActual: 2,
       stockMinimo: 10,
       faltante: 8,

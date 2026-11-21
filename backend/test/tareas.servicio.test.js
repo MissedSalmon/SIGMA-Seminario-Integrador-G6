@@ -208,7 +208,7 @@ describe('obtenerUnaDelTecnico', () => {
       activo: { codigo: 'AC-001', nombreTipo: 'Aires acondicionados' },
       ubicacion: { edificio: 'Edificio central', espacio: 'Aula 11', piso: '2' },
       ot: { id: 9, descripcion: 'Pierde agua', estado: 'Creada', origen: 'Ticket' },
-      materiales: [{ codigo: 'MAT-002', nombre: 'Tornillo', cantidad: 4 }],
+      materiales: [{ codigo: 'MAT-002', nombre: 'Tornillo', unidadMedida: 'unidad', cantidad: 4 }],
       observaciones: [{ id: 1, texto: 'Se limpió el filtro', autor: 'Ana Pérez', fecha: '2026-10-13T12:00:00Z' }],
     });
   });

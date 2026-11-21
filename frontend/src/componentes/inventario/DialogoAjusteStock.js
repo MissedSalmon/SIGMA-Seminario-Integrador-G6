@@ -59,7 +59,7 @@ export default function DialogoAjusteStock({ material, ultimaFecha, onCerrar, on
   } else if (!Number.isInteger(numero) || numero <= 0) {
     errores.cantidad = 'Tiene que ser un número entero mayor que cero.';
   } else if (esEgreso && numero > stock) {
-    errores.cantidad = `Quedan ${stock}: no se puede descontar más.`;
+    errores.cantidad = `Quedan ${stock} ${material.unidadMedida}: no se puede descontar más.`;
   }
 
   if (!fecha) {
@@ -88,7 +88,7 @@ export default function DialogoAjusteStock({ material, ultimaFecha, onCerrar, on
       });
       mostrarToast({
         tipo: 'exito',
-        mensaje: `Se registró el ${esEgreso ? 'egreso' : 'ingreso'} de "${material.nombre}": quedan ${actualizado.stockActual}.`,
+        mensaje: `Se registró el ${esEgreso ? 'egreso' : 'ingreso'} de "${material.nombre}": quedan ${actualizado.stockActual} ${material.unidadMedida}.`,
       });
       onGuardado(actualizado);
     } catch (fallo) {
@@ -113,7 +113,7 @@ export default function DialogoAjusteStock({ material, ultimaFecha, onCerrar, on
           </div>
           <div className="text-nowrap">
             <span className="text-body-secondary small">Stock actual:</span>{' '}
-            <span className="fw-semibold">{stock}</span>
+            <span className="fw-semibold">{stock} {material.unidadMedida}</span>
           </div>
         </div>
 
@@ -133,7 +133,7 @@ export default function DialogoAjusteStock({ material, ultimaFecha, onCerrar, on
           />
           <Campo
             id="cantidadAjuste"
-            etiqueta="Cantidad"
+            etiqueta={`Cantidad (${material.unidadMedida})`}
             tipo="numero"
             valor={cantidad}
             alCambiar={setCantidad}
@@ -171,7 +171,7 @@ export default function DialogoAjusteStock({ material, ultimaFecha, onCerrar, on
         {stockResultante !== null && (
           <p className="mb-0">
             <span className="text-body-secondary">Stock después del {esEgreso ? 'egreso' : 'ingreso'}:</span>{' '}
-            {stock} → <strong>{stockResultante}</strong>
+            {stock} → <strong>{stockResultante}</strong> {material.unidadMedida}
           </p>
         )}
       </CModalBody>

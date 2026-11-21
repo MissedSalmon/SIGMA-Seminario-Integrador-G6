@@ -376,7 +376,9 @@ export default function PantallaDetalleMiTarea({ params }) {
                                   <span className="fw-semibold">{material.codigo}</span>
                                   <span className="text-body-secondary"> — {material.nombre}</span>
                                 </CTableDataCell>
-                                <CTableDataCell className="text-end">{material.cantidad}</CTableDataCell>
+                                <CTableDataCell className="text-end">
+                                  {material.cantidad} {material.unidadMedida}
+                                </CTableDataCell>
                                 <CTableDataCell className="text-body-secondary text-nowrap">
                                   {formatearFechaHora(material.fecha)}
                                 </CTableDataCell>
