@@ -126,7 +126,7 @@ export default function PantallaDetalleCargaTrabajo({ params, searchParams }) {
         <CCardBody>
           {periodo && <p className="text-body-secondary">{periodo}</p>}
           <TablaDatos
-            antesDeLaTabla={<ReferenciaEtapas className="mt-0 mb-3" de="ot" estados={tareas.map((tarea) => tarea.estado)} />}
+            antesDeLaTabla={<ReferenciaEtapas className="mt-0 mb-3" de="tarea" estados={tareas.map((tarea) => tarea.estado)} />}
             filas={tareas}
             claveFila={(tarea) => `${tarea.idOt}-${tarea.idTarea}`}
             columnas={columnas}

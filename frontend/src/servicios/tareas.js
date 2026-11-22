@@ -55,8 +55,9 @@ export async function iniciarTarea(idOt, idTarea) {
  * Termina la tarea. Si era la última de la OT, la OT se finaliza sola.
  * @returns {Promise<{ tarea: object, ordenFinalizada: boolean }>}
  */
-export async function finalizarTarea(idOt, idTarea) {
-  const { data } = await api.post(`/tareas/mias/${idOt}/${idTarea}/finalizar`);
+/** `estadoActivo`: cómo queda el activo si con esta tarea se cierra la OT. */
+export async function finalizarTarea(idOt, idTarea, estadoActivo) {
+  const { data } = await api.post(`/tareas/mias/${idOt}/${idTarea}/finalizar`, { estadoActivo });
   return data.datos;
 }
 

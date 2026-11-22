@@ -134,8 +134,11 @@ export async function actualizarTarea(req, res) {
 
 /** GET /api/ordenes-trabajo/5/tareas/2: el detalle de la tarea, con lo que se hizo en ella. */
 export async function obtenerTarea(req, res) {
-  const tarea = await obtenerDetalleParaAdministrador(leerId(req), leerNumeroDeTarea(req));
-  res.json({ ok: true, datos: tarea });
+  const id = leerId(req);
+  const idTarea = leerNumeroDeTarea(req);
+  const tarea = await obtenerDetalleParaAdministrador(id, idTarea);
+  const cierraLaOrden = await tareasServicio.cierraLaOrden(id, idTarea);
+  res.json({ ok: true, datos: { ...tarea, cierraLaOrden } });
 }
 
 /** DELETE /api/ordenes-trabajo/5/tareas/2 */
@@ -155,11 +158,14 @@ export async function iniciarTareaDePrestador(req, res) {
   res.json({ ok: true, datos: await ordenesServicio.obtenerPorId(id) });
 }
 
-/** POST /api/ordenes-trabajo/5/tareas/2/finalizar (sólo tareas de un prestador) */
+/**
+ * POST /api/ordenes-trabajo/5/tareas/2/finalizar (sólo tareas de un prestador).
+ * El cuerpo puede traer `estadoActivo`: como queda el activo si se cierra la OT.
+ */
 export async function finalizarTareaDePrestador(req, res) {
   const id = leerId(req);
   const idTarea = leerNumeroDeTarea(req);
-  const ordenFinalizada = await tareasServicio.finalizarTareaDePrestador(id, idTarea);
+  const ordenFinalizada = await tareasServicio.finalizarTareaDePrestador(id, idTarea, req.body?.estadoActivo);
 
   res.json({ ok: true, datos: await ordenesServicio.obtenerPorId(id), ordenFinalizada });
 }

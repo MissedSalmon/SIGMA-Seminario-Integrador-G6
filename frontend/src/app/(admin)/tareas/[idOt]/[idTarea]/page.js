@@ -57,6 +57,7 @@ import DialogoHerramienta from '@/componentes/tareas/DialogoHerramienta.js';
 import DialogoFalla from '@/componentes/tareas/DialogoFalla.js';
 import DialogoMaterial from '@/componentes/tareas/DialogoMaterial.js';
 import ObservacionesTarea from '@/componentes/tareas/ObservacionesTarea.js';
+import PreguntaEstadoActivo from '@/componentes/tareas/PreguntaEstadoActivo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import {
   finalizarTarea,
@@ -92,6 +93,11 @@ export default function PantallaDetalleMiTarea({ params }) {
   const [procesando, setProcesando] = useState(false);
   const [errorVentana, setErrorVentana] = useState('');
 
+  // Si es la última tarea de la OT, al finalizar se elige cómo queda el activo (22/11/2026).
+  const [cierraLaOrden, setCierraLaOrden] = useState(false);
+  const [estadoActivo, setEstadoActivo] = useState('');
+  const [revisadoFinal, setRevisadoFinal] = useState(false);
+
   useEffect(() => {
     let vigente = true;
 
@@ -114,6 +120,19 @@ export default function PantallaDetalleMiTarea({ params }) {
     setVentana(nombre);
   }
 
+  /** Se vuelve a preguntar si es la última: otro técnico pudo terminar la suya mientras tanto. */
+  async function abrirFinalizar() {
+    setEstadoActivo('');
+    setRevisadoFinal(false);
+    try {
+      const actual = await obtenerMiTarea(idOt, idTarea);
+      setCierraLaOrden(Boolean(actual.cierraLaOrden && actual.activo));
+    } catch {
+      setCierraLaOrden(false);
+    }
+    abrir('finalizar');
+  }
+
   function cerrar() {
     if (!procesando) setVentana(null);
   }
@@ -133,14 +152,17 @@ export default function PantallaDetalleMiTarea({ params }) {
   }
 
   async function confirmarFinalizacion() {
+    setRevisadoFinal(true);
+    if (cierraLaOrden && !estadoActivo) return;
+
     setProcesando(true);
     setErrorVentana('');
     try {
-      const respuesta = await finalizarTarea(idOt, idTarea);
+      const respuesta = await finalizarTarea(idOt, idTarea, cierraLaOrden ? estadoActivo : undefined);
       mostrarToast({
         tipo: 'exito',
         mensaje: respuesta.ordenFinalizada
-          ? `La tarea quedó finalizada. Era la última: la OT #${idOt} se finalizó y el ticket se cerró.`
+          ? `La tarea quedó finalizada. Era la última: la OT #${idOt} se finalizó, el ticket se cerró y el activo quedó ${estadoActivo || 'Operativo'}.`
           : 'La tarea quedó finalizada.',
       });
       router.push('/tareas');
@@ -202,7 +224,7 @@ export default function PantallaDetalleMiTarea({ params }) {
         </span>
       )}
       {enEjecucion && (
-        <CButton color="primary" onClick={() => abrir('finalizar')}>
+        <CButton color="primary" onClick={abrirFinalizar}>
           <CIcon icon={cilCheckCircle} className="me-2" />
           Finalizar tarea
         </CButton>
@@ -224,7 +246,7 @@ export default function PantallaDetalleMiTarea({ params }) {
         accionesExtra={acciones}
       />
       {/* Que significa el color de cada sello (regla 6). */}
-      <ReferenciaEtapas de="ot" className="mt-0 mb-3" estados={[tarea?.estado]} />
+      <ReferenciaEtapas de="tarea" className="mt-0 mb-3" estados={[tarea?.estado]} />
 
       <Aviso mensaje={error} />
 
@@ -531,9 +553,18 @@ export default function PantallaDetalleMiTarea({ params }) {
         </CModalHeader>
         <CModalBody>
           <Aviso mensaje={errorVentana} />
-          <p className="mb-0">
+          <p className={cierraLaOrden ? undefined : 'mb-0'}>
             La tarea pasa a <strong>Finalizada</strong>.
           </p>
+          {cierraLaOrden && (
+            <PreguntaEstadoActivo
+              idOt={idOt}
+              codigoActivo={tarea?.activo?.codigo}
+              valor={estadoActivo}
+              alCambiar={setEstadoActivo}
+              revisado={revisadoFinal}
+            />
+          )}
         </CModalBody>
         <CModalFooter>
           <BotonesAccion

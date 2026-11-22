@@ -37,10 +37,11 @@ import {
   CTableRow,
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilArrowLeft, cilCheckCircle, cilMediaPlay, cilPencil, cilTrash } from '@coreui/icons';
+import { cilArrowLeft, cilCheckCircle, cilMediaPlay, cilPencil, cilTrash, cilUserFollow } from '@coreui/icons';
 import Link from 'next/link';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
+import ReferenciaEtapas from '@/componentes/estados/ReferenciaEtapas.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import BotonesAccion from '@/componentes/BotonesAccion.js';
@@ -49,6 +50,8 @@ import { Cargando } from '@/componentes/EstadoTabla.js';
 import EtiquetaEstadoOT from '@/componentes/ordenes/EtiquetaEstadoOT.js';
 import EtiquetaPrioridad from '@/componentes/ordenes/EtiquetaPrioridad.js';
 import ObservacionesTarea from '@/componentes/tareas/ObservacionesTarea.js';
+import PreguntaEstadoActivo from '@/componentes/tareas/PreguntaEstadoActivo.js';
+import DialogoAsignarTarea from '@/componentes/ordenes/DialogoAsignarTarea.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import {
   eliminarTarea,
@@ -106,9 +109,18 @@ export default function PantallaDetalleTareaOT({ params }) {
   const dePrestador = tarea?.responsable?.tipo === 'Prestador';
   const puedeIniciar = otAbierta && dePrestador && sinEmpezar;
   const puedeFinalizar = otAbierta && dePrestador && (sinEmpezar || tarea.estado === 'En ejecución');
+  // Sin responsable se asigna desde acá, sin pasar por «Editar» (22/11/2026).
+  const puedeAsignar = otAbierta && !tarea?.responsable && sinEmpezar;
+
+  // Si es la última tarea de la OT, al finalizar se elige cómo queda el activo (22/11/2026).
+  const preguntarEstadoActivo = ventana === 'finalizar' && Boolean(tarea?.cierraLaOrden && tarea?.activo);
+  const [estadoActivo, setEstadoActivo] = useState('');
+  const [revisadoFinal, setRevisadoFinal] = useState(false);
 
   function abrir(cual) {
     setErrorVentana('');
+    setEstadoActivo('');
+    setRevisadoFinal(false);
     setVentana(cual);
   }
 
@@ -117,6 +129,9 @@ export default function PantallaDetalleTareaOT({ params }) {
   }
 
   async function confirmarMovimiento() {
+    setRevisadoFinal(true);
+    if (preguntarEstadoActivo && !estadoActivo) return;
+
     setProcesando(true);
     setErrorVentana('');
     try {
@@ -124,11 +139,15 @@ export default function PantallaDetalleTareaOT({ params }) {
         await iniciarTareaDePrestador(id, idTarea);
         mostrarToast({ tipo: 'exito', mensaje: 'La tarea quedó en ejecución.' });
       } else {
-        const { ordenFinalizada } = await finalizarTareaDePrestador(id, idTarea);
+        const { ordenFinalizada } = await finalizarTareaDePrestador(
+          id,
+          idTarea,
+          preguntarEstadoActivo ? estadoActivo : undefined
+        );
         mostrarToast({
           tipo: 'exito',
           mensaje: ordenFinalizada
-            ? `La tarea quedó finalizada. Era la última: la OT #${id} se finalizó y el ticket se cerró.`
+            ? `La tarea quedó finalizada. Era la última: la OT #${id} se finalizó, el ticket se cerró y el activo quedó ${estadoActivo || 'Operativo'}.`
             : 'La tarea quedó finalizada.',
         });
       }
@@ -166,6 +185,12 @@ export default function PantallaDetalleTareaOT({ params }) {
           Opciones
         </CDropdownToggle>
         <CDropdownMenu className="shadow-sm border" style={{ minWidth: '14rem' }}>
+          {puedeAsignar && (
+            <CDropdownItem as="button" className="d-flex align-items-center gap-2 py-2" onClick={() => abrir('asignar')}>
+              <CIcon icon={cilUserFollow} />
+              Asignar
+            </CDropdownItem>
+          )}
           {puedeIniciar && (
             <CDropdownItem as="button" className="d-flex align-items-center gap-2 py-2" onClick={() => abrir('iniciar')}>
               <CIcon icon={cilMediaPlay} />
@@ -178,7 +203,7 @@ export default function PantallaDetalleTareaOT({ params }) {
               Finalizar tarea
             </CDropdownItem>
           )}
-          {(puedeIniciar || puedeFinalizar) && <CDropdownDivider className="my-1" />}
+          {(puedeAsignar || puedeIniciar || puedeFinalizar) && <CDropdownDivider className="my-1" />}
           {/* En rojo y separado: rojo = no se puede deshacer. */}
           <CDropdownItem
             as="button"
@@ -196,6 +221,8 @@ export default function PantallaDetalleTareaOT({ params }) {
   return (
     <>
       <EncabezadoPagina titulo={`Tarea ${idTarea} de la OT #${id}`} accionesExtra={acciones} />
+      {/* Que significa el color de cada sello (regla 6). */}
+      <ReferenciaEtapas className="mt-0 mb-3" de="tarea" estados={[tarea?.estado, tarea?.ot?.estado]} />
 
       <Aviso mensaje={error} />
 
@@ -236,7 +263,9 @@ export default function PantallaDetalleTareaOT({ params }) {
                         </Dato>
                       </CCol>
                       <CCol sm={6}>
-                        <Dato etiqueta="Estado">{tarea.estado}</Dato>
+                        <Dato etiqueta="Estado">
+                          <EtiquetaEstadoOT estado={tarea.estado} />
+                        </Dato>
                       </CCol>
                       <CCol sm={6}>
                         <Dato etiqueta="Fecha prevista">
@@ -440,10 +469,19 @@ export default function PantallaDetalleTareaOT({ params }) {
         </CModalHeader>
         <CModalBody>
           <Aviso mensaje={errorVentana} />
-          <p className="mb-0">
+          <p className={preguntarEstadoActivo ? undefined : 'mb-0'}>
             La tarea de <strong>{tarea?.responsable?.nombre}</strong> pasa a{' '}
             <strong>{ventana === 'iniciar' ? 'En ejecución' : 'Finalizada'}</strong>.
           </p>
+          {preguntarEstadoActivo && (
+            <PreguntaEstadoActivo
+              idOt={id}
+              codigoActivo={tarea.activo.codigo}
+              valor={estadoActivo}
+              alCambiar={setEstadoActivo}
+              revisado={revisadoFinal}
+            />
+          )}
         </CModalBody>
         <CModalFooter>
           <BotonesAccion
@@ -455,6 +493,18 @@ export default function PantallaDetalleTareaOT({ params }) {
           />
         </CModalFooter>
       </CModal>
+
+      {ventana === 'asignar' && tarea && (
+        <DialogoAsignarTarea
+          idOt={id}
+          tarea={tarea}
+          onCerrar={() => setVentana(null)}
+          onGuardado={async () => {
+            await pedir();
+            setVentana(null);
+          }}
+        />
+      )}
 
       <DialogoEliminar
         visible={ventana === 'eliminar'}

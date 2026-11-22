@@ -215,7 +215,7 @@ export default function PantallaMisTareas() {
       <CCard>
         <CCardBody>
           <TablaDatos
-            antesDeLaTabla={<ReferenciaEtapas de="ot" className="mt-0 mb-3" estados={tareas.map((tarea) => tarea.estado)} />}
+            antesDeLaTabla={<ReferenciaEtapas de="tarea" className="mt-0 mb-3" estados={tareas.map((tarea) => tarea.estado)} />}
             filas={tareas}
             claveFila={(tarea) => `${tarea.idOt}-${tarea.idTarea}`}
             columnas={columnas}

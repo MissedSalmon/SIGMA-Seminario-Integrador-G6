@@ -37,3 +37,13 @@ export const ETAPA_OT = {
   Finalizada: 'terminado',
   Cancelada: 'cancelado',
 };
+
+/** Las tareas usan los mismos sellos que la OT, más «Pendiente», que la OT no tiene (22/11/2026). */
+export const ETAPA_TAREA = {
+  Creada: 'pendiente',
+  Pendiente: 'pendiente',
+  Asignada: 'enCurso',
+  'En ejecución': 'enCurso',
+  Finalizada: 'terminado',
+  Cancelada: 'cancelado',
+};
