@@ -23,12 +23,13 @@ import {
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { listarAreas } from '@/servicios/areas.js';
 import { listarAutorizados, eliminarAutorizado } from '@/servicios/autorizados.js';
+import { useEstadoGuardado } from '@/utils/estadoGuardado.js';
 
 export default function PantallaAutorizados() {
   const [autorizados, setAutorizados] = useState([]);
   const [areas, setAreas] = useState([]);
-  const [filtroArea, setFiltroArea] = useState('');
-  const [filtroEstado, setFiltroEstado] = useState('');
+  const [filtroArea, setFiltroArea] = useEstadoGuardado('filtroArea', '');
+  const [filtroEstado, setFiltroEstado] = useEstadoGuardado('filtroEstado', '');
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');

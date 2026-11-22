@@ -64,7 +64,7 @@
  * filtros cuando hay alguno aplicado. La tabla no sabe cuales: solo llama a la
  * funcion, y la pantalla es la que los vacia.
  */
-import { useId, useMemo, useState } from 'react';
+import { useId, useMemo } from 'react';
 import { CButton, CButtonGroup, CFormInput, CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilChevronLeft, cilChevronRight, cilSearch, cilX } from '@coreui/icons';
@@ -72,6 +72,7 @@ import { cilChevronLeft, cilChevronRight, cilSearch, cilX } from '@coreui/icons'
 import { EsqueletoFilas, SinDatos, SinResultados } from '@/componentes/EstadoTabla.js';
 import CampoFecha from '@/componentes/formulario/CampoFecha.js';
 import CampoLista from '@/componentes/formulario/CampoLista.js';
+import { useEstadoGuardado } from '@/utils/estadoGuardado.js';
 
 const TAMANO_PAGINA = 10;
 
@@ -95,8 +96,10 @@ export default function TablaDatos({
   /** Lo que va entre los filtros y la tabla (por ejemplo, gráficos que dependen de los mismos filtros). */
   antesDeLaTabla = null,
 }) {
-  const [busqueda, setBusqueda] = useState('');
-  const [paginaPedida, setPaginaPedida] = useState(1);
+  // El buscador y la pagina se recuerdan, igual que los filtros de cada pantalla:
+  // al volver de un detalle, el listado aparece como se lo dejo.
+  const [busqueda, setBusqueda] = useEstadoGuardado('tabla:busqueda', '');
+  const [paginaPedida, setPaginaPedida] = useEstadoGuardado('tabla:pagina', 1);
 
   // Para que cada desplegable tenga su propio id, aunque haya dos tablas.
   const idFiltros = useId();

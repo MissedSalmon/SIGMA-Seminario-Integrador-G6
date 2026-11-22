@@ -19,13 +19,14 @@ import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarTiposPrestador } from '@/servicios/tiposPrestador.js';
 import { listarPrestadores, eliminarPrestador } from '@/servicios/prestadores.js';
+import { useEstadoGuardado } from '@/utils/estadoGuardado.js';
 
 export default function PantallaPrestadores() {
   const { mostrarToast } = useToast();
 
   const [prestadores, setPrestadores] = useState([]);
   const [tipos, setTipos] = useState([]);
-  const [filtroTipo, setFiltroTipo] = useState('');
+  const [filtroTipo, setFiltroTipo] = useEstadoGuardado('filtroTipo', '');
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');

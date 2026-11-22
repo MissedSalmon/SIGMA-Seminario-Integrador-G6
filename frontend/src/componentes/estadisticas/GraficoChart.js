@@ -81,6 +81,8 @@ export const COLORES_GRAFICO = {
   aviso: '#8a6100',
   curso: '#2b55b0',
   peligro: '#b02a37',
+  // El gris de la etiqueta neutra de las tablas (--sigma-tono-neutro): Retirado y prioridad Baja.
+  apagado: '#5c636a',
   neutro: '#94a3b8',
   neutroClaro: '#cbd5e1',
 };
@@ -90,10 +92,10 @@ const COLOR_POR_NOMBRE = {
   Operativo: COLORES_GRAFICO.exito,
   'En mantenimiento': COLORES_GRAFICO.curso,
   'Fuera de servicio': COLORES_GRAFICO.peligro,
-  Retirado: COLORES_GRAFICO.neutro,
+  Retirado: COLORES_GRAFICO.apagado,
   Alta: COLORES_GRAFICO.peligro,
   Media: COLORES_GRAFICO.aviso,
-  Baja: COLORES_GRAFICO.neutro,
+  Baja: COLORES_GRAFICO.apagado,
   'Sin prioridad': COLORES_GRAFICO.neutroClaro,
 };
 

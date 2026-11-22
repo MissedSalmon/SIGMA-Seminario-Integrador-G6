@@ -28,6 +28,7 @@ import EtiquetaPrioridad from '@/componentes/ordenes/EtiquetaPrioridad.js';
 import EtiquetaEstadoOT from '@/componentes/ordenes/EtiquetaEstadoOT.js';
 import { listarMisTareas, listarPrioridadesDeTarea } from '@/servicios/tareas.js';
 import { soloFechaLegible } from '@/utils/fechas.js';
+import { useEstadoGuardado } from '@/utils/estadoGuardado.js';
 
 /** El orden de la lista: lo que el técnico está haciendo, después lo que le asignaron. */
 const ORDEN_ESTADO = ['En ejecución', 'Asignada', 'Pendiente', 'Creada', 'Finalizada', 'Cancelada'];
@@ -60,10 +61,10 @@ export default function PantallaMisTareas() {
   const [tareas, setTareas] = useState([]);
   const [prioridades, setPrioridades] = useState([]);
 
-  const [filtroEstado, setFiltroEstado] = useState('');
-  const [filtroPrioridad, setFiltroPrioridad] = useState('');
-  const [filtroDesde, setFiltroDesde] = useState('');
-  const [filtroHasta, setFiltroHasta] = useState('');
+  const [filtroEstado, setFiltroEstado] = useEstadoGuardado('filtroEstado', '');
+  const [filtroPrioridad, setFiltroPrioridad] = useEstadoGuardado('filtroPrioridad', '');
+  const [filtroDesde, setFiltroDesde] = useEstadoGuardado('filtroDesde', '');
+  const [filtroHasta, setFiltroHasta] = useEstadoGuardado('filtroHasta', '');
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');

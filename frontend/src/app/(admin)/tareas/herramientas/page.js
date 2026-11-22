@@ -28,6 +28,7 @@ import EtiquetaEstadoPrestamo from '@/componentes/tareas/EtiquetaEstadoPrestamo.
 import TareaDelHistorial from '@/componentes/tareas/TareaDelHistorial.js';
 import { listarHistorialHerramientas } from '@/servicios/tareas.js';
 import { formatearFecha } from '@/utils/fechas.js';
+import { useEstadoGuardado } from '@/utils/estadoGuardado.js';
 
 const ESTADOS = ['En uso', 'Devuelta'];
 

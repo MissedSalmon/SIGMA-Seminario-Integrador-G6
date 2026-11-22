@@ -20,13 +20,14 @@ import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarEdificios } from '@/servicios/edificios.js';
 import { listarEspacios, eliminarEspacio } from '@/servicios/espacios.js';
 import { textoDelPiso } from '@/utils/pisos.js';
+import { useEstadoGuardado } from '@/utils/estadoGuardado.js';
 
 export default function PantallaEspacios() {
   const { mostrarToast } = useToast();
 
   const [espacios, setEspacios] = useState([]);
   const [edificios, setEdificios] = useState([]);
-  const [filtroEdificio, setFiltroEdificio] = useState('');
+  const [filtroEdificio, setFiltroEdificio] = useEstadoGuardado('filtroEdificio', '');
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');

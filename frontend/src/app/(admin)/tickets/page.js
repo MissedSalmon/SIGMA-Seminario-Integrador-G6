@@ -30,6 +30,7 @@ import { listarActivos } from '@/servicios/activos.js';
 import { listarAreas } from '@/servicios/areas.js';
 import { listarTickets, listarEstadosDeTicket } from '@/servicios/tickets.js';
 import { formatearFechaHora, inicioDelDia, finDelDia } from '@/utils/fechas.js';
+import { useEstadoGuardado } from '@/utils/estadoGuardado.js';
 
 export default function PantallaTickets() {
   // El ticket lo registra el autorizado, que es quien reporta el problema (19/11/2026).
@@ -43,11 +44,11 @@ export default function PantallaTickets() {
   const [activos, setActivos] = useState([]);
   const [areas, setAreas] = useState([]);
 
-  const [filtroEstado, setFiltroEstado] = useState('');
-  const [filtroDesde, setFiltroDesde] = useState('');
-  const [filtroHasta, setFiltroHasta] = useState('');
-  const [filtroActivo, setFiltroActivo] = useState('');
-  const [filtroArea, setFiltroArea] = useState('');
+  const [filtroEstado, setFiltroEstado] = useEstadoGuardado('filtroEstado', '');
+  const [filtroDesde, setFiltroDesde] = useEstadoGuardado('filtroDesde', '');
+  const [filtroHasta, setFiltroHasta] = useEstadoGuardado('filtroHasta', '');
+  const [filtroActivo, setFiltroActivo] = useEstadoGuardado('filtroActivo', '');
+  const [filtroArea, setFiltroArea] = useEstadoGuardado('filtroArea', '');
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');

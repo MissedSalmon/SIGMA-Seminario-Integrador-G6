@@ -30,6 +30,7 @@ import {
   CDropdownMenu,
   CDropdownItem
 } from '@coreui/react';
+import { useEstadoGuardado } from '@/utils/estadoGuardado.js';
 
 
 const ESTADOS = ['Operativo', 'En mantenimiento', 'Fuera de servicio', 'Retirado'];
@@ -42,9 +43,9 @@ export default function PantallaActivos() {
   const [tipos, setTipos] = useState([]);
 
   // El espacio se guarda como "edificio|numero" porque su clave son dos datos.
-  const [filtroEspacio, setFiltroEspacio] = useState('');
-  const [filtroTipo, setFiltroTipo] = useState('');
-  const [filtroEstado, setFiltroEstado] = useState('');
+  const [filtroEspacio, setFiltroEspacio] = useEstadoGuardado('filtroEspacio', '');
+  const [filtroTipo, setFiltroTipo] = useEstadoGuardado('filtroTipo', '');
+  const [filtroEstado, setFiltroEstado] = useEstadoGuardado('filtroEstado', '');
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');

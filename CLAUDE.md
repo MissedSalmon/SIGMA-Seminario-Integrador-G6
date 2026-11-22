@@ -129,6 +129,11 @@ en los **issues de GitHub**, y el modelo de datos en `supabase/migrations/`.
   espacios se eligen en el formulario del área; el solicitante reporta los activos de todos
   ellos. Migración `20261121200000_espacio_pertenece_a_un_area.sql`, **sin aplicar: hay que
   correr `npm run db:push` junto con este código**. Ver [dominio.md](.claude/contexto/dominio.md).
+- **Mi perfil igual para los tres roles (22/11/2026):** `/perfil` muestra legajo, nombre y
+  apellido, DNI, CUIL, fecha de nacimiento, email, teléfono y rol. La persona edita todo menos
+  el legajo y el rol (`PUT /api/auth/perfil`). Técnico y administrador suman DNI, CUIL, email y
+  fecha de nacimiento con la migración `20261122120000_perfil_datos_personales.sql`
+  (aplicada en Supabase el 22/11/2026).
 - **El proyecto en Supabase** y la conexión con **Vercel** en producción.
 
 *(Nota: La base de datos ya fue refactorizada e integrada con Supabase CLI en la carpeta `supabase/migrations/`)*
@@ -154,3 +159,4 @@ Al trabajar en la interfaz gráfica, se deben seguir estrictamente estas reglas:
 11. **Cantidades:** un campo de cantidad va con `<Campo tipo="numero">`, que dibuja el `NumberField` de HeroUI con los botones **- número +** (ver `frontend/src/componentes/formulario/CampoNumero.js`). Los botones respetan el `min` y el `max`. **No es para todo número:** un legajo o cualquier número que sea un identificador sigue siendo un campo de texto, porque no tiene sentido subirlo de a uno.
 12. **Guardar y Cancelar:** todo formulario y toda ventana se cierran con **«Guardar»** y **«Cancelar»**, en ese orden: la acción principal primero y «Cancelar» a su derecha. Vale igual para agregar y para editar (nada de «Guardar cambios», «Registrar», «Confirmar» ni «Volver a revisar»). Sólo cambia el verbo cuando la acción no es guardar datos sino algo puntual («Eliminar», «Dar de baja», «Validar», «Rechazar»), y aun así va primero. **No se arman a mano:** se usa `<BotonesAccion>` (ver `frontend/src/componentes/BotonesAccion.js`). El detalle está en [arquitectura.md](.claude/contexto/arquitectura.md).
 13. **Elegir varias opciones:** se usa `<SeleccionMultiple>` (ver `frontend/src/componentes/formulario/SeleccionMultiple.js`): un desplegable con casillas, una casilla para marcar todas y buscador cuando hay muchas opciones. **No usar grillas de casillas a la vista ni fichas.**
+14. **Los filtros se recuerdan (22/11/2026):** al volver a un listado (por ejemplo, desde el detalle con «Volver al listado») tienen que seguir puestos el buscador, los filtros y la página. Cada filtro de un listado se declara con `useEstadoGuardado('filtroX', '')` en vez de `useState` (ver `frontend/src/utils/estadoGuardado.js`); el buscador y la página ya los recuerda `<TablaDatos>`. Se guardan por pantalla y duran mientras la pestaña esté abierta.

@@ -2422,7 +2422,6 @@ body {
 .sigma-credencial {
   display: grid;
   grid-template-columns: 8rem 1fr;
-  max-width: 46rem;
   margin-bottom: 1rem;
   background: var(--sigma-superficie);
   border: 1px solid var(--sigma-linea);
@@ -2476,7 +2475,6 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  max-width: 46rem;
   padding: 1rem 1.5rem;
   background: var(--sigma-superficie);
   border: 1px solid var(--sigma-linea);
