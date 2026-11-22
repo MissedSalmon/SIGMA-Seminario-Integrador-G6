@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { login, perfil, cambiarPassword, logout } from '../controladores/auth.controlador.js';
+import { login, perfil, actualizarPerfil, cambiarPassword, logout } from '../controladores/auth.controlador.js';
 import { validarSesion } from '../middlewares/auth.middleware.js';
 
 const router = Router();
@@ -11,6 +11,7 @@ router.post('/logout', logout);
 // Protegidas
 router.use(validarSesion);
 router.get('/perfil', perfil);
+router.put('/perfil', actualizarPerfil);
 router.post('/cambiar-password', cambiarPassword);
 
 export default router;

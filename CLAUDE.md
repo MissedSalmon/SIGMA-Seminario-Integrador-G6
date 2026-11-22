@@ -129,6 +129,11 @@ en los **issues de GitHub**, y el modelo de datos en `supabase/migrations/`.
   espacios se eligen en el formulario del área; el solicitante reporta los activos de todos
   ellos. Migración `20261121200000_espacio_pertenece_a_un_area.sql`, **sin aplicar: hay que
   correr `npm run db:push` junto con este código**. Ver [dominio.md](.claude/contexto/dominio.md).
+- **Mi perfil igual para los tres roles (22/11/2026):** `/perfil` muestra legajo, nombre y
+  apellido, DNI, CUIL, fecha de nacimiento, email, teléfono y rol. La persona edita todo menos
+  el legajo y el rol (`PUT /api/auth/perfil`). Técnico y administrador suman DNI, CUIL, email y
+  fecha de nacimiento con la migración `20261122120000_perfil_datos_personales.sql`
+  (aplicada en Supabase el 22/11/2026).
 - **El proyecto en Supabase** y la conexión con **Vercel** en producción.
 
 *(Nota: La base de datos ya fue refactorizada e integrada con Supabase CLI en la carpeta `supabase/migrations/`)*
