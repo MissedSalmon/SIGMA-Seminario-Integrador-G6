@@ -95,10 +95,11 @@ export async function middleware(request) {
     }
 
     // Rutas protegidas según rol
-    // Autorizados: exclusivo /tickets, /perfil, /configuracion
+    // Autorizados: exclusivo /tickets, /notificaciones, /perfil, /configuracion
     if (
       rol === 'autorizado' &&
       !url.pathname.startsWith('/tickets') &&
+      !url.pathname.startsWith('/notificaciones') &&
       !url.pathname.startsWith('/perfil') &&
       !url.pathname.startsWith('/configuracion')
     ) {

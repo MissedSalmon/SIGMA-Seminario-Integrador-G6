@@ -60,6 +60,7 @@ import { obtenerOrden, actualizarOrden, listarPrioridades } from '@/servicios/or
 import { formatearFechaHora } from '@/utils/fechas.js';
 import { comoHoraMinuto } from '@/utils/duracion.js';
 
+import { useVolverA } from '@/utils/volverA.js';
 /** Una OT en estos estados ya no se planifica. */
 const ESTADOS_CERRADOS = ['Finalizada', 'Cancelada'];
 
@@ -76,6 +77,8 @@ function soloFechaLegible(iso) {
 }
 
 export default function PantallaDetalleOrdenTrabajo({ params }) {
+  // Si se llegó desde una notificación, se vuelve a /notificaciones.
+  const volverA = useVolverA('/ordenes-trabajo');
   const { id } = use(params);
   const { mostrarToast } = useToast();
 
@@ -483,7 +486,7 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
       )}
 
       <div className="mt-2 mb-4">
-        <BotonEnlace href="/ordenes-trabajo" color="secondary" variante="outline">
+        <BotonEnlace href={volverA} color="secondary" variante="outline">
           <CIcon icon={cilArrowLeft} className="me-2" />
           Volver al listado
         </BotonEnlace>

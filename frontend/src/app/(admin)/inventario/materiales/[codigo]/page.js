@@ -47,6 +47,7 @@ import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { eliminarItem, listarConsumos, listarMovimientos, obtenerItem } from '@/servicios/inventario.js';
 import { soloFechaLegible } from '@/utils/fechas.js';
 
+import { useVolverA } from '@/utils/volverA.js';
 /** Los tipos de movimiento que suben el stock; el resto lo bajan. */
 const ENTRADAS = ['Ingreso', 'Ingreso manual'];
 
@@ -56,6 +57,8 @@ function SinDato({ children }) {
 }
 
 export default function PantallaFichaItem({ params }) {
+  // Si se llegó desde una notificación, se vuelve a /notificaciones.
+  const volverA = useVolverA('/inventario/materiales');
   const { codigo } = use(params);
 
   // El codigo viaja en la direccion, asi que puede venir escapado ("AC%2D014").
@@ -348,7 +351,7 @@ export default function PantallaFichaItem({ params }) {
       )}
 
       <div className="d-flex flex-wrap gap-2 mt-2 mb-4">
-        <BotonEnlace href="/inventario/materiales" color="secondary" variante="outline">
+        <BotonEnlace href={volverA} color="secondary" variante="outline">
           <CIcon icon={cilArrowLeft} className="me-2" />
           Volver al listado
         </BotonEnlace>

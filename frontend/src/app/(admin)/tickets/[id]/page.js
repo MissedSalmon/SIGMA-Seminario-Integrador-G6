@@ -34,6 +34,7 @@ import { formatearFechaHora } from '@/utils/fechas.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { useSesion } from '@/componentes/layout/ContextoSesion.js';
 
+import { useVolverA } from '@/utils/volverA.js';
 /*
  * Los estados en los que no corresponde hablar todavia de la orden de trabajo.
  *
@@ -68,6 +69,8 @@ function SinDato({ children }) {
 }
 
 export default function PantallaDetalleTicket({ params }) {
+  // Si se llegó desde una notificación, se vuelve a /notificaciones.
+  const volverA = useVolverA('/tickets');
   const { id } = use(params);
   // El usuario autorizado no entra a las OT: el enlace a la orden es sólo del administrador.
   const { usuario } = useSesion();
@@ -513,7 +516,7 @@ export default function PantallaDetalleTicket({ params }) {
       )}
 
       <div className="mt-2 mb-4">
-        <BotonEnlace href="/tickets" color="secondary" variante="outline">
+        <BotonEnlace href={volverA} color="secondary" variante="outline">
           <CIcon icon={cilArrowLeft} className="me-2" />
           Volver al listado
         </BotonEnlace>

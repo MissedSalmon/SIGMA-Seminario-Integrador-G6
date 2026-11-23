@@ -48,7 +48,7 @@ export function rutaPermitidaParaRol(rol, ruta) {
   }
 
   if (rolNorm === 'autorizado') {
-    return ruta.startsWith('/tickets');
+    return ruta.startsWith('/tickets') || ruta.startsWith('/notificaciones');
   }
 
   return false;
