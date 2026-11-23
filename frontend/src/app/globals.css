@@ -1970,17 +1970,66 @@ body {
   color: var(--sigma-teal);
 }
 
-/* En el celular los seis botones van en dos filas de tres, a todo el ancho. */
+/* Selector segmentado compacto para encabezados de tarjetas de gráficos. */
+.sigma-segmentos--compacto .sigma-segmento {
+  font-size: 0.78rem;
+  padding: 0.22rem 0.65rem;
+}
+
+/* Pie de gráfico con resumen del top y botón para alternar la tabla completa. */
+.sigma-grafico-pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px dashed var(--sigma-linea);
+}
+
+.sigma-grafico-ver-tabla {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 0;
+  background: transparent;
+  padding: 0.15rem 0.35rem;
+  border-radius: var(--sigma-radio-sm);
+  color: var(--sigma-teal);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.sigma-grafico-ver-tabla:hover {
+  background: var(--sigma-teal-suave);
+  color: var(--sigma-teal-hover);
+}
+
+.sigma-grafico-ver-tabla:focus-visible {
+  outline: 2px solid var(--sigma-teal);
+  outline-offset: 2px;
+}
+
+/* En el celular los seis botones del período van en dos filas de tres, a todo el ancho. */
 @media (max-width: 767.98px) {
-  .sigma-segmentos {
+  .sigma-segmentos:not(.sigma-segmentos--compacto) {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     width: 100%;
   }
 
-  .sigma-segmento {
+  .sigma-segmentos:not(.sigma-segmentos--compacto) .sigma-segmento {
     padding: 0.4rem 0.25rem;
     white-space: normal;
+  }
+
+  .sigma-segmentos--compacto .sigma-segmento {
+    min-width: auto;
+    min-height: 36px;
+    padding: 0.25rem 0.65rem;
   }
 }
 

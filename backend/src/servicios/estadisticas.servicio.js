@@ -40,6 +40,9 @@ const COLUMNAS = `
     espacio (
       espacio_id,
       espacio_num,
+      tipo_espacio (
+        tipo_espacio_nom
+      ),
       edificio (
         edificio_nom
       ),
@@ -72,6 +75,13 @@ function aIncidencia(fila) {
   const espacio = activo?.espacio ?? null;
   const ot = fila.orden_trabajo ?? null;
   const ticket = ot?.ticket ?? null;
+  const tipoEspacio = espacio?.tipo_espacio?.tipo_espacio_nom ?? '';
+  const numeroEspacio = espacio?.espacio_num ?? '';
+  const nombreEspacio = numeroEspacio
+    ? tipoEspacio
+      ? `${tipoEspacio} ${numeroEspacio}`
+      : `Espacio ${numeroEspacio}`
+    : '';
 
   return {
     idFalla: fila.falla_id,
@@ -81,7 +91,8 @@ function aIncidencia(fila) {
     codigoActivo: fila.activo_codigo,
     nombreTipoActivo: activo?.tipo_activo?.tipo_activo_nom ?? '',
     nombreEdificio: espacio?.edificio?.edificio_nom ?? '',
-    numeroEspacio: espacio?.espacio_num ?? '',
+    numeroEspacio,
+    nombreEspacio,
     idOt: fila.ot_id,
     idTarea: fila.tarea_id,
     idPlan: ot?.mant_prev_id ?? null,
@@ -184,6 +195,149 @@ export async function obtenerAreasConMayorIncidencia(filtros = {}) {
   ranking.sort(compararRanking);
 
   return ranking.map((area, indice) => ({ posicion: indice + 1, ...area }));
+}
+
+/**
+ * Construye los rankings completos de fallas agrupadas por tipo de activo y por
+ * activo específico a partir de las incidencias del período.
+ *
+ * Reglas de negocio:
+ * - Cada falla (idFalla) cuenta una sola vez.
+ * - Cuentan las fallas de OT correctivas y preventivas registradas en el período.
+ * - "Tickets" son los tickets distintos detrás de esas fallas.
+ * - En tipos de activo, "cantidadActivos" cuenta los activos distintos que fallaron.
+ * - Orden de mayor a menor cantidad de fallas; empate por activos afectados / tickets y luego alfabético.
+ * - "Sin tipo" siempre al final.
+ */
+export function agruparFallasPorActivoYTipo(rankingAreas = []) {
+  const fallasDistintas = new Set();
+  const porTipo = new Map();
+  const porActivo = new Map();
+
+  for (const area of rankingAreas ?? []) {
+    const nombreArea = area?.nombreArea ?? SIN_AREA;
+    for (const inc of area?.incidencias ?? []) {
+      const claveFalla = inc.idFalla ?? `${inc.idOt}-${inc.idTarea}-${inc.codigoActivo}`;
+      if (fallasDistintas.has(claveFalla)) continue;
+      fallasDistintas.add(claveFalla);
+
+      const tipoActivoLimpio = (inc.nombreTipoActivo ?? '').trim();
+      const sinTipo = !tipoActivoLimpio;
+      const nombreTipoActivo = sinTipo ? 'Sin tipo' : tipoActivoLimpio;
+      const claveTipo = sinTipo ? '__sin_tipo__' : nombreTipoActivo;
+
+      if (!porTipo.has(claveTipo)) {
+        porTipo.set(claveTipo, {
+          nombreTipoActivo,
+          sinTipo,
+          cantidadFallas: 0,
+          activos: new Set(),
+          tickets: new Set(),
+          ots: new Set(),
+          tiposFalla: new Map(),
+        });
+      }
+      const grupoTipo = porTipo.get(claveTipo);
+      grupoTipo.cantidadFallas += 1;
+      if (inc.codigoActivo) grupoTipo.activos.add(inc.codigoActivo);
+      if (inc.ticket?.id != null) grupoTipo.tickets.add(inc.ticket.id);
+      if (inc.idOt != null) grupoTipo.ots.add(inc.idOt);
+      const tipoFalla = inc.tipo ?? 'Sin tipo';
+      grupoTipo.tiposFalla.set(tipoFalla, (grupoTipo.tiposFalla.get(tipoFalla) ?? 0) + 1);
+
+      if (inc.codigoActivo) {
+        if (!porActivo.has(inc.codigoActivo)) {
+          const espacioTexto = inc.nombreEspacio || (inc.numeroEspacio ? `Espacio ${inc.numeroEspacio}` : '');
+          porActivo.set(inc.codigoActivo, {
+            codigoActivo: inc.codigoActivo,
+            nombreTipoActivo,
+            nombreArea,
+            nombreEdificio: inc.nombreEdificio || area?.nombreEdificio || '',
+            numeroEspacio: inc.numeroEspacio || '',
+            nombreEspacio: espacioTexto,
+            cantidadFallas: 0,
+            tickets: new Set(),
+            ots: new Set(),
+            tiposFalla: new Map(),
+          });
+        }
+        const grupoActivo = porActivo.get(inc.codigoActivo);
+        grupoActivo.cantidadFallas += 1;
+        if (inc.ticket?.id != null) grupoActivo.tickets.add(inc.ticket.id);
+        if (inc.idOt != null) grupoActivo.ots.add(inc.idOt);
+        grupoActivo.tiposFalla.set(tipoFalla, (grupoActivo.tiposFalla.get(tipoFalla) ?? 0) + 1);
+      }
+    }
+  }
+
+  const totalFallas = fallasDistintas.size;
+  const calcularPorcentaje = (cantidad) =>
+    totalFallas > 0 ? Math.round((cantidad / totalFallas) * 1000) / 10 : 0;
+
+  const porTipoActivo = [...porTipo.values()]
+    .map((g) => ({
+      nombreTipoActivo: g.nombreTipoActivo,
+      sinTipo: g.sinTipo,
+      cantidadFallas: g.cantidadFallas,
+      cantidadActivos: g.activos.size,
+      cantidadTickets: g.tickets.size,
+      cantidadOts: g.ots.size,
+      porcentaje: calcularPorcentaje(g.cantidadFallas),
+      desglose: [...g.tiposFalla.entries()]
+        .map(([tipo, cantidad]) => ({ tipo, cantidad }))
+        .sort((a, b) => b.cantidad - a.cantidad || a.tipo.localeCompare(b.tipo, 'es')),
+    }))
+    .sort((a, b) => {
+      if (a.sinTipo !== b.sinTipo) return a.sinTipo ? 1 : -1;
+      return (
+        b.cantidadFallas - a.cantidadFallas ||
+        b.cantidadActivos - a.cantidadActivos ||
+        b.cantidadTickets - a.cantidadTickets ||
+        a.nombreTipoActivo.localeCompare(b.nombreTipoActivo, 'es')
+      );
+    })
+    .map(({ sinTipo: _sinTipo, ...item }, idx) => ({
+      posicion: idx + 1,
+      ...item,
+    }));
+
+  const listaPorActivo = [...porActivo.values()]
+    .map((g) => ({
+      codigoActivo: g.codigoActivo,
+      nombreTipoActivo: g.nombreTipoActivo,
+      etiqueta:
+        g.nombreTipoActivo && g.nombreTipoActivo !== 'Sin tipo'
+          ? `${g.codigoActivo} · ${g.nombreTipoActivo}`
+          : g.codigoActivo,
+      nombreArea: g.nombreArea,
+      nombreEdificio: g.nombreEdificio,
+      numeroEspacio: g.numeroEspacio,
+      nombreEspacio: g.nombreEspacio,
+      cantidadFallas: g.cantidadFallas,
+      cantidadTickets: g.tickets.size,
+      cantidadOts: g.ots.size,
+      porcentaje: calcularPorcentaje(g.cantidadFallas),
+      desglose: [...g.tiposFalla.entries()]
+        .map(([tipo, cantidad]) => ({ tipo, cantidad }))
+        .sort((a, b) => b.cantidad - a.cantidad || a.tipo.localeCompare(b.tipo, 'es')),
+    }))
+    .sort(
+      (a, b) =>
+        b.cantidadFallas - a.cantidadFallas ||
+        b.cantidadTickets - a.cantidadTickets ||
+        b.cantidadOts - a.cantidadOts ||
+        a.codigoActivo.localeCompare(b.codigoActivo, 'es')
+    )
+    .map((item, idx) => ({
+      posicion: idx + 1,
+      ...item,
+    }));
+
+  return {
+    totalFallas,
+    porTipoActivo,
+    porActivo: listaPorActivo,
+  };
 }
 
 /*
@@ -484,6 +638,7 @@ export async function obtenerPanelCompleto(filtros = {}) {
       cargaTecnicos,
       areasIncidencia: {
         ranking: areasIncidencia,
+        ...agruparFallasPorActivoYTipo(areasIncidencia),
       },
       tiemposResolucion,
     },
