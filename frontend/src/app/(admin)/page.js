@@ -571,12 +571,12 @@ export default function PantallaPanelAdministrador() {
                                 <div className="fw-medium">{m.nombre}</div>
                                 <div className="small text-body-secondary text-nowrap">{m.codigo}</div>
                               </CTableDataCell>
-                              <CTableDataCell className="text-end">{m.stockActual} {m.unidadMedida}</CTableDataCell>
+                              <CTableDataCell className="text-end">{m.stockActual}</CTableDataCell>
                               <CTableDataCell className="text-end text-body-secondary">
-                                {m.stockMinimo} {m.unidadMedida}
+                                {m.stockMinimo}
                               </CTableDataCell>
                               <CTableDataCell className="text-end fw-bold">
-                                {m.faltante} {m.unidadMedida}
+                                {m.faltante}
                               </CTableDataCell>
                             </CTableRow>
                           ))}
