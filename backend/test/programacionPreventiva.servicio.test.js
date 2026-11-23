@@ -105,26 +105,26 @@ describe('proximoMantenimiento (reglas de negocio)', () => {
     expect(proximoMantenimiento({ ...base, altaActivo: '2026-05-10' }).fecha).toBe('2026-11-10');
   });
 
-  test('si el vencimiento ya pasó, queda ese y no el siguiente', () => {
-    expect(proximoMantenimiento({ ...base, altaActivo: '2026-04-11' }).fecha).toBe('2026-10-11');
+  test('si el vencimiento ya pasó, devuelve hoy y no una fecha anterior', () => {
+    expect(proximoMantenimiento({ ...base, altaActivo: '2026-04-11' }).fecha).toBe('2026-11-06');
   });
 
-  test('un activo de hace dos años con plan trimestral debe sólo el último vencimiento', () => {
+  test('un activo de hace dos años con plan trimestral queda vencido para hoy', () => {
     const resultado = proximoMantenimiento({ ...base, intervalo: 3, altaActivo: '2024-11-20' });
-    expect(resultado.fecha).toBe('2026-08-20');
+    expect(resultado.fecha).toBe('2026-11-06');
   });
 
-  test('una OT cancelada hace mucho tampoco arrastra los ciclos atrasados', () => {
+  test('una OT cancelada hace mucho tampoco arrastra los ciclos atrasados y queda para hoy', () => {
     const resultado = proximoMantenimiento({
       ...base,
       altaActivo: '2024-07-10',
       ordenes: [{ id: 1, estado: 'Cancelada', fechaProgramada: '2025-01-10' }],
     });
-    expect(resultado.fecha).toBe('2026-07-10');
+    expect(resultado.fecha).toBe('2026-11-06');
   });
 
-  test('fin de mes: los atrasados se suman desde la alta y no se corren al 28', () => {
-    expect(proximoMantenimiento({ ...base, altaActivo: '2025-08-31' }).fecha).toBe('2026-08-31');
+  test('fin de mes: los atrasados no devuelven fecha pasada y los futuros no se corren al 28', () => {
+    expect(proximoMantenimiento({ ...base, altaActivo: '2025-08-31' }).fecha).toBe('2026-11-06');
   });
 
   test('con una OT finalizada, cuenta desde su cierre aunque se haya cerrado tarde', () => {

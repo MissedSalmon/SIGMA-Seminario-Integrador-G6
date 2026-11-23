@@ -281,7 +281,13 @@ export async function crearPlan(datos = {}) {
   const { error: errorTareas } = await supabase.from('mant_prev_tarea').insert(filasTareas);
   if (errorTareas) throw errorDeBase(errorTareas, 'al asignar tareas al plan');
 
-  return obtenerPlanPorId(idPlan);
+  const plan = await obtenerPlanPorId(idPlan);
+  try {
+    await generarOtsPreventivas({ idPlan });
+  } catch (fallo) {
+    console.error('[planes] No se pudo generar las OT preventivas iniciales del plan:', fallo.message);
+  }
+  return plan;
 }
 
 /**

@@ -79,7 +79,7 @@ function vencimientoPendiente(base, intervalo, unidad, hoy) {
   let fecha = sumarPeriodo(base, intervalo, unidad);
   for (;;) {
     const siguiente = sumarPeriodo(base, intervalo * (vueltas + 1), unidad);
-    if (siguiente > hoy) return fecha;
+    if (siguiente > hoy) return fecha < hoy ? hoy : fecha;
     vueltas++;
     fecha = siguiente;
   }
@@ -255,17 +255,19 @@ async function crearOtPreventiva({ plan, activo, fecha }) {
  * @param {object} [opciones]
  * @param {string} [opciones.fechaCorte]     - "hoy" para el cálculo (por defecto, hoy en Argentina)
  * @param {number} [opciones.diasAnticipacion]
+ * @param {number} [opciones.idPlan]         - sólo ese plan (lo usa el alta de planes)
  * @param {string} [opciones.codigoActivo]   - sólo ese activo (lo usa el alta de activos)
  */
 export async function generarOtsPreventivas({
   fechaCorte,
   diasAnticipacion = env.planesDiasAnticipacion,
+  idPlan = null,
   codigoActivo = null,
 } = {}) {
   const corte = soloDia(fechaCorte) ?? hoyArgentina();
   const limite = sumarDias(corte, diasAnticipacion);
 
-  const pares = armarProgramacion(await leerDatos({ codigoActivo }), corte);
+  const pares = armarProgramacion(await leerDatos({ idPlan, codigoActivo }), corte);
   const vencidos = pares.filter((par) => par.fecha && par.fecha <= limite);
 
   const resultado = {
