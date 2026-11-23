@@ -332,6 +332,16 @@ describe('consultas de programación', () => {
     expect(await listarPorVencer(7, '2026-12-06')).toHaveLength(1);
   });
 
+  test('listarPorVencer no devuelve fechaGeneracion anterior a hoy cuando vence hoy', async () => {
+    escenario({ planes: [filaPlan()], activos: [filaActivo('AC-A', '2026-05-06')] });
+
+    const lista = await listarPorVencer(7, '2026-11-06');
+
+    expect(lista).toEqual([
+      { idPlan: 1, nombre: 'Limpieza de filtros', codigoActivo: 'AC-A', fecha: '2026-11-06', fechaGeneracion: '2026-11-06', diasRestantes: 0 },
+    ]);
+  });
+
   test('listarProgramacion devuelve cada activo con su última y próxima fecha', async () => {
     escenario({
       planes: [filaPlan()],

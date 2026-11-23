@@ -336,12 +336,15 @@ export async function listarPorVencer(dias = 7, fechaReferencia) {
   return pares
     .filter((par) => par.fecha && par.fecha <= tope)
     .sort((a, b) => a.fecha.localeCompare(b.fecha))
-    .map((par) => ({
-      idPlan: par.plan.id,
-      nombre: par.plan.nombre,
-      codigoActivo: par.activo.activo_codigo,
-      fecha: par.fecha,
-      fechaGeneracion: sumarDias(par.fecha, -env.planesDiasAnticipacion),
-      diasRestantes: diasEntre(hoy, par.fecha),
-    }));
+    .map((par) => {
+      const fechaGeneracion = sumarDias(par.fecha, -env.planesDiasAnticipacion);
+      return {
+        idPlan: par.plan.id,
+        nombre: par.plan.nombre,
+        codigoActivo: par.activo.activo_codigo,
+        fecha: par.fecha,
+        fechaGeneracion: fechaGeneracion < hoy ? hoy : fechaGeneracion,
+        diasRestantes: diasEntre(hoy, par.fecha),
+      };
+    });
 }

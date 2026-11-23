@@ -1,6 +1,6 @@
 import { supabase } from '../config/supabase.js';
 import { datoInvalido, noEncontrado, conflicto, errorDeBase } from '../utiles/errores.js';
-import { ENUM_ESTADO_OT } from '../utiles/enumerados.js';
+import { ENUM_ESTADO_ASIGNACION_TECNICO, ENUM_ESTADO_OT, ENUM_ESTADO_TAREA } from '../utiles/enumerados.js';
 import { hoyArgentina, soloDia, sumarPeriodo, UNIDADES_FRECUENCIA } from '../utiles/periodicidad.js';
 import { generarOtsPreventivas, listarPorVencer, listarProgramacion } from './programacionPreventiva.servicio.js';
 
@@ -399,7 +399,8 @@ export async function actualizarPlan(id, datos = {}) {
 
 /**
  * Baja lógica de un plan preventivo (CA6).
- * No altera ni elimina las órdenes de trabajo ya generadas.
+ * Cancela las órdenes de trabajo abiertas (Creada, Asignada, En ejecución)
+ * generadas por el plan junto con sus tareas y asignaciones pendientes.
  */
 export async function darDeBajaPlan(id) {
   const idNum = Number(id);
@@ -419,9 +420,48 @@ export async function darDeBajaPlan(id) {
 
   if (error) throw errorDeBase(error, 'al dar de baja el plan');
 
+  const estadosAbiertosOt = ['Creada', 'Asignada', 'En ejecución'].map((e) => ENUM_ESTADO_OT.codigo(e));
+  const { data: otsCanceladas, error: errorOts } = await supabase
+    .from('orden_trabajo')
+    .update({ ot_estado: ENUM_ESTADO_OT.codigo('Cancelada') })
+    .eq('mant_prev_id', idNum)
+    .in('ot_estado', estadosAbiertosOt)
+    .select('ot_id');
+
+  if (errorOts) throw errorDeBase(errorOts, 'al cancelar las órdenes de trabajo del plan');
+
+  const idsOtsCanceladas = (otsCanceladas ?? []).map((ot) => ot.ot_id);
+  if (idsOtsCanceladas.length > 0) {
+    const estadosAbiertosTarea = ['Creada', 'Asignada', 'En ejecución', 'Pendiente'].map((e) =>
+      ENUM_ESTADO_TAREA.codigo(e)
+    );
+    const { error: errorTareas } = await supabase
+      .from('tarea_ot')
+      .update({ tarea_estado: ENUM_ESTADO_TAREA.codigo('Cancelada') })
+      .in('ot_id', idsOtsCanceladas)
+      .in('tarea_estado', estadosAbiertosTarea);
+
+    if (errorTareas) throw errorDeBase(errorTareas, 'al cancelar las tareas de las órdenes del plan');
+
+    const estadosPendientesAsig = ['Pendiente', 'Asignada', 'En curso'].map((e) =>
+      ENUM_ESTADO_ASIGNACION_TECNICO.codigo(e)
+    );
+    const { error: errorAsig } = await supabase
+      .from('tecnico_asignado_tarea_ot')
+      .update({ tec_asig_estado: ENUM_ESTADO_ASIGNACION_TECNICO.codigo('Cancelada') })
+      .in('ot_id', idsOtsCanceladas)
+      .in('tec_asig_estado', estadosPendientesAsig);
+
+    if (errorAsig) throw errorDeBase(errorAsig, 'al cancelar las asignaciones de las órdenes del plan');
+  }
+
   return {
     id: idNum,
-    mensaje: `El plan "${plan.nombre}" fue dado de baja correctamente. Las órdenes de trabajo existentes no se vieron afectadas.`,
+    otsCanceladas: idsOtsCanceladas.length,
+    mensaje:
+      idsOtsCanceladas.length > 0
+        ? `El plan "${plan.nombre}" fue dado de baja correctamente y se cancelaron ${idsOtsCanceladas.length} órdenes de trabajo abiertas.`
+        : `El plan "${plan.nombre}" fue dado de baja correctamente.`,
   };
 }
 

@@ -288,7 +288,7 @@ export default function PantallaDetallePlanMantenimiento({ params }) {
           Se va a dar de baja el plan <strong>{plan?.nombre}</strong>.
         </p>
         <p className="text-body-secondary mb-0">
-          Deja de generar órdenes de trabajo. Las que ya generó no se tocan.
+          Deja de generar órdenes de trabajo y se cancelan las órdenes abiertas asociadas al plan.
         </p>
       </DialogoEliminar>
     </>
