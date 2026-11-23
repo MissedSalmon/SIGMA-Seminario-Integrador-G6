@@ -2,7 +2,9 @@
 -- SIGMA · Script 2: Limpieza completa de datos de la base de datos
 -- =============================================================================
 -- Vacía todas las filas de las tablas de la base de datos manteniendo intactas
--- las estructuras, restricciones, funciones, vistas y relaciones.
+-- las estructuras, restricciones, funciones, vistas y relaciones del modelo
+-- actual (incluyendo datos personales de perfiles, unidades de medida de
+-- materiales y relación espacio -> área).
 --
 -- RESTRICCIÓN CRÍTICA:
 --   Se preserva de forma estricta el registro del Administrador ('Admin') en la

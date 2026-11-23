@@ -56,11 +56,14 @@ SELECT setval('public.especialidad_especialidad_id_seq', COALESCE((SELECT MAX(es
 -- =============================================================================
 -- 3. EDIFICIOS Y TIPOS DE ESPACIO
 -- =============================================================================
+-- Nota: La seed cuenta únicamente con los 2 edificios del sistema:
+--   1 = Edificio Central
+--   2 = Anexo
 INSERT INTO public.edificio (edificio_id, edificio_nom, edificio_dir)
 OVERRIDING SYSTEM VALUE
 VALUES
     (1, 'Edificio Central', 'French 414, Resistencia, Chaco'),
-    (2, 'Anexo Aulas y Laboratorios', 'Av. Laprida 550, Resistencia, Chaco')
+    (2, 'Anexo',            'Av. Laprida 550, Resistencia, Chaco')
 ON CONFLICT (edificio_id) DO NOTHING;
 
 SELECT setval('public.edificio_edificio_id_seq', COALESCE((SELECT MAX(edificio_id) FROM public.edificio), 1), true);
@@ -83,9 +86,11 @@ SELECT setval('public.tipo_espacio_tipo_espacio_id_seq', COALESCE((SELECT MAX(ti
 -- =============================================================================
 -- 4. SOLICITANTES (AUTORIZADOS) Y SUS CUENTAS DE USUARIO
 -- =============================================================================
--- Regla: Su legajo es su usuario y su contraseña inicial, y solicita cambio
--- (`require_password_change = true`). Todos los CUILs tienen dígito verificador
--- módulo 11 válido y teléfonos normalizados de 10 dígitos.
+-- Nota: El usuario Administrador ('Admin', rol = 1) y su perfil en
+-- `administrador` se conservan intactos sin ninguna modificación.
+-- Regla para Solicitantes: Su legajo es su usuario y su contraseña inicial, y
+-- solicita cambio (`require_password_change = true`). Todos los CUILs tienen
+-- dígito verificador módulo 11 válido y teléfonos normalizados de 10 dígitos.
 INSERT INTO public.autorizado (
     autorizado_legajo,
     autorizado_nom_ape,
@@ -154,7 +159,7 @@ VALUES
     (7,  1, 'BIB-1', 8, '0', 120.00, 5),
     (8,  1, 'SRV-1', 7, '1', 20.00, 6),
     (9,  1, 'SAN-PB', 6, '0', 18.00, NULL),
-    -- Anexo Aulas y Laboratorios (edificio_id = 2)
+    -- Anexo (edificio_id = 2)
     (10, 2, '201', 1, '1', 52.00, 2),
     (11, 2, '202', 1, '2', 52.00, 2),
     (12, 2, 'LAB-FIS', 2, '0', 70.00, 2),
@@ -170,18 +175,24 @@ SELECT setval('public.espacio_espacio_id_seq', COALESCE((SELECT MAX(espacio_id) 
 -- =============================================================================
 -- Regla: El legajo del técnico es numérico (guardado en VARCHAR), es su usuario
 -- y su contraseña inicial con `require_password_change = true` (rol = 2).
+-- Incluye sus datos personales completos (`tecnico_dni`, `tecnico_cuil`,
+-- `tecnico_email`, `tecnico_fecha_nac`) para el modelo actual de «Mi perfil».
 INSERT INTO public.tecnico (
     tecnico_legajo,
     tecnico_nom_ape,
+    tecnico_dni,
+    tecnico_cuil,
+    tecnico_email,
     tecnico_tel,
+    tecnico_fecha_nac,
     tecnico_disponibilidad
 ) VALUES
-    ('1001', 'Carlos Alberto Méndez',  '362 4310001', true),
-    ('1002', 'Diego Armando Peralta',  '362 4310002', true),
-    ('1003', 'Jorge Luis Villalba',    '362 4310003', true),
-    ('1004', 'Martín Ezequiel Acosta', '362 4310004', true),
-    ('1005', 'Pablo Sebastián Romero', '362 4310005', true),
-    ('1006', 'Héctor Fabián Benítez',  '362 4310006', false)
+    ('1001', 'Carlos Alberto Méndez',  '27345678', '20-27345678-0', 'carlos.mendez@frre.utn.edu.ar',  '362 4310001', '1979-03-12', true),
+    ('1002', 'Diego Armando Peralta',  '31456789', '20-31456789-3', 'diego.peralta@frre.utn.edu.ar',  '362 4310002', '1985-06-24', true),
+    ('1003', 'Jorge Luis Villalba',    '26789012', '20-26789012-4', 'jorge.villalba@frre.utn.edu.ar', '362 4310003', '1978-09-08', true),
+    ('1004', 'Martín Ezequiel Acosta', '34567890', '20-34567890-1', 'martin.acosta@frre.utn.edu.ar',  '362 4310004', '1990-01-17', true),
+    ('1005', 'Pablo Sebastián Romero', '36123456', '20-36123456-7', 'pablo.romero@frre.utn.edu.ar',   '362 4310005', '1992-05-29', true),
+    ('1006', 'Héctor Fabián Benítez',  '24890123', '20-24890123-6', 'hector.benitez@frre.utn.edu.ar', '362 4310006', '1975-11-21', false)
 ON CONFLICT (tecnico_legajo) DO NOTHING;
 
 INSERT INTO public.tecnico_especialidad (tecnico_legajo, especialidad_id)
