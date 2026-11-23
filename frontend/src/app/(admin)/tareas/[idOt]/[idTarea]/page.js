@@ -66,6 +66,7 @@ import {
 import { formatearFecha, formatearFechaHora, hoyTexto, soloFechaLegible } from '@/utils/fechas.js';
 import { textoDelPiso } from '@/utils/pisos.js';
 
+import { useVolverA } from '@/utils/volverA.js';
 /** Una tarea en estos estados todavía no empezó: se puede iniciar. */
 const ESTADOS_SIN_EMPEZAR = ['Creada', 'Asignada', 'Pendiente'];
 
@@ -75,6 +76,8 @@ function SinDato({ children }) {
 }
 
 export default function PantallaDetalleMiTarea({ params }) {
+  // Si se llegó desde una notificación, se vuelve a /notificaciones.
+  const volverA = useVolverA('/tareas');
   const { idOt, idTarea } = use(params);
   const { mostrarToast } = useToast();
 
@@ -490,7 +493,7 @@ export default function PantallaDetalleMiTarea({ params }) {
 
       {/* Lugar para que la accion fija del celular no tape el final de la pantalla. */}
       <div className={`mt-2 mb-4${acciones ? ' sigma-espacio-accion' : ''}`}>
-        <BotonEnlace href="/tareas" color="secondary" variante="outline">
+        <BotonEnlace href={volverA} color="secondary" variante="outline">
           <CIcon icon={cilArrowLeft} className="me-2" />
           Volver al listado
         </BotonEnlace>

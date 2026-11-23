@@ -134,6 +134,16 @@ en los **issues de GitHub**, y el modelo de datos en `supabase/migrations/`.
   el legajo y el rol (`PUT /api/auth/perfil`). Técnico y administrador suman DNI, CUIL, email y
   fecha de nacimiento con la migración `20261122120000_perfil_datos_personales.sql`
   (aplicada en Supabase el 22/11/2026).
+- **Notificaciones por rol (23/11/2026):** la campana y `/notificaciones` las tienen los tres
+  roles (`GET /api/notificaciones`). Administrador: tickets nuevos (sin validar), OT
+  finalizadas y stock bajo. Técnico: tareas asignadas y las que tiene que hacer hoy (fecha
+  prevista). Solicitante: sus tickets validados o rechazados y los resueltos (OT finalizada).
+  No se guardan: se calculan, y las de cosas ya pasadas se muestran durante 7 días. El
+  rechazo no guarda fecha, así que se toma la del alta del ticket. Cada usuario las puede
+  marcar como leídas o no leídas y eliminarlas; eso sí se guarda, en la tabla
+  `notificacion_usuario` (migración `20261123160000_notificacion_usuario.sql`, aplicada en Supabase el 23/11/2026).
+  `/notificaciones` es una sola
+  tabla para los tres roles, de la más reciente a la más vieja.
 - **El proyecto en Supabase** y la conexión con **Vercel** en producción.
 
 *(Nota: La base de datos ya fue refactorizada e integrada con Supabase CLI en la carpeta `supabase/migrations/`)*
