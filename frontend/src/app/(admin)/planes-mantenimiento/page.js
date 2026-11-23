@@ -224,8 +224,8 @@ export default function PantallaPlanesMantenimiento() {
           <strong>{aDarDeBaja?.nombre}</strong>?
         </p>
         <p className="text-body-secondary small mb-0">
-          El plan dejará de generar nuevas órdenes de trabajo automáticas. Las órdenes de
-          trabajo ya generadas previamente no se verán afectadas.
+          El plan dejará de generar nuevas órdenes de trabajo automáticas y se cancelarán las órdenes
+          abiertas que haya generado.
         </p>
       </DialogoEliminar>
     </>

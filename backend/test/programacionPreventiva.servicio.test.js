@@ -105,26 +105,26 @@ describe('proximoMantenimiento (reglas de negocio)', () => {
     expect(proximoMantenimiento({ ...base, altaActivo: '2026-05-10' }).fecha).toBe('2026-11-10');
   });
 
-  test('si el vencimiento ya pasó, queda ese y no el siguiente', () => {
-    expect(proximoMantenimiento({ ...base, altaActivo: '2026-04-11' }).fecha).toBe('2026-10-11');
+  test('si el vencimiento ya pasó, devuelve hoy y no una fecha anterior', () => {
+    expect(proximoMantenimiento({ ...base, altaActivo: '2026-04-11' }).fecha).toBe('2026-11-06');
   });
 
-  test('un activo de hace dos años con plan trimestral debe sólo el último vencimiento', () => {
+  test('un activo de hace dos años con plan trimestral queda vencido para hoy', () => {
     const resultado = proximoMantenimiento({ ...base, intervalo: 3, altaActivo: '2024-11-20' });
-    expect(resultado.fecha).toBe('2026-08-20');
+    expect(resultado.fecha).toBe('2026-11-06');
   });
 
-  test('una OT cancelada hace mucho tampoco arrastra los ciclos atrasados', () => {
+  test('una OT cancelada hace mucho tampoco arrastra los ciclos atrasados y queda para hoy', () => {
     const resultado = proximoMantenimiento({
       ...base,
       altaActivo: '2024-07-10',
       ordenes: [{ id: 1, estado: 'Cancelada', fechaProgramada: '2025-01-10' }],
     });
-    expect(resultado.fecha).toBe('2026-07-10');
+    expect(resultado.fecha).toBe('2026-11-06');
   });
 
-  test('fin de mes: los atrasados se suman desde la alta y no se corren al 28', () => {
-    expect(proximoMantenimiento({ ...base, altaActivo: '2025-08-31' }).fecha).toBe('2026-08-31');
+  test('fin de mes: los atrasados no devuelven fecha pasada y los futuros no se corren al 28', () => {
+    expect(proximoMantenimiento({ ...base, altaActivo: '2025-08-31' }).fecha).toBe('2026-11-06');
   });
 
   test('con una OT finalizada, cuenta desde su cierre aunque se haya cerrado tarde', () => {
@@ -224,9 +224,9 @@ describe('generarOtsPreventivas', () => {
     expect(insercionesDe(elDiaAnterior, 'orden_trabajo')[0].datos.ot_fecha_programada).toBe('2026-11-09');
   });
 
-  test('un activo viejo con varios ciclos atrasados genera una sola OT', async () => {
+  test('un activo viejo con varios ciclos atrasados genera una sola OT con fecha actual (no en el pasado)', async () => {
     const pedidos = escenario({
-      planes: [filaPlan({ mant_prev_intervalo: 3, mant_prev_fecha_alta: '2026-11-04' })],
+      planes: [filaPlan({ mant_prev_intervalo: 3, mant_prev_fecha_alta: '2026-11-04', tareas: [[10, 'Limpiar filtros', 2]] })],
       activos: [filaActivo('PC-VIEJA', '2024-11-20')],
     });
 
@@ -235,7 +235,9 @@ describe('generarOtsPreventivas', () => {
     expect(resultado.otsGeneradas).toBe(1);
     const ots = insercionesDe(pedidos, 'orden_trabajo');
     expect(ots).toHaveLength(1);
-    expect(ots[0].datos.ot_fecha_programada).toBe('2026-08-20');
+    expect(ots[0].datos.ot_fecha_programada).toBe('2026-11-06');
+    const tareas = insercionesDe(pedidos, 'tarea_ot')[0].datos;
+    expect(tareas.every((t) => t.tarea_fecha_ini === '2026-11-06')).toBe(true);
   });
 
   test('la anticipación configurada adelanta la generación', async () => {
@@ -328,6 +330,16 @@ describe('consultas de programación', () => {
 
     expect(await listarPorVencer(7, '2026-12-05')).toHaveLength(0);
     expect(await listarPorVencer(7, '2026-12-06')).toHaveLength(1);
+  });
+
+  test('listarPorVencer no devuelve fechaGeneracion anterior a hoy cuando vence hoy', async () => {
+    escenario({ planes: [filaPlan()], activos: [filaActivo('AC-A', '2026-05-06')] });
+
+    const lista = await listarPorVencer(7, '2026-11-06');
+
+    expect(lista).toEqual([
+      { idPlan: 1, nombre: 'Limpieza de filtros', codigoActivo: 'AC-A', fecha: '2026-11-06', fechaGeneracion: '2026-11-06', diasRestantes: 0 },
+    ]);
   });
 
   test('listarProgramacion devuelve cada activo con su última y próxima fecha', async () => {

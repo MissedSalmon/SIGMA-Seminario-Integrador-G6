@@ -242,7 +242,7 @@ describe('Planes de Mantenimiento Preventivo - Servicio', () => {
       expect(actualizado.ordenes[0].id).toBe(101);
     });
 
-    test('baja lógica desactiva el plan y no borra OTs ya generadas', async () => {
+    test('baja lógica desactiva el plan y cancela sus OTs abiertas junto con tareas y asignaciones', async () => {
       const planActivo = {
         mant_prev_id: 2,
         mant_prev_nom: 'Plan a dar de baja',
@@ -252,14 +252,25 @@ describe('Planes de Mantenimiento Preventivo - Servicio', () => {
         orden_trabajo: [{ ot_id: 201 }],
       };
 
+      const cancelarOts = consultaQueDevuelve([{ ot_id: 201 }]);
+      const cancelarTareas = consultaQueDevuelve(null);
+      const cancelarAsignaciones = consultaQueDevuelve(null);
+
       supabase.from
         .mockReturnValueOnce(consultaQueDevuelve(planActivo))
-        .mockReturnValueOnce(consultaQueDevuelve(null));
+        .mockReturnValueOnce(consultaQueDevuelve(null))
+        .mockReturnValueOnce(cancelarOts)
+        .mockReturnValueOnce(cancelarTareas)
+        .mockReturnValueOnce(cancelarAsignaciones);
 
       const res = await darDeBajaPlan(2);
       expect(res.id).toBe(2);
+      expect(res.otsCanceladas).toBe(1);
       expect(res.mensaje).toContain('fue dado de baja correctamente');
-      expect(res.mensaje).toContain('no se vieron afectadas');
+      expect(res.mensaje).toContain('se cancelaron 1 órdenes de trabajo abiertas');
+      expect(cancelarOts.update).toHaveBeenCalledWith({ ot_estado: 5 });
+      expect(cancelarTareas.update).toHaveBeenCalledWith({ tarea_estado: 6 });
+      expect(cancelarAsignaciones.update).toHaveBeenCalledWith({ tec_asig_estado: 5 });
     });
 
     test('rechaza dar de baja un plan que ya está inactivo', async () => {

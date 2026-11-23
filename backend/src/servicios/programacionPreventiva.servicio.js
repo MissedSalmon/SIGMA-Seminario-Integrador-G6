@@ -79,7 +79,7 @@ function vencimientoPendiente(base, intervalo, unidad, hoy) {
   let fecha = sumarPeriodo(base, intervalo, unidad);
   for (;;) {
     const siguiente = sumarPeriodo(base, intervalo * (vueltas + 1), unidad);
-    if (siguiente > hoy) return fecha;
+    if (siguiente > hoy) return fecha < hoy ? hoy : fecha;
     vueltas++;
     fecha = siguiente;
   }
@@ -255,17 +255,19 @@ async function crearOtPreventiva({ plan, activo, fecha }) {
  * @param {object} [opciones]
  * @param {string} [opciones.fechaCorte]     - "hoy" para el cálculo (por defecto, hoy en Argentina)
  * @param {number} [opciones.diasAnticipacion]
+ * @param {number} [opciones.idPlan]         - sólo ese plan (lo usa el alta de planes)
  * @param {string} [opciones.codigoActivo]   - sólo ese activo (lo usa el alta de activos)
  */
 export async function generarOtsPreventivas({
   fechaCorte,
   diasAnticipacion = env.planesDiasAnticipacion,
+  idPlan = null,
   codigoActivo = null,
 } = {}) {
   const corte = soloDia(fechaCorte) ?? hoyArgentina();
   const limite = sumarDias(corte, diasAnticipacion);
 
-  const pares = armarProgramacion(await leerDatos({ codigoActivo }), corte);
+  const pares = armarProgramacion(await leerDatos({ idPlan, codigoActivo }), corte);
   const vencidos = pares.filter((par) => par.fecha && par.fecha <= limite);
 
   const resultado = {
@@ -279,10 +281,12 @@ export async function generarOtsPreventivas({
   if (vencidos.length === 0) return resultado;
 
   for (const par of vencidos) {
-    const base = { idPlan: par.plan.id, plan: par.plan.nombre, codigoActivo: par.activo.activo_codigo, fecha: par.fecha };
+    // Si el vencimiento del ciclo ya quedó en el pasado, la OT se programa para la fecha de corte actual.
+    const fechaProgramada = par.fecha < corte ? corte : par.fecha;
+    const base = { idPlan: par.plan.id, plan: par.plan.nombre, codigoActivo: par.activo.activo_codigo, fecha: fechaProgramada };
 
     try {
-      const creada = await crearOtPreventiva(par);
+      const creada = await crearOtPreventiva({ ...par, fecha: fechaProgramada });
 
       if (creada.yaExistia) {
         resultado.yaExistian++;
@@ -332,12 +336,15 @@ export async function listarPorVencer(dias = 7, fechaReferencia) {
   return pares
     .filter((par) => par.fecha && par.fecha <= tope)
     .sort((a, b) => a.fecha.localeCompare(b.fecha))
-    .map((par) => ({
-      idPlan: par.plan.id,
-      nombre: par.plan.nombre,
-      codigoActivo: par.activo.activo_codigo,
-      fecha: par.fecha,
-      fechaGeneracion: sumarDias(par.fecha, -env.planesDiasAnticipacion),
-      diasRestantes: diasEntre(hoy, par.fecha),
-    }));
+    .map((par) => {
+      const fechaGeneracion = sumarDias(par.fecha, -env.planesDiasAnticipacion);
+      return {
+        idPlan: par.plan.id,
+        nombre: par.plan.nombre,
+        codigoActivo: par.activo.activo_codigo,
+        fecha: par.fecha,
+        fechaGeneracion: fechaGeneracion < hoy ? hoy : fechaGeneracion,
+        diasRestantes: diasEntre(hoy, par.fecha),
+      };
+    });
 }
