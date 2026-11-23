@@ -31,6 +31,7 @@ import {
   CDropdownMenu,
   CDropdownItem
 } from '@coreui/react';
+import { useEstadoGuardado } from '@/utils/estadoGuardado.js';
 
 
 const ESTADOS = ['Operativo', 'En mantenimiento', 'Fuera de servicio', 'Retirado'];

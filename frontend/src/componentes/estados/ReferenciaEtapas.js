@@ -16,9 +16,10 @@
  * de OT ya no explica «Cerrado», que una OT nunca tiene, y una ficha explica
  * solo su sello. Si no hay ningun estado, no se dibuja.
  */
-import { ETAPAS, ETAPA_OT, ETAPA_TICKET } from './etapas.js';
+import { ETAPAS, ETAPA_OT, ETAPA_TAREA, ETAPA_TICKET } from './etapas.js';
 
-const ESTADOS_POR_ETAPA = { ot: ETAPA_OT, ticket: ETAPA_TICKET };
+// "tarea" sirve también para una pantalla con la OT y sus tareas: incluye los estados de la OT.
+const ESTADOS_POR_ETAPA = { ot: ETAPA_OT, tarea: ETAPA_TAREA, ticket: ETAPA_TICKET };
 
 export default function ReferenciaEtapas({ etapas, estados, de, className = '' }) {
   const mapa = ESTADOS_POR_ETAPA[de];

@@ -123,7 +123,7 @@ export async function iniciarTareaDePrestador(idOrden, idTarea) {
 }
 
 /** Devuelve la OT y si con esta tarea se finalizó. */
-export async function finalizarTareaDePrestador(idOrden, idTarea) {
-  const { data } = await api.post(`/ordenes-trabajo/${idOrden}/tareas/${idTarea}/finalizar`);
+export async function finalizarTareaDePrestador(idOrden, idTarea, estadoActivo) {
+  const { data } = await api.post(`/ordenes-trabajo/${idOrden}/tareas/${idTarea}/finalizar`, { estadoActivo });
   return { orden: data.datos, ordenFinalizada: data.ordenFinalizada };
 }

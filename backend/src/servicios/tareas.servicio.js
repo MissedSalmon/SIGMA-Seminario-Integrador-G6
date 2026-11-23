@@ -506,7 +506,35 @@ async function arrastrarInicio(idOt) {
  *
  * Devuelve true si la cerro.
  */
-async function finalizarOrdenSiTermino(idOt) {
+/**
+ * Cómo puede quedar el activo al cerrarse su OT (22/11/2026). Quien finaliza
+ * la última tarea lo elige: el arreglo puede no haber alcanzado.
+ */
+export const ESTADOS_ACTIVO_AL_CERRAR = ['Operativo', 'Fuera de servicio'];
+
+/** El estado elegido, o null si no se eligió ninguno. */
+function leerEstadoActivoAlCerrar(estado) {
+  if (estado === undefined || estado === null || estado === '') return null;
+  if (!ESTADOS_ACTIVO_AL_CERRAR.includes(estado)) {
+    throw datoInvalido(`El activo puede quedar ${ESTADOS_ACTIVO_AL_CERRAR.join(' o ')}, no "${estado}".`);
+  }
+  return estado;
+}
+
+/**
+ * Si al finalizar esta tarea se cierra la OT: todas las demás ya están
+ * Finalizadas o Canceladas. Sirve para preguntar antes cómo queda el activo.
+ */
+export async function cierraLaOrden(idOt, idTarea) {
+  const { data, error } = await supabase.from('tarea_ot').select('tarea_id, tarea_estado').eq('ot_id', idOt);
+  if (error) throw errorDeBase(error, 'de las tareas');
+
+  return (data ?? [])
+    .filter((fila) => fila.tarea_id !== idTarea)
+    .every((fila) => ['Finalizada', 'Cancelada'].includes(ENUM_ESTADO_TAREA.texto(fila.tarea_estado)));
+}
+
+async function finalizarOrdenSiTermino(idOt, estadoElegido = null) {
   const { data: tareas, error: errorTareas } = await supabase
     .from('tarea_ot')
     .select('tarea_estado')
@@ -544,10 +572,11 @@ async function finalizarOrdenSiTermino(idOt) {
     if (error) throw errorDeBase(error, 'del ticket');
   }
 
+  // Si otra OT lo sigue arreglando, queda En mantenimiento: lo decide quien cierre esa.
   if (orden.codigoActivo && !(await activoSigueEnMantenimiento(orden.codigoActivo, idOt))) {
     const { error } = await supabase
       .from('activo')
-      .update({ activo_estado: ENUM_ESTADO_ACTIVO.codigo('Operativo') })
+      .update({ activo_estado: ENUM_ESTADO_ACTIVO.codigo(estadoElegido ?? 'Operativo') })
       .eq('activo_codigo', orden.codigoActivo)
       .neq('activo_estado', ENUM_ESTADO_ACTIVO.codigo('Retirado'));
     if (error) throw errorDeBase(error, 'del activo');
@@ -561,8 +590,10 @@ async function finalizarOrdenSiTermino(idOt) {
  * tambien. Si era la ultima de la OT, la OT se cierra sola (HU-26).
  *
  * Devuelve la tarea y si con ella se cerro la OT, para avisarle al tecnico.
+ * `estadoActivo` es como queda el activo si la OT se cierra (Operativo si no viene).
  */
-export async function finalizarTarea(legajo, idOt, idTarea) {
+export async function finalizarTarea(legajo, idOt, idTarea, estadoActivo) {
+  const estadoFinal = leerEstadoActivoAlCerrar(estadoActivo);
   const tarea = await obtenerUnaDelTecnico(legajo, idOt, idTarea);
 
   if (ESTADOS_SIN_EMPEZAR.includes(tarea.estado)) {
@@ -575,7 +606,7 @@ export async function finalizarTarea(legajo, idOt, idTarea) {
   await cambiarEstadoTarea(idOt, idTarea, ['En ejecución'], 'Finalizada');
   await cambiarAsignacion(legajo, idOt, idTarea, 'Finalizada');
 
-  const ordenFinalizada = await finalizarOrdenSiTermino(idOt);
+  const ordenFinalizada = await finalizarOrdenSiTermino(idOt, estadoFinal);
 
   return { tarea: await obtenerUnaDelTecnico(legajo, idOt, idTarea), ordenFinalizada };
 }
@@ -626,14 +657,15 @@ export async function iniciarTareaDePrestador(idOt, idTarea) {
  *
  * Devuelve true si con ella se cerró la OT.
  */
-export async function finalizarTareaDePrestador(idOt, idTarea) {
+export async function finalizarTareaDePrestador(idOt, idTarea, estadoActivo) {
+  const estadoFinal = leerEstadoActivoAlCerrar(estadoActivo);
   const estado = await estadoDeTareaDePrestador(idOt, idTarea);
   const sinTerminar = [...ESTADOS_SIN_EMPEZAR, 'En ejecución'];
 
   if (!sinTerminar.includes(estado)) throw conflicto(`La tarea ya está ${estado.toLowerCase()}.`);
 
   await cambiarEstadoTarea(idOt, idTarea, sinTerminar, 'Finalizada');
-  return finalizarOrdenSiTermino(idOt);
+  return finalizarOrdenSiTermino(idOt, estadoFinal);
 }
 
 /* ---------------------------------------------------------------- Materiales */

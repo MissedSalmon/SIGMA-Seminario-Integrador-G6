@@ -177,7 +177,11 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
           )
         } />
       {/* Que significa el color de cada sello (regla 6). */}
-      <ReferenciaEtapas className="mt-0 mb-3" de="ot" estados={[orden?.estado]} />
+      <ReferenciaEtapas
+        className="mt-0 mb-3"
+        de="tarea"
+        estados={[orden?.estado, ...(orden?.tareas ?? []).map((tarea) => tarea.estado)]}
+      />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
 
@@ -379,7 +383,9 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
                             {comoHoraMinuto(tarea.horasEstimadas) || '-'}
                           </CTableDataCell>
 
-                          <CTableDataCell className="text-body-secondary">{tarea.estado}</CTableDataCell>
+                          <CTableDataCell>
+                            <EtiquetaEstadoOT estado={tarea.estado} />
+                          </CTableDataCell>
 
                           <CTableDataCell style={{ minWidth: '12rem' }}>
                             {tarea.falla ? (

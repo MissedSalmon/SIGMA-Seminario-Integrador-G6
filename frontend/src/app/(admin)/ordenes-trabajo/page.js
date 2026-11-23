@@ -12,7 +12,6 @@
  * responsables, esa OT todavía no se puede empezar a trabajar.
  */
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilDescription } from '@coreui/icons';
@@ -105,7 +104,7 @@ export default function PantallaOrdenesTrabajo() {
     {
       clave: 'id',
       encabezado: '#',
-      render: (orden) => <Talon numero={orden.id} href={`/ordenes-trabajo/${orden.id}`} titulo={`Ver la orden de trabajo ${orden.id}`} />,
+      render: (orden) => <Talon numero={orden.id} />,
     },
     {
       clave: 'estado',
@@ -148,14 +147,12 @@ export default function PantallaOrdenesTrabajo() {
     {
       clave: 'origen',
       encabezado: 'Origen',
-      // Lleva al ticket o al plan preventivo que la generó.
+      // El ticket o el plan preventivo que la generó, como texto: en la tabla no hay enlaces.
       render: (orden) =>
         orden.idTicket ? (
-          <Link href={`/tickets/${orden.idTicket}`}>Ticket #{orden.idTicket}</Link>
+          <span>Ticket #{orden.idTicket}</span>
         ) : orden.idMantenimientoPreventivo ? (
-          <Link href={`/planes-mantenimiento/${orden.idMantenimientoPreventivo}`} title={orden.nombrePlan ?? undefined}>
-            Plan #{orden.idMantenimientoPreventivo}
-          </Link>
+          <span title={orden.nombrePlan ?? undefined}>Plan #{orden.idMantenimientoPreventivo}</span>
         ) : (
           <span className="text-body-tertiary">-</span>
         ),

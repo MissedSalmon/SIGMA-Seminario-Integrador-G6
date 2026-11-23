@@ -81,7 +81,8 @@ export async function obtenerMia(req, res) {
   const idTarea = leerNumero(req.params.idTarea, 'tarea');
 
   const tarea = await tareasServicio.obtenerUnaDelTecnico(req.usuario.identificador, idOt, idTarea);
-  res.json({ ok: true, datos: tarea });
+  const cierraLaOrden = await tareasServicio.cierraLaOrden(idOt, idTarea);
+  res.json({ ok: true, datos: { ...tarea, cierraLaOrden } });
 }
 
 function leerTarea(req) {
@@ -102,10 +103,16 @@ export async function iniciar(req, res) {
  * POST /api/tareas/mias/:idOt/:idTarea/finalizar (HU-22)
  *
  * Responde { tarea, ordenFinalizada }: si con esta tarea se cerro la OT (HU-26).
+ * El cuerpo puede traer `estadoActivo`: como queda el activo si se cierra la OT.
  */
 export async function finalizar(req, res) {
   const { idOt, idTarea } = leerTarea(req);
-  const datos = await tareasServicio.finalizarTarea(req.usuario.identificador, idOt, idTarea);
+  const datos = await tareasServicio.finalizarTarea(
+    req.usuario.identificador,
+    idOt,
+    idTarea,
+    req.body?.estadoActivo
+  );
   res.json({ ok: true, datos });
 }
 

@@ -21,6 +21,7 @@ import { listarEdificios } from '@/servicios/edificios.js';
 import { listarEspacios, eliminarEspacio } from '@/servicios/espacios.js';
 import { useFiltroPersistente } from '@/utils/filtros.js';
 import { textoDelPiso } from '@/utils/pisos.js';
+import { useEstadoGuardado } from '@/utils/estadoGuardado.js';
 
 export default function PantallaEspacios() {
   const { mostrarToast } = useToast();

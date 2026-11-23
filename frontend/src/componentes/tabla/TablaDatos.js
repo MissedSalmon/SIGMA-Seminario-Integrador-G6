@@ -64,7 +64,7 @@
  * filtros cuando hay alguno aplicado. La tabla no sabe cuales: solo llama a la
  * funcion, y la pantalla es la que los vacia.
  */
-import { useId, useMemo, useState } from 'react';
+import { useId, useMemo } from 'react';
 import { CButton, CButtonGroup, CFormInput, CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilChevronLeft, cilChevronRight, cilSearch, cilX } from '@coreui/icons';

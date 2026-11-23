@@ -90,7 +90,7 @@ export default function PantallaPlanesMantenimiento() {
     {
       clave: 'id',
       encabezado: '#',
-      render: (plan) => <Talon numero={plan.id} href={`/planes-mantenimiento/${plan.id}`} titulo={`Ver el plan ${plan.id}`} />,
+      render: (plan) => <Talon numero={plan.id} />,
     },
     {
       clave: 'nombre',

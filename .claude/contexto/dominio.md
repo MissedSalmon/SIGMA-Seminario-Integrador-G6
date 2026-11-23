@@ -257,11 +257,13 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 >   Aula 1.6 del Edificio Central, Aula 0.2 del Anexo I; el Aula 1.1 era de Electromecánica, que
 >   quedó sin espacios), solicitante **Bedelía Prueba** (legajo 7001) y su ticket **#43**. El
 >   mismo caso está automatizado en `backend/test/reglas.bedelia.test.js`.
-> - ⬜ **Pendiente de confirmar** con el Secretario de Infraestructura si un espacio puede ser de
->   dos áreas a la vez. Si pasa, la idea es crear un área común (por ejemplo «Aulas compartidas»).
+> - ✅ **Confirmado (21/11/2026): un espacio no puede pertenecer a dos áreas.** Los espacios que
+>   usan varios departamentos, como las aulas, van a un área común (por ejemplo Bedelía).
+> - **Un espacio no cambia de área; un área sí puede cambiar de espacios** (21/11/2026).
 
 > **Decisión del 19/11/2026 (quién registra un ticket):**
-> - **Sólo el usuario autorizado registra tickets.** Es quien reporta el problema y el ticket
+> - **Sólo el usuario autorizado registra tickets** (confirmado de nuevo el 21/11/2026: el
+>   administrador no carga tickets). Es quien reporta el problema y el ticket
 >   guarda su legajo (`ticket.autorizado_legajo`). El administrador no ve el botón «Agregar»
 >   en Tickets y la API le responde 403 (`POST /api/tickets`). Antes podía entrar al formulario,
 >   pero el alta fallaba porque su legajo no es el de un autorizado.
@@ -452,6 +454,19 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 >   Canceladas (y al menos una Finalizada), la **OT se finaliza** con su fecha de cierre, el
 >   **ticket se cierra** con su fecha de cierre (columna nueva `ticket_fecha_cierre`) y el
 >   **activo vuelve a Operativo**, salvo que otra OT en ejecución lo siga arreglando.
+> - **Cómo queda el activo al cerrar la OT (22/11/2026):** quien finaliza la **última tarea**
+>   (el técnico, o el administrador si es de un prestador) elige en la misma ventana de
+>   «Finalizar» si el activo queda **Operativo** o **Fuera de servicio**, porque el arreglo puede
+>   no haber alcanzado. Es obligatorio elegir. **Si otra OT en ejecución lo sigue arreglando,
+>   queda En mantenimiento** y lo decide quien cierre esa (confirmado el 22/11/2026). La API
+>   recibe `estadoActivo` al finalizar (sin él, Operativo) y cada tarea trae `cierraLaOrden`
+>   para saber si hay que preguntar.
+> - **Asignar desde la ficha de la tarea** (22/11/2026): si una tarea sin empezar no tiene
+>   responsable, «Opciones» suma «Asignar». La ventana pide técnico o prestador con las mismas
+>   reglas que «Editar» (técnicos activos de la especialidad de la tarea) y no cambia el resto.
+> - **El estado de las tareas va con sello** (22/11/2026), en la tabla de tareas de la OT y en la
+>   ficha de la tarea, con la referencia de colores. «Pendiente» va como «Falta empezar»
+>   (`ETAPA_TAREA` en `frontend/src/componentes/estados/etapas.js`).
 > - **Historial del técnico en el menú:** "Materiales utilizados" (`/tareas/materiales`) lista
 >   lo que se usó en sus tareas, con filtro por material y por fecha. Es sólo para consultar:
 >   no lleva acciones. "Herramientas utilizadas" (`/tareas/herramientas`) lista las que tiene
