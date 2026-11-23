@@ -15,18 +15,18 @@
   },
   "dependencies": {
     "@internationalized/date": "^3.12.4",
-    "@supabase/supabase-js": "^2.112.4",
-    "axios": "^1.20.0",
+    "@supabase/supabase-js": "^2.119.2",
+    "axios": "^1.21.1",
     "bcryptjs": "^3.0.3",
-    "concurrently": "^10.0.5",
+    "concurrently": "^10.0.7",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
+    "dotenv": "^18.0.10",
+    "express": "^5.3.0",
     "jsonwebtoken": "^9.0.3"
   },
   "devDependencies": {
-    "eslint-config-next": "^16.4.0",
+    "eslint-config-next": "^16.4.6",
     "jest": "^30.5.2",
     "nodemon": "^3.1.14"
   }

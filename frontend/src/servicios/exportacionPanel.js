@@ -63,6 +63,24 @@ function aplicarAutoTable(doc, opciones) {
 const numero = (valor) => Number(valor ?? 0).toLocaleString('es-AR', { maximumFractionDigits: 1 });
 const porcentaje = (valor) => `${numero(valor)} %`;
 
+const ABREVIATURAS_UNIDAD = {
+  unidad: 'u.',
+  litro: 'L',
+  kilogramo: 'kg',
+  metro: 'm',
+  'metro cuadrado': 'm²',
+  pulgada: 'pulg.',
+};
+
+function cantidadConUnidad(cantidad, unidadMedida) {
+  const num = numero(cantidad);
+  const unidad = String(unidadMedida ?? '').trim().toLowerCase();
+  if (!unidad) return num;
+  if (unidad === 'par') return `${num} ${Number(cantidad) === 1 ? 'par' : 'pares'}`;
+  const abrev = ABREVIATURAS_UNIDAD[unidad] ?? unidadMedida;
+  return `${num} ${abrev}`;
+}
+
 /** "2026-11-09" -> "09/11/2026". */
 function fechaCorta(iso) {
   if (!iso) return null;
@@ -677,9 +695,9 @@ export function generarDocumentoPdf(payloadPanel) {
       celdas: [
         m.codigo,
         m.nombre,
-        `${numero(m.stockActual)} ${m.unidadMedida ?? ''}`.trim(),
-        `${numero(m.stockMinimo)} ${m.unidadMedida ?? ''}`.trim(),
-        `${numero(m.faltante)} ${m.unidadMedida ?? ''}`.trim(),
+        cantidadConUnidad(m.stockActual, m.unidadMedida),
+        cantidadConUnidad(m.stockMinimo, m.unidadMedida),
+        cantidadConUnidad(m.faltante, m.unidadMedida),
       ],
     })),
     vacio: 'Ningún material está por debajo de su stock mínimo.',

@@ -79,6 +79,25 @@ const porcentaje = (valor) => (valor != null ? `${numero(valor)} %` : '-');
 /** "1 retirado" / "3 retirados". */
 const contar = (cantidad, singular, plural) => `${cantidad ?? 0} ${(cantidad ?? 0) === 1 ? singular : plural}`;
 
+const ABREVIATURAS_UNIDAD = {
+  unidad: 'u.',
+  litro: 'L',
+  kilogramo: 'kg',
+  metro: 'm',
+  'metro cuadrado': 'm²',
+  pulgada: 'pulg.',
+};
+
+/** Formatea una cantidad de material con la abreviatura de su unidad de medida ("4 kg", "10 L", "12 u."). */
+function cantidadConUnidad(cantidad, unidadMedida) {
+  const num = numero(cantidad);
+  const unidad = String(unidadMedida ?? '').trim().toLowerCase();
+  if (!unidad) return num;
+  if (unidad === 'par') return `${num} ${Number(cantidad) === 1 ? 'par' : 'pares'}`;
+  const abrev = ABREVIATURAS_UNIDAD[unidad] ?? unidadMedida;
+  return `${num} ${abrev}`;
+}
+
 function TituloSeccion({ id, children }) {
   return (
     <h2 id={id} className="sigma-panel-seccion">
@@ -571,12 +590,14 @@ export default function PantallaPanelAdministrador() {
                                 <div className="fw-medium">{m.nombre}</div>
                                 <div className="small text-body-secondary text-nowrap">{m.codigo}</div>
                               </CTableDataCell>
-                              <CTableDataCell className="text-end">{m.stockActual}</CTableDataCell>
-                              <CTableDataCell className="text-end text-body-secondary">
-                                {m.stockMinimo}
+                              <CTableDataCell className="text-end text-nowrap">
+                                {cantidadConUnidad(m.stockActual, m.unidadMedida)}
                               </CTableDataCell>
-                              <CTableDataCell className="text-end fw-bold">
-                                {m.faltante}
+                              <CTableDataCell className="text-end text-body-secondary text-nowrap">
+                                {cantidadConUnidad(m.stockMinimo, m.unidadMedida)}
+                              </CTableDataCell>
+                              <CTableDataCell className="text-end fw-bold text-nowrap">
+                                {cantidadConUnidad(m.faltante, m.unidadMedida)}
                               </CTableDataCell>
                             </CTableRow>
                           ))}
