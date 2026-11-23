@@ -10,6 +10,10 @@ import { controlarTecnicoActivo } from './usuarios.servicio.js';
  */
 const CLASES = ['Material', 'Herramienta'];
 const UNIDADES_MEDIDA = ['par', 'unidad', 'metro', 'pulgada', 'kilogramo', 'litro', 'metro cuadrado'];
+const LARGO_UNIDAD_MEDIDA = 40;
+// 23505: indice unico repetido; 23514: CHECK viejo de la columna; 42P01/PGRST205: la tabla unidad_medida todavia no esta.
+const DUPLICADO = '23505';
+const FALTA_TABLA_UNIDADES = ['42P01', 'PGRST205'];
 
 function texto(valor) {
   if (typeof valor !== 'string') return null;
@@ -149,6 +153,68 @@ export async function obtenerItem(codigo) {
   throw noEncontrado(`No existe el código "${codigo}" en el depósito.`);
 }
 
+export async function obtenerUnidadesMedida() {
+  const [{ data: catalogo, error: errorCatalogo }, { data: materiales, error: errorMateriales }] = await Promise.all([
+    supabase.from('unidad_medida').select('unidad_medida_nom'),
+    supabase.from('material').select('mat_unidad_medida'),
+  ]);
+
+  if (errorCatalogo && !FALTA_TABLA_UNIDADES.includes(errorCatalogo.code)) {
+    throw errorDeBase(errorCatalogo, 'de las unidades de medida');
+  }
+  if (errorMateriales) throw new Error(errorMateriales.message);
+
+  const vistas = new Map();
+  const agregar = (valor) => {
+    const limpio = texto(valor);
+    if (!limpio) return;
+    const clave = limpio.toLowerCase();
+    if (!vistas.has(clave)) vistas.set(clave, limpio);
+  };
+
+  for (const base of UNIDADES_MEDIDA) agregar(base);
+  for (const fila of catalogo ?? []) agregar(fila.unidad_medida_nom);
+  for (const fila of materiales ?? []) agregar(fila.mat_unidad_medida);
+
+  return [...vistas.values()].sort((a, b) => a.localeCompare(b, 'es'));
+}
+
+export async function crearUnidadMedida(datos = {}) {
+  const nombre = texto(datos.nombre ?? datos.unidadMedida)?.toLowerCase() ?? null;
+  if (!nombre) throw datoInvalido('El nombre de la unidad de medida es obligatorio.');
+  if (nombre.length > LARGO_UNIDAD_MEDIDA) {
+    throw datoInvalido(`La unidad de medida no puede tener más de ${LARGO_UNIDAD_MEDIDA} caracteres.`);
+  }
+
+  const actuales = await obtenerUnidadesMedida();
+  if (actuales.some((una) => una.toLowerCase() === nombre)) {
+    throw conflicto(`Ya existe la unidad de medida "${nombre}".`);
+  }
+
+  const { data, error } = await supabase
+    .from('unidad_medida')
+    .insert({ unidad_medida_nom: nombre })
+    .select('unidad_medida_nom')
+    .single();
+
+  if (error?.code === DUPLICADO) {
+    throw conflicto(`Ya existe la unidad de medida "${nombre}".`);
+  }
+  if (error && !FALTA_TABLA_UNIDADES.includes(error.code)) {
+    throw errorDeBase(error, 'de las unidades de medida');
+  }
+
+  return data?.unidad_medida_nom ?? nombre;
+}
+
+async function registrarUnidadEnCatalogo(unidadMedida) {
+  if (!unidadMedida || UNIDADES_MEDIDA.includes(unidadMedida)) return;
+  const { error } = await supabase.from('unidad_medida').insert({ unidad_medida_nom: unidadMedida });
+  if (error && error.code !== DUPLICADO && !FALTA_TABLA_UNIDADES.includes(error.code)) {
+    throw errorDeBase(error, 'de las unidades de medida');
+  }
+}
+
 export async function obtenerTipos(clase) {
   let consulta = supabase.from('inventariotipo').select('*').order('inventariotiponom');
   if (clase) consulta = consulta.eq('inventariotipoclase', leerClase(clase));
@@ -248,15 +314,18 @@ function leerDatos(datos) {
   const nombre = texto(datos.nombre);
   const clase = leerClase(datos.clase);
   const descripcion = texto(datos.descripcion);
-  const unidadMedida = texto(datos.unidadMedida);
+  const unidadMedida = texto(datos.unidadMedida)?.toLowerCase() ?? null;
   const idTipo = Number(datos.idTipo);
   const hayMinimo = datos.stockMinimo !== '' && datos.stockMinimo != null;
   const stockMinimo = hayMinimo ? Number(datos.stockMinimo) : null;
 
   if (!nombre) throw datoInvalido('El nombre es obligatorio.');
   if (!Number.isInteger(idTipo)) throw datoInvalido('Hay que indicar un tipo.');
-  if (clase === 'Material' && !UNIDADES_MEDIDA.includes(unidadMedida)) {
+  if (clase === 'Material' && !unidadMedida) {
     throw datoInvalido('Elegí una unidad de medida válida para el material.');
+  }
+  if (clase === 'Material' && unidadMedida.length > LARGO_UNIDAD_MEDIDA) {
+    throw datoInvalido(`La unidad de medida no puede tener más de ${LARGO_UNIDAD_MEDIDA} caracteres.`);
   }
   if (clase === 'Material' && (!Number.isInteger(stockMinimo) || stockMinimo < 0)) {
     throw datoInvalido('El stock mínimo del material es obligatorio y no puede ser negativo.');
@@ -280,6 +349,7 @@ export async function crearItem(datos) {
   }
 
   if (item.clase === 'Material') {
+    await registrarUnidadEnCatalogo(item.unidadMedida);
     const { data, error } = await supabase
       .from('material')
       .insert({
@@ -293,6 +363,7 @@ export async function crearItem(datos) {
       })
       .select(COLUMNAS)
       .single();
+    if (error?.code === '23514') throw errorDeBase({ code: 'PGRST205' }, 'de las unidades de medida');
     if (error) throw new Error(error.message);
     return aMaterial(data);
   }
@@ -313,6 +384,7 @@ export async function actualizarItem(codigo, datos) {
   await verificarTipo(item.idTipo, item.clase);
 
   if (actual.clase === 'Material') {
+    await registrarUnidadEnCatalogo(item.unidadMedida);
     const { data, error } = await supabase
       .from('material')
       .update({
@@ -325,6 +397,7 @@ export async function actualizarItem(codigo, datos) {
       .eq('mat_cod', codigo)
       .select(COLUMNAS)
       .single();
+    if (error?.code === '23514') throw errorDeBase({ code: 'PGRST205' }, 'de las unidades de medida');
     if (error) throw new Error(error.message);
     return aMaterial(data);
   }

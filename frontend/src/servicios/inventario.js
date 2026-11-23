@@ -104,3 +104,13 @@ export async function eliminarTipoInventario(id) {
   const { data } = await api.delete(`/inventario/tipos/${id}`);
   return data.datos;
 }
+
+export async function listarUnidadesMedida() {
+  const { data } = await api.get('/inventario/unidades');
+  return data.datos;
+}
+
+export async function crearUnidadMedida(nombre) {
+  const { data } = await api.post('/inventario/unidades', { nombre });
+  return data.datos;
+}

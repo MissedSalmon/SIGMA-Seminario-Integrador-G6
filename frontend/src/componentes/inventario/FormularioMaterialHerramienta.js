@@ -25,15 +25,18 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CCard, CCardBody } from '@coreui/react';
+import { CButton, CCard, CCardBody, CFormLabel } from '@coreui/react';
+import CIcon from '@coreui/icons-react';
+import { cilPlus } from '@coreui/icons';
 
 import Aviso from '@/componentes/Aviso.js';
 import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Campo from '@/componentes/formulario/Campo.js';
+import DialogoNuevaUnidadMedida from '@/componentes/inventario/DialogoNuevaUnidadMedida.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
-import { listarTiposInventario } from '@/servicios/inventario.js';
+import { listarTiposInventario, listarUnidadesMedida } from '@/servicios/inventario.js';
 
-const UNIDADES_MEDIDA = ['par', 'unidad', 'metro', 'pulgada', 'kilogramo', 'litro', 'metro cuadrado'];
+const UNIDADES_POR_DEFECTO = ['par', 'unidad', 'metro', 'pulgada', 'kilogramo', 'litro', 'metro cuadrado'];
 
 /** "Se agrego el material" / "Se agrego la herramienta". */
 function elArticulo(clase) {
@@ -55,12 +58,20 @@ export default function FormularioMaterialHerramienta({ clase, articulo = null, 
   const [codigo, setCodigo] = useState(articulo?.codigo ?? '');
   const [nombre, setNombre] = useState(articulo?.nombre ?? '');
   const [descripcion, setDescripcion] = useState(articulo?.descripcion ?? '');
-  const [unidadMedida, setUnidadMedida] = useState(articulo?.unidadMedida ?? 'unidad');
+  const [unidadMedida, setUnidadMedida] = useState(articulo?.unidadMedida ?? '');
   const [idTipo, setIdTipo] = useState(articulo?.idTipo ?? '');
   const [stockMinimo, setStockMinimo] = useState(articulo?.stockMinimo ?? '');
 
   const [tipos, setTipos] = useState([]);
   const [cargandoTipos, setCargandoTipos] = useState(true);
+  const [unidadesMedida, setUnidadesMedida] = useState(() => {
+    const iniciales = [...UNIDADES_POR_DEFECTO];
+    if (articulo?.unidadMedida && !iniciales.includes(articulo.unidadMedida)) {
+      iniciales.push(articulo.unidadMedida);
+    }
+    return iniciales;
+  });
+  const [nuevaUnidadVisible, setNuevaUnidadVisible] = useState(false);
   const [revisado, setRevisado] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
@@ -74,6 +85,26 @@ export default function FormularioMaterialHerramienta({ clase, articulo = null, 
       .finally(() => setCargandoTipos(false));
   }, [clase]);
 
+  useEffect(() => {
+    if (!esMaterial) return;
+    listarUnidadesMedida()
+      .then((lista) => {
+        setUnidadesMedida((anteriores) => {
+          const todas = new Set([...lista, ...anteriores]);
+          return [...todas].sort((a, b) => a.localeCompare(b, 'es'));
+        });
+      })
+      .catch(() => {});
+  }, [esMaterial]);
+
+  function usarUnidadNueva(nueva) {
+    setUnidadesMedida((anteriores) => {
+      if (anteriores.some((una) => una.toLowerCase() === nueva.toLowerCase())) return anteriores;
+      return [...anteriores, nueva].sort((a, b) => a.localeCompare(b, 'es'));
+    });
+    setUnidadMedida(nueva);
+  }
+
   /*
    * Los errores se recalculan en cada tecla, pero no se muestran hasta apretar
    * Guardar. De ahi en mas se actualizan solos mientras se corrige.
@@ -83,7 +114,7 @@ export default function FormularioMaterialHerramienta({ clase, articulo = null, 
 
     if (!codigo.trim()) encontrados.codigo = 'El código es obligatorio y no se puede repetir.';
     if (!nombre.trim()) encontrados.nombre = 'El nombre es obligatorio.';
-    if (esMaterial && !UNIDADES_MEDIDA.includes(unidadMedida)) encontrados.unidadMedida = 'Elegí la unidad de medida.';
+    if (esMaterial && !unidadMedida.trim()) encontrados.unidadMedida = 'Elegí la unidad de medida.';
     if (!idTipo) encontrados.idTipo = 'Elegí la categoría.';
     if (esMaterial && String(stockMinimo).trim() === '') {
       encontrados.stockMinimo = 'Indicá desde qué cantidad hay que reponer.';
@@ -130,7 +161,7 @@ export default function FormularioMaterialHerramienta({ clase, articulo = null, 
     valor: tipo.idTipo,
     texto: tipo.nombre,
   }));
-  const opcionesUnidades = UNIDADES_MEDIDA.map((unidad) => ({ valor: unidad, texto: unidad }));
+  const opcionesUnidades = unidadesMedida.map((unidad) => ({ valor: unidad, texto: unidad }));
 
   return (
     <CCard>
@@ -173,7 +204,7 @@ export default function FormularioMaterialHerramienta({ clase, articulo = null, 
               etiqueta="Nombre"
               valor={nombre}
               alCambiar={setNombre}
-              placeholder={esMaterial ? 'Cable 2.5 mm' : 'Taladro percutor'}
+              placeholder={esMaterial ? 'Cable' : 'Taladro percutor'}
               obligatorio
               maxLength={150}
               ancho={22}
@@ -182,19 +213,41 @@ export default function FormularioMaterialHerramienta({ clase, articulo = null, 
             />
 
             {esMaterial && (
-              <Campo
-                id="unidadMedida"
-                etiqueta="Unidad de medida"
-                tipo="lista"
-                valor={unidadMedida}
-                alCambiar={setUnidadMedida}
-                opciones={opcionesUnidades}
-                placeholder="Elegir unidad"
-                obligatorio
-                ancho={18}
-                revisado={revisado}
-                error={errores.unidadMedida}
-              />
+              <>
+                <Campo
+                  id="unidadMedida"
+                  etiqueta="Unidad de medida"
+                  tipo="lista"
+                  valor={unidadMedida}
+                  alCambiar={setUnidadMedida}
+                  opciones={opcionesUnidades}
+                  placeholder="Elegir unidad"
+                  obligatorio
+                  ancho={18}
+                  revisado={revisado}
+                  error={errores.unidadMedida}
+                />
+
+                {/*
+                  La etiqueta invisible empuja el botón a la altura de la caja,
+                  aunque debajo de la caja aparezca un error.
+                */}
+                <div className="sigma-campo">
+                  <CFormLabel className="invisible" aria-hidden="true">
+                    Agregar
+                  </CFormLabel>
+                  <CButton
+                    type="button"
+                    color="secondary"
+                    variant="outline"
+                    onClick={() => setNuevaUnidadVisible(true)}
+                    title="Agregar una unidad de medida nueva"
+                  >
+                    <CIcon icon={cilPlus} size="sm" className="me-1" />
+                    Agregar
+                  </CButton>
+                </div>
+              </>
             )}
 
             {/* El estado solo existe para una herramienta: un material no lo tiene. */}
@@ -254,6 +307,14 @@ export default function FormularioMaterialHerramienta({ clase, articulo = null, 
           <BotonesAccion procesando={guardando} hrefCancelar={volverA} className="mt-4" />
         </form>
       </CCardBody>
+
+      {esMaterial && (
+        <DialogoNuevaUnidadMedida
+          visible={nuevaUnidadVisible}
+          alCrear={usarUnidadNueva}
+          alCerrar={() => setNuevaUnidadVisible(false)}
+        />
+      )}
     </CCard>
   );
 }

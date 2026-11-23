@@ -21,7 +21,7 @@
     "start:frontend": "npm run start --workspace frontend",
     "lint": "npm run lint --workspace frontend",
     "db:link": "npx supabase link --project-ref agayydinmimmqoyuybbi",
-    "db:push": "npx supabase db push",
+    "db:push": "npx supabase db push --remote",
     "db:start": "npx supabase start",
     "db:seed": "node seed_admin.js"
   },

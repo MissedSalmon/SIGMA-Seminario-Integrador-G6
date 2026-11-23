@@ -13,6 +13,8 @@ function leerCodigo(req) {
   return codigo;
 }
 
+export async function listarUnidadesMedida(_req, res) { res.json({ ok: true, datos: await servicio.obtenerUnidadesMedida() }); }
+export async function crearUnidadMedida(req, res) { res.status(201).json({ ok: true, datos: await servicio.crearUnidadMedida(req.body) }); }
 export async function listarTipos(req, res) { res.json({ ok: true, datos: await servicio.obtenerTipos(req.query.clase) }); }
 export async function obtenerTipo(req, res) { res.json({ ok: true, datos: await servicio.obtenerTipo(leerId(req)) }); }
 export async function crearTipo(req, res) { res.status(201).json({ ok: true, datos: await servicio.crearTipo(req.body) }); }

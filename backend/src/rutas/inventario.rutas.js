@@ -4,6 +4,9 @@ import { soloAdministrador } from '../middlewares/soloAdministrador.js';
 
 const router = Router();
 
+router.get('/unidades', inventario.listarUnidadesMedida);
+router.post('/unidades', inventario.crearUnidadMedida);
+
 router.get('/tipos', inventario.listarTipos);
 router.post('/tipos', inventario.crearTipo);
 router.get('/tipos/:id', inventario.obtenerTipo);
