@@ -279,10 +279,12 @@ export async function generarOtsPreventivas({
   if (vencidos.length === 0) return resultado;
 
   for (const par of vencidos) {
-    const base = { idPlan: par.plan.id, plan: par.plan.nombre, codigoActivo: par.activo.activo_codigo, fecha: par.fecha };
+    // Si el vencimiento del ciclo ya quedó en el pasado, la OT se programa para la fecha de corte actual.
+    const fechaProgramada = par.fecha < corte ? corte : par.fecha;
+    const base = { idPlan: par.plan.id, plan: par.plan.nombre, codigoActivo: par.activo.activo_codigo, fecha: fechaProgramada };
 
     try {
-      const creada = await crearOtPreventiva(par);
+      const creada = await crearOtPreventiva({ ...par, fecha: fechaProgramada });
 
       if (creada.yaExistia) {
         resultado.yaExistian++;

@@ -45,6 +45,7 @@ DELETE FROM public.compra;
 DELETE FROM public.proveedor;
 DELETE FROM public.material;
 DELETE FROM public.herramienta;
+DELETE FROM public.inventarioitem;
 DELETE FROM public.inventariotipo;
 
 -- 6. Activos, espacios, áreas, edificios y catálogos físicos
@@ -64,7 +65,8 @@ DELETE FROM public.prestador_servicio;
 DELETE FROM public.tipo_prestador;
 DELETE FROM public.especialidad;
 
--- 8. Historial de contraseñas, usuarios y perfiles (PRESERVANDO AL ADMIN)
+-- 8. Notificaciones, historial de contraseñas, usuarios y perfiles (PRESERVANDO AL ADMIN)
+DELETE FROM public.notificacion_usuario;
 DELETE FROM public.historial_restablecimiento_contrasena;
 
 -- Eliminar únicamente usuarios que NO sean el administrador (identificador 'Admin' / rol = 1)

@@ -16,6 +16,8 @@
 
 BEGIN;
 
+SET LOCAL TIME ZONE 'America/Argentina/Buenos_Aires';
+
 -- Extensión para generar hashes bcrypt ($2a$) compatibles con bcryptjs del backend
 CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 
@@ -312,21 +314,21 @@ INSERT INTO public.activo (
     activo_fecha_ult_maint,
     activo_estado
 ) VALUES
-    ('AA-101',  1, 1,  1, 'Aire Acondicionado Split Surrey 6000 Frigorías - Aula 101',          '2026-03-10 09:00:00-03', '2024-11-15', NULL, '2026-10-15 16:00:00-03', 1),
-    ('AA-102',  1, 2,  1, 'Aire Acondicionado Split Carrier 6000 Frigorías - Aula 102',         '2026-03-10 09:30:00-03', '2024-11-15', NULL, '2026-09-20 12:00:00-03', 1),
-    ('AA-LAB1', 1, 3,  1, 'Aire Acondicionado Split BGH 9000 Frigorías - Laboratorio 1',        '2026-03-12 10:00:00-03', '2023-05-20', NULL, NULL,                     2), -- En mantenimiento (OT 3 en ejecución)
-    ('AA-SRV1', 1, 8,  1, 'Aire Acondicionado Precisión Liebert 12000 Frigorías - Sala Server', '2026-02-01 08:00:00-03', '2022-03-10', NULL, '2026-11-05 11:30:00-03', 1),
-    ('PR-101',  1, 1,  2, 'Proyector Epson PowerLite X49 3600 Lúmenes - Aula 101',              '2026-04-01 10:00:00-03', '2025-02-20', NULL, '2026-10-22 18:00:00-03', 1),
-    ('PR-AUD1', 1, 6,  2, 'Proyector Láser Epson Full HD 5000 Lúmenes - Auditorio Central',     '2026-04-05 11:00:00-03', '2025-03-01', NULL, NULL,                     1),
-    ('TE-PB01', 1, 5,  3, 'Tablero Eléctrico Seccional Planta Baja - Secretaría Académica',     '2026-02-15 09:00:00-03', '2021-08-10', NULL, '2026-10-08 14:00:00-03', 1),
-    ('TE-TAL1', 2, 13, 3, 'Tablero Trifásico Principal 380V - Taller Electromecánica 1',        '2026-02-20 09:00:00-03', '2020-06-15', NULL, '2026-11-10 17:00:00-03', 1),
-    ('LU-201',  2, 10, 4, 'Paneles Luminosos LED 60x60 48W (Lote 8 unidades) - Aula 201',       '2026-05-10 08:30:00-03', '2025-04-12', NULL, '2026-11-02 10:30:00-03', 1),
-    ('LU-BIB1', 1, 7,  4, 'Sistema de Iluminación Lineal LED - Sala de Lectura Biblioteca',     '2026-05-12 09:00:00-03', '2025-05-01', NULL, NULL,                     1),
-    ('MB-202',  2, 11, 5, 'Conjunto de Pupitres Bipersonales y Pizarrón Acrílico - Aula 202',   '2026-03-01 08:00:00-03', '2023-03-01', NULL, NULL,                     1),
-    ('BA-TAL2', 2, 14, 6, 'Bomba Centrífuga Pedrollo 2HP Circuito de Enfriamiento - Taller 2',  '2026-03-18 10:00:00-03', '2022-09-10', NULL, NULL,                     3), -- Fuera de servicio
-    ('SV-RACK', 1, 8,  7, 'Rack Principal y UPS APC Smart-UPS 3000VA - Centro de Cómputos',     '2026-02-01 08:30:00-03', '2023-01-15', NULL, '2026-11-12 15:00:00-03', 1),
-    ('SN-SAN1', 1, 9,  8, 'Batería de Lavatorios y Válvulas Automáticas - Sanitario PB',        '2026-03-25 09:00:00-03', '2022-11-01', NULL, NULL,                     1),
-    ('PR-RET1', 1, 3,  2, 'Proyector BenQ MS527 (Lámpara y placa madre agotadas)',              '2026-01-15 09:00:00-03', '2018-04-10', '2026-09-01 12:00:00-03', NULL, 4)  -- Retirado
+    ('AA-101',  1, 1,  1, 'Aire Acondicionado Split Surrey 6000 Frigorías - Aula 101',          ((CURRENT_DATE - 258) + TIME '09:00:00')::TIMESTAMPTZ, '2024-11-15', NULL, ((CURRENT_DATE - 39) + TIME '16:00:00')::TIMESTAMPTZ, 1),
+    ('AA-102',  1, 2,  1, 'Aire Acondicionado Split Carrier 6000 Frigorías - Aula 102',         ((CURRENT_DATE - 258) + TIME '09:30:00')::TIMESTAMPTZ, '2024-11-15', NULL, ((CURRENT_DATE - 64) + TIME '12:00:00')::TIMESTAMPTZ, 1),
+    ('AA-LAB1', 1, 3,  1, 'Aire Acondicionado Split BGH 9000 Frigorías - Laboratorio 1',        ((CURRENT_DATE - 256) + TIME '10:00:00')::TIMESTAMPTZ, '2023-05-20', NULL, NULL,                     2), -- En mantenimiento (OT 3 en ejecución)
+    ('AA-SRV1', 1, 8,  1, 'Aire Acondicionado Precisión Liebert 12000 Frigorías - Sala Server', ((CURRENT_DATE - 295) + TIME '08:00:00')::TIMESTAMPTZ, '2022-03-10', NULL, ((CURRENT_DATE - 18) + TIME '11:30:00')::TIMESTAMPTZ, 1),
+    ('PR-101',  1, 1,  2, 'Proyector Epson PowerLite X49 3600 Lúmenes - Aula 101',              ((CURRENT_DATE - 236) + TIME '10:00:00')::TIMESTAMPTZ, '2025-02-20', NULL, ((CURRENT_DATE - 32) + TIME '18:00:00')::TIMESTAMPTZ, 1),
+    ('PR-AUD1', 1, 6,  2, 'Proyector Láser Epson Full HD 5000 Lúmenes - Auditorio Central',     ((CURRENT_DATE - 232) + TIME '11:00:00')::TIMESTAMPTZ, '2025-03-01', NULL, NULL,                     1),
+    ('TE-PB01', 1, 5,  3, 'Tablero Eléctrico Seccional Planta Baja - Secretaría Académica',     ((CURRENT_DATE - 281) + TIME '09:00:00')::TIMESTAMPTZ, '2021-08-10', NULL, ((CURRENT_DATE - 46) + TIME '14:00:00')::TIMESTAMPTZ, 1),
+    ('TE-TAL1', 2, 13, 3, 'Tablero Trifásico Principal 380V - Taller Electromecánica 1',        ((CURRENT_DATE - 276) + TIME '09:00:00')::TIMESTAMPTZ, '2020-06-15', NULL, ((CURRENT_DATE - 13) + TIME '17:00:00')::TIMESTAMPTZ, 1),
+    ('LU-201',  2, 10, 4, 'Paneles Luminosos LED 60x60 48W (Lote 8 unidades) - Aula 201',       ((CURRENT_DATE - 197) + TIME '08:30:00')::TIMESTAMPTZ, '2025-04-12', NULL, ((CURRENT_DATE - 21) + TIME '10:30:00')::TIMESTAMPTZ, 1),
+    ('LU-BIB1', 1, 7,  4, 'Sistema de Iluminación Lineal LED - Sala de Lectura Biblioteca',     ((CURRENT_DATE - 195) + TIME '09:00:00')::TIMESTAMPTZ, '2025-05-01', NULL, NULL,                     1),
+    ('MB-202',  2, 11, 5, 'Conjunto de Pupitres Bipersonales y Pizarrón Acrílico - Aula 202',   ((CURRENT_DATE - 267) + TIME '08:00:00')::TIMESTAMPTZ, '2023-03-01', NULL, NULL,                     1),
+    ('BA-TAL2', 2, 14, 6, 'Bomba Centrífuga Pedrollo 2HP Circuito de Enfriamiento - Taller 2',  ((CURRENT_DATE - 250) + TIME '10:00:00')::TIMESTAMPTZ, '2022-09-10', NULL, NULL,                     3), -- Fuera de servicio
+    ('SV-RACK', 1, 8,  7, 'Rack Principal y UPS APC Smart-UPS 3000VA - Centro de Cómputos',     ((CURRENT_DATE - 295) + TIME '08:30:00')::TIMESTAMPTZ, '2023-01-15', NULL, ((CURRENT_DATE - 11) + TIME '15:00:00')::TIMESTAMPTZ, 1),
+    ('SN-SAN1', 1, 9,  8, 'Batería de Lavatorios y Válvulas Automáticas - Sanitario PB',        ((CURRENT_DATE - 243) + TIME '09:00:00')::TIMESTAMPTZ, '2022-11-01', NULL, NULL,                     1),
+    ('PR-RET1', 1, 3,  2, 'Proyector BenQ MS527 (Lámpara y placa madre agotadas)',              ((CURRENT_DATE - 312) + TIME '09:00:00')::TIMESTAMPTZ, '2018-04-10', ((CURRENT_DATE - 83) + TIME '12:00:00')::TIMESTAMPTZ, NULL, 4)  -- Retirado
 ON CONFLICT (activo_codigo) DO NOTHING;
 
 -- =============================================================================
@@ -366,19 +368,19 @@ OVERRIDING SYSTEM VALUE
 VALUES
     (1, NULL, 1, 'Plan Preventivo Trimestral de Aires Acondicionados',
         'Limpieza integral de filtros, control de drenaje y verificación de presiones en equipos de climatización.',
-        'Trimestral', 3, 'meses', '2026-08-01', true, NULL),
+        'Trimestral', 3, 'meses', (CURRENT_DATE - 114), true, NULL),
     (2, NULL, 3, 'Plan Preventivo Semestral de Tableros Eléctricos',
         'Ajuste de borneras, prueba de disyuntores diferenciales y control termográfico en tableros seccionales.',
-        'Semestral', 6, 'meses', '2026-08-01', true, NULL),
+        'Semestral', 6, 'meses', (CURRENT_DATE - 114), true, NULL),
     (3, NULL, 2, 'Plan Preventivo Cuatrimestral de Proyectores',
         'Limpieza de filtros de polvo y sistema óptico de proyectores en aulas y auditorio.',
-        'Cuatrimestral', 4, 'meses', '2026-08-15', true, NULL),
+        'Cuatrimestral', 4, 'meses', (CURRENT_DATE - 100), true, NULL),
     (4, 'SV-RACK', 7, 'Plan Preventivo Mensual de Rack y UPS Centro de Cómputos',
         'Verificación mensual de autonomía de UPS y refrigeración del rack principal.',
-        'Mensual', 1, 'meses', '2026-09-01', true, NULL),
+        'Mensual', 1, 'meses', (CURRENT_DATE - 83), true, NULL),
     (5, NULL, 5, 'Plan Anual de Revisión de Mobiliario (Histórico)',
         'Revisión general de bancos y pizarrones antes del inicio del ciclo lectivo.',
-        'Anual', 1, 'anios', '2026-03-01', false, '2026-10-01 10:00:00-03')
+        'Anual', 1, 'anios', (CURRENT_DATE - 267), false, ((CURRENT_DATE - 53) + TIME '10:00:00')::TIMESTAMPTZ)
 ON CONFLICT (mant_prev_id) DO NOTHING;
 
 SELECT setval('public.mantenimiento_preventivo_mant_prev_id_seq', COALESCE((SELECT MAX(mant_prev_id) FROM public.mantenimiento_preventivo), 1), true);
@@ -465,8 +467,8 @@ SELECT setval('public.proveedor_proveedor_id_seq', COALESCE((SELECT MAX(proveedo
 INSERT INTO public.compra (compra_id, proveedor_id, compra_fecha, compra_tipo_fac, compra_num_fac, compra_obs)
 OVERRIDING SYSTEM VALUE
 VALUES
-    (1, 1, '2026-09-10 10:00:00-03', 'A', '0003-00045120', 'Compra trimestral de insumos eléctricos'),
-    (2, 2, '2026-09-25 11:30:00-03', 'A', '0001-00018932', 'Adquisición de insumos de refrigeración e instrumental')
+    (1, 1, ((CURRENT_DATE - 74) + TIME '10:00:00')::TIMESTAMPTZ, 'A', '0003-00045120', 'Compra trimestral de insumos eléctricos'),
+    (2, 2, ((CURRENT_DATE - 59) + TIME '11:30:00')::TIMESTAMPTZ, 'A', '0001-00018932', 'Adquisición de insumos de refrigeración e instrumental')
 ON CONFLICT (compra_id) DO NOTHING;
 
 SELECT setval('public.compra_compra_id_seq', COALESCE((SELECT MAX(compra_id) FROM public.compra), 1), true);
@@ -491,9 +493,9 @@ INSERT INTO public.remito (
 )
 OVERRIDING SYSTEM VALUE
 VALUES
-    (1, 'Remito',  'Distribuidora Eléctrica Norte S.A.', '0001-00045102', '2026-09-12', 'Recepción conforme en depósito central', 'Admin', '2026-09-12 09:30:00-03'),
-    (2, 'Factura', 'FríoRepuestos Chaco S.R.L.',         '0002-00019840', '2026-09-26', 'Entrega de capacitores, gas y herramientas de medición', 'Admin', '2026-09-26 11:00:00-03'),
-    (3, 'Remito',  'Ferretería Industrial Sarmiento',    '0004-00088210', '2026-10-14', 'Reposición de insumos sanitarios y pintura', 'Admin', '2026-10-14 10:15:00-03')
+    (1, 'Remito',  'Distribuidora Eléctrica Norte S.A.', '0001-00045102', (CURRENT_DATE - 72), 'Recepción conforme en depósito central', 'Admin', ((CURRENT_DATE - 72) + TIME '09:30:00')::TIMESTAMPTZ),
+    (2, 'Factura', 'FríoRepuestos Chaco S.R.L.',         '0002-00019840', (CURRENT_DATE - 58), 'Entrega de capacitores, gas y herramientas de medición', 'Admin', ((CURRENT_DATE - 58) + TIME '11:00:00')::TIMESTAMPTZ),
+    (3, 'Remito',  'Ferretería Industrial Sarmiento',    '0004-00088210', (CURRENT_DATE - 40), 'Reposición de insumos sanitarios y pintura', 'Admin', ((CURRENT_DATE - 40) + TIME '10:15:00')::TIMESTAMPTZ)
 ON CONFLICT (remito_id) DO NOTHING;
 
 SELECT setval('public.remito_remito_id_seq', COALESCE((SELECT MAX(remito_id) FROM public.remito), 1), true);
@@ -532,32 +534,32 @@ INSERT INTO public.ticket (
 OVERRIDING SYSTEM VALUE
 VALUES
     -- Tickets Cerrados (estado = 6, con fecha de cierre para alimentar KPIs y evolución mensual)
-    (1, 'AA-101',  '2001', '2026-09-14 08:30:00-03', '2026-09-15 14:30:00-03',
+    (1, 'AA-101',  '2001', ((CURRENT_DATE - 70) + TIME '08:30:00')::TIMESTAMPTZ, ((CURRENT_DATE - 69) + TIME '14:30:00')::TIMESTAMPTZ,
         'El aire acondicionado del Aula 101 enciende la turbina pero no enfría el ambiente.', 6, NULL),
-    (2, 'TE-PB01', '2003', '2026-10-06 09:00:00-03', '2026-10-08 14:00:00-03',
+    (2, 'TE-PB01', '2003', ((CURRENT_DATE - 48) + TIME '09:00:00')::TIMESTAMPTZ, ((CURRENT_DATE - 46) + TIME '14:00:00')::TIMESTAMPTZ,
         'Salta la llave térmica del circuito de tomacorrientes en Secretaría Académica cuando se conectan las impresoras.', 6, NULL),
-    (3, 'PR-101',  '2001', '2026-10-21 14:00:00-03', '2026-10-22 18:00:00-03',
+    (3, 'PR-101',  '2001', ((CURRENT_DATE - 33) + TIME '14:00:00')::TIMESTAMPTZ, ((CURRENT_DATE - 32) + TIME '18:00:00')::TIMESTAMPTZ,
         'El proyector del Aula 101 muestra imagen con tonalidad amarillenta y aviso de temperatura elevada.', 6, NULL),
-    (4, 'LU-201',  '2002', '2026-11-01 08:00:00-03', '2026-11-02 10:30:00-03',
+    (4, 'LU-201',  '2002', ((CURRENT_DATE - 22) + TIME '08:00:00')::TIMESTAMPTZ, ((CURRENT_DATE - 21) + TIME '10:30:00')::TIMESTAMPTZ,
         'Cuatro paneles LED de la primera fila del Aula 201 parpadean constantemente o no encienden.', 6, NULL),
-    (5, 'TE-TAL1', '2004', '2026-11-08 10:00:00-03', '2026-11-10 17:00:00-03',
+    (5, 'TE-TAL1', '2004', ((CURRENT_DATE - 15) + TIME '10:00:00')::TIMESTAMPTZ, ((CURRENT_DATE - 13) + TIME '17:00:00')::TIMESTAMPTZ,
         'Recalentamiento detectado en seccionador trifásico principal del Taller de Electromecánica 1.', 6, NULL),
     -- Ticket En ejecución (estado = 4)
-    (6, 'AA-LAB1', '2001', '2026-11-18 09:15:00-03', NULL,
+    (6, 'AA-LAB1', '2001', ((CURRENT_DATE - 5) + TIME '09:15:00')::TIMESTAMPTZ, NULL,
         'Pérdida de agua por la unidad interior del split del Laboratorio 1 y baja capacidad de enfriamiento.', 4, NULL),
     -- Ticket Asignado (estado = 3)
-    (7, 'SN-SAN1', '2003', '2026-11-19 11:00:00-03', NULL,
+    (7, 'SN-SAN1', '2003', ((CURRENT_DATE - 4) + TIME '11:00:00')::TIMESTAMPTZ, NULL,
         'Dos lavatorios del sanitario de planta baja presentan pérdida continua en la válvula automática y un flexible fisurado.', 3, NULL),
     -- Ticket Validado con OT creada aún sin asignar (estado = 2)
-    (8, 'BA-TAL2', '2004', '2026-11-20 08:45:00-03', NULL,
+    (8, 'BA-TAL2', '2004', ((CURRENT_DATE - 3) + TIME '08:45:00')::TIMESTAMPTZ, NULL,
         'La bomba centrífuga del Taller 2 hace ruido metálico en el eje y pierde presión de impulsión.', 2, NULL),
     -- Tickets Creados pendientes de validación del administrador (estado = 1)
-    (9, 'LU-BIB1', '2005', '2026-11-21 09:00:00-03', NULL,
+    (9, 'LU-BIB1', '2005', ((CURRENT_DATE - 2) + TIME '09:00:00')::TIMESTAMPTZ, NULL,
         'Un tramo de la iluminación lineal sobre las mesas de lectura de la Biblioteca quedó apagado.', 1, NULL),
-    (10, 'MB-202', '2002', '2026-11-21 10:30:00-03', NULL,
+    (10, 'MB-202', '2002', ((CURRENT_DATE - 2) + TIME '10:30:00')::TIMESTAMPTZ, NULL,
         'El pizarrón acrílico del Aula 202 tiene flojo el soporte derecho y tres pupitres requieren ajuste.', 1, NULL),
     -- Ticket Rechazado con motivo (estado = 7)
-    (11, 'PR-AUD1', '2003', '2026-10-18 16:00:00-03', NULL,
+    (11, 'PR-AUD1', '2003', ((CURRENT_DATE - 36) + TIME '16:00:00')::TIMESTAMPTZ, NULL,
         'El proyector del Auditorio no detecta la notebook al conectar el cable.' || E'\n\n--- MOTIVO DE RECHAZO ---\n' ||
         'Se verificó en el lugar que el equipo funciona correctamente; el inconveniente era el adaptador HDMI externo del docente.', 7, NULL)
 ON CONFLICT (ticket_id) DO NOTHING;
@@ -587,31 +589,31 @@ INSERT INTO public.orden_trabajo (
 OVERRIDING SYSTEM VALUE
 VALUES
     -- OTs Correctivas Finalizadas (estado = 4)
-    (1,  1, NULL, 'AA-101',  '2026-09-14 09:00:00-03', NULL, '2026-09-15 14:30:00-03', 4, 1,
+    (1,  1, NULL, 'AA-101',  ((CURRENT_DATE - 70) + TIME '09:00:00')::TIMESTAMPTZ, NULL, ((CURRENT_DATE - 69) + TIME '14:30:00')::TIMESTAMPTZ, 4, 1,
          'Reparación de sistema de arranque de compresor y recarga parcial de gas en split Aula 101.'),
-    (2,  2, NULL, 'TE-PB01', '2026-10-06 10:00:00-03', NULL, '2026-10-08 14:00:00-03', 4, 1,
+    (2,  2, NULL, 'TE-PB01', ((CURRENT_DATE - 48) + TIME '10:00:00')::TIMESTAMPTZ, NULL, ((CURRENT_DATE - 46) + TIME '14:00:00')::TIMESTAMPTZ, 4, 1,
          'Reemplazo de llave térmica fatigada y redistribución de cargas en tablero de Secretaría Académica.'),
-    (3,  3, NULL, 'PR-101',  '2026-10-21 15:00:00-03', NULL, '2026-10-22 18:00:00-03', 4, 2,
+    (3,  3, NULL, 'PR-101',  ((CURRENT_DATE - 33) + TIME '15:00:00')::TIMESTAMPTZ, NULL, ((CURRENT_DATE - 32) + TIME '18:00:00')::TIMESTAMPTZ, 4, 2,
          'Mantenimiento óptico y desobstrucción de ventilación de proyector Epson Aula 101.'),
-    (4,  4, NULL, 'LU-201',  '2026-11-01 09:00:00-03', NULL, '2026-11-02 10:30:00-03', 4, 2,
+    (4,  4, NULL, 'LU-201',  ((CURRENT_DATE - 22) + TIME '09:00:00')::TIMESTAMPTZ, NULL, ((CURRENT_DATE - 21) + TIME '10:30:00')::TIMESTAMPTZ, 4, 2,
          'Sustitución de 4 paneles LED 60x60 agotados en Aula 201.'),
-    (5,  5, NULL, 'TE-TAL1', '2026-11-08 11:00:00-03', NULL, '2026-11-10 17:00:00-03', 4, 1,
+    (5,  5, NULL, 'TE-TAL1', ((CURRENT_DATE - 15) + TIME '11:00:00')::TIMESTAMPTZ, NULL, ((CURRENT_DATE - 13) + TIME '17:00:00')::TIMESTAMPTZ, 4, 1,
          'Intervención especializada sobre seccionador trifásico de 380V en Taller Electromecánica 1.'),
     -- OT Correctiva En ejecución (estado = 3)
-    (6,  6, NULL, 'AA-LAB1', '2026-11-18 10:00:00-03', NULL, NULL,                     3, 1,
+    (6,  6, NULL, 'AA-LAB1', ((CURRENT_DATE - 5) + TIME '10:00:00')::TIMESTAMPTZ, NULL, NULL,                     3, 1,
          'Destape de bandeja de condensado, cambio de capacitor y control de carga de gas en Laboratorio 1.'),
     -- OT Correctiva Asignada (estado = 2)
-    (7,  7, NULL, 'SN-SAN1', '2026-11-19 12:00:00-03', NULL, NULL,                     2, 2,
+    (7,  7, NULL, 'SN-SAN1', ((CURRENT_DATE - 4) + TIME '12:00:00')::TIMESTAMPTZ, NULL, NULL,                     2, 2,
          'Cambio de válvulas automáticas y reemplazo de flexible en Sanitario PB.'),
     -- OT Correctiva Creada (estado = 1, pendiente de asignación)
-    (8,  8, NULL, 'BA-TAL2', '2026-11-20 09:30:00-03', NULL, NULL,                     1, 1,
+    (8,  8, NULL, 'BA-TAL2', ((CURRENT_DATE - 3) + TIME '09:30:00')::TIMESTAMPTZ, NULL, NULL,                     1, 1,
          'Diagnóstico y reparación mecánica de bomba centrífuga en Taller 2.'),
     -- OTs Preventivas (mant_prev_id IS NOT NULL, ticket_id IS NULL)
-    (9,  NULL, 1, 'AA-SRV1', '2026-11-04 08:00:00-03', '2026-11-05', '2026-11-05 11:30:00-03', 4, 1,
+    (9,  NULL, 1, 'AA-SRV1', ((CURRENT_DATE - 19) + TIME '08:00:00')::TIMESTAMPTZ, (CURRENT_DATE - 18), ((CURRENT_DATE - 18) + TIME '11:30:00')::TIMESTAMPTZ, 4, 1,
          'Plan Preventivo Trimestral de Aires Acondicionados - Sala de Servidores'),
-    (10, NULL, 4, 'SV-RACK', '2026-11-11 08:00:00-03', '2026-11-12', '2026-11-12 15:00:00-03', 4, 2,
+    (10, NULL, 4, 'SV-RACK', ((CURRENT_DATE - 12) + TIME '08:00:00')::TIMESTAMPTZ, (CURRENT_DATE - 11), ((CURRENT_DATE - 11) + TIME '15:00:00')::TIMESTAMPTZ, 4, 2,
          'Plan Preventivo Mensual de Rack y UPS Centro de Cómputos'),
-    (11, NULL, 1, 'AA-102',  '2026-11-20 08:00:00-03', '2026-11-22', NULL,                     2, 2,
+    (11, NULL, 1, 'AA-102',  ((CURRENT_DATE - 3) + TIME '08:00:00')::TIMESTAMPTZ, (CURRENT_DATE - 1), NULL,                     2, 2,
          'Plan Preventivo Trimestral de Aires Acondicionados - Aula 102')
 ON CONFLICT (ot_id) DO NOTHING;
 
@@ -637,30 +639,30 @@ INSERT INTO public.tarea_ot (
     tarea_fecha_fin
 ) VALUES
     -- OT 1 (Finalizada)
-    (1,  1, 2, NULL, 2.50, 'Reemplazo de capacitor de arranque de 45 uF y prueba de compresor.', 5, 1, '2026-09-15 08:00:00-03', '2026-09-15 11:00:00-03'),
-    (1,  2, 1, NULL, 1.50, 'Limpieza de filtros y compensación de carga de gas R410A.',          5, 2, '2026-09-15 11:30:00-03', '2026-09-15 14:30:00-03'),
+    (1,  1, 2, NULL, 2.50, 'Reemplazo de capacitor de arranque de 45 uF y prueba de compresor.', 5, 1, ((CURRENT_DATE - 69) + TIME '08:00:00')::TIMESTAMPTZ, ((CURRENT_DATE - 69) + TIME '11:00:00')::TIMESTAMPTZ),
+    (1,  2, 1, NULL, 1.50, 'Limpieza de filtros y compensación de carga de gas R410A.',          5, 2, ((CURRENT_DATE - 69) + TIME '11:30:00')::TIMESTAMPTZ, ((CURRENT_DATE - 69) + TIME '14:30:00')::TIMESTAMPTZ),
     -- OT 2 (Finalizada)
-    (2,  1, 3, NULL, 3.00, 'Reemplazo de llave térmica 2x20A, peinado de cables y reapriete.',   5, 1, '2026-10-08 09:00:00-03', '2026-10-08 14:00:00-03'),
+    (2,  1, 3, NULL, 3.00, 'Reemplazo de llave térmica 2x20A, peinado de cables y reapriete.',   5, 1, ((CURRENT_DATE - 46) + TIME '09:00:00')::TIMESTAMPTZ, ((CURRENT_DATE - 46) + TIME '14:00:00')::TIMESTAMPTZ),
     -- OT 3 (Finalizada)
-    (3,  1, 5, NULL, 2.00, 'Desarme y limpieza óptica y de turbina de enfriamiento de proyector.', 5, 2, '2026-10-22 15:00:00-03', '2026-10-22 18:00:00-03'),
+    (3,  1, 5, NULL, 2.00, 'Desarme y limpieza óptica y de turbina de enfriamiento de proyector.', 5, 2, ((CURRENT_DATE - 32) + TIME '15:00:00')::TIMESTAMPTZ, ((CURRENT_DATE - 32) + TIME '18:00:00')::TIMESTAMPTZ),
     -- OT 4 (Finalizada)
-    (4,  1, 4, NULL, 2.00, 'Desmontaje de paneles agotados e instalación de 4 paneles LED nuevos.', 5, 2, '2026-11-02 08:00:00-03', '2026-11-02 10:30:00-03'),
+    (4,  1, 4, NULL, 2.00, 'Desmontaje de paneles agotados e instalación de 4 paneles LED nuevos.', 5, 2, ((CURRENT_DATE - 21) + TIME '08:00:00')::TIMESTAMPTZ, ((CURRENT_DATE - 21) + TIME '10:30:00')::TIMESTAMPTZ),
     -- OT 5 (Finalizada - realizada por Prestador Externo ElectroChaco S.A.)
-    (5,  1, 3, 2,    6.00, 'Revisión termográfica y recambio de contactos de potencia en tablero 380V por prestador especializado.', 5, 1, '2026-11-10 08:00:00-03', '2026-11-10 17:00:00-03'),
+    (5,  1, 3, 2,    6.00, 'Revisión termográfica y recambio de contactos de potencia en tablero 380V por prestador especializado.', 5, 1, ((CURRENT_DATE - 13) + TIME '08:00:00')::TIMESTAMPTZ, ((CURRENT_DATE - 13) + TIME '17:00:00')::TIMESTAMPTZ),
     -- OT 6 (En ejecución)
-    (6,  1, 2, NULL, 2.50, 'Desobstrucción de drenaje, cambio de capacitor y control eléctrico en split Lab 1.', 3, 1, '2026-11-21 08:00:00-03', '2026-11-22 18:00:00-03'),
-    (6,  2, 1, NULL, 1.50, 'Limpieza profunda de unidad interior/exterior y control de presiones.',              2, 2, '2026-11-22 08:00:00-03', '2026-11-23 18:00:00-03'),
+    (6,  1, 2, NULL, 2.50, 'Desobstrucción de drenaje, cambio de capacitor y control eléctrico en split Lab 1.', 3, 1, ((CURRENT_DATE - 2) + TIME '08:00:00')::TIMESTAMPTZ, ((CURRENT_DATE - 1) + TIME '18:00:00')::TIMESTAMPTZ),
+    (6,  2, 1, NULL, 1.50, 'Limpieza profunda de unidad interior/exterior y control de presiones.',              2, 2, ((CURRENT_DATE - 1) + TIME '08:00:00')::TIMESTAMPTZ, (CURRENT_DATE + TIME '18:00:00')::TIMESTAMPTZ),
     -- OT 7 (Asignada)
-    (7,  1, 7, NULL, 3.00, 'Reemplazo de dos válvulas de descarga y un flexible mallado en sanitario PB.',       2, 2, '2026-11-22 08:00:00-03', '2026-11-24 18:00:00-03'),
+    (7,  1, 7, NULL, 3.00, 'Reemplazo de dos válvulas de descarga y un flexible mallado en sanitario PB.',       2, 2, ((CURRENT_DATE - 1) + TIME '08:00:00')::TIMESTAMPTZ, ((CURRENT_DATE + 1) + TIME '18:00:00')::TIMESTAMPTZ),
     -- OT 8 (Creada - tarea sin responsable aún)
-    (8,  1, 10, NULL, 4.00, 'Desarme de cabezal hidráulico, revisión de rodamientos y sello mecánico.',          1, 1, '2026-11-23 08:00:00-03', '2026-11-25 18:00:00-03'),
+    (8,  1, 10, NULL, 4.00, 'Desarme de cabezal hidráulico, revisión de rodamientos y sello mecánico.',          1, 1, (CURRENT_DATE + TIME '08:00:00')::TIMESTAMPTZ, ((CURRENT_DATE + 2) + TIME '18:00:00')::TIMESTAMPTZ),
     -- OT 9 (Preventiva Finalizada)
-    (9,  1, 1, NULL, 2.00, 'Limpieza de filtros y control de gas refrigerante en equipo de Sala de Servidores.', 5, 1, '2026-11-05 08:30:00-03', '2026-11-05 11:30:00-03'),
+    (9,  1, 1, NULL, 2.00, 'Limpieza de filtros y control de gas refrigerante en equipo de Sala de Servidores.', 5, 1, ((CURRENT_DATE - 18) + TIME '08:30:00')::TIMESTAMPTZ, ((CURRENT_DATE - 18) + TIME '11:30:00')::TIMESTAMPTZ),
     -- OT 10 (Preventiva Finalizada)
-    (10, 1, 6, NULL, 2.00, 'Test de autonomía de baterías UPS y limpieza de ventilación del rack principal.',   5, 2, '2026-11-12 13:00:00-03', '2026-11-12 15:00:00-03'),
+    (10, 1, 6, NULL, 2.00, 'Test de autonomía de baterías UPS y limpieza de ventilación del rack principal.',   5, 2, ((CURRENT_DATE - 11) + TIME '13:00:00')::TIMESTAMPTZ, ((CURRENT_DATE - 11) + TIME '15:00:00')::TIMESTAMPTZ),
     -- OT 11 (Preventiva Asignada)
-    (11, 1, 1, NULL, 1.50, 'Limpieza de filtros y control de gas refrigerante - Split Aula 102.',                2, 2, '2026-11-22 08:00:00-03', '2026-11-24 18:00:00-03'),
-    (11, 2, 2, NULL, 1.50, 'Revisión de compresor, capacitor y drenaje de split - Aula 102.',                    2, 2, '2026-11-22 08:00:00-03', '2026-11-24 18:00:00-03')
+    (11, 1, 1, NULL, 1.50, 'Limpieza de filtros y control de gas refrigerante - Split Aula 102.',                2, 2, ((CURRENT_DATE - 1) + TIME '08:00:00')::TIMESTAMPTZ, ((CURRENT_DATE + 1) + TIME '18:00:00')::TIMESTAMPTZ),
+    (11, 2, 2, NULL, 1.50, 'Revisión de compresor, capacitor y drenaje de split - Aula 102.',                    2, 2, ((CURRENT_DATE - 1) + TIME '08:00:00')::TIMESTAMPTZ, ((CURRENT_DATE + 1) + TIME '18:00:00')::TIMESTAMPTZ)
 ON CONFLICT (ot_id, tarea_id) DO NOTHING;
 
 INSERT INTO public.tecnico_asignado_tarea_ot (
@@ -670,18 +672,18 @@ INSERT INTO public.tecnico_asignado_tarea_ot (
     tec_asig_fecha_asig,
     tec_asig_estado
 ) VALUES
-    ('1002', 1,  1, '2026-09-14 09:30:00-03', 4), -- Finalizada
-    ('1002', 1,  2, '2026-09-14 09:30:00-03', 4), -- Finalizada
-    ('1001', 2,  1, '2026-10-06 10:30:00-03', 4), -- Finalizada
-    ('1001', 3,  1, '2026-10-21 15:30:00-03', 4), -- Finalizada
-    ('1005', 4,  1, '2026-11-01 09:30:00-03', 4), -- Finalizada
-    ('1002', 6,  1, '2026-11-18 10:30:00-03', 3), -- En curso (tarea en ejecución)
-    ('1005', 6,  2, '2026-11-18 10:30:00-03', 2), -- Asignada
-    ('1003', 7,  1, '2026-11-19 12:30:00-03', 2), -- Asignada
-    ('1002', 9,  1, '2026-11-04 09:00:00-03', 4), -- Finalizada
-    ('1001', 10, 1, '2026-11-11 09:00:00-03', 4), -- Finalizada
-    ('1005', 11, 1, '2026-11-20 09:00:00-03', 2), -- Asignada
-    ('1005', 11, 2, '2026-11-20 09:00:00-03', 2)  -- Asignada
+    ('1002', 1,  1, ((CURRENT_DATE - 70) + TIME '09:30:00')::TIMESTAMPTZ, 4), -- Finalizada
+    ('1002', 1,  2, ((CURRENT_DATE - 70) + TIME '09:30:00')::TIMESTAMPTZ, 4), -- Finalizada
+    ('1001', 2,  1, ((CURRENT_DATE - 48) + TIME '10:30:00')::TIMESTAMPTZ, 4), -- Finalizada
+    ('1001', 3,  1, ((CURRENT_DATE - 33) + TIME '15:30:00')::TIMESTAMPTZ, 4), -- Finalizada
+    ('1005', 4,  1, ((CURRENT_DATE - 22) + TIME '09:30:00')::TIMESTAMPTZ, 4), -- Finalizada
+    ('1002', 6,  1, ((CURRENT_DATE - 5) + TIME '10:30:00')::TIMESTAMPTZ, 3), -- En curso (tarea en ejecución)
+    ('1005', 6,  2, ((CURRENT_DATE - 5) + TIME '10:30:00')::TIMESTAMPTZ, 2), -- Asignada
+    ('1003', 7,  1, ((CURRENT_DATE - 4) + TIME '12:30:00')::TIMESTAMPTZ, 2), -- Asignada
+    ('1002', 9,  1, ((CURRENT_DATE - 19) + TIME '09:00:00')::TIMESTAMPTZ, 4), -- Finalizada
+    ('1001', 10, 1, ((CURRENT_DATE - 12) + TIME '09:00:00')::TIMESTAMPTZ, 4), -- Finalizada
+    ('1005', 11, 1, ((CURRENT_DATE - 3) + TIME '09:00:00')::TIMESTAMPTZ, 2), -- Asignada
+    ('1005', 11, 2, ((CURRENT_DATE - 3) + TIME '09:00:00')::TIMESTAMPTZ, 2)  -- Asignada
 ON CONFLICT (tecnico_legajo, ot_id, tarea_id) DO NOTHING;
 
 -- =============================================================================
@@ -698,13 +700,13 @@ INSERT INTO public.falla (
 )
 OVERRIDING SYSTEM VALUE
 VALUES
-    (1, 1, 1, 'AA-101',  'Eléctrica',   'Capacitor de marcha de 45 uF desvalorizado que impedía el arranque del motocompresor.', '2026-09-15 10:30:00-03'),
-    (2, 1, 2, 'AA-101',  'Mecánica',    'Merma parcial de presión en circuito de gas R410A por microfuga en tuerca flare.',      '2026-09-15 14:00:00-03'),
-    (3, 2, 1, 'TE-PB01', 'Eléctrica',   'Llave termomagnética 2x20A con contactos internos carbonizados por sobrecarga.',         '2026-10-08 13:00:00-03'),
-    (4, 3, 1, 'PR-101',  'Electrónica', 'Obstrucción severa de filtro de admisión de aire que disparaba el sensor térmico.',      '2026-10-22 17:30:00-03'),
-    (5, 4, 1, 'LU-201',  'Eléctrica',   'Drivers electrónicos quemados por fluctuación de tensión en cuatro paneles LED.',        '2026-11-02 10:00:00-03'),
-    (6, 5, 1, 'TE-TAL1', 'Eléctrica',   'Falso contacto y sulfatación en bornes de entrada del seccionador trifásico principal.', '2026-11-10 16:30:00-03'),
-    (7, 6, 1, 'AA-LAB1', 'Sanitaria',   'Manguera de desagüe de condensado obstruida con sedimento y capacitor fatigado.',        '2026-11-21 10:00:00-03')
+    (1, 1, 1, 'AA-101',  'Eléctrica',   'Capacitor de marcha de 45 uF desvalorizado que impedía el arranque del motocompresor.', ((CURRENT_DATE - 69) + TIME '10:30:00')::TIMESTAMPTZ),
+    (2, 1, 2, 'AA-101',  'Mecánica',    'Merma parcial de presión en circuito de gas R410A por microfuga en tuerca flare.',      ((CURRENT_DATE - 69) + TIME '14:00:00')::TIMESTAMPTZ),
+    (3, 2, 1, 'TE-PB01', 'Eléctrica',   'Llave termomagnética 2x20A con contactos internos carbonizados por sobrecarga.',         ((CURRENT_DATE - 46) + TIME '13:00:00')::TIMESTAMPTZ),
+    (4, 3, 1, 'PR-101',  'Electrónica', 'Obstrucción severa de filtro de admisión de aire que disparaba el sensor térmico.',      ((CURRENT_DATE - 32) + TIME '17:30:00')::TIMESTAMPTZ),
+    (5, 4, 1, 'LU-201',  'Eléctrica',   'Drivers electrónicos quemados por fluctuación de tensión en cuatro paneles LED.',        ((CURRENT_DATE - 21) + TIME '10:00:00')::TIMESTAMPTZ),
+    (6, 5, 1, 'TE-TAL1', 'Eléctrica',   'Falso contacto y sulfatación en bornes de entrada del seccionador trifásico principal.', ((CURRENT_DATE - 13) + TIME '16:30:00')::TIMESTAMPTZ),
+    (7, 6, 1, 'AA-LAB1', 'Sanitaria',   'Manguera de desagüe de condensado obstruida con sedimento y capacitor fatigado.',        ((CURRENT_DATE - 2) + TIME '10:00:00')::TIMESTAMPTZ)
 ON CONFLICT (ot_id, tarea_id) DO NOTHING;
 
 SELECT setval('public.falla_falla_id_seq', COALESCE((SELECT MAX(falla_id) FROM public.falla), 1), true);
@@ -714,13 +716,13 @@ SELECT setval('public.falla_falla_id_seq', COALESCE((SELECT MAX(falla_id) FROM p
 -- =============================================================================
 INSERT INTO public.tarea_ot_consume_material (ot_id, tarea_id, mat_cod, tamat_fecha_cons, tamat_cant)
 VALUES
-    (1, 1, 'MAT-RF01', '2026-09-15 10:45:00-03', 1),
-    (1, 2, 'MAT-RF02', '2026-09-15 14:15:00-03', 1),
-    (2, 1, 'MAT-EL02', '2026-10-08 13:30:00-03', 3),
-    (2, 1, 'MAT-EL03', '2026-10-08 13:35:00-03', 10),
-    (4, 1, 'MAT-EL01', '2026-11-02 10:15:00-03', 6),
-    (6, 1, 'MAT-RF01', '2026-11-21 10:30:00-03', 2),
-    (9, 1, 'MAT-RF02', '2026-11-05 11:00:00-03', 1)
+    (1, 1, 'MAT-RF01', ((CURRENT_DATE - 69) + TIME '10:45:00')::TIMESTAMPTZ, 1),
+    (1, 2, 'MAT-RF02', ((CURRENT_DATE - 69) + TIME '14:15:00')::TIMESTAMPTZ, 1),
+    (2, 1, 'MAT-EL02', ((CURRENT_DATE - 46) + TIME '13:30:00')::TIMESTAMPTZ, 3),
+    (2, 1, 'MAT-EL03', ((CURRENT_DATE - 46) + TIME '13:35:00')::TIMESTAMPTZ, 10),
+    (4, 1, 'MAT-EL01', ((CURRENT_DATE - 21) + TIME '10:15:00')::TIMESTAMPTZ, 6),
+    (6, 1, 'MAT-RF01', ((CURRENT_DATE - 2) + TIME '10:30:00')::TIMESTAMPTZ, 2),
+    (9, 1, 'MAT-RF02', ((CURRENT_DATE - 18) + TIME '11:00:00')::TIMESTAMPTZ, 1)
 ON CONFLICT (ot_id, tarea_id, mat_cod) DO NOTHING;
 
 -- Movimientos de inventario (Ingresos por remito + Consumos en tareas + Ajuste manual)
@@ -737,30 +739,30 @@ INSERT INTO public.inventariomovimiento (
 OVERRIDING SYSTEM VALUE
 VALUES
     -- Ingresos del Remito 1 (2026-09-12)
-    (1,  'MAT-EL01', 'Ingreso', 24,  '2026-09-12 00:00:00', 1, 'Admin', NULL),
-    (2,  'MAT-EL02', 'Ingreso', 15,  '2026-09-12 00:00:00', 1, 'Admin', NULL),
-    (3,  'MAT-EL03', 'Ingreso', 150, '2026-09-12 00:00:00', 1, 'Admin', NULL),
-    (4,  'MAT-AL02', 'Ingreso', 6,   '2026-09-12 00:00:00', 1, 'Admin', NULL),
+    (1,  'MAT-EL01', 'Ingreso', 24,  ((CURRENT_DATE - 72) + TIME '00:00:00'), 1, 'Admin', NULL),
+    (2,  'MAT-EL02', 'Ingreso', 15,  ((CURRENT_DATE - 72) + TIME '00:00:00'), 1, 'Admin', NULL),
+    (3,  'MAT-EL03', 'Ingreso', 150, ((CURRENT_DATE - 72) + TIME '00:00:00'), 1, 'Admin', NULL),
+    (4,  'MAT-AL02', 'Ingreso', 6,   ((CURRENT_DATE - 72) + TIME '00:00:00'), 1, 'Admin', NULL),
     -- Ingresos del Remito 2 (2026-09-26)
-    (5,  'MAT-RF01', 'Ingreso', 6,   '2026-09-26 00:00:00', 2, 'Admin', NULL),
-    (6,  'MAT-RF02', 'Ingreso', 6,   '2026-09-26 00:00:00', 2, 'Admin', NULL),
-    (7,  'HER-ME01', 'Ingreso', 1,   '2026-09-26 00:00:00', 2, 'Admin', NULL),
-    (8,  'HER-ME02', 'Ingreso', 1,   '2026-09-26 00:00:00', 2, 'Admin', NULL),
+    (5,  'MAT-RF01', 'Ingreso', 6,   ((CURRENT_DATE - 58) + TIME '00:00:00'), 2, 'Admin', NULL),
+    (6,  'MAT-RF02', 'Ingreso', 6,   ((CURRENT_DATE - 58) + TIME '00:00:00'), 2, 'Admin', NULL),
+    (7,  'HER-ME01', 'Ingreso', 1,   ((CURRENT_DATE - 58) + TIME '00:00:00'), 2, 'Admin', NULL),
+    (8,  'HER-ME02', 'Ingreso', 1,   ((CURRENT_DATE - 58) + TIME '00:00:00'), 2, 'Admin', NULL),
     -- Ingresos del Remito 3 (2026-10-14)
-    (9,  'MAT-PL01', 'Ingreso', 16,  '2026-10-14 00:00:00', 3, 'Admin', NULL),
-    (10, 'MAT-PL02', 'Ingreso', 4,   '2026-10-14 00:00:00', 3, 'Admin', NULL),
-    (11, 'MAT-AL01', 'Ingreso', 40,  '2026-10-14 00:00:00', 3, 'Admin', NULL),
+    (9,  'MAT-PL01', 'Ingreso', 16,  ((CURRENT_DATE - 40) + TIME '00:00:00'), 3, 'Admin', NULL),
+    (10, 'MAT-PL02', 'Ingreso', 4,   ((CURRENT_DATE - 40) + TIME '00:00:00'), 3, 'Admin', NULL),
+    (11, 'MAT-AL01', 'Ingreso', 40,  ((CURRENT_DATE - 40) + TIME '00:00:00'), 3, 'Admin', NULL),
     -- Consumos en tareas
-    (12, 'MAT-RF01', 'Consumo', 1,   '2026-09-15 10:45:00', NULL, '1002', NULL),
-    (13, 'MAT-RF02', 'Consumo', 1,   '2026-09-15 14:15:00', NULL, '1002', NULL),
-    (14, 'MAT-EL02', 'Consumo', 3,   '2026-10-08 13:30:00', NULL, '1001', NULL),
-    (15, 'MAT-EL03', 'Consumo', 10,  '2026-10-08 13:35:00', NULL, '1001', NULL),
-    (16, 'MAT-EL01', 'Consumo', 6,   '2026-11-02 10:15:00', NULL, '1005', NULL),
-    (17, 'MAT-RF02', 'Consumo', 1,   '2026-11-05 11:00:00', NULL, '1002', NULL),
-    (18, 'MAT-RF01', 'Consumo', 2,   '2026-11-21 10:30:00', NULL, '1002', NULL),
+    (12, 'MAT-RF01', 'Consumo', 1,   ((CURRENT_DATE - 69) + TIME '10:45:00'), NULL, '1002', NULL),
+    (13, 'MAT-RF02', 'Consumo', 1,   ((CURRENT_DATE - 69) + TIME '14:15:00'), NULL, '1002', NULL),
+    (14, 'MAT-EL02', 'Consumo', 3,   ((CURRENT_DATE - 46) + TIME '13:30:00'), NULL, '1001', NULL),
+    (15, 'MAT-EL03', 'Consumo', 10,  ((CURRENT_DATE - 46) + TIME '13:35:00'), NULL, '1001', NULL),
+    (16, 'MAT-EL01', 'Consumo', 6,   ((CURRENT_DATE - 21) + TIME '10:15:00'), NULL, '1005', NULL),
+    (17, 'MAT-RF02', 'Consumo', 1,   ((CURRENT_DATE - 18) + TIME '11:00:00'), NULL, '1002', NULL),
+    (18, 'MAT-RF01', 'Consumo', 2,   ((CURRENT_DATE - 2) + TIME '10:30:00'), NULL, '1002', NULL),
     -- Ajustes manuales de stock
-    (19, 'MAT-PL02', 'Egreso manual', 2, '2026-11-15 11:00:00', NULL, 'Admin', 'Dos kits descartados por sello de goma reseco en control de depósito'),
-    (20, 'MAT-PL01', 'Egreso manual', 1, '2026-11-15 11:15:00', NULL, 'Admin', 'Ajuste por conteo físico de inventario mensual')
+    (19, 'MAT-PL02', 'Egreso manual', 2, ((CURRENT_DATE - 8) + TIME '11:00:00'), NULL, 'Admin', 'Dos kits descartados por sello de goma reseco en control de depósito'),
+    (20, 'MAT-PL01', 'Egreso manual', 1, ((CURRENT_DATE - 8) + TIME '11:15:00'), NULL, 'Admin', 'Ajuste por conteo físico de inventario mensual')
 ON CONFLICT (inventariomovimientoid) DO NOTHING;
 
 SELECT setval('public.inventariomovimiento_inventariomovimientoid_seq', COALESCE((SELECT MAX(inventariomovimientoid) FROM public.inventariomovimiento), 1), true);
@@ -780,12 +782,12 @@ INSERT INTO public.tecnico_utiliza_herramienta (
     tarea_id
 ) VALUES
     -- Préstamos históricos ya devueltos
-    ('1002', 'HER-ME02', '2026-09-15 08:15:00-03', '2026-09-15 14:40:00-03', 1,  2),
-    ('1001', 'HER-ME01', '2026-10-08 09:10:00-03', '2026-10-08 14:15:00-03', 2,  1),
-    ('1005', 'HER-MA01', '2026-11-02 08:05:00-03', '2026-11-02 10:40:00-03', 4,  1),
+    ('1002', 'HER-ME02', ((CURRENT_DATE - 69) + TIME '08:15:00')::TIMESTAMPTZ, ((CURRENT_DATE - 69) + TIME '14:40:00')::TIMESTAMPTZ, 1,  2),
+    ('1001', 'HER-ME01', ((CURRENT_DATE - 46) + TIME '09:10:00')::TIMESTAMPTZ, ((CURRENT_DATE - 46) + TIME '14:15:00')::TIMESTAMPTZ, 2,  1),
+    ('1005', 'HER-MA01', ((CURRENT_DATE - 21) + TIME '08:05:00')::TIMESTAMPTZ, ((CURRENT_DATE - 21) + TIME '10:40:00')::TIMESTAMPTZ, 4,  1),
     -- Préstamos actualmente abiertos (herramientas 'HER-ME01' y 'HER-ME02' en estado 2 = En uso)
-    ('1002', 'HER-ME02', '2026-11-21 08:30:00-03', NULL,                     6,  1),
-    ('1001', 'HER-ME01', '2026-11-21 09:00:00-03', NULL,                     NULL, NULL)
+    ('1002', 'HER-ME02', ((CURRENT_DATE - 2) + TIME '08:30:00')::TIMESTAMPTZ, NULL,                     6,  1),
+    ('1001', 'HER-ME01', ((CURRENT_DATE - 2) + TIME '09:00:00')::TIMESTAMPTZ, NULL,                     NULL, NULL)
 ON CONFLICT (tecnico_legajo, herr_cod, tec_herr_fecha_prest) DO NOTHING;
 
 -- =============================================================================
@@ -808,14 +810,14 @@ SELECT
     v.fecha
 FROM (
     VALUES
-        (1::BIGINT,  1, '1002', 'Se reemplazó el capacitor de 45 uF y se verificó que el consumo de corriente del compresor quedó estable en 6.4 A.', '2026-09-15 10:50:00-03'::TIMESTAMPTZ),
-        (1::BIGINT,  2, '1002', 'Se reapretó la tuerca flare de la válvula de servicio y se completó carga con R410A hasta 125 PSI en baja.',          '2026-09-15 14:20:00-03'::TIMESTAMPTZ),
-        (2::BIGINT,  1, '1001', 'Se instaló térmica Schneider 2x20A nueva y se separó la línea de impresoras láser en un circuito independiente.',     '2026-10-08 13:50:00-03'::TIMESTAMPTZ),
-        (3::BIGINT,  1, '1001', 'Se limpió el filtro de aire y el prisma óptico; la lámpara registra 1420 horas de uso sobre 6000 estimadas.',          '2026-10-22 17:45:00-03'::TIMESTAMPTZ),
-        (4::BIGINT,  1, '1005', 'Se reemplazaron los 4 paneles de la primera fila y otros 2 del fondo que presentaban desgaste de driver.',            '2026-11-02 10:25:00-03'::TIMESTAMPTZ),
-        (6::BIGINT,  1, '1002', 'Se destapó la manguera de drenaje con nitrógeno a baja presión y se colocó capacitor nuevo; queda en prueba.',        '2026-11-21 11:00:00-03'::TIMESTAMPTZ),
-        (9::BIGINT,  1, '1002', 'Equipo de precisión de Sala de Servidores operando en parámetros normales a 20 °C constantes.',                       '2026-11-05 11:20:00-03'::TIMESTAMPTZ),
-        (10::BIGINT, 1, '1001', 'Prueba de corte eléctrico superada: el banco de baterías de la UPS mantuvo carga durante 25 minutos al 65%.',         '2026-11-12 14:50:00-03'::TIMESTAMPTZ)
+        (1::BIGINT,  1, '1002', 'Se reemplazó el capacitor de 45 uF y se verificó que el consumo de corriente del compresor quedó estable en 6.4 A.', ((CURRENT_DATE - 69) + TIME '10:50:00')::TIMESTAMPTZ),
+        (1::BIGINT,  2, '1002', 'Se reapretó la tuerca flare de la válvula de servicio y se completó carga con R410A hasta 125 PSI en baja.',          ((CURRENT_DATE - 69) + TIME '14:20:00')::TIMESTAMPTZ),
+        (2::BIGINT,  1, '1001', 'Se instaló térmica Schneider 2x20A nueva y se separó la línea de impresoras láser en un circuito independiente.',     ((CURRENT_DATE - 46) + TIME '13:50:00')::TIMESTAMPTZ),
+        (3::BIGINT,  1, '1001', 'Se limpió el filtro de aire y el prisma óptico; la lámpara registra 1420 horas de uso sobre 6000 estimadas.',          ((CURRENT_DATE - 32) + TIME '17:45:00')::TIMESTAMPTZ),
+        (4::BIGINT,  1, '1005', 'Se reemplazaron los 4 paneles de la primera fila y otros 2 del fondo que presentaban desgaste de driver.',            ((CURRENT_DATE - 21) + TIME '10:25:00')::TIMESTAMPTZ),
+        (6::BIGINT,  1, '1002', 'Se destapó la manguera de drenaje con nitrógeno a baja presión y se colocó capacitor nuevo; queda en prueba.',        ((CURRENT_DATE - 2) + TIME '11:00:00')::TIMESTAMPTZ),
+        (9::BIGINT,  1, '1002', 'Equipo de precisión de Sala de Servidores operando en parámetros normales a 20 °C constantes.',                       ((CURRENT_DATE - 18) + TIME '11:20:00')::TIMESTAMPTZ),
+        (10::BIGINT, 1, '1001', 'Prueba de corte eléctrico superada: el banco de baterías de la UPS mantuvo carga durante 25 minutos al 65%.',         ((CURRENT_DATE - 11) + TIME '14:50:00')::TIMESTAMPTZ)
 ) AS v(ot_id, tarea_id, legajo, texto, fecha)
 JOIN public.tecnico t ON t.tecnico_legajo = v.legajo
 JOIN public.usuario u ON u.tecnico_legajo = t.tecnico_legajo

@@ -224,9 +224,9 @@ describe('generarOtsPreventivas', () => {
     expect(insercionesDe(elDiaAnterior, 'orden_trabajo')[0].datos.ot_fecha_programada).toBe('2026-11-09');
   });
 
-  test('un activo viejo con varios ciclos atrasados genera una sola OT', async () => {
+  test('un activo viejo con varios ciclos atrasados genera una sola OT con fecha actual (no en el pasado)', async () => {
     const pedidos = escenario({
-      planes: [filaPlan({ mant_prev_intervalo: 3, mant_prev_fecha_alta: '2026-11-04' })],
+      planes: [filaPlan({ mant_prev_intervalo: 3, mant_prev_fecha_alta: '2026-11-04', tareas: [[10, 'Limpiar filtros', 2]] })],
       activos: [filaActivo('PC-VIEJA', '2024-11-20')],
     });
 
@@ -235,7 +235,9 @@ describe('generarOtsPreventivas', () => {
     expect(resultado.otsGeneradas).toBe(1);
     const ots = insercionesDe(pedidos, 'orden_trabajo');
     expect(ots).toHaveLength(1);
-    expect(ots[0].datos.ot_fecha_programada).toBe('2026-08-20');
+    expect(ots[0].datos.ot_fecha_programada).toBe('2026-11-06');
+    const tareas = insercionesDe(pedidos, 'tarea_ot')[0].datos;
+    expect(tareas.every((t) => t.tarea_fecha_ini === '2026-11-06')).toBe(true);
   });
 
   test('la anticipación configurada adelanta la generación', async () => {
