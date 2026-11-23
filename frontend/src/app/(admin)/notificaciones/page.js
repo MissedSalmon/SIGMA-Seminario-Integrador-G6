@@ -27,16 +27,22 @@ import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
-import { useSesion } from '@/componentes/layout/ContextoSesion.js';
-import { listarAlertasStock } from '@/servicios/inventario.js';
-import { listarNotificaciones } from '@/servicios/notificaciones.js';
-import { useFiltroPersistente } from '@/utils/filtros.js';
+import { useToast } from '@/componentes/toast/ContextoToast.js';
+import {
+  EVENTO_CAMBIO,
+  eliminarNotificacion,
+  listarNotificaciones,
+  marcarNotificacionLeida,
+  marcarTodasLeidas,
+} from '@/servicios/notificaciones.js';
+import { formatearFechaHora } from '@/utils/fechas.js';
+import { useEstadoGuardado } from '@/utils/estadoGuardado.js';
+import { enlaceDesdeNotificaciones } from '@/utils/volverA.js';
 
-function AlertasDeStock() {
-  const [alertas, setAlertas] = useState([]);
-  const [categoria, setCategoria] = useFiltroPersistente('categoria', '');
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
+const ESTADOS = [
+  { valor: 'no-leidas', texto: 'No leídas' },
+  { valor: 'leidas', texto: 'Leídas' },
+];
 
 export default function PantallaNotificaciones() {
   const router = useRouter();

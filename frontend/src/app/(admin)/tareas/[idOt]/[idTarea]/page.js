@@ -168,7 +168,7 @@ export default function PantallaDetalleMiTarea({ params }) {
           ? `La tarea quedó finalizada. Era la última: la OT #${idOt} se finalizó, el ticket se cerró y el activo quedó ${estadoActivo || 'Operativo'}.`
           : 'La tarea quedó finalizada.',
       });
-      router.push('/tareas');
+      router.push(volverA);
     } catch (fallo) {
       setErrorVentana(fallo.message);
       setProcesando(false);
