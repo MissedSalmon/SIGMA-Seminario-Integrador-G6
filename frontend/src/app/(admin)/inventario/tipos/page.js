@@ -15,11 +15,12 @@ import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { eliminarTipoInventario, listarTiposInventario } from '@/servicios/inventario.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 export default function PantallaTiposInventario() {
   const { mostrarToast } = useToast();
   const [tipos, setTipos] = useState([]);
-  const [clase, setClase] = useState('');
+  const [clase, setClase] = useFiltroPersistente('clase', '');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [aEliminar, setAEliminar] = useState(null);
@@ -118,7 +119,7 @@ export default function PantallaTiposInventario() {
             ]}
             alLimpiar={() => setClase('')}
             cargando={cargando}
-            textoVacio="Todavia no hay tipos cargados."
+            textoVacio="Todavía no hay tipos cargados."
           />
         </CCardBody>
       </CCard>

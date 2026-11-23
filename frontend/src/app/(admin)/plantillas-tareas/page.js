@@ -16,13 +16,14 @@ import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { eliminarPlantilla, listarPlantillas } from '@/servicios/plantillasTareas.js';
 import { listarEspecialidades } from '@/servicios/especialidades.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 export default function PantallaPlantillas() {
   const { mostrarToast } = useToast();
 
   const [plantillas, setPlantillas] = useState([]);
   const [especialidades, setEspecialidades] = useState([]);
-  const [filtroEspecialidad, setFiltroEspecialidad] = useState('');
+  const [filtroEspecialidad, setFiltroEspecialidad] = useFiltroPersistente('especialidad', '');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
@@ -140,7 +141,7 @@ export default function PantallaPlantillas() {
             ]}
             alLimpiar={() => setFiltroEspecialidad('')}
             cargando={cargando}
-            textoVacio="Todavia no hay plantillas de tareas cargadas."
+            textoVacio="Todavía no hay plantillas de tareas cargadas."
           />
         </CCardBody>
       </CCard>

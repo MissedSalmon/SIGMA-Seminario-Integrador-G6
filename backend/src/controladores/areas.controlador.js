@@ -15,8 +15,8 @@ function leerId(req) {
 }
 
 function leerCuerpo(req) {
-  const { nombre, idEspacio } = req.body;
-  return { nombre, idEspacio };
+  const { nombre, idsEspacios } = req.body;
+  return { nombre, idsEspacios };
 }
 
 /** GET /api/areas */

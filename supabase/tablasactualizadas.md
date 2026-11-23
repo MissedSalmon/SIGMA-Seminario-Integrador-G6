@@ -323,6 +323,7 @@ Repuestos e insumos consumibles en stock.
 | **FK** | `compraId` | Referencia a la compra de origen (opcional) |
 | **FK** | `lineaId` | Referencia a la línea de compra específica (opcional) |
 | | `matNom` | Nombre del material/repuesto |
+| | `matUnidadMedida` | Unidad de medida: par, unidad, metro, pulgada, kilogramo, litro o metro cuadrado |
 | | `matStockActual` | Existencia actual en inventario |
 | | `matStockMin` | Nivel mínimo recomendado de stock |
 | | `matFechaVenc` | Fecha de vencimiento (si aplica) |

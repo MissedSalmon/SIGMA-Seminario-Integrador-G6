@@ -134,7 +134,7 @@ export default function PantallaTiposActivos() {
             buscarPor={['nombre', ]}
             placeholderBusqueda="Buscar por nombre"
             cargando={cargando}
-            textoVacio="Todavia no hay tipos de activos cargados."
+            textoVacio="Todavía no hay tipos de activos cargados."
           />
         </CCardBody>
       </CCard>

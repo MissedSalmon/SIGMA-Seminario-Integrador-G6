@@ -27,15 +27,16 @@ import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { eliminarItem, listarItems } from '@/servicios/inventario.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 const ESTADOS = ['Disponible', 'En uso', 'Fuera de servicio'];
 
 export default function PantallaHerramientas() {
   const { mostrarToast } = useToast();
   const [herramientas, setHerramientas] = useState([]);
-  const [categoria, setCategoria] = useState('');
-  const [estado, setEstado] = useState('');
-  const [tecnico, setTecnico] = useState('');
+  const [categoria, setCategoria] = useFiltroPersistente('categoria', '');
+  const [estado, setEstado] = useFiltroPersistente('estado', '');
+  const [tecnico, setTecnico] = useFiltroPersistente('tecnico', '');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [aEliminar, setAEliminar] = useState(null);
@@ -113,7 +114,7 @@ export default function PantallaHerramientas() {
             href={`/inventario/herramientas/${encodeURIComponent(fila.codigo)}`}
             variante="ghost"
             className="btn-icono"
-            title="Ver la ficha y el historial de movimientos"
+            title={`Ver detalle de ${fila.nombre}`}
           >
             <CIcon icon={cilDescription} />
           </BotonEnlace>
@@ -121,7 +122,7 @@ export default function PantallaHerramientas() {
             href={`/inventario/herramientas/${encodeURIComponent(fila.codigo)}/editar`}
             variante="ghost"
             className="btn-icono"
-            title="Editar"
+            title={`Editar ${fila.nombre}`}
           >
             <CIcon icon={cilPencil} />
           </BotonEnlace>
@@ -132,7 +133,7 @@ export default function PantallaHerramientas() {
               color="danger"
               className="btn-icono"
               onClick={() => pedirBaja(fila)}
-              title="Dar de baja"
+              title={`Dar de baja ${fila.nombre}`}
             >
               <CIcon icon={cilTrash} />
             </CButton>
@@ -192,7 +193,7 @@ export default function PantallaHerramientas() {
               setTecnico('');
             }}
             cargando={cargando}
-            textoVacio="Todavia no hay herramientas cargadas."
+            textoVacio="Todavía no hay herramientas cargadas."
           />
         </CCardBody>
       </CCard>

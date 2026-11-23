@@ -7,18 +7,18 @@
  * Celeste: la herramienta está a nombre del técnico y la puede devolver.
  * Gris: ya la devolvió, la fila queda sólo como historial.
  */
-const ESTILOS = {
-  'En uso': { fondo: 'var(--cui-info-bg-subtle, #d6f1fb)', texto: 'var(--cui-info-text-emphasis, #0b6b8c)' },
-  Devuelta: { fondo: 'var(--cui-secondary-bg-subtle, #e9ecef)', texto: 'var(--cui-secondary-text-emphasis, #495057)' },
+/** El tono del sello de cada estado (ver --sigma-tono-* en globals.css). */
+const TONOS = {
+  'En uso': 'curso',
+  Devuelta: 'neutro',
 };
 
 export default function EtiquetaEstadoPrestamo({ enUso }) {
   const estado = enUso ? 'En uso' : 'Devuelta';
-  const estilo = ESTILOS[estado];
+  const tono = TONOS[estado];
 
   return (
-    <span className="sigma-etiqueta text-nowrap" style={{ backgroundColor: estilo.fondo, color: estilo.texto }}>
-      <span aria-hidden="true" style={{ marginRight: '0.35rem' }}>●</span>
+    <span className={`sigma-sello sigma-sello--${tono}`}>
       {estado}
     </span>
   );

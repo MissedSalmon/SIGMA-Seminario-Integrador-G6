@@ -94,7 +94,7 @@ export default function PantallaEspecialidades() {
             buscarPor={[ 'nombre' ]}
             placeholderBusqueda="Buscar por nombre"
             cargando={cargando}
-            textoVacio="Todavia no hay especialidades cargadas."
+            textoVacio="Todavía no hay especialidades cargadas."
           />
         </CCardBody>
       </CCard>

@@ -21,19 +21,20 @@
     "start:frontend": "npm run start --workspace frontend",
     "lint": "npm run lint --workspace frontend",
     "db:link": "npx supabase link --project-ref agayydinmimmqoyuybbi",
-    "db:push": "npx supabase db push",
+    "db:push": "npx supabase db push --remote",
     "db:start": "npx supabase start",
     "db:seed": "node seed_admin.js"
   },
   "devDependencies": {
-    "concurrently": "^10.0.5",
+    "concurrently": "^10.0.7",
     "jest": "^30.5.2",
-    "supabase": "^2.118.0"
+    "supabase": "^3.3.0"
   },
   "allowScripts": {
     "unrs-resolver": true,
     "@parcel/watcher@2.6.0": true,
-    "nodemon@1.14.10": true
+    "nodemon@1.14.10": true,
+    "core-js": false
   },
   "overrides": {
     "uuid": "^11.1.1",

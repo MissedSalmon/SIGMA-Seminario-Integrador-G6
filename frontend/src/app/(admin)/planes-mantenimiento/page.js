@@ -4,10 +4,11 @@
  * /planes-mantenimiento - listado de planes de mantenimiento preventivo (Sprint 5).
  */
 import { useEffect, useState } from 'react';
-import { CButtonGroup, CCard, CCardBody } from '@coreui/react';
+import { CButton, CButtonGroup, CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilDescription, cilPencil, cilTrash } from '@coreui/icons';
 
+import Talon from '@/componentes/Talon.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
@@ -17,14 +18,15 @@ import EtiquetaEstadoPlan from '@/componentes/planes/EtiquetaEstadoPlan.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarPlanes, darDeBajaPlan } from '@/servicios/planesMantenimiento.js';
 import { listarTiposActivos } from '@/servicios/tiposActivos.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 export default function PantallaPlanesMantenimiento() {
   const { mostrarToast } = useToast();
 
   const [planes, setPlanes] = useState([]);
   const [tiposActivos, setTiposActivos] = useState([]);
-  const [filtroTipo, setFiltroTipo] = useState('');
-  const [filtroEstado, setFiltroEstado] = useState('activo');
+  const [filtroTipo, setFiltroTipo] = useFiltroPersistente('tipo', '');
+  const [filtroEstado, setFiltroEstado] = useFiltroPersistente('estado', 'activo');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
@@ -88,7 +90,7 @@ export default function PantallaPlanesMantenimiento() {
     {
       clave: 'id',
       encabezado: '#',
-      render: (plan) => <span className="fw-semibold">{plan.id}</span>,
+      render: (plan) => <Talon numero={plan.id} />,
     },
     {
       clave: 'nombre',
@@ -121,7 +123,7 @@ export default function PantallaPlanesMantenimiento() {
     },
     {
       clave: 'acciones',
-      encabezado: 'Acción',
+      encabezado: 'Acciones',
       alinearDerecha: true,
       render: (plan) => (
         <CButtonGroup size="sm">
@@ -129,7 +131,7 @@ export default function PantallaPlanesMantenimiento() {
             href={`/planes-mantenimiento/${plan.id}`}
             variante="ghost"
             className="btn-icono"
-            title="Ver detalle del plan"
+            title={`Ver detalle de ${plan.nombre}`}
           >
             <CIcon icon={cilDescription} />
           </BotonEnlace>
@@ -139,18 +141,19 @@ export default function PantallaPlanesMantenimiento() {
                 href={`/planes-mantenimiento/${plan.id}/editar`}
                 variante="ghost"
                 className="btn-icono"
-                title="Editar plan"
+                title={`Editar ${plan.nombre}`}
               >
                 <CIcon icon={cilPencil} />
               </BotonEnlace>
-              <BotonEnlace
+              <CButton
+                variant="ghost"
+                color="danger"
+                className="btn-icono"
                 onClick={() => setADarDeBaja(plan)}
-                variante="ghost"
-                className="btn-icono text-danger"
-                title="Dar de baja plan"
+                title={`Dar de baja ${plan.nombre}`}
               >
                 <CIcon icon={cilTrash} />
-              </BotonEnlace>
+              </CButton>
             </>
           )}
         </CButtonGroup>

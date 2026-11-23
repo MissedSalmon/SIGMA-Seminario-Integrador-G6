@@ -11,7 +11,7 @@ jest.unstable_mockModule('../src/config/supabase.js', () => ({
 }));
 
 const { supabase } = await import('../src/config/supabase.js');
-const { obtenerAreasConMayorIncidencia } = await import('../src/servicios/estadisticas.servicio.js');
+const { obtenerAreasConMayorIncidencia, agruparFallasPorActivoYTipo } = await import('../src/servicios/estadisticas.servicio.js');
 
 const LABORATORIO = { area_id: 1, area_nom: 'Laboratorio' };
 const BIBLIOTECA = { area_id: 2, area_nom: 'Biblioteca' };
@@ -20,7 +20,19 @@ const BEDELIA = { area_id: 3, area_nom: 'Bedelía' };
 let siguienteId = 1;
 
 /** Una fila de la tabla falla como la devuelve Supabase. */
-function falla({ tipo, areas = [], ticket = null, plan = null, ot = 10, fecha = '2026-10-01T12:00:00Z' }) {
+function falla({
+  tipo,
+  codigoActivo = 'AC-1',
+  tipoActivo = 'Aire acondicionado',
+  area = null,
+  edificio = 'Central',
+  espacioNum = '101',
+  tipoEspacio = null,
+  ticket = null,
+  plan = null,
+  ot = 10,
+  fecha = '2026-10-01T12:00:00Z',
+}) {
   return {
     falla_id: siguienteId++,
     ot_id: ot,
@@ -28,11 +40,17 @@ function falla({ tipo, areas = [], ticket = null, plan = null, ot = 10, fecha = 
     falla_tipo: tipo,
     falla_desc: 'Descripción',
     falla_fecha: fecha,
-    activo_codigo: 'AC-1',
+    activo_codigo: codigoActivo,
     activo: {
-      activo_codigo: 'AC-1',
-      tipo_activo: { tipo_activo_nom: 'Aire acondicionado' },
-      espacio: { espacio_id: 5, espacio_num: '101', edificio: { edificio_nom: 'Central' }, area: areas },
+      activo_codigo: codigoActivo,
+      tipo_activo: tipoActivo ? { tipo_activo_nom: tipoActivo } : null,
+      espacio: {
+        espacio_id: 5,
+        espacio_num: espacioNum,
+        ...(tipoEspacio ? { tipo_espacio: { tipo_espacio_nom: tipoEspacio } } : {}),
+        edificio: { edificio_nom: edificio },
+        area,
+      },
     },
     orden_trabajo: {
       ot_id: ot,
@@ -71,9 +89,9 @@ afterEach(() => {
 describe('obtenerAreasConMayorIncidencia', () => {
   test('ordena las áreas por cantidad de fallas, de mayor a menor', async () => {
     fallasRegistradas([
-      falla({ tipo: 'Eléctrica', areas: [BIBLIOTECA], ticket: 1 }),
-      falla({ tipo: 'Eléctrica', areas: [LABORATORIO], ticket: 2 }),
-      falla({ tipo: 'Sanitaria', areas: [LABORATORIO], ticket: 3 }),
+      falla({ tipo: 'Eléctrica', area: BIBLIOTECA, ticket: 1 }),
+      falla({ tipo: 'Eléctrica', area: LABORATORIO, ticket: 2 }),
+      falla({ tipo: 'Sanitaria', area: LABORATORIO, ticket: 3 }),
     ]);
 
     const ranking = await obtenerAreasConMayorIncidencia();
@@ -89,10 +107,10 @@ describe('obtenerAreasConMayorIncidencia', () => {
 
   test('cuenta tickets distintos y desglosa por tipo de falla', async () => {
     fallasRegistradas([
-      falla({ tipo: 'Eléctrica', areas: [LABORATORIO], ticket: 1 }),
-      falla({ tipo: 'Sanitaria', areas: [LABORATORIO], ticket: 1 }),
-      falla({ tipo: 'Eléctrica', areas: [LABORATORIO], ticket: 2 }),
-      falla({ tipo: 'Mecánica', areas: [LABORATORIO], plan: 7, ot: 20 }),
+      falla({ tipo: 'Eléctrica', area: LABORATORIO, ticket: 1 }),
+      falla({ tipo: 'Sanitaria', area: LABORATORIO, ticket: 1 }),
+      falla({ tipo: 'Eléctrica', area: LABORATORIO, ticket: 2 }),
+      falla({ tipo: 'Mecánica', area: LABORATORIO, plan: 7, ot: 20 }),
     ]);
 
     const [area] = await obtenerAreasConMayorIncidencia();
@@ -112,12 +130,12 @@ describe('obtenerAreasConMayorIncidencia', () => {
 
   test('un empate en fallas se desempata por tickets y después por nombre', async () => {
     fallasRegistradas([
-      falla({ tipo: 'Eléctrica', areas: [LABORATORIO], ticket: 1 }),
-      falla({ tipo: 'Eléctrica', areas: [LABORATORIO], ticket: 1 }),
-      falla({ tipo: 'Eléctrica', areas: [BIBLIOTECA], ticket: 2 }),
-      falla({ tipo: 'Eléctrica', areas: [BIBLIOTECA], ticket: 3 }),
-      falla({ tipo: 'Eléctrica', areas: [BEDELIA], ticket: 4 }),
-      falla({ tipo: 'Eléctrica', areas: [BEDELIA], ticket: 5 }),
+      falla({ tipo: 'Eléctrica', area: LABORATORIO, ticket: 1 }),
+      falla({ tipo: 'Eléctrica', area: LABORATORIO, ticket: 1 }),
+      falla({ tipo: 'Eléctrica', area: BIBLIOTECA, ticket: 2 }),
+      falla({ tipo: 'Eléctrica', area: BIBLIOTECA, ticket: 3 }),
+      falla({ tipo: 'Eléctrica', area: BEDELIA, ticket: 4 }),
+      falla({ tipo: 'Eléctrica', area: BEDELIA, ticket: 5 }),
     ]);
 
     const ranking = await obtenerAreasConMayorIncidencia();
@@ -127,9 +145,9 @@ describe('obtenerAreasConMayorIncidencia', () => {
 
   test('las fallas de un espacio sin área van a "Sin área", siempre al final', async () => {
     fallasRegistradas([
-      falla({ tipo: 'Eléctrica', areas: [], ticket: 1 }),
-      falla({ tipo: 'Eléctrica', areas: [], ticket: 2 }),
-      falla({ tipo: 'Eléctrica', areas: [BIBLIOTECA], ticket: 3 }),
+      falla({ tipo: 'Eléctrica', ticket: 1 }),
+      falla({ tipo: 'Eléctrica', ticket: 2 }),
+      falla({ tipo: 'Eléctrica', area: BIBLIOTECA, ticket: 3 }),
     ]);
 
     const ranking = await obtenerAreasConMayorIncidencia();
@@ -140,22 +158,25 @@ describe('obtenerAreasConMayorIncidencia', () => {
     ]);
   });
 
-  test('si dos áreas comparten el espacio, la falla cuenta para las dos', async () => {
-    fallasRegistradas([falla({ tipo: 'Eléctrica', areas: [LABORATORIO, BIBLIOTECA], ticket: 1 })]);
-
-    const ranking = await obtenerAreasConMayorIncidencia();
-
-    expect(ranking.map((area) => [area.nombreArea, area.cantidadFallas])).toEqual([
-      ['Biblioteca', 1],
-      ['Laboratorio', 1],
+  test('un área con espacios en varios edificios los muestra todos, y cada falla cuenta una vez', async () => {
+    fallasRegistradas([
+      falla({ tipo: 'Eléctrica', area: BEDELIA, edificio: 'Central', ticket: 1 }),
+      falla({ tipo: 'Eléctrica', area: BEDELIA, edificio: 'Anexo I', ticket: 2 }),
+      falla({ tipo: 'Eléctrica', area: BEDELIA, edificio: 'Central', ticket: 3 }),
     ]);
+
+    const [area] = await obtenerAreasConMayorIncidencia();
+
+    expect(area.nombreEdificio).toBe('Anexo I / Central');
+    expect(area.cantidadFallas).toBe(3);
+    expect(area.porcentaje).toBe(100);
   });
 
   test('el porcentaje es sobre el total de fallas, con un decimal', async () => {
     fallasRegistradas([
-      falla({ tipo: 'Eléctrica', areas: [LABORATORIO], ticket: 1 }),
-      falla({ tipo: 'Eléctrica', areas: [LABORATORIO], ticket: 2 }),
-      falla({ tipo: 'Eléctrica', areas: [BIBLIOTECA], ticket: 3 }),
+      falla({ tipo: 'Eléctrica', area: LABORATORIO, ticket: 1 }),
+      falla({ tipo: 'Eléctrica', area: LABORATORIO, ticket: 2 }),
+      falla({ tipo: 'Eléctrica', area: BIBLIOTECA, ticket: 3 }),
     ]);
 
     const ranking = await obtenerAreasConMayorIncidencia();
@@ -188,7 +209,7 @@ describe('obtenerAreasConMayorIncidencia', () => {
 
   test('trae todas las fallas aunque pasen las 1000 filas de un pedido', async () => {
     fallasRegistradas(
-      Array.from({ length: 1500 }, (_, i) => falla({ tipo: 'Eléctrica', areas: [LABORATORIO], ticket: i + 1 }))
+      Array.from({ length: 1500 }, (_, i) => falla({ tipo: 'Eléctrica', area: LABORATORIO, ticket: i + 1 }))
     );
 
     const ranking = await obtenerAreasConMayorIncidencia();
@@ -213,5 +234,82 @@ describe('obtenerAreasConMayorIncidencia', () => {
     await expect(
       obtenerAreasConMayorIncidencia({ desde: '2026-11-01', hasta: '2026-05-01' })
     ).rejects.toThrow('no puede ser posterior');
+  });
+});
+
+describe('agruparFallasPorActivoYTipo', () => {
+  test('ordena tipos de activo y activos específicos por cantidad de fallas con porcentajes y desgloses', async () => {
+    fallasRegistradas([
+      falla({ tipo: 'Eléctrica', codigoActivo: 'AC-001', tipoActivo: 'Aire acondicionado', area: LABORATORIO, tipoEspacio: 'Laboratorio', espacioNum: '1.1', ticket: 1 }),
+      falla({ tipo: 'Mecánica', codigoActivo: 'AC-001', tipoActivo: 'Aire acondicionado', area: LABORATORIO, tipoEspacio: 'Laboratorio', espacioNum: '1.1', ticket: 2 }),
+      falla({ tipo: 'Eléctrica', codigoActivo: 'AC-002', tipoActivo: 'Aire acondicionado', area: BIBLIOTECA, tipoEspacio: 'Sala', espacioNum: '0.2', ticket: 3 }),
+      falla({ tipo: 'Eléctrica', codigoActivo: 'PC-001', tipoActivo: 'PC de escritorio', area: LABORATORIO, tipoEspacio: 'Laboratorio', espacioNum: '1.1', ticket: 4 }),
+    ]);
+
+    const areas = await obtenerAreasConMayorIncidencia();
+    const { totalFallas, porTipoActivo, porActivo } = agruparFallasPorActivoYTipo(areas);
+
+    expect(totalFallas).toBe(4);
+    expect(porTipoActivo).toEqual([
+      expect.objectContaining({
+        posicion: 1,
+        nombreTipoActivo: 'Aire acondicionado',
+        cantidadFallas: 3,
+        cantidadActivos: 2,
+        cantidadTickets: 3,
+        porcentaje: 75,
+      }),
+      expect.objectContaining({
+        posicion: 2,
+        nombreTipoActivo: 'PC de escritorio',
+        cantidadFallas: 1,
+        cantidadActivos: 1,
+        cantidadTickets: 1,
+        porcentaje: 25,
+      }),
+    ]);
+
+    expect(porActivo).toEqual([
+      expect.objectContaining({
+        posicion: 1,
+        codigoActivo: 'AC-001',
+        nombreTipoActivo: 'Aire acondicionado',
+        etiqueta: 'AC-001 · Aire acondicionado',
+        nombreArea: 'Laboratorio',
+        nombreEdificio: 'Central',
+        nombreEspacio: 'Laboratorio 1.1',
+        cantidadFallas: 2,
+        cantidadTickets: 2,
+        porcentaje: 50,
+      }),
+      expect.objectContaining({
+        posicion: 2,
+        codigoActivo: 'AC-002',
+        cantidadFallas: 1,
+        porcentaje: 25,
+      }),
+      expect.objectContaining({
+        posicion: 3,
+        codigoActivo: 'PC-001',
+        cantidadFallas: 1,
+        porcentaje: 25,
+      }),
+    ]);
+  });
+
+  test('envía "Sin tipo" siempre al final en el ranking por tipo de activo', async () => {
+    fallasRegistradas([
+      falla({ tipo: 'Eléctrica', codigoActivo: 'X-001', tipoActivo: null, area: LABORATORIO, ticket: 1 }),
+      falla({ tipo: 'Eléctrica', codigoActivo: 'X-002', tipoActivo: null, area: LABORATORIO, ticket: 2 }),
+      falla({ tipo: 'Eléctrica', codigoActivo: 'PR-001', tipoActivo: 'Proyector', area: BIBLIOTECA, ticket: 3 }),
+    ]);
+
+    const areas = await obtenerAreasConMayorIncidencia();
+    const { porTipoActivo } = agruparFallasPorActivoYTipo(areas);
+
+    expect(porTipoActivo.map((t) => [t.posicion, t.nombreTipoActivo, t.cantidadFallas])).toEqual([
+      [1, 'Proyector', 1],
+      [2, 'Sin tipo', 2],
+    ]);
   });
 });

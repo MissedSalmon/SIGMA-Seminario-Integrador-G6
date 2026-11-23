@@ -25,12 +25,12 @@ export default function ConfiguracionPage() {
       >
         <CCardHeader className="bg-white py-3 border-bottom d-flex align-items-center gap-2">
           <CIcon icon={cilShieldAlt} className="text-primary" />
-          <strong style={{ color: 'var(--sigma-ink)' }}>Seguridad y Acceso</strong>
+          <strong style={{ color: 'var(--sigma-ink)' }}>Seguridad y acceso</strong>
         </CCardHeader>
 
         <CCardBody className="p-4">
           <p className="text-secondary mb-4">
-            Administre sus credenciales de acceso al sistema y mantenga segura su cuenta.
+            Administrá tus credenciales de acceso al sistema y mantené segura tu cuenta.
           </p>
 
           <CButton type="button" color="primary" onClick={() => setCambiandoContrasena(true)}>

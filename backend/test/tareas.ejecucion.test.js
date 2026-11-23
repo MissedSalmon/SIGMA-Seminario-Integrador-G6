@@ -243,6 +243,90 @@ describe('finalizarTarea', () => {
   });
 });
 
+describe('tareas de un prestador (las mueve el administrador, 21/11/2026)', () => {
+  /** La tarea 1 de la OT 9, leída por el administrador. */
+  function tareaDePrestador({ estadoTarea = 2, estadoOt = 2, idPrestador = 7 } = {}) {
+    return {
+      data: { tarea_estado: estadoTarea, prestador_serv_id: idPrestador, orden_trabajo: { ot_estado: estadoOt } },
+      error: null,
+    };
+  }
+
+  test('iniciar pasa la tarea a En ejecución y arrastra OT, ticket y activo', async () => {
+    lecturas.tarea_ot = [tareaDePrestador({ estadoTarea: 2 })];
+    lecturas.orden_trabajo = [ORDEN_CON_ACTIVO];
+
+    await tareas.iniciarTareaDePrestador(9, 1);
+
+    const [tarea] = escriturasEn('tarea_ot');
+    expect(valorEscrito(tarea)).toEqual({ tarea_estado: 3 });
+    expect(tarea.ops).toContainEqual(['in', 'tarea_estado', [1, 2, 4]]);
+    expect(escriturasEn('tecnico_asignado_tarea_ot')).toHaveLength(0);
+    expect(valorEscrito(escriturasEn('orden_trabajo')[0])).toEqual({ ot_estado: 3 });
+    expect(valorEscrito(escriturasEn('ticket')[0])).toEqual({ ticket_estado: 4 });
+    expect(valorEscrito(escriturasEn('activo')[0])).toEqual({ activo_estado: 2 });
+  });
+
+  test('finalizar sin haberla iniciado cierra la OT, el ticket y devuelve el activo', async () => {
+    lecturas.tarea_ot = [
+      tareaDePrestador({ estadoTarea: 2 }),
+      { data: [{ tarea_estado: 5 }], error: null },
+    ];
+    lecturas.orden_trabajo = [ORDEN_CON_ACTIVO];
+
+    const ordenFinalizada = await tareas.finalizarTareaDePrestador(9, 1);
+
+    expect(ordenFinalizada).toBe(true);
+    const [tarea] = escriturasEn('tarea_ot');
+    expect(valorEscrito(tarea)).toEqual({ tarea_estado: 5 });
+    expect(tarea.ops).toContainEqual(['in', 'tarea_estado', [1, 2, 4, 3]]);
+    expect(valorEscrito(escriturasEn('orden_trabajo')[0])).toMatchObject({ ot_estado: 4 });
+    expect(valorEscrito(escriturasEn('ticket')[0])).toMatchObject({ ticket_estado: 6 });
+    expect(valorEscrito(escriturasEn('activo')[0])).toEqual({ activo_estado: 1 });
+  });
+
+  test('si quedan otras tareas, la OT sigue abierta', async () => {
+    lecturas.tarea_ot = [
+      tareaDePrestador({ estadoTarea: 3 }),
+      { data: [{ tarea_estado: 5 }, { tarea_estado: 3 }], error: null },
+    ];
+
+    expect(await tareas.finalizarTareaDePrestador(9, 1)).toBe(false);
+    expect(escriturasEn('orden_trabajo')).toHaveLength(0);
+  });
+
+  test('una tarea de un técnico no la mueve el administrador', async () => {
+    lecturas.tarea_ot = [tareaDePrestador({ idPrestador: null })];
+
+    await expect(tareas.finalizarTareaDePrestador(9, 1)).rejects.toMatchObject({ estado: 409 });
+    expect(escriturasEn('tarea_ot')).toHaveLength(0);
+  });
+
+  test('una tarea ya finalizada no se vuelve a finalizar', async () => {
+    lecturas.tarea_ot = [tareaDePrestador({ estadoTarea: 5 })];
+
+    await expect(tareas.finalizarTareaDePrestador(9, 1)).rejects.toThrow('ya está finalizada');
+  });
+
+  test('una tarea en ejecución no se vuelve a iniciar', async () => {
+    lecturas.tarea_ot = [tareaDePrestador({ estadoTarea: 3 })];
+
+    await expect(tareas.iniciarTareaDePrestador(9, 1)).rejects.toThrow('ya está en ejecución');
+  });
+
+  test('no se mueve una tarea de una OT finalizada', async () => {
+    lecturas.tarea_ot = [tareaDePrestador({ estadoOt: 4 })];
+
+    await expect(tareas.iniciarTareaDePrestador(9, 1)).rejects.toThrow('está finalizada');
+  });
+
+  test('si la tarea no existe, responde 404', async () => {
+    lecturas.tarea_ot = [{ data: null, error: null }];
+
+    await expect(tareas.finalizarTareaDePrestador(9, 1)).rejects.toMatchObject({ estado: 404 });
+  });
+});
+
 describe('registrarMateriales', () => {
   test('llama a la función de la base con los materiales y el legajo', async () => {
     laTareaEsta({ estadoTarea: 3 });
@@ -512,5 +596,68 @@ describe('herramientas', () => {
 
     await expect(tareas.devolverHerramienta('2030', 'HER-3')).rejects.toThrow('no está a tu nombre');
     expect(inventario.devolverHerramienta).not.toHaveBeenCalled();
+  });
+});
+
+describe('cómo queda el activo al cerrarse la OT (22/11/2026)', () => {
+  const activoEscrito = () => valorEscrito(escriturasEn('activo')[0]);
+
+  test('el técnico puede dejarlo Fuera de servicio al finalizar la última tarea', async () => {
+    laTareaEsta({ estadoTarea: 3 });
+    lecturas.tarea_ot = [{ data: [{ tarea_estado: 5 }], error: null }];
+    lecturas.orden_trabajo = [ORDEN_CON_ACTIVO];
+
+    const { ordenFinalizada } = await tareas.finalizarTarea('2030', 9, 1, 'Fuera de servicio');
+
+    expect(ordenFinalizada).toBe(true);
+    expect(activoEscrito()).toEqual({ activo_estado: 3 }); // Fuera de servicio
+  });
+
+  test('si no se elige, queda Operativo como antes', async () => {
+    laTareaEsta({ estadoTarea: 3 });
+    lecturas.tarea_ot = [{ data: [{ tarea_estado: 5 }], error: null }];
+    lecturas.orden_trabajo = [ORDEN_CON_ACTIVO];
+
+    await tareas.finalizarTarea('2030', 9, 1);
+
+    expect(activoEscrito()).toEqual({ activo_estado: 1 });
+  });
+
+  test('rechaza un estado que no es Operativo ni Fuera de servicio, sin tocar nada', async () => {
+    laTareaEsta({ estadoTarea: 3 });
+
+    await expect(tareas.finalizarTarea('2030', 9, 1, 'Retirado')).rejects.toMatchObject({ estado: 400 });
+    expect(escriturasEn('tarea_ot')).toHaveLength(0);
+  });
+
+  test('si otra OT lo sigue arreglando, queda En mantenimiento aunque se elija', async () => {
+    laTareaEsta({ estadoTarea: 3 });
+    lecturas.tarea_ot = [{ data: [{ tarea_estado: 5 }], error: null }];
+    lecturas.orden_trabajo = [ORDEN_CON_ACTIVO, { data: [{ ot_id: 12 }], error: null }];
+
+    await tareas.finalizarTarea('2030', 9, 1, 'Fuera de servicio');
+
+    expect(escriturasEn('activo')).toHaveLength(0);
+  });
+
+  test('el administrador también lo elige al finalizar la última tarea de un prestador', async () => {
+    lecturas.tarea_ot = [
+      { data: { tarea_estado: 3, prestador_serv_id: 7, orden_trabajo: { ot_estado: 3 } }, error: null },
+      { data: [{ tarea_estado: 5 }], error: null },
+    ];
+    lecturas.orden_trabajo = [ORDEN_CON_ACTIVO];
+
+    expect(await tareas.finalizarTareaDePrestador(9, 1, 'Fuera de servicio')).toBe(true);
+    expect(activoEscrito()).toEqual({ activo_estado: 3 });
+  });
+
+  test('cierraLaOrden: sólo si todas las demás tareas están finalizadas o canceladas', async () => {
+    lecturas.tarea_ot = [
+      { data: [{ tarea_id: 1, tarea_estado: 3 }, { tarea_id: 2, tarea_estado: 5 }, { tarea_id: 3, tarea_estado: 6 }], error: null },
+      { data: [{ tarea_id: 1, tarea_estado: 3 }, { tarea_id: 2, tarea_estado: 2 }], error: null },
+    ];
+
+    expect(await tareas.cierraLaOrden(9, 1)).toBe(true);
+    expect(await tareas.cierraLaOrden(9, 1)).toBe(false);
   });
 });

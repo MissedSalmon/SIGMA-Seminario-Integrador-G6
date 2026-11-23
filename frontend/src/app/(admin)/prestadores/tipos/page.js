@@ -133,7 +133,7 @@ export default function PantallaTiposPrestador() {
             buscarPor={['nombre', 'descripcion']}
             placeholderBusqueda="Buscar por nombre o descripción"
             cargando={cargando}
-            textoVacio="Todavia no hay tipos de prestador cargados."
+            textoVacio="Todavía no hay tipos de prestador cargados."
           />
         </CCardBody>
       </CCard>

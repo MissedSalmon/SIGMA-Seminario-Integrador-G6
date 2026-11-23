@@ -14,6 +14,7 @@ import BotonEnlace from '@/componentes/BotonEnlace.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { listarEspecialidades } from '@/servicios/especialidades.js';
 import { listarCargaTrabajo } from '@/servicios/tecnicos.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 function direccionDetalle(legajo, desde, hasta) {
   const parametros = new URLSearchParams();
@@ -26,9 +27,9 @@ function direccionDetalle(legajo, desde, hasta) {
 export default function PantallaCargaTrabajo() {
   const [tecnicos, setTecnicos] = useState([]);
   const [especialidades, setEspecialidades] = useState([]);
-  const [filtroEspecialidad, setFiltroEspecialidad] = useState('');
-  const [filtroDesde, setFiltroDesde] = useState('');
-  const [filtroHasta, setFiltroHasta] = useState('');
+  const [filtroEspecialidad, setFiltroEspecialidad] = useFiltroPersistente('especialidad', '');
+  const [filtroDesde, setFiltroDesde] = useFiltroPersistente('desde', '');
+  const [filtroHasta, setFiltroHasta] = useFiltroPersistente('hasta', '');
   const [cargando, setCargando] = useState(true);
   const [errorEspecialidades, setErrorEspecialidades] = useState('');
   const [errorCarga, setErrorCarga] = useState('');
@@ -153,8 +154,11 @@ export default function PantallaCargaTrabajo() {
     },
   ];
 
-  const maximoCargaActiva = Math.max(1, ...tecnicos.map((tecnico) => tecnico.cargaActiva));
-  const maximoCompletadas = Math.max(1, ...tecnicos.map((tecnico) => tecnico.completadas));
+  const tecnicosConCarga = tecnicos.filter(
+    (tecnico) => tecnico.pendientes > 0 || tecnico.enEjecucion > 0 || tecnico.completadas > 0
+  );
+  const maximoCargaActiva = Math.max(1, ...tecnicosConCarga.map((tecnico) => tecnico.cargaActiva));
+  const maximoCompletadas = Math.max(1, ...tecnicosConCarga.map((tecnico) => tecnico.completadas));
 
   const graficos = (
     <section className="sigma-carga-graficos" aria-label="Gráficos de carga de trabajo">
@@ -169,7 +173,7 @@ export default function PantallaCargaTrabajo() {
           <h2>Carga activa</h2>
           <p>Pendientes y en ejecución, ordenadas por técnico.</p>
         </figcaption>
-        {tecnicos.map((tecnico) => {
+        {tecnicosConCarga.map((tecnico) => {
           const anchoPendientes = (tecnico.pendientes / maximoCargaActiva) * 100;
           const anchoEjecucion = (tecnico.enEjecucion / maximoCargaActiva) * 100;
 
@@ -190,7 +194,7 @@ export default function PantallaCargaTrabajo() {
             </div>
           );
         })}
-        {tecnicos.length === 0 && !cargando && (
+        {tecnicosConCarga.length === 0 && !cargando && (
           <p className="text-body-secondary mb-0">No hay datos para graficar.</p>
         )}
       </figure>
@@ -200,7 +204,7 @@ export default function PantallaCargaTrabajo() {
           <h2>Tareas completadas</h2>
           <p>Comparación por técnico en el mismo período.</p>
         </figcaption>
-        {tecnicos.map((tecnico) => {
+        {tecnicosConCarga.map((tecnico) => {
           const anchoCompletadas = (tecnico.completadas / maximoCompletadas) * 100;
 
           return (
@@ -219,7 +223,7 @@ export default function PantallaCargaTrabajo() {
             </div>
           );
         })}
-        {tecnicos.length === 0 && !cargando && (
+        {tecnicosConCarga.length === 0 && !cargando && (
           <p className="text-body-secondary mb-0">No hay datos para graficar.</p>
         )}
       </figure>
@@ -240,7 +244,7 @@ export default function PantallaCargaTrabajo() {
       <CCard>
         <CCardBody>
           <TablaDatos
-            filas={tecnicos}
+            filas={tecnicosConCarga}
             claveFila={(tecnico) => tecnico.legajo}
             columnas={columnas}
             buscarPor={['nombre', 'legajo']}
@@ -276,8 +280,8 @@ export default function PantallaCargaTrabajo() {
             cargando={cargando}
             textoVacio={
               filtroEspecialidad || filtroDesde || filtroHasta
-                ? 'No hay técnicos que coincidan con los filtros.'
-                : 'Todavía no hay técnicos cargados.'
+                ? 'No hay técnicos con tareas que coincidan con esos filtros.'
+                : 'No hay técnicos con tareas para mostrar.'
             }
           />
         </CCardBody>

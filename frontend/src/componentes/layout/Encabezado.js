@@ -43,6 +43,7 @@ import { useLayout } from './ContextoLayout.js';
 import { useSesion } from './ContextoSesion.js';
 import CampanaNotificaciones, { olvidarAvisadas, ROLES_CON_NOTIFICACIONES } from './CampanaNotificaciones.js';
 import { logout } from '@/servicios/auth.js';
+import { olvidarFiltrosGuardados } from '@/utils/filtros.js';
 import { inicioPorRol } from '@/utils/roles.js';
 import DialogoCambiarContrasena from '@/componentes/usuarios/CambioContrasena.js';
 
@@ -71,6 +72,7 @@ const NOMBRES = {
   '/espacios/tipos': 'Tipos de espacio',
   '/areas': 'Áreas',
   '/activos': 'Activos',
+  '/activos/importar': 'Importar activos',
   '/tipos-activos': 'Tipos de activos',
   '/inventario/tipos': 'Tipos de materiales y herramientas',
   '/inventario/remitos': 'Ingresos',
@@ -81,9 +83,9 @@ const NOMBRES = {
   '/especialidades': 'Especialidades',
   '/prestadores': 'Listado de prestadores',
   '/prestadores/tipos': 'Tipos de prestador',
-  '/autorizados': 'Usuarios autorizados',
+  '/autorizados': 'Solicitantes',
   '/notificaciones': 'Notificaciones',
-  '/perfil': 'Mi Perfil',
+  '/perfil': 'Mi perfil',
   '/configuracion': 'Configuración',
   '/configuracion/cambiar-password': 'Cambiar contraseña'
 };
@@ -110,6 +112,17 @@ const MODULOS_CON_CODIGO = [
   '/autorizados',
 ];
 
+/** El texto de la miga de una ficha con numero, igual al titulo de esa pantalla. */
+function textoDeFicha(padre, numero, tramos) {
+  if (padre === '/tickets') return `Ticket #${numero}`;
+  if (padre === '/ordenes-trabajo') return `Orden de trabajo #${numero}`;
+  // La tarea del tecnico: /tareas/5/2 es la tarea 2 de la OT 5.
+  if (tramos[0] === 'tareas' && tramos.length === 3) return `Tarea ${numero} de la OT #${tramos[1]}`;
+  // El detalle de una tarea de la OT (/ordenes-trabajo/5/tareas/2) termina en su numero.
+  if (tramos[0] === 'ordenes-trabajo' && padre.endsWith('/tareas')) return `Tarea ${numero}`;
+  return 'Detalle';
+}
+
 /**
  * Convierte "/edificios/3/editar" en los tramos de la ruta de migas.
  *
@@ -127,6 +140,17 @@ function armarMigas(direccion) {
   tramos.forEach((tramo, indice) => {
     const padre = acumulada;
     acumulada += `/${tramo}`;
+
+    /*
+     * Un numero al final de la direccion es la ficha de un registro
+     * (/tickets/34): esa si es una pantalla, y la miga lleva su titulo para que
+     * se sepa donde se esta parado. Si el titulo depende de datos que la miga
+     * no tiene (el nombre de un plan), dice "Detalle".
+     */
+    if (/^\d+$/.test(tramo) && indice === tramos.length - 1) {
+      migas.push({ texto: textoDeFicha(padre, tramo, tramos), direccion: acumulada, ultima: true });
+      return;
+    }
 
     if (/^\d+$/.test(tramo) || tramos[indice + 1] === 'editar') return;
 
@@ -151,6 +175,9 @@ function armarMigas(direccion) {
       // La ficha del activo (HU-29) es una pantalla: la miga lleva su titulo.
       if (padre === '/activos' && indice === tramos.length - 1) {
         migas.push({ texto: `Activo ${decodeURIComponent(tramo)}`, direccion: acumulada, ultima: true });
+      } else if (indice === tramos.length - 1) {
+        // Las demas fichas se titulan con un nombre que la miga no conoce.
+        migas.push({ texto: 'Detalle', direccion: acumulada, ultima: true });
       }
       return;
     }
@@ -204,6 +231,7 @@ export default function Encabezado() {
       console.error('Error al cerrar sesión:', error);
     } finally {
       olvidarAvisadas?.();
+      olvidarFiltrosGuardados();
       window.location.replace('/login');
     }
   };
@@ -211,10 +239,11 @@ export default function Encabezado() {
   return (
     <>
       <CHeader position="sticky" className="mb-4 p-0">
-        <CContainer className="border-bottom px-4 py-3 d-flex align-items-center justify-content-between" fluid>
-          <div className="d-flex align-items-center flex-grow-1">
+        <CContainer className="border-bottom px-3 px-sm-4 py-3 d-flex flex-nowrap align-items-center justify-content-between gap-2" fluid>
+          {/* min-w-0: las migas largas se acomodan en su lugar en vez de empujar los íconos a otro renglón. */}
+          <div className="d-flex align-items-center flex-grow-1 min-w-0">
             <button
-              className="btn btn-link text-body p-0 d-md-none me-3"
+              className="btn btn-link text-body p-0 d-md-none me-2 sigma-boton-menu"
               onClick={() => setBarraVisible(!barraVisible)}
               aria-label="Alternar menú"
             >
@@ -237,7 +266,7 @@ export default function Encabezado() {
             </RouterProvider>
           </div>
 
-          <div className="d-flex align-items-center gap-1">
+          <div className="d-flex align-items-center gap-1 flex-shrink-0">
             {ROLES_CON_NOTIFICACIONES.includes(usuario?.rol) && <CampanaNotificaciones />}
             <CDropdown variant="nav-item" placement="bottom-end">
               <CDropdownToggle
@@ -249,12 +278,12 @@ export default function Encabezado() {
                 <CIcon icon={cilUser} size="lg" />
               </CDropdownToggle>
               <CDropdownMenu className="pt-0 shadow-sm border" style={{ minWidth: '13rem', borderRadius: 'var(--sigma-radio-md)' }}>
-                <CDropdownHeader className="bg-light fw-semibold py-2 text-secondary" style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <CDropdownHeader className="bg-light fw-semibold py-2 text-secondary" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Mi Cuenta
                 </CDropdownHeader>
                 <CDropdownItem as={Link} href="/perfil" className="d-flex align-items-center gap-2 py-2">
                   <CIcon icon={cilUser} />
-                  <span>Mi Perfil</span>
+                  <span>Mi perfil</span>
                 </CDropdownItem>
                 <CDropdownItem
                   as="button"

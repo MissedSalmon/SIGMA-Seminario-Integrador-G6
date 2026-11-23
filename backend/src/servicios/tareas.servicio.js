@@ -22,6 +22,7 @@
  */
 import { supabase } from '../config/supabase.js';
 import { conflicto, datoInvalido, errorDeBase, noEncontrado } from '../utiles/errores.js';
+import { nombreDelEspacio } from '../utiles/espacios.js';
 import {
   ENUM_ESTADO_ACTIVO,
   ENUM_ESTADO_ASIGNACION_TECNICO,
@@ -32,7 +33,7 @@ import {
 } from '../utiles/enumerados.js';
 import * as inventario from './inventario.servicio.js';
 import { observacionesDeLaTarea } from './observaciones.servicio.js';
-import { guardarFalla, validarDatosFalla } from './ordenesTrabajo.servicio.js';
+import { guardarFalla, obtenerPorId as obtenerOrden, validarDatosFalla } from './ordenesTrabajo.servicio.js';
 
 /** De mas urgente a menos: con este orden se ofrecen en el filtro. */
 export const PRIORIDADES = ENUM_PRIORIDAD.textos;
@@ -64,6 +65,7 @@ const COLUMNAS = `
   ot_id,
   tarea_id,
   tec_asig_estado,
+  tec_asig_fecha_asig,
   tarea_ot!inner (
     tarea_id,
     tarea_desc,
@@ -92,13 +94,6 @@ function soloElDia(valor) {
   return valor ? String(valor).slice(0, 10) : null;
 }
 
-/** "Aula 11", o "Espacio 11" si el espacio no tiene tipo. */
-function nombreDelEspacio(espacio) {
-  return espacio.tipo_espacio
-    ? `${espacio.tipo_espacio.tipo_espacio_nom} ${espacio.espacio_num}`
-    : `Espacio ${espacio.espacio_num}`;
-}
-
 /**
  * El activo de una OT. Una OT preventiva lo tiene en la propia OT (el plan es
  * de un tipo de activo y no tiene activo propio); una correctiva, en el
@@ -123,6 +118,7 @@ function aTarea(fila) {
     pendiente: !ESTADOS_TERMINADOS.includes(estado),
     prioridad: ENUM_PRIORIDAD.texto(tarea.tarea_prioridad) ?? 'Media',
     fechaPrevista: soloElDia(tarea.tarea_fecha_ini),
+    fechaAsignacion: fila.tec_asig_fecha_asig ?? null,
     fechaFinPrevista: soloElDia(tarea.tarea_fecha_fin),
     codigoActivo: activo?.activo_codigo ?? null,
     activo: activo
@@ -211,7 +207,7 @@ export async function obtenerDelTecnico(legajo, filtros = {}) {
 async function materialesDeLaTarea(idOt, idTarea) {
   const { data, error } = await supabase
     .from('tarea_ot_consume_material')
-    .select('mat_cod, tamat_cant, tamat_fecha_cons, material ( mat_nom )')
+    .select('mat_cod, tamat_cant, tamat_fecha_cons, material ( mat_nom, mat_unidad_medida )')
     .eq('ot_id', idOt)
     .eq('tarea_id', idTarea)
     .order('tamat_fecha_cons', { ascending: false });
@@ -221,6 +217,7 @@ async function materialesDeLaTarea(idOt, idTarea) {
   return (data ?? []).map((fila) => ({
     codigo: fila.mat_cod,
     nombre: fila.material?.mat_nom ?? fila.mat_cod,
+    unidadMedida: fila.material?.mat_unidad_medida ?? 'unidad',
     cantidad: Number(fila.tamat_cant),
     fecha: fila.tamat_fecha_cons,
   }));
@@ -245,6 +242,63 @@ export async function obtenerUnaDelTecnico(legajo, idOt, idTarea) {
     materiales: await materialesDeLaTarea(idOt, idTarea),
     observaciones: await observacionesDeLaTarea(idOt, idTarea),
     falla: await fallaDeLaTarea(idOt, idTarea),
+  };
+}
+
+/** Las herramientas que se tomaron para la tarea, con quién y hasta cuándo. */
+async function herramientasDeLaTarea(idOt, idTarea) {
+  const { data, error } = await supabase
+    .from('tecnico_utiliza_herramienta')
+    .select('herr_cod, tec_herr_fecha_prest, tec_herr_fecha_dev, herramienta ( herr_nom ), tecnico ( tecnico_nom_ape )')
+    .eq('ot_id', idOt)
+    .eq('tarea_id', idTarea)
+    .order('tec_herr_fecha_prest', { ascending: false });
+
+  // Sin la migracion 20261022120000 los prestamos no tienen tarea: no hay nada que mostrar.
+  if (error && FALTA_COLUMNA.includes(error.code)) return [];
+  if (error) throw errorDeBase(error, 'de las herramientas de la tarea');
+
+  return (data ?? []).map((fila) => ({
+    codigo: fila.herr_cod,
+    nombre: fila.herramienta?.herr_nom ?? fila.herr_cod,
+    tecnico: fila.tecnico?.tecnico_nom_ape ?? '',
+    desde: fila.tec_herr_fecha_prest,
+    hasta: fila.tec_herr_fecha_dev ?? null,
+  }));
+}
+
+/**
+ * Una tarea vista por el administrador desde la OT: lo planificado y lo que se
+ * hizo (falla, materiales, herramientas y observaciones). Es sólo de consulta.
+ */
+export async function obtenerDetalleParaAdministrador(idOt, idTarea) {
+  const orden = await obtenerOrden(idOt);
+  const tarea = orden.tareas.find((item) => item.idTarea === idTarea);
+  if (!tarea) throw noEncontrado(`La orden de trabajo ${idOt} no tiene la tarea ${idTarea}.`);
+
+  const [materiales, herramientas, observaciones, falla] = await Promise.all([
+    materialesDeLaTarea(idOt, idTarea),
+    herramientasDeLaTarea(idOt, idTarea),
+    observacionesDeLaTarea(idOt, idTarea),
+    fallaDeLaTarea(idOt, idTarea),
+  ]);
+
+  return {
+    ...tarea,
+    falla,
+    materiales,
+    herramientas,
+    observaciones,
+    ot: {
+      id: orden.id,
+      estado: orden.estado,
+      descripcion: orden.descripcion,
+      origen: orden.origen,
+      idTicket: orden.idTicket,
+      nombrePlan: orden.nombrePlan,
+    },
+    activo: orden.activo,
+    nombreArea: orden.nombreArea,
   };
 }
 
@@ -405,7 +459,13 @@ export async function iniciarTarea(legajo, idOt, idTarea) {
 
   await cambiarEstadoTarea(idOt, idTarea, ESTADOS_SIN_EMPEZAR, 'En ejecución');
   await cambiarAsignacion(legajo, idOt, idTarea, 'En curso');
+  await arrastrarInicio(idOt);
 
+  return obtenerUnaDelTecnico(legajo, idOt, idTarea);
+}
+
+/** Lo que mueve empezar una tarea, la haga un técnico o un prestador: OT, ticket y activo. */
+async function arrastrarInicio(idOt) {
   const orden = await ordenConActivo(idOt);
 
   const { error: errorOrden } = await supabase
@@ -432,8 +492,6 @@ export async function iniciarTarea(legajo, idOt, idTarea) {
       .neq('activo_estado', ENUM_ESTADO_ACTIVO.codigo('Retirado'));
     if (error) throw errorDeBase(error, 'del activo');
   }
-
-  return obtenerUnaDelTecnico(legajo, idOt, idTarea);
 }
 
 /**
@@ -448,7 +506,35 @@ export async function iniciarTarea(legajo, idOt, idTarea) {
  *
  * Devuelve true si la cerro.
  */
-async function finalizarOrdenSiTermino(idOt) {
+/**
+ * Cómo puede quedar el activo al cerrarse su OT (22/11/2026). Quien finaliza
+ * la última tarea lo elige: el arreglo puede no haber alcanzado.
+ */
+export const ESTADOS_ACTIVO_AL_CERRAR = ['Operativo', 'Fuera de servicio'];
+
+/** El estado elegido, o null si no se eligió ninguno. */
+function leerEstadoActivoAlCerrar(estado) {
+  if (estado === undefined || estado === null || estado === '') return null;
+  if (!ESTADOS_ACTIVO_AL_CERRAR.includes(estado)) {
+    throw datoInvalido(`El activo puede quedar ${ESTADOS_ACTIVO_AL_CERRAR.join(' o ')}, no "${estado}".`);
+  }
+  return estado;
+}
+
+/**
+ * Si al finalizar esta tarea se cierra la OT: todas las demás ya están
+ * Finalizadas o Canceladas. Sirve para preguntar antes cómo queda el activo.
+ */
+export async function cierraLaOrden(idOt, idTarea) {
+  const { data, error } = await supabase.from('tarea_ot').select('tarea_id, tarea_estado').eq('ot_id', idOt);
+  if (error) throw errorDeBase(error, 'de las tareas');
+
+  return (data ?? [])
+    .filter((fila) => fila.tarea_id !== idTarea)
+    .every((fila) => ['Finalizada', 'Cancelada'].includes(ENUM_ESTADO_TAREA.texto(fila.tarea_estado)));
+}
+
+async function finalizarOrdenSiTermino(idOt, estadoElegido = null) {
   const { data: tareas, error: errorTareas } = await supabase
     .from('tarea_ot')
     .select('tarea_estado')
@@ -486,10 +572,11 @@ async function finalizarOrdenSiTermino(idOt) {
     if (error) throw errorDeBase(error, 'del ticket');
   }
 
+  // Si otra OT lo sigue arreglando, queda En mantenimiento: lo decide quien cierre esa.
   if (orden.codigoActivo && !(await activoSigueEnMantenimiento(orden.codigoActivo, idOt))) {
     const { error } = await supabase
       .from('activo')
-      .update({ activo_estado: ENUM_ESTADO_ACTIVO.codigo('Operativo') })
+      .update({ activo_estado: ENUM_ESTADO_ACTIVO.codigo(estadoElegido ?? 'Operativo') })
       .eq('activo_codigo', orden.codigoActivo)
       .neq('activo_estado', ENUM_ESTADO_ACTIVO.codigo('Retirado'));
     if (error) throw errorDeBase(error, 'del activo');
@@ -503,8 +590,10 @@ async function finalizarOrdenSiTermino(idOt) {
  * tambien. Si era la ultima de la OT, la OT se cierra sola (HU-26).
  *
  * Devuelve la tarea y si con ella se cerro la OT, para avisarle al tecnico.
+ * `estadoActivo` es como queda el activo si la OT se cierra (Operativo si no viene).
  */
-export async function finalizarTarea(legajo, idOt, idTarea) {
+export async function finalizarTarea(legajo, idOt, idTarea, estadoActivo) {
+  const estadoFinal = leerEstadoActivoAlCerrar(estadoActivo);
   const tarea = await obtenerUnaDelTecnico(legajo, idOt, idTarea);
 
   if (ESTADOS_SIN_EMPEZAR.includes(tarea.estado)) {
@@ -517,9 +606,66 @@ export async function finalizarTarea(legajo, idOt, idTarea) {
   await cambiarEstadoTarea(idOt, idTarea, ['En ejecución'], 'Finalizada');
   await cambiarAsignacion(legajo, idOt, idTarea, 'Finalizada');
 
-  const ordenFinalizada = await finalizarOrdenSiTermino(idOt);
+  const ordenFinalizada = await finalizarOrdenSiTermino(idOt, estadoFinal);
 
   return { tarea: await obtenerUnaDelTecnico(legajo, idOt, idTarea), ordenFinalizada };
+}
+
+/*
+ * Tareas de un prestador externo (21/11/2026). El prestador no entra al
+ * sistema, así que las inicia y las finaliza el administrador desde la OT.
+ */
+
+/** El estado de la tarea, si es de un prestador y su OT sigue abierta. */
+async function estadoDeTareaDePrestador(idOt, idTarea) {
+  const { data, error } = await supabase
+    .from('tarea_ot')
+    .select('tarea_estado, prestador_serv_id, orden_trabajo ( ot_estado )')
+    .eq('ot_id', idOt)
+    .eq('tarea_id', idTarea)
+    .maybeSingle();
+
+  if (error) throw errorDeBase(error, 'de la tarea');
+  if (!data) throw noEncontrado(`La orden de trabajo ${idOt} no tiene la tarea ${idTarea}.`);
+  if (!data.prestador_serv_id) {
+    throw conflicto('La tarea la hace un técnico: la inicia y la finaliza él desde sus tareas.');
+  }
+
+  const estadoOt = ENUM_ESTADO_OT.texto(data.orden_trabajo?.ot_estado);
+  if (ESTADOS_OT_CERRADOS.includes(estadoOt)) {
+    throw conflicto(`La orden de trabajo #${idOt} está ${estadoOt.toLowerCase()}: ya no se trabaja.`);
+  }
+
+  return ENUM_ESTADO_TAREA.texto(data.tarea_estado) ?? 'Creada';
+}
+
+export async function iniciarTareaDePrestador(idOt, idTarea) {
+  const estado = await estadoDeTareaDePrestador(idOt, idTarea);
+
+  if (estado === 'En ejecución') throw conflicto('La tarea ya está en ejecución.');
+  if (!ESTADOS_SIN_EMPEZAR.includes(estado)) {
+    throw conflicto(`La tarea está ${estado.toLowerCase()}: ya no se puede iniciar.`);
+  }
+
+  await cambiarEstadoTarea(idOt, idTarea, ESTADOS_SIN_EMPEZAR, 'En ejecución');
+  await arrastrarInicio(idOt);
+}
+
+/**
+ * Se puede finalizar sin haberla iniciado: muchas veces el administrador se
+ * entera del trabajo recién cuando el prestador terminó.
+ *
+ * Devuelve true si con ella se cerró la OT.
+ */
+export async function finalizarTareaDePrestador(idOt, idTarea, estadoActivo) {
+  const estadoFinal = leerEstadoActivoAlCerrar(estadoActivo);
+  const estado = await estadoDeTareaDePrestador(idOt, idTarea);
+  const sinTerminar = [...ESTADOS_SIN_EMPEZAR, 'En ejecución'];
+
+  if (!sinTerminar.includes(estado)) throw conflicto(`La tarea ya está ${estado.toLowerCase()}.`);
+
+  await cambiarEstadoTarea(idOt, idTarea, sinTerminar, 'Finalizada');
+  return finalizarOrdenSiTermino(idOt, estadoFinal);
 }
 
 /* ---------------------------------------------------------------- Materiales */
@@ -531,6 +677,7 @@ export async function listarMateriales() {
   return materiales.map((material) => ({
     codigo: material.codigo,
     nombre: material.nombre,
+    unidadMedida: material.unidadMedida,
     stock: material.stockActual,
   }));
 }
@@ -707,7 +854,7 @@ export async function historialMateriales(legajo) {
 
   const { data, error } = await supabase
     .from('tarea_ot_consume_material')
-    .select(`ot_id, tarea_id, mat_cod, tamat_cant, tamat_fecha_cons, material ( mat_nom ), ${TAREA_DEL_HISTORIAL}`)
+    .select(`ot_id, tarea_id, mat_cod, tamat_cant, tamat_fecha_cons, material ( mat_nom, mat_unidad_medida ), ${TAREA_DEL_HISTORIAL}`)
     .in('ot_id', ordenes)
     .order('tamat_fecha_cons', { ascending: false });
   if (error) throw errorDeBase(error, 'de los materiales usados');
@@ -718,6 +865,7 @@ export async function historialMateriales(legajo) {
       fecha: fila.tamat_fecha_cons,
       codigo: fila.mat_cod,
       nombre: fila.material?.mat_nom ?? fila.mat_cod,
+      unidadMedida: fila.material?.mat_unidad_medida ?? 'unidad',
       cantidad: Number(fila.tamat_cant),
       idOt: fila.ot_id,
       idTarea: fila.tarea_id,

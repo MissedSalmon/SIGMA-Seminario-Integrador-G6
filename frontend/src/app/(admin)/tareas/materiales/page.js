@@ -20,15 +20,16 @@ import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import TareaDelHistorial from '@/componentes/tareas/TareaDelHistorial.js';
 import { listarHistorialMateriales } from '@/servicios/tareas.js';
 import { diaLocal, formatearFecha } from '@/utils/fechas.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 export default function PantallaMaterialesUtilizados() {
   const [filas, setFilas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
-  const [filtroMaterial, setFiltroMaterial] = useState('');
-  const [filtroDesde, setFiltroDesde] = useState('');
-  const [filtroHasta, setFiltroHasta] = useState('');
+  const [filtroMaterial, setFiltroMaterial] = useFiltroPersistente('material', '');
+  const [filtroDesde, setFiltroDesde] = useFiltroPersistente('desde', '');
+  const [filtroHasta, setFiltroHasta] = useFiltroPersistente('hasta', '');
 
   useEffect(() => {
     listarHistorialMateriales()
@@ -74,7 +75,7 @@ export default function PantallaMaterialesUtilizados() {
           <span className="fw-semibold">{fila.codigo}</span>
           <span className="text-body-secondary"> — {fila.nombre}</span>
           <div className="d-md-none text-body-secondary small">
-            Cantidad: {fila.cantidad} · {formatearFecha(fila.fecha)}
+            Cantidad: {fila.cantidad} {fila.unidadMedida} · {formatearFecha(fila.fecha)}
           </div>
         </>
       ),
@@ -83,7 +84,7 @@ export default function PantallaMaterialesUtilizados() {
       clave: 'cantidad',
       encabezado: 'Cantidad',
       ocultarDebajoDe: 'md',
-      render: (fila) => fila.cantidad,
+      render: (fila) => `${fila.cantidad} ${fila.unidadMedida}`,
     },
     {
       clave: 'fecha',

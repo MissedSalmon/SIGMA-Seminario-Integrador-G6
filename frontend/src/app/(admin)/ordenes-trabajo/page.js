@@ -12,11 +12,12 @@
  * responsables, esa OT todavía no se puede empezar a trabajar.
  */
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilDescription } from '@coreui/icons';
 
+import ReferenciaEtapas from '@/componentes/estados/ReferenciaEtapas.js';
+import Talon from '@/componentes/Talon.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
@@ -26,6 +27,7 @@ import EtiquetaPrioridad from '@/componentes/ordenes/EtiquetaPrioridad.js';
 import { listarActivos } from '@/servicios/activos.js';
 import { listarOrdenes, listarEstadosDeOrden, listarPrioridades } from '@/servicios/ordenesTrabajo.js';
 import { formatearFechaHora, inicioDelDia, finDelDia } from '@/utils/fechas.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 export default function PantallaOrdenesTrabajo() {
   const [ordenes, setOrdenes] = useState([]);
@@ -35,11 +37,11 @@ export default function PantallaOrdenesTrabajo() {
   const [prioridades, setPrioridades] = useState([]);
   const [activos, setActivos] = useState([]);
 
-  const [filtroEstado, setFiltroEstado] = useState('');
-  const [filtroPrioridad, setFiltroPrioridad] = useState('');
-  const [filtroActivo, setFiltroActivo] = useState('');
-  const [filtroDesde, setFiltroDesde] = useState('');
-  const [filtroHasta, setFiltroHasta] = useState('');
+  const [filtroEstado, setFiltroEstado] = useFiltroPersistente('estado', '');
+  const [filtroPrioridad, setFiltroPrioridad] = useFiltroPersistente('prioridad', '');
+  const [filtroActivo, setFiltroActivo] = useFiltroPersistente('activo', '');
+  const [filtroDesde, setFiltroDesde] = useFiltroPersistente('desde', '');
+  const [filtroHasta, setFiltroHasta] = useFiltroPersistente('hasta', '');
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
@@ -102,7 +104,7 @@ export default function PantallaOrdenesTrabajo() {
     {
       clave: 'id',
       encabezado: '#',
-      render: (orden) => <span className="fw-semibold">{orden.id}</span>,
+      render: (orden) => <Talon numero={orden.id} />,
     },
     {
       clave: 'estado',
@@ -145,14 +147,12 @@ export default function PantallaOrdenesTrabajo() {
     {
       clave: 'origen',
       encabezado: 'Origen',
-      // Lleva al ticket o al plan preventivo que la generó.
+      // El ticket o el plan preventivo que la generó, como texto: en la tabla no hay enlaces.
       render: (orden) =>
         orden.idTicket ? (
-          <Link href={`/tickets/${orden.idTicket}`}>Ticket #{orden.idTicket}</Link>
+          <span>Ticket #{orden.idTicket}</span>
         ) : orden.idMantenimientoPreventivo ? (
-          <Link href={`/planes-mantenimiento/${orden.idMantenimientoPreventivo}`} title={orden.nombrePlan ?? undefined}>
-            Plan #{orden.idMantenimientoPreventivo}
-          </Link>
+          <span title={orden.nombrePlan ?? undefined}>Plan #{orden.idMantenimientoPreventivo}</span>
         ) : (
           <span className="text-body-tertiary">-</span>
         ),
@@ -183,13 +183,15 @@ export default function PantallaOrdenesTrabajo() {
 
   return (
     <>
-      <EncabezadoPagina titulo="Órdenes de trabajo" accion={{ direccion: '/ordenes-trabajo/agregar' }} />
+      {/* Sin «Agregar»: la OT se genera sola al validar el ticket (19/11/2026). */}
+      <EncabezadoPagina titulo="Órdenes de trabajo" />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
 
       <CCard>
         <CCardBody>
           <TablaDatos
+            antesDeLaTabla={<ReferenciaEtapas className="mt-0 mb-3" de="ot" estados={ordenes.map((orden) => orden.estado)} />}
             filas={ordenes}
             claveFila={(orden) => orden.id}
             columnas={columnas}

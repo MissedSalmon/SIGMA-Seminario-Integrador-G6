@@ -229,12 +229,61 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 >   valores que la de la tarea. La migración quedó como
 >   `20261010120000_datos_enumerados.sql`, para que vaya después de las del 09/10.
 
+> **Decisión del 21/11/2026 (un área tiene varios espacios):**
+> - **Cada espacio es de un área como máximo, y un área puede tener muchos espacios**, incluso
+>   en varios edificios. Se tomó la propuesta del 18/11/2026 (`Propuesta-areas-y-espacios.pdf`).
+>   Ejemplo: la Secretaría de Asuntos Universitarios con varias oficinas, o Bedelía con todas las
+>   aulas. Un espacio común (pasillo, baño) puede quedar **«Sin área»**.
+> - La relación la guarda el espacio (`espacio.area_id`). El área ya no tiene `espacio_id` ni
+>   `edificio_id`: su edificio sale de sus espacios, y si están en varios se muestran todos
+>   («Anexo I / Edificio Central»). Migración `20261121200000_espacio_pertenece_a_un_area.sql`,
+>   **escrita pero sin aplicar**: hay que correr `npm run db:push` junto con este código.
+> - **Los espacios se eligen en el formulario del área**, con la selección múltiple. La lista
+>   ofrece sólo los espacios libres y los que ya son de esa área; la API rechaza un espacio que
+>   es de otra. El área puede quedar sin espacios. El listado de áreas muestra edificio y cantidad
+>   de espacios; el de espacios, una columna «Área» que sólo se puede ver.
+> - **El solicitante reporta los activos de todos los espacios de su área.**
+> - Como un espacio tiene un área como máximo, **cada ticket y cada falla cuentan para una sola
+>   área** en las estadísticas (HU-34 y tiempos de resolución): los porcentajes suman 100 %.
+> - Un solicitante es responsable de un área como máximo: la base lo exige con
+>   `uq_area_autorizado`.
+> - Al eliminar un área, sus espacios quedan sin área.
+> - **El área de un ticket se calcula con el espacio de hoy, no se guarda.** Si un espacio cambia
+>   de área, sus tickets viejos pasan a la nueva, en el listado y en las estadísticas.
+> - **El nombre de un espacio es su tipo y su número** («Aula 1.1»): la base no guarda un nombre
+>   propio y no hace falta. Se arma en `backend/src/utiles/espacios.js` y se muestra en activos,
+>   tickets y órdenes de trabajo.
+> - **Datos de prueba en la base (21/11/2026):** área **Bedelía** con las tres aulas (Aula 1.1 y
+>   Aula 1.6 del Edificio Central, Aula 0.2 del Anexo I; el Aula 1.1 era de Electromecánica, que
+>   quedó sin espacios), solicitante **Bedelía Prueba** (legajo 7001) y su ticket **#43**. El
+>   mismo caso está automatizado en `backend/test/reglas.bedelia.test.js`.
+> - ✅ **Confirmado (21/11/2026): un espacio no puede pertenecer a dos áreas.** Los espacios que
+>   usan varios departamentos, como las aulas, van a un área común (por ejemplo Bedelía).
+> - **Un espacio no cambia de área; un área sí puede cambiar de espacios** (21/11/2026).
+
+> **Decisión del 19/11/2026 (quién registra un ticket):**
+> - **Sólo el usuario autorizado registra tickets** (confirmado de nuevo el 21/11/2026: el
+>   administrador no carga tickets). Es quien reporta el problema y el ticket
+>   guarda su legajo (`ticket.autorizado_legajo`). El administrador no ve el botón «Agregar»
+>   en Tickets y la API le responde 403 (`POST /api/tickets`). Antes podía entrar al formulario,
+>   pero el alta fallaba porque su legajo no es el de un autorizado.
+>   Al guardar, la app vuelve al listado de tickets, donde el nuevo queda primero (21/11/2026;
+>   antes llevaba al detalle del ticket).
+> - **El autorizado sólo reporta activos de sus áreas.** El buscador del alta lista los activos
+>   de los espacios de las áreas que tiene a cargo (`area.autorizado_legajo` → `espacio.area_id`
+>   desde el 21/11/2026),
+>   menos los retirados (`GET /api/tickets/activos`). La API rechaza el alta de cualquier otro
+>   activo. Si sus áreas no tienen espacio o el espacio no tiene activos, el formulario lo avisa.
+>   Así todo ticket nuevo tiene área; los viejos que salen «Sin área» siguen así hasta que se le
+>   asigne un área a su espacio.
+
 > **Decisiones del 13/09/2026 (HU-10, consulta de tickets):**
 > - Los estados del ticket viven en `backend/src/servicios/tickets.servicio.js` (`ESTADOS`) y
 >   se exponen en `GET /api/tickets/estados`. Todo ticket nuevo se guarda como **Creado**.
 >   Los primeros tickets quedaron guardados como `ABIERTO` (default viejo de la tabla): el
 >   backend los lee y los filtra como "Creado". No se cambió la base.
-> - **El área de un ticket es la del espacio donde está el activo** (`area.espacio_id`).
+> - **El área de un ticket es la del espacio donde está el activo** (`espacio.area_id` desde el
+>   21/11/2026; antes, `area.espacio_id`).
 >   El ticket no tiene FK a área. Si el espacio no tiene área asignada, el ticket se muestra
 >   "Sin área".
 
@@ -247,6 +296,9 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 > - **La OT sale de un ticket VALIDADO y de ninguno otro.** Antes de validarlo no se sabe si
 >   el trabajo se va a hacer; y si el ticket ya avanzó (asignado, en ejecución, cerrado) su OT
 >   ya existe. El botón "Crear OT" del detalle del ticket sólo aparece si está "Validado".
+>   *Cambio del 19/11/2026:* el listado de órdenes de trabajo ya no tiene «Agregar» y se borró
+>   la pantalla `/ordenes-trabajo/agregar`: la OT se genera sola al validar el ticket. Si esa
+>   generación falla, se crea con «Crear OT» desde el detalle del ticket.
 > - **Las tareas se planifican para adelante:** ni el inicio ni el fin previstos pueden ser
 >   anteriores a hoy. Al editar una tarea vieja, la fecha que ya estaba guardada se respeta:
 >   sólo se rechaza si se la cambia por otra que también quedó atrás.
@@ -359,11 +411,15 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 > - **La fecha que se filtra es la prevista de inicio** (`tarea_fecha_ini`, la que carga el
 >   administrador al planificar la OT). Una tarea sin fecha prevista no aparece cuando se
 >   filtra por fecha.
-> - **Orden por defecto** *(cambiado el 25/10/2026)*: por estado, primero lo que el técnico
+> - **Orden por defecto** *(cambiado el 19/11/2026)*: por estado, primero lo que el técnico
 >   tiene entre manos: En ejecución, Asignada, Pendiente, Creada y al final Finalizada y
->   Cancelada. Dentro de cada estado, prioridad más alta primero y después la fecha prevista
->   más cercana (sin fecha, al final). Lo ordena la pantalla, no la API. Antes (22/10/2026) era
->   cronológico de creación, por número de OT y de tarea.
+>   Cancelada. Dentro de cada estado, **la última que le asignaron primero**
+>   (`tec_asig_fecha_asig`), como en la campana. Lo ordena la pantalla, no la API. Antes
+>   (25/10/2026) iba por prioridad y fecha prevista, y una tarea nueva sin fecha prevista
+>   quedaba al final de las asignadas.
+> - **Editar una tarea no cambia su asignación** *(19/11/2026)*: si el técnico sigue siendo el
+>   mismo, la asignación conserva su fecha y su estado. Antes se borraba y se volvía a crear,
+>   y una tarea En curso volvía a figurar como Asignada.
 > - **El estado es la segunda columna** *(25/10/2026)*, después de la prioridad, con la misma
 >   etiqueta (punto de color + texto) que el estado de la OT (`EtiquetaEstadoOT`): la tarea
 >   tiene los mismos estados. El color acompaña; lo que se lee es la palabra.
@@ -377,7 +433,8 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 > - **El técnico ejecuta la tarea desde su detalle.** "Iniciar tarea" la pasa de Creada,
 >   Asignada o Pendiente a **En ejecución**; "Finalizar tarea" la pasa de En ejecución a
 >   **Finalizada** (la HU dice "Completada": es el mismo estado, que en el diccionario se llama
->   Finalizada). Las dos piden confirmación.
+>   Finalizada). Las dos piden confirmación. Al finalizar, la app vuelve a «Tareas asignadas»
+>   (21/11/2026).
 > - **Al iniciar**, se mueve en cadena lo que corresponde, y sólo hacia adelante: la
 >   asignación del técnico pasa a En curso, la OT a En ejecución (si estaba Creada o
 >   Asignada), el ticket a En ejecución (si estaba Validado o Asignado) y el **activo a En
@@ -397,6 +454,19 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 >   Canceladas (y al menos una Finalizada), la **OT se finaliza** con su fecha de cierre, el
 >   **ticket se cierra** con su fecha de cierre (columna nueva `ticket_fecha_cierre`) y el
 >   **activo vuelve a Operativo**, salvo que otra OT en ejecución lo siga arreglando.
+> - **Cómo queda el activo al cerrar la OT (22/11/2026):** quien finaliza la **última tarea**
+>   (el técnico, o el administrador si es de un prestador) elige en la misma ventana de
+>   «Finalizar» si el activo queda **Operativo** o **Fuera de servicio**, porque el arreglo puede
+>   no haber alcanzado. Es obligatorio elegir. **Si otra OT en ejecución lo sigue arreglando,
+>   queda En mantenimiento** y lo decide quien cierre esa (confirmado el 22/11/2026). La API
+>   recibe `estadoActivo` al finalizar (sin él, Operativo) y cada tarea trae `cierraLaOrden`
+>   para saber si hay que preguntar.
+> - **Asignar desde la ficha de la tarea** (22/11/2026): si una tarea sin empezar no tiene
+>   responsable, «Opciones» suma «Asignar». La ventana pide técnico o prestador con las mismas
+>   reglas que «Editar» (técnicos activos de la especialidad de la tarea) y no cambia el resto.
+> - **El estado de las tareas va con sello** (22/11/2026), en la tabla de tareas de la OT y en la
+>   ficha de la tarea, con la referencia de colores. «Pendiente» va como «Falta empezar»
+>   (`ETAPA_TAREA` en `frontend/src/componentes/estados/etapas.js`).
 > - **Historial del técnico en el menú:** "Materiales utilizados" (`/tareas/materiales`) lista
 >   lo que se usó en sus tareas, con filtro por material y por fecha. Es sólo para consultar:
 >   no lleva acciones. "Herramientas utilizadas" (`/tareas/herramientas`) lista las que tiene
@@ -414,7 +484,8 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 >   fecha va sin la hora; los filtros "Desde" y "Hasta" toman el día en la hora local.
 > - **Herramientas utilizadas: una fila por préstamo** *(25/10/2026)*, cada vez que la tomó,
 >   como materiales tiene una fila por consumo. Columnas Herramienta, Estado, Desde, Hasta,
->   Tarea y Acción ("Devolver", sólo en la que tiene todavía). El estado va con una etiqueta
+>   Tarea y Acción ("Devolver", sólo en la que tiene todavía; se sacó el 10/11/2026 y volvió el
+>   21/11/2026). El estado va con una etiqueta
 >   (punto + texto, como el de la OT): **celeste = En uso** (la tiene a su nombre y la puede
 >   devolver) y **gris = Devuelta** (ya no la tiene; queda como historial). Primero las En uso. Reemplaza a
 >   la fila por herramienta con las columnas "Último uso" y "Veces" y la ventana "Ver OT"
@@ -424,9 +495,41 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 >   columnas de fechas, estado, cantidad y acción se esconden y su dato pasa abajo de la
 >   herramienta o del material. En herramientas, "Desde" y "Hasta" recién aparecen en
 >   pantallas grandes (desde 1200 px): con el menú lateral abierto no entran las seis columnas.
-> - ⬜ **Pendiente de definir:** una tarea a cargo de un **prestador externo** no la puede
->   finalizar un técnico desde la app. Si una OT tiene una, no se va a cerrar sola hasta que
->   haya una forma de marcar esa tarea como hecha (la tendría que hacer el administrador).
+> - ✅ **Tareas de un prestador externo (21/11/2026):** el prestador no entra al sistema, así
+>   que su tarea la mueve el **administrador** desde la ficha de la tarea
+>   (`/ordenes-trabajo/:id/tareas/:idTarea`), en el desplegable «Opciones». En la tabla de
+>   tareas de la OT cada fila tiene sólo «Ver detalle» y «Editar», como las listas de
+>   técnicos y solicitantes; «Eliminar» también pasó a «Opciones» de la ficha.
+>   - **Iniciar:** la tarea pasa a En ejecución y arrastra lo mismo que cuando la inicia un
+>     técnico (OT y ticket a En ejecución, activo a En mantenimiento).
+>   - **Finalizar:** la tarea pasa a Finalizada. **Se puede finalizar sin haberla iniciado**,
+>     porque muchas veces el administrador se entera recién cuando el prestador terminó. Si era
+>     la última, se aplica el cierre automático de la HU-26.
+>   - Una tarea de un técnico no se mueve desde la OT: la sigue iniciando y finalizando él.
+>   - Direcciones: `POST /api/ordenes-trabajo/:id/tareas/:idTarea/iniciar` y `/finalizar`,
+>     sólo administrador.
+
+> **Decisiones del 19/11/2026 (datos de demostración):**
+> - Se limpiaron los datos de la base para mostrar el sistema a clientes. El detalle de cada
+>   cambio está en la guía de datos de demostración, que no está en el repositorio. No se
+>   tocaron los usuarios.
+> - **Número de espacio:** piso y orden separados por un punto. «Aula 1.1» es la primera
+>   del 1er piso; «Oficina 0.2», la segunda de planta baja.
+> - **Piso:** se guarda como número: 0 planta baja, 1 1er piso, 2 2do piso. La columna
+>   `espacio_piso` sigue siendo texto (sin migración por ahora). En el formulario de espacios
+>   se elige de una lista (Planta baja, 1er piso, 2do piso) y las pantallas muestran el nombre
+>   (`frontend/src/utils/pisos.js`). La API rechaza cualquier otro valor; el piso puede quedar
+>   vacío.
+> - **Código de activo:** prefijo del tipo, guion y tres cifras (`AC-004`, `PC-002`,
+>   `EDI-001`). Se renumeraron 16 activos.
+
+> **Decisión del 19/11/2026 (detalle de la tarea para el administrador):**
+> - En el detalle de la OT, cada tarea tiene el ícono de la hoja para ver su detalle
+>   (`/ordenes-trabajo/[id]/tareas/[idTarea]`), también en las OT finalizadas.
+> - Es **sólo de consulta**: lo planificado (tarea estándar, responsable, prioridad, fechas,
+>   duración) y lo que hizo el técnico (falla, materiales, herramientas tomadas para la tarea y
+>   observaciones). La tarea se sigue cambiando con «Editar» y lo ejecutado lo carga el técnico.
+> - API: `GET /api/ordenes-trabajo/:id/tareas/:idTarea`, sólo para el administrador.
 
 > **Decisiones del 25/10/2026 (HU-29, historial de intervenciones por activo):**
 > - **Una intervención es una OT del activo**, no cada tarea. Es **correctiva** si viene de un
@@ -461,8 +564,8 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 >   Las fallas viejas que sólo estaban asociadas a la OT (sin tarea ni activo) no cuentan,
 >   porque no se sabe de qué área son.
 > - **El área de una falla es la del espacio de su activo**, igual que la de un ticket. Si el
->   espacio no tiene área, la falla va a **«Sin área»**, que se muestra siempre al final. Si
->   dos áreas comparten el espacio, la falla cuenta para las dos.
+>   espacio no tiene área, la falla va a **«Sin área»**, que se muestra siempre al final. Desde
+>   el 21/11/2026 un espacio tiene un área como máximo: cada falla cuenta una sola vez.
 > - Cuentan las fallas de OT **correctivas y preventivas**. La columna «Tickets» es la cantidad
 >   de tickets distintos: una falla preventiva no tiene ticket, y un ticket con dos tareas
 >   diagnosticadas suma dos fallas pero un ticket.
@@ -505,8 +608,8 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 >   pantalla lo escribe con las dos unidades más grandes: «2 d 4 h», «3 h 30 min», «25 min»,
 >   y al lado en horas con un decimal.
 > - **Promedio general:** cada ticket cuenta una vez.
-> - **Por área:** el área del espacio del activo, como en la HU-34. Si dos áreas comparten el
->   espacio, el ticket cuenta para las dos. Sin espacio o sin área: **«Sin área»**.
+> - **Por área:** el área del espacio del activo, como en la HU-34. Desde el 21/11/2026 cada
+>   ticket cuenta para una sola área. Sin espacio o sin área: **«Sin área»**.
 > - **Por tipo de activo:** el tipo del activo del ticket.
 > - **Por técnico:** el ticket cuenta para **cada técnico** que tuvo una asignación no
 >   cancelada en una tarea no cancelada de su OT (un técnico con dos tareas cuenta una vez).
@@ -623,6 +726,7 @@ Agrupadas por tema, para tener el mapa general:
 | **Disponibilidad** | Indica si el técnico puede tomar tareas nuevas. Junto con el tipo de trabajo define a quién se le asigna. |
 | **Edificio** | Construcción de la facultad. Contiene espacios. |
 | **Egreso** | Salida de un material o herramienta del depósito. Baja el stock. |
+| **Unidad de medida** | Unidad en la que se expresa la cantidad de cada material (par, unidad, metro, pulgada, kilogramo, litro, metro cuadrado, etc.). En el alta o edición de un material se elige de la lista o se puede agregar una nueva con el botón «Agregar» (23/11/2026). Las cantidades siguen siendo enteras. |
 | **Espacio** | Lugar dentro de un edificio: aula, laboratorio, oficina, pasillo. |
 | **Evidencia** | Fotos que se adjuntan a un ticket o a una OT. |
 | **Falla** | Clasificación del problema: eléctrica, mecánica, estructural, sanitaria. Se registra en la tarea de la OT. |

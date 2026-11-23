@@ -19,13 +19,16 @@ import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarEdificios } from '@/servicios/edificios.js';
 import { listarEspacios, eliminarEspacio } from '@/servicios/espacios.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
+import { textoDelPiso } from '@/utils/pisos.js';
+import { useEstadoGuardado } from '@/utils/estadoGuardado.js';
 
 export default function PantallaEspacios() {
   const { mostrarToast } = useToast();
 
   const [espacios, setEspacios] = useState([]);
   const [edificios, setEdificios] = useState([]);
-  const [filtroEdificio, setFiltroEdificio] = useState('');
+  const [filtroEdificio, setFiltroEdificio] = useFiltroPersistente('edificio', '');
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
@@ -53,7 +56,8 @@ export default function PantallaEspacios() {
       try {
         const filas = await listarEspacios(filtroEdificio ? Number(filtroEdificio) : null);
         if (!vigente) return;
-        setEspacios(filas);
+        // El piso viene como número; con el texto al lado, el buscador encuentra "planta baja".
+        setEspacios(filas.map((espacio) => ({ ...espacio, pisoTexto: textoDelPiso(espacio.piso) })));
         setError('');
       } catch (fallo) {
         if (vigente) setError(fallo.message);
@@ -105,12 +109,18 @@ export default function PantallaEspacios() {
     {
       clave: 'piso',
       encabezado: 'Piso',
-      render: (espacio) => <span className="text-body-secondary">{espacio.piso ?? '-'}</span>,
+      render: (espacio) => <span className="text-body-secondary">{espacio.pisoTexto || '-'}</span>,
     },
     {
       clave: 'numero',
       encabezado: 'Número',
       render: (espacio) => <span className="text-body-secondary">{espacio.numero ?? '-'}</span>,
+    },
+    {
+      // Sólo se ve: el área se elige desde el formulario del área (21/11/2026).
+      clave: 'area',
+      encabezado: 'Área',
+      render: (espacio) => <span className="text-body-secondary">{espacio.nombreArea || 'Sin área'}</span>,
     },
     {
       clave: 'acciones',
@@ -152,8 +162,8 @@ export default function PantallaEspacios() {
             filas={espacios}
             claveFila={(espacio) => `${espacio.idEdificio}-${espacio.espacio_num}`}
             columnas={columnas}
-            buscarPor={['nombre', 'nombreEdificio', 'tipo', 'piso', 'numero']}
-            placeholderBusqueda="Buscar por nombre, edificio o tipo"
+            buscarPor={['nombre', 'nombreEdificio', 'tipo', 'pisoTexto', 'numero', 'nombreArea']}
+            placeholderBusqueda="Buscar por nombre, edificio, tipo o área"
             filtros={[
               {
                 etiqueta: 'Edificio',
@@ -169,8 +179,8 @@ export default function PantallaEspacios() {
             cargando={cargando}
             textoVacio={
               filtroEdificio
-                ? 'Ese edificio todavia no tiene espacios cargados.'
-                : 'Todavia no hay espacios cargados.'
+                ? 'Ese edificio todavía no tiene espacios cargados.'
+                : 'Todavía no hay espacios cargados.'
             }
           />
         </CCardBody>

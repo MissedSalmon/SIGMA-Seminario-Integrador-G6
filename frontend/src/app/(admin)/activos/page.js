@@ -24,14 +24,14 @@ import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarEspacios } from '@/servicios/espacios.js';
 import { listarTiposActivos } from '@/servicios/tiposActivos.js';
 import { listarActivos, darDeBajaActivo } from '@/servicios/activos.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 import {
   CDropdown,
   CDropdownToggle,
   CDropdownMenu,
   CDropdownItem
 } from '@coreui/react';
-import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
+import { useEstadoGuardado } from '@/utils/estadoGuardado.js';
 
 
 const ESTADOS = ['Operativo', 'En mantenimiento', 'Fuera de servicio', 'Retirado'];
@@ -44,9 +44,9 @@ export default function PantallaActivos() {
   const [tipos, setTipos] = useState([]);
 
   // El espacio se guarda como "edificio|numero" porque su clave son dos datos.
-  const [filtroEspacio, setFiltroEspacio] = useState('');
-  const [filtroTipo, setFiltroTipo] = useState('');
-  const [filtroEstado, setFiltroEstado] = useState('');
+  const [filtroEspacio, setFiltroEspacio] = useFiltroPersistente('espacio', '');
+  const [filtroTipo, setFiltroTipo] = useFiltroPersistente('tipo', '');
+  const [filtroEstado, setFiltroEstado] = useFiltroPersistente('estado', '');
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
@@ -120,6 +120,8 @@ export default function PantallaActivos() {
   
 
   const exportarActivos = async () => {
+    // ExcelJS pesa mucho: se descarga recien cuando alguien exporta.
+    const [{ default: ExcelJS }, { saveAs }] = await Promise.all([import('exceljs'), import('file-saver')]);
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Activos');
     
@@ -183,7 +185,7 @@ export default function PantallaActivos() {
             href={`/activos/${encodeURIComponent(activo.codigo)}`}
             variante="ghost"
             className="btn-icono"
-            title="Ver la ficha y el historial de intervenciones"
+            title={`Ver detalle de ${activo.codigo}`}
           >
             <CIcon icon={cilDescription} />
           </BotonEnlace>
@@ -194,7 +196,7 @@ export default function PantallaActivos() {
                 href={`/activos/${encodeURIComponent(activo.codigo)}/editar`}
                 variante="ghost"
                 className="btn-icono"
-                title="Editar"
+                title={`Editar ${activo.codigo}`}
               >
                 <CIcon icon={cilPencil} />
               </BotonEnlace>
@@ -203,7 +205,7 @@ export default function PantallaActivos() {
                 color="danger"
                 className="btn-icono"
                 onClick={() => setADarDeBaja(activo)}
-                title="Dar de baja"
+                title={`Dar de baja ${activo.codigo}`}
               >
                 <CIcon icon={cilTrash} />
               </CButton>
@@ -281,7 +283,7 @@ export default function PantallaActivos() {
             textoVacio={
               hayFiltros
                 ? 'No hay activos que cumplan con esos filtros.'
-                : 'Todavia no hay activos cargados.'
+                : 'Todavía no hay activos cargados.'
             }
           />
         </CCardBody>

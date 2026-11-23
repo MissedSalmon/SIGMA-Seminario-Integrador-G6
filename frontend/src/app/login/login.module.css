@@ -1,0 +1,248 @@
+/*
+  Pantalla de ingreso, mundo «Talonario» (ver frontend/DESIGN.md).
+
+  El fondo es un talonario en movimiento: columnas de comprobantes que suben
+  despacio sobre la Tinta del menu, con una cuadricula de formulario muy
+  tenue. Es decoracion: va oculto para los lectores de pantalla y quieto
+  cuando el sistema pide menos movimiento.
+*/
+
+.pagina {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  overflow: hidden;
+  isolation: isolate;
+  background-color: var(--sigma-ink);
+}
+
+/* ---------- El fondo ---------- */
+
+.fondo {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  display: flex;
+  justify-content: space-between;
+  gap: 2.5rem;
+  padding: 0 2.5rem;
+  pointer-events: none;
+  /* Cuadricula de formulario, apenas visible. */
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Un velo hacia el centro: la tarjeta queda sobre lo mas calmo. */
+.fondo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 42% 60% at 50% 50%, var(--sigma-ink) 30%, rgba(12, 39, 51, 0) 100%);
+}
+
+.columna {
+  flex: 0 0 13.5rem;
+  min-width: 0;
+  opacity: 0.55;
+}
+
+/*
+  Cada columna lleva su tira de comprobantes dos veces seguidas: al subir la
+  mitad del alto, la segunda copia queda donde estaba la primera y la vuelta
+  no se nota.
+*/
+.tira {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  animation: subir var(--duracion, 90s) linear infinite;
+  animation-delay: var(--retraso, 0s);
+}
+
+@keyframes subir {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+.comprobante {
+  display: grid;
+  grid-template-columns: 3.6rem 1fr;
+  border: 1px solid rgba(163, 199, 212, 0.28);
+  border-radius: var(--sigma-radio-md);
+  color: rgba(214, 231, 237, 0.62);
+}
+
+.talon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.7rem 0.3rem;
+  border-right: 2px dashed rgba(163, 199, 212, 0.28);
+  line-height: 1.05;
+}
+
+.talonRotulo {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.talonNumero {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: rgba(127, 179, 200, 0.85);
+}
+
+.cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.75rem 0.7rem;
+}
+
+.renglon {
+  height: 0.4rem;
+  border-radius: 2px;
+  background: rgba(163, 199, 212, 0.22);
+}
+
+.selloFondo {
+  align-self: flex-start;
+  margin-top: 0.2rem;
+  padding: 0.05rem 0.35rem;
+  border: 1.5px solid rgba(127, 179, 200, 0.6);
+  border-radius: 3px;
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: rgba(127, 179, 200, 0.85);
+}
+
+/* En pantallas angostas quedan menos columnas: la tarjeta tapa el centro. */
+@media (max-width: 991.98px) {
+  .columna:nth-child(n + 4) {
+    display: none;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .fondo {
+    gap: 1rem;
+    padding: 0 1rem;
+  }
+
+  .columna {
+    flex-basis: 10rem;
+    opacity: 0.4;
+  }
+
+  .columna:nth-child(n + 3) {
+    display: none;
+  }
+}
+
+/* ---------- La tarjeta de ingreso ---------- */
+
+.tarjeta {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: var(--sigma-superficie);
+  border: 1px solid var(--sigma-linea, #c3d4da);
+  border-radius: var(--sigma-radio-lg);
+  box-shadow: 0 24px 60px rgba(4, 18, 24, 0.45);
+  /* Llega subiendo: el comprobante se presenta. */
+  animation: llegar 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes llegar {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+  La linea de troquel debajo de la marca: se dibuja de izquierda a derecha
+  cuando la tarjeta ya llego, como un talon recien arrancado.
+*/
+.troquel {
+  height: 0;
+  margin: 1.5rem -3rem 0;
+  border-top: 2px dashed var(--sigma-linea, #c3d4da);
+  transform-origin: left center;
+  animation: troquelar 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both;
+}
+
+@keyframes troquelar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (max-width: 575.98px) {
+  .troquel {
+    margin-inline: -1.5rem;
+  }
+}
+
+/* El aviso de error se despliega en vez de aparecer de golpe. */
+.aviso {
+  animation: desplegar 0.2s ease-out both;
+}
+
+@keyframes desplegar {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- Menos movimiento ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  /* El fondo queda quieto; el resto llega con un fundido, sin desplazarse. */
+  .tira {
+    animation: none;
+  }
+
+  .tarjeta,
+  .aviso {
+    animation-name: aparecer;
+  }
+
+  .troquel {
+    animation: none;
+  }
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

@@ -1,7 +1,8 @@
 import { supabase } from '../config/supabase.js';
-import { datoInvalido, noEncontrado } from '../utiles/errores.js';
+import { datoInvalido, noEncontrado, prohibido } from '../utiles/errores.js';
 import * as ordenesTrabajo from './ordenesTrabajo.servicio.js';
 import { ENUM_ESTADO_ACTIVO, ENUM_ESTADO_OT, ENUM_ESTADO_TICKET } from '../utiles/enumerados.js';
+import { nombreDelEspacio } from '../utiles/espacios.js';
 
 /**
  * Los estados por los que pasa un ticket (ver .claude/contexto/dominio.md).
@@ -30,9 +31,8 @@ function limpiar(texto) {
  * El ticket con todo lo que se muestra: el activo (con su tipo y su
  * ubicacion), quien lo registro y la OT si ya se genero.
  *
- * El area no esta en el ticket: se deduce de donde esta el activo
- * (area.espacio_id), decision del 13/09/2026. Como varias areas pueden
- * compartir un espacio, viene como lista.
+ * El area no esta en el ticket: es la del espacio del activo
+ * (espacio.area_id). Un espacio tiene un area como maximo (21/11/2026).
  */
 const COLUMNAS = `
   ticket_id,
@@ -51,6 +51,7 @@ const COLUMNAS = `
     espacio (
       espacio_id,
       espacio_num,
+      tipo_espacio ( tipo_espacio_nom ),
       edificio (
         edificio_nom
       ),
@@ -85,7 +86,7 @@ const COLUMNAS_CON_AREA = COLUMNAS.replace('\n  activo (', '\n  activo!inner (')
 function aTicket(fila) {
   const activo = fila.activo ?? null;
   const espacio = activo?.espacio ?? null;
-  const areas = espacio?.area ?? [];
+  const area = espacio?.area ?? null;
   const autorizado = fila.autorizado ?? null;
   // Un ticket tiene a lo sumo una OT, pero la relacion viene como lista.
   const ot = Array.isArray(fila.orden_trabajo) ? fila.orden_trabajo[0] ?? null : fila.orden_trabajo;
@@ -114,10 +115,11 @@ function aTicket(fila) {
           estado: ENUM_ESTADO_ACTIVO.texto(activo.activo_estado) ?? '',
           nombreEdificio: espacio?.edificio?.edificio_nom ?? '',
           espacio_num: espacio?.espacio_num ?? '',
+          nombreEspacio: nombreDelEspacio(espacio),
         }
       : null,
-    idArea: areas[0]?.area_id ?? null,
-    nombreArea: areas.map((area) => area.area_nom).join(' / '),
+    idArea: area?.area_id ?? null,
+    nombreArea: area?.area_nom ?? '',
     registradoPor: autorizado
       ? { legajo: autorizado.autorizado_legajo, nombre: autorizado.autorizado_nom_ape }
       : { legajo: fila.autorizado_legajo, nombre: '' },
@@ -205,7 +207,39 @@ export async function obtenerPorId(id, usuario = null) {
   return ticket;
 }
 
+/**
+ * Los activos que el autorizado puede reportar: los de todos los espacios de
+ * su área, menos los retirados (19/11/2026; varios espacios desde el 21/11/2026).
+ */
+export async function activosQuePuedeReportar(legajo) {
+  const { data: suyos, error: errorEspacios } = await supabase
+    .from('espacio')
+    .select('espacio_id, area!inner ( autorizado_legajo )')
+    .eq('area.autorizado_legajo', legajo);
+  if (errorEspacios) throw new Error(errorEspacios.message);
+
+  const espacios = (suyos ?? []).map((espacio) => espacio.espacio_id);
+  if (espacios.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('activo')
+    .select('activo_codigo, activo_estado, tipo_activo ( tipo_activo_nom )')
+    .in('espacio_id', espacios)
+    .neq('activo_estado', ENUM_ESTADO_ACTIVO.codigo('Retirado'))
+    .order('activo_codigo');
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((activo) => ({
+    codigo: activo.activo_codigo,
+    nombreTipo: activo.tipo_activo?.tipo_activo_nom ?? '',
+  }));
+}
+
 export async function crear(datos, usuario = null) {
+  if (usuario?.rol !== 'autorizado') {
+    throw prohibido('Sólo un usuario autorizado puede registrar tickets.');
+  }
+
   const codigoActivo = limpiar(datos.codigoActivo);
   const idEdificio = datos.idEdificio ? Number(datos.idEdificio) : null;
   const espacioNum = limpiar(datos.espacioNum);
@@ -224,14 +258,14 @@ export async function crear(datos, usuario = null) {
     throw datoInvalido('El modelo de datos actual exige que todo ticket esté asociado a un activo.');
   }
 
-  // Si el usuario es autorizado, usamos su identificador (legajo). Si es admin, puede usar el del form o '0000'
-  const legajoAutorizado = usuario?.rol === 'autorizado'
-    ? usuario.identificador
-    : (datos.autorizadoLegajo || usuario?.identificador || '0000');
+  const permitidos = await activosQuePuedeReportar(usuario.identificador);
+  if (!permitidos.some((activo) => activo.codigo === codigoActivo)) {
+    throw datoInvalido(`El activo ${codigoActivo} no está en tu área: no podés reportarlo.`);
+  }
 
   const { data, error } = await supabase.from('ticket').insert({
     activo_codigo: codigoActivo,
-    autorizado_legajo: legajoAutorizado,
+    autorizado_legajo: usuario.identificador,
     ticket_desc: descripcion,
     ticket_estado: ENUM_ESTADO_TICKET.codigo(ESTADO_INICIAL),
     ticket_evidencia: evidencia

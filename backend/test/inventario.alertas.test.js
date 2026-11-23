@@ -11,10 +11,12 @@ jest.unstable_mockModule('../src/config/supabase.js', () => ({
 }));
 
 const { supabase } = await import('../src/config/supabase.js');
-const { obtenerAlertasStock } = await import('../src/servicios/inventario.servicio.js');
+const { obtenerAlertasStock, obtenerUnidadesMedida, crearUnidadMedida, crearItem } = await import(
+  '../src/servicios/inventario.servicio.js'
+);
 
 /** Una fila de la tabla material como la devuelve Supabase. */
-function material(codigo, nombre, actual, minimo) {
+function material(codigo, nombre, actual, minimo, unidad = 'unidad') {
   return {
     mat_cod: codigo,
     mat_nom: nombre,
@@ -23,6 +25,7 @@ function material(codigo, nombre, actual, minimo) {
     inventariotipo: { inventariotiponom: 'Electricidad' },
     mat_stock_actual: actual,
     mat_stock_min: minimo,
+    mat_unidad_medida: unidad,
   };
 }
 
@@ -53,7 +56,7 @@ describe('obtenerAlertasStock', () => {
   });
 
   test('dice cuanto falta para llegar al minimo', async () => {
-    depositoCon([material('CA-1', 'Cable', 2, 10)]);
+    depositoCon([material('CA-1', 'Cable', 2, 10, 'metro')]);
 
     const [alerta] = await obtenerAlertasStock();
 
@@ -61,6 +64,7 @@ describe('obtenerAlertasStock', () => {
       codigo: 'CA-1',
       nombre: 'Cable',
       nombreTipo: 'Electricidad',
+      unidadMedida: 'metro',
       stockActual: 2,
       stockMinimo: 10,
       faltante: 8,
@@ -100,5 +104,113 @@ describe('obtenerAlertasStock', () => {
     }));
 
     await expect(obtenerAlertasStock()).rejects.toThrow('sin conexión');
+  });
+});
+
+describe('unidades de medida', () => {
+  test('lista las unidades base junto con las del catalogo y materiales', async () => {
+    supabase.from.mockImplementation((tabla) => ({
+      select: jest.fn(() =>
+        Promise.resolve({
+          data:
+            tabla === 'unidad_medida'
+              ? [{ unidad_medida_nom: 'rollo' }]
+              : [{ mat_unidad_medida: 'caja' }],
+          error: null,
+        })
+      ),
+    }));
+
+    const unidades = await obtenerUnidadesMedida();
+
+    expect(unidades).toEqual(
+      expect.arrayContaining(['unidad', 'metro', 'litro', 'rollo', 'caja'])
+    );
+  });
+
+  test('crea una unidad de medida nueva en minusculas y rechaza duplicadas', async () => {
+    supabase.from.mockImplementation((tabla) => {
+      if (tabla === 'unidad_medida') {
+        return {
+          select: jest.fn(() => Promise.resolve({ data: [], error: null })),
+          insert: jest.fn((fila) => ({
+            select: jest.fn(() => ({
+              single: jest.fn(() => Promise.resolve({ data: fila, error: null })),
+            })),
+          })),
+        };
+      }
+      return {
+        select: jest.fn(() => Promise.resolve({ data: [], error: null })),
+      };
+    });
+
+    await expect(crearUnidadMedida({ nombre: '  Rollo ' })).resolves.toBe('rollo');
+    await expect(crearUnidadMedida({ nombre: 'UNIDAD' })).rejects.toMatchObject({
+      estado: 409,
+      message: 'Ya existe la unidad de medida "unidad".',
+    });
+  });
+
+  test('permite dar de alta un material con una unidad de medida nueva', async () => {
+    supabase.from.mockImplementation((tabla) => {
+      if (tabla === 'inventariotipo') {
+        return {
+          select: jest.fn(() => ({
+            eq: jest.fn(() => ({
+              maybeSingle: jest.fn(() =>
+                Promise.resolve({
+                  data: { inventariotipoid: 1, inventariotiponom: 'Electricidad', inventariotipoclase: 'Material' },
+                  error: null,
+                })
+              ),
+            })),
+          })),
+        };
+      }
+      if (tabla === 'unidad_medida') {
+        return {
+          insert: jest.fn(() => Promise.resolve({ data: null, error: null })),
+        };
+      }
+      if (tabla === 'material') {
+        return {
+          select: jest.fn(() => ({
+            eq: jest.fn(() => ({
+              maybeSingle: jest.fn(() => Promise.resolve({ data: null, error: null })),
+            })),
+          })),
+          insert: jest.fn((fila) => ({
+            select: jest.fn(() => ({
+              single: jest.fn(() =>
+                Promise.resolve({
+                  data: { ...fila, inventariotipo: { inventariotiponom: 'Electricidad' } },
+                  error: null,
+                })
+              ),
+            })),
+          })),
+        };
+      }
+      return {
+        select: jest.fn(() => ({
+          eq: jest.fn(() => ({
+            maybeSingle: jest.fn(() => Promise.resolve({ data: null, error: null })),
+          })),
+        })),
+      };
+    });
+
+    const creado = await crearItem({
+      codigo: 'MAT-99',
+      nombre: 'Cinta teflón',
+      descripcion: '',
+      unidadMedida: 'Rollo',
+      clase: 'Material',
+      idTipo: 1,
+      stockMinimo: 5,
+    });
+
+    expect(creado.unidadMedida).toBe('rollo');
   });
 });

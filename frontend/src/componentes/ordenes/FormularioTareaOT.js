@@ -524,7 +524,7 @@ export default function FormularioTareaOT({ orden, tarea = null, onGuardar }) {
  * trabajo (corrección #2 de la profe). La lista ya viene filtrada por la
  * especialidad de la tarea estándar.
  */
-function textoDelTecnico(tecnico) {
+export function textoDelTecnico(tecnico) {
   const especialidades = (tecnico.especialidades ?? []).map((una) => una.nombre).join(', ');
   const partes = [tecnico.nombre];
 

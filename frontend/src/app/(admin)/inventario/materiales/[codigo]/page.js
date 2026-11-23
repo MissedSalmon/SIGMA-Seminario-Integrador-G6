@@ -14,12 +14,17 @@
  * remito ni de una tarea; queda en el historial como Ingreso manual o Egreso manual.
  */
 import { use, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
-  CButton,
   CCard,
   CCardBody,
   CCardHeader,
   CCol,
+  CDropdown,
+  CDropdownDivider,
+  CDropdownItem,
+  CDropdownMenu,
+  CDropdownToggle,
   CRow,
   CTable,
   CTableBody,
@@ -29,26 +34,20 @@ import {
   CTableRow,
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilArrowLeft, cilPencil, cilSwapVertical } from '@coreui/icons';
+import { cilArrowLeft, cilPencil, cilSwapVertical, cilTrash } from '@coreui/icons';
 
+import Dato from '@/componentes/Dato.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
+import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import { Cargando, SinDatos } from '@/componentes/EstadoTabla.js';
 import DialogoAjusteStock from '@/componentes/inventario/DialogoAjusteStock.js';
-import { listarConsumos, listarMovimientos, obtenerItem } from '@/servicios/inventario.js';
+import { useToast } from '@/componentes/toast/ContextoToast.js';
+import { eliminarItem, listarConsumos, listarMovimientos, obtenerItem } from '@/servicios/inventario.js';
 import { soloFechaLegible } from '@/utils/fechas.js';
 
-/** Un renglón "etiqueta: valor" de la ficha. */
-function Dato({ etiqueta, children }) {
-  return (
-    <div className="mb-3">
-      <div className="text-body-secondary small">{etiqueta}</div>
-      <div>{children ?? '-'}</div>
-    </div>
-  );
-}
-
+import { useVolverA } from '@/utils/volverA.js';
 /** Los tipos de movimiento que suben el stock; el resto lo bajan. */
 const ENTRADAS = ['Ingreso', 'Ingreso manual'];
 
@@ -58,6 +57,8 @@ function SinDato({ children }) {
 }
 
 export default function PantallaFichaItem({ params }) {
+  // Si se llegó desde una notificación, se vuelve a /notificaciones.
+  const volverA = useVolverA('/inventario/materiales');
   const { codigo } = use(params);
 
   // El codigo viaja en la direccion, asi que puede venir escapado ("AC%2D014").
@@ -69,6 +70,23 @@ export default function PantallaFichaItem({ params }) {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [ajustando, setAjustando] = useState(false);
+  const router = useRouter();
+  const { mostrarToast } = useToast();
+  const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
+
+  async function confirmarEliminar() {
+    setEliminando(true);
+    try {
+      await eliminarItem(item.codigo);
+      mostrarToast({ tipo: 'exito', mensaje: `Se eliminó "${item.nombre}".` });
+      router.push('/inventario/materiales');
+    } catch (fallo) {
+      setError(fallo.message);
+      setConfirmandoEliminar(false);
+      setEliminando(false);
+    }
+  }
 
   async function alAjustar(actualizado) {
     setAjustando(false);
@@ -100,10 +118,6 @@ export default function PantallaFichaItem({ params }) {
         accionesExtra={
           item && (
             <>
-              <CButton color="secondary" variant="outline" onClick={() => setAjustando(true)}>
-                <CIcon icon={cilSwapVertical} className="me-2" />
-                Modificar stock
-              </CButton>
               <BotonEnlace
                 href={`/inventario/materiales/${encodeURIComponent(item.codigo)}/editar`}
                 color="secondary"
@@ -112,10 +126,48 @@ export default function PantallaFichaItem({ params }) {
                 <CIcon icon={cilPencil} className="me-2" />
                 Editar
               </BotonEnlace>
+              <CDropdown placement="bottom-end">
+                <CDropdownToggle color="secondary" variant="outline">
+                  Opciones
+                </CDropdownToggle>
+                <CDropdownMenu className="shadow-sm border" style={{ minWidth: '14rem' }}>
+                  <CDropdownItem
+                    as="button"
+                    className="d-flex align-items-center gap-2 py-2"
+                    onClick={() => setAjustando(true)}
+                  >
+                    <CIcon icon={cilSwapVertical} />
+                    Modificar stock
+                  </CDropdownItem>
+                  <CDropdownDivider className="my-1" />
+                  <CDropdownItem
+                    as="button"
+                    className="d-flex align-items-center gap-2 py-2 text-danger"
+                    onClick={() => setConfirmandoEliminar(true)}
+                  >
+                    <CIcon icon={cilTrash} />
+                    Eliminar
+                  </CDropdownItem>
+                </CDropdownMenu>
+              </CDropdown>
             </>
           )
         }
       />
+
+      <DialogoEliminar
+        visible={confirmandoEliminar}
+        eliminando={eliminando}
+        onConfirmar={confirmarEliminar}
+        onCancelar={() => setConfirmandoEliminar(false)}
+      >
+        <p className="mb-0">
+          Se va a eliminar <strong>{item?.nombre}</strong>.
+        </p>
+        <p className="text-body-secondary mt-2 mb-0">
+          Solo se puede eliminar si no tiene ingresos ni consumos registrados.
+        </p>
+      </DialogoEliminar>
 
       <Aviso mensaje={error} />
 
@@ -142,18 +194,19 @@ export default function PantallaFichaItem({ params }) {
                     </Dato>
                   </CCol>
                   <CCol sm={6} lg={3}>
-                    <Dato etiqueta="Stock mínimo">{item.stockMinimo}</Dato>
+                    <Dato etiqueta="Unidad de medida">{item.unidadMedida}</Dato>
+                    <Dato etiqueta="Stock mínimo">{item.stockMinimo} {item.unidadMedida}</Dato>
                   </CCol>
                   <CCol sm={6} lg={3}>
                     <Dato etiqueta="Stock actual">
                       {/* El rojo se explica al lado: está por debajo del mínimo. */}
                       {item.bajoMinimo ? (
                         <>
-                          <span className="sigma-stock-bajo">{item.stockActual}</span>
+                          <span className="sigma-stock-bajo">{item.stockActual} {item.unidadMedida}</span>
                           <span className="text-body-secondary small"> — por debajo del mínimo</span>
                         </>
                       ) : (
-                        <span className="fw-semibold">{item.stockActual}</span>
+                        <span className="fw-semibold">{item.stockActual} {item.unidadMedida}</span>
                       )}
                     </Dato>
                   </CCol>
@@ -191,7 +244,7 @@ export default function PantallaFichaItem({ params }) {
                             <CTableDataCell>
                               <span className="fw-semibold">{soloFechaLegible(consumo.fecha)}</span>
                             </CTableDataCell>
-                            <CTableDataCell>{consumo.cantidad}</CTableDataCell>
+                            <CTableDataCell>{consumo.cantidad} {item.unidadMedida}</CTableDataCell>
                             <CTableDataCell>{consumo.tarea}</CTableDataCell>
                             <CTableDataCell>
                               <BotonEnlace
@@ -252,7 +305,7 @@ export default function PantallaFichaItem({ params }) {
                               */}
                               <span className="text-body-secondary">
                                 {ENTRADAS.includes(movimiento.tipo) ? '+' : '−'}
-                                {movimiento.cantidad}
+                                {movimiento.cantidad} {item.unidadMedida}
                               </span>
                             </CTableDataCell>
                             <CTableDataCell>
@@ -298,7 +351,7 @@ export default function PantallaFichaItem({ params }) {
       )}
 
       <div className="d-flex flex-wrap gap-2 mt-2 mb-4">
-        <BotonEnlace href="/inventario/materiales" color="secondary" variante="outline">
+        <BotonEnlace href={volverA} color="secondary" variante="outline">
           <CIcon icon={cilArrowLeft} className="me-2" />
           Volver al listado
         </BotonEnlace>

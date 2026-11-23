@@ -16,11 +16,15 @@
  */
 import { use, useEffect, useState } from 'react';
 import {
-  CButton,
   CCard,
   CCardBody,
   CCardHeader,
   CCol,
+  CDropdown,
+  CDropdownDivider,
+  CDropdownItem,
+  CDropdownMenu,
+  CDropdownToggle,
   CModal,
   CModalBody,
   CModalFooter,
@@ -35,8 +39,9 @@ import {
   CTableRow,
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilActionUndo, cilArrowLeft, cilBan, cilCheckCircle, cilPencil, cilUserFollow } from '@coreui/icons';
+import { cilActionUndo, cilArrowLeft, cilCheckCircle, cilPencil, cilTrash, cilUserFollow } from '@coreui/icons';
 
+import Dato from '@/componentes/Dato.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
@@ -52,16 +57,6 @@ import {
   ponerEnServicio,
 } from '@/servicios/inventario.js';
 import { formatearFechaHora, soloFechaLegible } from '@/utils/fechas.js';
-
-/** Un renglón "etiqueta: valor" de la ficha. */
-function Dato({ etiqueta, children }) {
-  return (
-    <div className="mb-3">
-      <div className="text-body-secondary small">{etiqueta}</div>
-      <div>{children ?? '-'}</div>
-    </div>
-  );
-}
 
 /** Texto en gris e itálica para decir que algo no está. */
 function SinDato({ children }) {
@@ -135,21 +130,47 @@ export default function PantallaFichaItem({ params }) {
                 <CIcon icon={cilPencil} className="me-2" />
                 Editar
               </BotonEnlace>
-              {/*
-                Una herramienta fuera de servicio no se asigna: lo que se puede
-                hacer es volver a ponerla en servicio.
-              */}
-              {item.estado === 'Fuera de servicio' ? (
-                <CButton color="secondary" variant="outline" onClick={() => setCambioEstado('servicio')}>
-                  <CIcon icon={cilCheckCircle} className="me-2" />
-                  Poner en servicio
-                </CButton>
-              ) : (
-                <CButton color="secondary" variant="outline" onClick={() => setAsignando(true)}>
-                  <CIcon icon={item.legajoTecnico ? cilActionUndo : cilUserFollow} className="me-2" />
-                  {item.legajoTecnico ? 'Registrar la devolución' : 'Asignar a un técnico'}
-                </CButton>
-              )}
+              <CDropdown placement="bottom-end">
+                <CDropdownToggle color="secondary" variant="outline">
+                  Opciones
+                </CDropdownToggle>
+                <CDropdownMenu className="shadow-sm border" style={{ minWidth: '14rem' }}>
+                  {/* Fuera de servicio no se asigna: lo que se puede hacer es volver a ponerla en servicio. */}
+                  {item.estado === 'Fuera de servicio' ? (
+                    <CDropdownItem
+                      as="button"
+                      className="d-flex align-items-center gap-2 py-2"
+                      onClick={() => setCambioEstado('servicio')}
+                    >
+                      <CIcon icon={cilCheckCircle} />
+                      Poner en servicio
+                    </CDropdownItem>
+                  ) : (
+                    <CDropdownItem
+                      as="button"
+                      className="d-flex align-items-center gap-2 py-2"
+                      onClick={() => setAsignando(true)}
+                    >
+                      <CIcon icon={item.legajoTecnico ? cilActionUndo : cilUserFollow} />
+                      {item.legajoTecnico ? 'Registrar la devolución' : 'Asignar a un técnico'}
+                    </CDropdownItem>
+                  )}
+                  {/* Sólo una disponible: si la tiene un técnico, primero se devuelve. */}
+                  {item.estado === 'Disponible' && (
+                    <>
+                      <CDropdownDivider className="my-1" />
+                      <CDropdownItem
+                        as="button"
+                        className="d-flex align-items-center gap-2 py-2 text-danger"
+                        onClick={() => setCambioEstado('fuera')}
+                      >
+                        <CIcon icon={cilTrash} />
+                        Dar de baja
+                      </CDropdownItem>
+                    </>
+                  )}
+                </CDropdownMenu>
+              </CDropdown>
             </>
           )
         }
@@ -324,24 +345,6 @@ export default function PantallaFichaItem({ params }) {
           <CIcon icon={cilArrowLeft} className="me-2" />
           Volver al listado
         </BotonEnlace>
-
-        {/*
-          Ponerla fuera de servicio es la accion delicada de la ficha: va abajo,
-          contra el borde derecho y sin borde, lejos de las de todos los dias.
-          Solo una disponible: si la tiene un tecnico, primero se devuelve.
-        */}
-        {item?.estado === 'Disponible' && (
-          <CButton
-            color="danger"
-            variant="ghost"
-            size="sm"
-            className="ms-auto"
-            onClick={() => setCambioEstado('fuera')}
-          >
-            <CIcon icon={cilBan} size="sm" className="me-1" />
-            Poner fuera de servicio
-          </CButton>
-        )}
       </div>
 
       <CModal
@@ -351,7 +354,7 @@ export default function PantallaFichaItem({ params }) {
       >
         <CModalHeader>
           <CModalTitle>
-            {cambioEstado === 'fuera' ? 'Poner fuera de servicio' : 'Poner en servicio'}
+            {cambioEstado === 'fuera' ? 'Dar de baja' : 'Poner en servicio'}
           </CModalTitle>
         </CModalHeader>
         <CModalBody>
@@ -369,7 +372,7 @@ export default function PantallaFichaItem({ params }) {
         </CModalBody>
         <CModalFooter>
           <BotonesAccion
-            texto={cambioEstado === 'fuera' ? 'Poner fuera de servicio' : 'Poner en servicio'}
+            texto={cambioEstado === 'fuera' ? 'Dar de baja' : 'Poner en servicio'}
             textoProcesando="Guardando..."
             color={cambioEstado === 'fuera' ? 'danger' : 'primary'}
             procesando={cambiandoEstado}

@@ -4,10 +4,10 @@
  * /tareas - Tareas asignadas: las del técnico de la sesión (HU-21).
  *
  * - El técnico ve sólo las suyas: la API las busca por el legajo de la sesión.
- * - Orden (25/10/2026): primero lo que tiene entre manos. En ejecución, después
- *   Asignada y después el resto; dentro de cada estado, la prioridad más alta y
- *   la fecha prevista más cercana primero. El estado va como segunda columna,
- *   con la misma etiqueta que el estado de la OT.
+ * - Orden: primero lo que tiene entre manos. En ejecución, después Asignada y
+ *   después el resto (25/10/2026); dentro de cada estado, la última que le
+ *   asignaron primero (19/11/2026). El estado va como segunda columna, con la
+ *   misma etiqueta que el estado de la OT.
  * - El filtro de estado ofrece los estados de la tarea (25/10/2026). Arranca en
  *   "Todas": por el orden, las finalizadas y canceladas quedan al final.
  * - Las pendientes también aparecen en la campana de notificaciones de arriba
@@ -19,6 +19,7 @@ import { CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilDescription } from '@coreui/icons';
 
+import ReferenciaEtapas from '@/componentes/estados/ReferenciaEtapas.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
@@ -27,10 +28,10 @@ import EtiquetaPrioridad from '@/componentes/ordenes/EtiquetaPrioridad.js';
 import EtiquetaEstadoOT from '@/componentes/ordenes/EtiquetaEstadoOT.js';
 import { listarMisTareas, listarPrioridadesDeTarea } from '@/servicios/tareas.js';
 import { soloFechaLegible } from '@/utils/fechas.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 /** El orden de la lista: lo que el técnico está haciendo, después lo que le asignaron. */
 const ORDEN_ESTADO = ['En ejecución', 'Asignada', 'Pendiente', 'Creada', 'Finalizada', 'Cancelada'];
-const ORDEN_PRIORIDAD = ['Alta', 'Media', 'Baja'];
 
 /** Los que ofrece el filtro: Creada y Pendiente existen en la base, pero el técnico no las tiene. */
 const ESTADOS_DEL_FILTRO = ['En ejecución', 'Asignada', 'Finalizada', 'Cancelada'];
@@ -44,11 +45,10 @@ function posicion(lista, valor) {
 function compararTareas(una, otra) {
   return (
     posicion(ORDEN_ESTADO, una.estado) - posicion(ORDEN_ESTADO, otra.estado) ||
-    posicion(ORDEN_PRIORIDAD, una.prioridad) - posicion(ORDEN_PRIORIDAD, otra.prioridad) ||
-    // Sin fecha prevista va después de las que tienen. El texto "2026-10-02" se compara como fecha.
-    (una.fechaPrevista ?? '9999').localeCompare(otra.fechaPrevista ?? '9999') ||
-    una.idOt - otra.idOt ||
-    una.idTarea - otra.idTarea
+    // Fechas ISO en UTC: comparar el texto es comparar la fecha. Sin fecha, al final.
+    (otra.fechaAsignacion ?? '').localeCompare(una.fechaAsignacion ?? '') ||
+    otra.idOt - una.idOt ||
+    otra.idTarea - una.idTarea
   );
 }
 
@@ -61,10 +61,10 @@ export default function PantallaMisTareas() {
   const [tareas, setTareas] = useState([]);
   const [prioridades, setPrioridades] = useState([]);
 
-  const [filtroEstado, setFiltroEstado] = useState('');
-  const [filtroPrioridad, setFiltroPrioridad] = useState('');
-  const [filtroDesde, setFiltroDesde] = useState('');
-  const [filtroHasta, setFiltroHasta] = useState('');
+  const [filtroEstado, setFiltroEstado] = useFiltroPersistente('estado', '');
+  const [filtroPrioridad, setFiltroPrioridad] = useFiltroPersistente('prioridad', '');
+  const [filtroDesde, setFiltroDesde] = useFiltroPersistente('desde', '');
+  const [filtroHasta, setFiltroHasta] = useFiltroPersistente('hasta', '');
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
@@ -130,7 +130,18 @@ export default function PantallaMisTareas() {
     {
       clave: 'descripcion',
       encabezado: 'Tarea',
-      render: (tarea) => <span className="fw-semibold">{tarea.descripcion}</span>,
+      // La descripcion es solo texto: a la tarea se entra con el boton de la columna Accion.
+      // Debajo de 992px el activo y la ubicacion van aca, porque sus columnas se ocultan.
+      render: (tarea) => (
+        <>
+          <span className="fw-semibold">{tarea.descripcion}</span>
+          {(tarea.activo || tarea.ubicacion) && (
+            <div className="d-lg-none text-body-secondary small">
+              {[tarea.activo?.codigo, tarea.ubicacion?.edificio, tarea.ubicacion?.espacio].filter(Boolean).join(' · ')}
+            </div>
+          )}
+        </>
+      ),
     },
     {
       clave: 'fechaPrevista',
@@ -145,6 +156,7 @@ export default function PantallaMisTareas() {
     {
       clave: 'activo',
       encabezado: 'Activo',
+      ocultarDebajoDe: 'lg',
       render: (tarea) =>
         tarea.activo ? (
           <>
@@ -160,6 +172,7 @@ export default function PantallaMisTareas() {
     {
       clave: 'ubicacion',
       encabezado: 'Ubicación',
+      ocultarDebajoDe: 'lg',
       render: (tarea) =>
         tarea.ubicacion ? (
           <span className="text-body-secondary">
@@ -172,6 +185,7 @@ export default function PantallaMisTareas() {
     {
       clave: 'ot',
       encabezado: 'OT',
+      ocultarDebajoDe: 'md',
       render: (tarea) => <span className="text-body-secondary text-nowrap">#{tarea.idOt}</span>,
     },
     {
@@ -201,6 +215,7 @@ export default function PantallaMisTareas() {
       <CCard>
         <CCardBody>
           <TablaDatos
+            antesDeLaTabla={<ReferenciaEtapas de="tarea" className="mt-0 mb-3" estados={tareas.map((tarea) => tarea.estado)} />}
             filas={tareas}
             claveFila={(tarea) => `${tarea.idOt}-${tarea.idTarea}`}
             columnas={columnas}

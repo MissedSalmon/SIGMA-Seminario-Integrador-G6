@@ -74,6 +74,16 @@ export async function perfil(req, res, next) {
   }
 }
 
+/** PUT /api/auth/perfil: la persona corrige sus datos. El legajo sale de la sesion. */
+export async function actualizarPerfil(req, res, next) {
+  try {
+    const perfil = await authServicio.actualizarPerfil(req.usuario.identificador, req.usuario.rol, req.body ?? {});
+    res.json({ ok: true, datos: perfil });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function cambiarPassword(req, res, next) {
   try {
     const { passwordActual, passwordNueva } = req.body ?? {};

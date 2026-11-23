@@ -18,6 +18,12 @@ export async function registrarTicket(ticket) {
  * @param {string} [filtros.codigoActivo]
  * @param {number|string} [filtros.idArea]
  */
+/** Los activos de las áreas del autorizado de la sesión: son los únicos que puede reportar. */
+export async function listarActivosReportables() {
+  const { data } = await api.get('/tickets/activos');
+  return data.datos;
+}
+
 export async function listarTickets(filtros = {}) {
   const { estado, desde, hasta, codigoActivo, idArea } = filtros;
 

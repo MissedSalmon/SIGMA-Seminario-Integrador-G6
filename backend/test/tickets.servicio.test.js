@@ -38,7 +38,7 @@ function filaTicket(cambios = {}) {
         espacio_id: 2,
         espacio_num: '1',
         edificio: { edificio_nom: 'Edificio central' },
-        area: [{ area_id: 4, area_nom: 'Secretaria' }],
+        area: { area_id: 4, area_nom: 'Secretaria' },
       },
     },
     autorizado: { autorizado_legajo: '1234', autorizado_nom_ape: 'Martin Guimenez' },
@@ -62,6 +62,8 @@ function consultaQueDevuelve(data) {
     order: jest.fn(() => cadena),
     eq: jest.fn(() => cadena),
     in: jest.fn(() => cadena),
+    not: jest.fn(() => cadena),
+    neq: jest.fn(() => cadena),
     gte: jest.fn(() => cadena),
     lte: jest.fn(() => cadena),
     insert: jest.fn(() => cadena),
@@ -201,7 +203,7 @@ describe('obtenerPorId', () => {
             activo_codigo: 'AC-001',
             activo_estado: 1, // Operativo
             tipo_activo: { tipo_activo_nom: 'Aires' },
-            espacio: { espacio_id: 3, espacio_num: '11', edificio: { edificio_nom: 'Central' }, area: [] },
+            espacio: { espacio_id: 3, espacio_num: '11', edificio: { edificio_nom: 'Central' }, area: null },
           },
         })
       )
@@ -222,9 +224,20 @@ describe('obtenerPorId', () => {
   });
 });
 
+/** Las consultas del alta: los espacios del área del autorizado, sus activos y el ticket nuevo. */
+function consultasDelAlta(ticketNuevo) {
+  const consultas = {
+    espacio: consultaQueDevuelve([{ espacio_id: 3 }, { espacio_id: 8 }]),
+    activo: consultaQueDevuelve([{ activo_codigo: 'AC-001', activo_estado: 1, tipo_activo: null }]),
+    ticket: consultaQueDevuelve(ticketNuevo),
+  };
+  supabase.from.mockImplementation((tabla) => consultas[tabla]);
+  return consultas;
+}
+
 describe('crear', () => {
   test('guarda el ticket nuevo en estado "Creado"', async () => {
-    const consulta = consultaQueDevuelve({
+    const { ticket: consulta } = consultasDelAlta({
       ticket_id: 9,
       activo_codigo: 'AC-001',
       ticket_desc: 'Hace ruido',
@@ -232,11 +245,40 @@ describe('crear', () => {
       ticket_evidencia: null,
       ticket_fecha_alta: '2026-09-13T16:00:00+00:00',
     });
-    supabase.from.mockReturnValue(consulta);
 
-    const nuevo = await crear({ codigoActivo: 'AC-001', descripcion: 'Hace ruido' });
+    const nuevo = await crear(
+      { codigoActivo: 'AC-001', descripcion: 'Hace ruido' },
+      { rol: 'autorizado', identificador: '1234' }
+    );
 
-    expect(consulta.insert).toHaveBeenCalledWith(expect.objectContaining({ ticket_estado: 1 }));
+    expect(consulta.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ ticket_estado: 1, autorizado_legajo: '1234' })
+    );
     expect(nuevo.estado).toBe('Creado');
+  });
+
+  test('busca los activos en todos los espacios del área del autorizado', async () => {
+    const { espacio, activo } = consultasDelAlta({ ticket_id: 9, ticket_estado: 1 });
+
+    await crear({ codigoActivo: 'AC-001', descripcion: 'Hace ruido' }, { rol: 'autorizado', identificador: '1234' });
+
+    expect(espacio.eq).toHaveBeenCalledWith('area.autorizado_legajo', '1234');
+    expect(activo.in).toHaveBeenCalledWith('espacio_id', [3, 8]);
+  });
+
+  test('el administrador no puede registrar tickets', async () => {
+    await expect(
+      crear({ codigoActivo: 'AC-001', descripcion: 'Hace ruido' }, { rol: 'administrador', identificador: '1' })
+    ).rejects.toMatchObject({ estado: 403 });
+    expect(supabase.from).not.toHaveBeenCalledWith('ticket');
+  });
+
+  test('no deja reportar un activo que no está en el área del autorizado', async () => {
+    const { ticket } = consultasDelAlta(null);
+
+    await expect(
+      crear({ codigoActivo: 'TV-505', descripcion: 'No prende' }, { rol: 'autorizado', identificador: '1234' })
+    ).rejects.toMatchObject({ estado: 400 });
+    expect(ticket.insert).not.toHaveBeenCalled();
   });
 });

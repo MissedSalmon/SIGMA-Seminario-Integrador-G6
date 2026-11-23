@@ -1,5 +1,22 @@
+/**
+ * Áreas (HU-3). Un área tiene muchos espacios, incluso en varios edificios, y
+ * cada espacio es de un área como máximo (21/11/2026). La relación la guarda
+ * el espacio (espacio.area_id), pero se elige desde el formulario del área.
+ */
 import { supabase } from '../config/supabase.js';
 import { datoInvalido, noEncontrado, conflicto } from '../utiles/errores.js';
+import { nombreDelEspacio } from '../utiles/espacios.js';
+
+const COLUMNAS = `
+  area_id,
+  area_nom,
+  espacio (
+    espacio_id,
+    espacio_num,
+    tipo_espacio ( tipo_espacio_nom ),
+    edificio ( edificio_nom )
+  )
+`;
 
 function limpiar(texto) {
   if (typeof texto !== 'string') return null;
@@ -7,113 +24,135 @@ function limpiar(texto) {
   return limpio === '' ? null : limpio;
 }
 
+function aArea(fila) {
+  const espacios = (fila.espacio ?? [])
+    .map((espacio) => ({
+      idEspacio: espacio.espacio_id,
+      nombre: nombreDelEspacio(espacio),
+      nombreEdificio: espacio.edificio?.edificio_nom ?? '',
+    }))
+    .sort((a, b) => a.nombreEdificio.localeCompare(b.nombreEdificio, 'es') || a.nombre.localeCompare(b.nombre, 'es'));
+
+  return {
+    idArea: fila.area_id,
+    nombre: fila.area_nom,
+    espacios,
+    idsEspacios: espacios.map((espacio) => espacio.idEspacio),
+    nombreEdificio: [...new Set(espacios.map((espacio) => espacio.nombreEdificio).filter(Boolean))].join(' / '),
+  };
+}
+
 export async function obtenerTodos() {
-  const { data, error } = await supabase.from('area').select(`
-    area_id,
-    area_nom,
-    autorizado_legajo,
-    espacio_id,
-    espacio (
-      espacio_num,
-      edificio_id,
-      edificio (
-        edificio_nom
-      )
-    )
-  `).order('area_nom', { ascending: true });
-  
+  const { data, error } = await supabase.from('area').select(COLUMNAS).order('area_nom', { ascending: true });
   if (error) throw new Error(error.message);
-  
-  return data.map(area => ({
-    idArea: area.area_id,
-    nombre: area.area_nom,
-    idEspacio: area.espacio_id,
-    nombreEspacio: area.espacio ? area.espacio.espacio_num : '(espacio eliminado)',
-    nombreEdificio: (area.espacio && area.espacio.edificio) ? area.espacio.edificio.edificio_nom : ''
-  }));
+  return data.map(aArea);
 }
 
 export async function obtenerPorId(idArea) {
-  const { data, error } = await supabase.from('area').select(`
-    area_id,
-    area_nom,
-    espacio_id
-  `).eq('area_id', idArea).single();
-  
-  if (error || !data) throw noEncontrado(`No existe el área ${idArea}.`);
-  
-  return {
-    idArea: data.area_id,
-    nombre: data.area_nom,
-    idEspacio: data.espacio_id
-  };
+  const { data, error } = await supabase.from('area').select(COLUMNAS).eq('area_id', idArea).maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw noEncontrado(`No existe el área ${idArea}.`);
+  return aArea(data);
 }
 
-async function obtenerEdificioDeEspacio(espacio_id) {
-  const { data } = await supabase.from('espacio').select('edificio_id').eq('espacio_id', espacio_id).maybeSingle();
-  if (!data) throw datoInvalido(`No existe el espacio ${espacio_id}.`);
-  return data.edificio_id;
+/** Los espacios elegidos, sin repetir. Puede no haber ninguno: el área se arma y después se le suman. */
+function leerEspacios(datos) {
+  const lista = Array.isArray(datos.idsEspacios) ? datos.idsEspacios : [];
+  const ids = [...new Set(lista.map(Number))];
+  if (ids.some((id) => !Number.isInteger(id) || id <= 0)) {
+    throw datoInvalido('Alguno de los espacios elegidos no es válido.');
+  }
+  return ids;
+}
+
+/** Que existan y que no sean de otra área. */
+async function validarEspacios(ids, idArea = null) {
+  if (ids.length === 0) return;
+
+  const { data, error } = await supabase
+    .from('espacio')
+    .select('espacio_id, espacio_num, area_id, tipo_espacio ( tipo_espacio_nom ), area ( area_nom )')
+    .in('espacio_id', ids);
+  if (error) throw new Error(error.message);
+
+  const encontrados = new Set((data ?? []).map((espacio) => espacio.espacio_id));
+  const faltante = ids.find((id) => !encontrados.has(id));
+  if (faltante) throw datoInvalido(`No existe el espacio ${faltante}.`);
+
+  const deOtra = (data ?? []).find((espacio) => espacio.area_id && espacio.area_id !== idArea);
+  if (deOtra) {
+    throw conflicto(
+      `El espacio "${nombreDelEspacio(deOtra)}" ya es del área "${deOtra.area?.area_nom ?? deOtra.area_id}". Sacalo de esa área primero.`
+    );
+  }
+}
+
+async function validarNombreLibre(nombre, idArea = null) {
+  let consulta = supabase.from('area').select('area_id').ilike('area_nom', nombre);
+  if (idArea) consulta = consulta.neq('area_id', idArea);
+  const { data: existente } = await consulta.maybeSingle();
+  if (existente) throw conflicto(`Ya existe un área con el nombre "${nombre}".`);
+}
+
+/** Deja al área con exactamente esos espacios: suelta los que ya no eligió y se queda con los nuevos. */
+async function asignarEspacios(idArea, ids) {
+  let soltar = supabase.from('espacio').update({ area_id: null }).eq('area_id', idArea);
+  if (ids.length > 0) soltar = soltar.not('espacio_id', 'in', `(${ids.join(',')})`);
+  const { error: errorSoltar } = await soltar;
+  if (errorSoltar) throw new Error(errorSoltar.message);
+
+  if (ids.length === 0) return;
+  const { error } = await supabase.from('espacio').update({ area_id: idArea }).in('espacio_id', ids);
+  if (error) throw new Error(error.message);
 }
 
 export async function crear(datos) {
-  const nombreLimpio = limpiar(datos.nombre);
-  const idEspacio = Number(datos.idEspacio);
-  
-  if (!nombreLimpio) throw datoInvalido('El nombre del área es obligatorio.');
-  if (!idEspacio || isNaN(idEspacio)) throw datoInvalido('El espacio es obligatorio.');
+  const nombre = limpiar(datos.nombre);
+  if (!nombre) throw datoInvalido('El nombre del área es obligatorio.');
+  const ids = leerEspacios(datos);
 
-  const { data: existente } = await supabase.from('area').select('area_id').ilike('area_nom', nombreLimpio).maybeSingle();
-  if (existente) throw conflicto(`Ya existe un área con el nombre "${nombreLimpio}".`);
+  await validarNombreLibre(nombre);
+  await validarEspacios(ids);
 
-  const idEdificio = await obtenerEdificioDeEspacio(idEspacio);
-
-  const { data, error } = await supabase.from('area').insert({
-    area_nom: nombreLimpio,
-    autorizado_legajo: null,
-    espacio_id: idEspacio,
-    edificio_id: idEdificio
-  }).select().single();
-
+  const { data, error } = await supabase
+    .from('area')
+    .insert({ area_nom: nombre, autorizado_legajo: null })
+    .select('area_id')
+    .single();
   if (error) throw new Error(error.message);
 
-  return {
-    idArea: data.area_id,
-    nombre: data.area_nom
-  };
+  await asignarEspacios(data.area_id, ids);
+  return obtenerPorId(data.area_id);
 }
 
 export async function actualizar(idArea, datos) {
-  const nombreLimpio = limpiar(datos.nombre);
-  const idEspacio = Number(datos.idEspacio);
+  const nombre = limpiar(datos.nombre);
+  if (!nombre) throw datoInvalido('El nombre del área es obligatorio.');
+  const ids = leerEspacios(datos);
 
-  if (!nombreLimpio) throw datoInvalido('El nombre del área es obligatorio.');
-  if (!idEspacio || isNaN(idEspacio)) throw datoInvalido('El espacio es obligatorio.');
+  await validarNombreLibre(nombre, idArea);
+  await validarEspacios(ids, idArea);
 
-  const { data: existente } = await supabase.from('area').select('area_id').ilike('area_nom', nombreLimpio).neq('area_id', idArea).maybeSingle();
-  if (existente) throw conflicto(`Ya existe un área con el nombre "${nombreLimpio}".`);
+  const { data, error } = await supabase
+    .from('area')
+    .update({ area_nom: nombre })
+    .eq('area_id', idArea)
+    .select('area_id')
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw noEncontrado(`No existe el área ${idArea}.`);
 
-  const idEdificio = await obtenerEdificioDeEspacio(idEspacio);
-
-  const { data, error } = await supabase.from('area').update({
-    area_nom: nombreLimpio,
-    espacio_id: idEspacio,
-    edificio_id: idEdificio
-  }).eq('area_id', idArea).select().single();
-
-  if (error || !data) throw noEncontrado(`No existe el área ${idArea}.`);
-
-  return {
-    idArea: data.area_id,
-    nombre: data.area_nom
-  };
+  await asignarEspacios(idArea, ids);
+  return obtenerPorId(idArea);
 }
 
+/** Sus espacios quedan sin área (ON DELETE SET NULL en espacio.area_id). */
 export async function eliminar(idArea) {
   const { data, error } = await supabase.from('area').delete().eq('area_id', idArea).select().single();
   if (error || !data) throw noEncontrado(`No existe el área ${idArea}.`);
 
   return {
     idArea: data.area_id,
-    nombre: data.area_nom
+    nombre: data.area_nom,
   };
 }

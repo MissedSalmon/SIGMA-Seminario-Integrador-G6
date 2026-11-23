@@ -54,8 +54,8 @@ function limpiar(texto) {
  * primer nivel.
  */
 function aAutorizado(fila) {
-  const areas = fila.area ?? [];
-  const area = areas[0] ?? null;
+  // Con el UNIQUE de area.autorizado_legajo (21/11/2026) la base lo manda como objeto; antes, como lista.
+  const area = Array.isArray(fila.area) ? fila.area[0] ?? null : fila.area ?? null;
 
   return {
     legajo: fila.autorizado_legajo,

@@ -63,6 +63,24 @@ function aplicarAutoTable(doc, opciones) {
 const numero = (valor) => Number(valor ?? 0).toLocaleString('es-AR', { maximumFractionDigits: 1 });
 const porcentaje = (valor) => `${numero(valor)} %`;
 
+const ABREVIATURAS_UNIDAD = {
+  unidad: 'u.',
+  litro: 'L',
+  kilogramo: 'kg',
+  metro: 'm',
+  'metro cuadrado': 'm²',
+  pulgada: 'pulg.',
+};
+
+function cantidadConUnidad(cantidad, unidadMedida) {
+  const num = numero(cantidad);
+  const unidad = String(unidadMedida ?? '').trim().toLowerCase();
+  if (!unidad) return num;
+  if (unidad === 'par') return `${num} ${Number(cantidad) === 1 ? 'par' : 'pares'}`;
+  const abrev = ABREVIATURAS_UNIDAD[unidad] ?? unidadMedida;
+  return `${num} ${abrev}`;
+}
+
 /** "2026-11-09" -> "09/11/2026". */
 function fechaCorta(iso) {
   if (!iso) return null;
@@ -461,30 +479,85 @@ export function generarDocumentoPdf(payloadPanel) {
   });
 
   const rawAreas = datos.areasIncidencia;
+  const tiposConFallas = Array.isArray(rawAreas?.porTipoActivo) ? rawAreas.porTipoActivo : [];
+  const activosConFallas = Array.isArray(rawAreas?.porActivo) ? rawAreas.porActivo : [];
   const areas = Array.isArray(rawAreas) ? rawAreas : (rawAreas?.ranking ?? []);
-  bloque({
-    titulo: 'Áreas con más incidencias',
-    detalle: 'Fallas registradas en el período, según el área del activo. Si dos áreas comparten un espacio, la falla cuenta para las dos.',
-    columnas: [
-      { titulo: 'Área', ancho: 50 },
-      { titulo: 'Edificio', ancho: 32 },
-      { titulo: '', barra: true },
-      { titulo: 'Fallas', ancho: 15, alinear: 'right' },
-      { titulo: 'Tickets', ancho: 15, alinear: 'right' },
-      { titulo: '%', ancho: 17, alinear: 'right' },
-    ],
-    filas: areas.map((a) => ({
-      valorBarra: a.cantidadFallas ?? a.fallas,
-      celdas: [
-        a.nombreArea ?? a.nombre ?? 'Sin área',
-        a.nombreEdificio || '-',
-        '',
-        numero(a.cantidadFallas ?? a.fallas),
-        numero(a.cantidadTickets ?? a.tickets),
-        porcentaje(a.porcentaje),
+
+  if (tiposConFallas.length > 0 || activosConFallas.length > 0 || areas.length === 0) {
+    bloque({
+      titulo: 'Tipos de activos con más fallas',
+      detalle: 'Fallas registradas por los técnicos en las tareas del período, agrupadas por categoría de activo.',
+      columnas: [
+        { titulo: 'Tipo de activo', ancho: 64 },
+        { titulo: '', barra: true },
+        { titulo: 'Activos', ancho: 18, alinear: 'right' },
+        { titulo: 'Tickets', ancho: 18, alinear: 'right' },
+        { titulo: 'Fallas', ancho: 18, alinear: 'right' },
+        { titulo: '%', ancho: 18, alinear: 'right' },
       ],
-    })),
-  });
+      filas: tiposConFallas.map((t) => ({
+        valorBarra: t.cantidadFallas,
+        celdas: [
+          t.nombreTipoActivo ?? 'Sin tipo',
+          '',
+          numero(t.cantidadActivos),
+          numero(t.cantidadTickets),
+          numero(t.cantidadFallas),
+          porcentaje(t.porcentaje),
+        ],
+      })),
+    });
+
+    if (activosConFallas.length > 0) {
+      bloque({
+        titulo: 'Activos con más fallas',
+        detalle: 'Equipos específicos con fallas diagnosticadas en las tareas del período.',
+        columnas: [
+          { titulo: 'Activo', ancho: 46 },
+          { titulo: 'Área / Ubicación', ancho: 44 },
+          { titulo: '', barra: true },
+          { titulo: 'Tickets', ancho: 16, alinear: 'right' },
+          { titulo: 'Fallas', ancho: 16, alinear: 'right' },
+          { titulo: '%', ancho: 17, alinear: 'right' },
+        ],
+        filas: activosConFallas.map((a) => ({
+          valorBarra: a.cantidadFallas,
+          celdas: [
+            a.etiqueta ?? a.codigoActivo ?? '-',
+            [a.nombreArea, a.nombreEdificio, a.nombreEspacio].filter(Boolean).join(' · ') || '-',
+            '',
+            numero(a.cantidadTickets),
+            numero(a.cantidadFallas),
+            porcentaje(a.porcentaje),
+          ],
+        })),
+      });
+    }
+  } else {
+    bloque({
+      titulo: 'Áreas con más incidencias',
+      detalle: 'Fallas registradas en el período, según el área del activo.',
+      columnas: [
+        { titulo: 'Área', ancho: 50 },
+        { titulo: 'Edificio', ancho: 32 },
+        { titulo: '', barra: true },
+        { titulo: 'Fallas', ancho: 15, alinear: 'right' },
+        { titulo: 'Tickets', ancho: 15, alinear: 'right' },
+        { titulo: '%', ancho: 17, alinear: 'right' },
+      ],
+      filas: areas.map((a) => ({
+        valorBarra: a.cantidadFallas ?? a.fallas,
+        celdas: [
+          a.nombreArea ?? a.nombre ?? 'Sin área',
+          a.nombreEdificio || '-',
+          '',
+          numero(a.cantidadFallas ?? a.fallas),
+          numero(a.cantidadTickets ?? a.tickets),
+          porcentaje(a.porcentaje),
+        ],
+      })),
+    });
+  }
 
   const tiempos = datos.tiemposResolucion ?? {};
   const promedioGeneral = tiempos.general?.promedioSegundos;
@@ -619,7 +692,13 @@ export function generarDocumentoPdf(payloadPanel) {
       { titulo: 'Faltante', ancho: 22, alinear: 'right' },
     ],
     filas: (materiales.items ?? []).map((m) => ({
-      celdas: [m.codigo, m.nombre, numero(m.stockActual), numero(m.stockMinimo), numero(m.faltante)],
+      celdas: [
+        m.codigo,
+        m.nombre,
+        cantidadConUnidad(m.stockActual, m.unidadMedida),
+        cantidadConUnidad(m.stockMinimo, m.unidadMedida),
+        cantidadConUnidad(m.faltante, m.unidadMedida),
+      ],
     })),
     vacio: 'Ningún material está por debajo de su stock mínimo.',
   });
@@ -643,7 +722,7 @@ export function generarDocumentoPdf(payloadPanel) {
       doc.setFontSize(7);
       const anchoMarca = doc.getTextWidth('SIGMA');
       escribir('SIGMA', M, 13, { tam: 7, estilo: 'bold', color: COLOR.azul });
-      escribir('Informe del Panel de Control', M + anchoMarca + 3, 13, { tam: 7, color: COLOR.gris });
+      escribir('Informe del panel de control', M + anchoMarca + 3, 13, { tam: 7, color: COLOR.gris });
       escribir(periodo, M + ANCHO_UTIL, 13, { tam: 7, color: COLOR.gris, align: 'right' });
       linea(M, 16, M + ANCHO_UTIL, 16);
     }

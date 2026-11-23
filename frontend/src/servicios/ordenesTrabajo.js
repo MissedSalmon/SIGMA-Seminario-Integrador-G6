@@ -104,7 +104,26 @@ export async function registrarFalla(idOrden, idTarea, falla) {
   return data.datos;
 }
 
+/** Una tarea de la OT con lo que se hizo en ella: falla, materiales, herramientas y observaciones. */
+export async function obtenerTareaDeOrden(idOrden, idTarea) {
+  const { data } = await api.get(`/ordenes-trabajo/${idOrden}/tareas/${idTarea}`);
+  return data.datos;
+}
+
 export async function eliminarTarea(idOrden, idTarea) {
   const { data } = await api.delete(`/ordenes-trabajo/${idOrden}/tareas/${idTarea}`);
   return data.datos;
+}
+
+/* Las tareas de un prestador externo: las inicia y las finaliza el administrador. */
+
+export async function iniciarTareaDePrestador(idOrden, idTarea) {
+  const { data } = await api.post(`/ordenes-trabajo/${idOrden}/tareas/${idTarea}/iniciar`);
+  return data.datos;
+}
+
+/** Devuelve la OT y si con esta tarea se finalizó. */
+export async function finalizarTareaDePrestador(idOrden, idTarea, estadoActivo) {
+  const { data } = await api.post(`/ordenes-trabajo/${idOrden}/tareas/${idTarea}/finalizar`, { estadoActivo });
+  return { orden: data.datos, ordenFinalizada: data.ordenFinalizada };
 }

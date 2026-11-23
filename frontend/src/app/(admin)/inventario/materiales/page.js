@@ -22,6 +22,7 @@ import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { eliminarItem, listarItems } from '@/servicios/inventario.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 /* El filtro de stock: separa los que hay que reponer de los demas. */
 const BAJO_MINIMO = 'Por debajo del mínimo';
@@ -30,8 +31,8 @@ const SUFICIENTE = 'Suficiente';
 export default function PantallaMateriales() {
   const { mostrarToast } = useToast();
   const [materiales, setMateriales] = useState([]);
-  const [categoria, setCategoria] = useState('');
-  const [filtroStock, setFiltroStock] = useState('');
+  const [categoria, setCategoria] = useFiltroPersistente('categoria', '');
+  const [filtroStock, setFiltroStock] = useFiltroPersistente('stock', '');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [aEliminar, setAEliminar] = useState(null);
@@ -80,12 +81,21 @@ export default function PantallaMateriales() {
       encabezado: 'Categoría',
       render: (fila) => <span className="text-body-secondary">{fila.nombreTipo || '-'}</span>,
     },
-    { clave: 'stockMinimo', encabezado: 'Stock mínimo', render: (fila) => fila.stockMinimo },
+    {
+      clave: 'stockMinimo',
+      encabezado: 'Stock mínimo',
+      render: (fila) => fila.stockMinimo,
+    },
     {
       clave: 'stockActual',
       encabezado: 'Stock actual',
       render: (fila) =>
         fila.bajoMinimo ? <span className="sigma-stock-bajo">{fila.stockActual}</span> : fila.stockActual,
+    },
+    {
+      clave: 'unidadMedida',
+      encabezado: 'Unidad de medida',
+      render: (fila) => fila.unidadMedida,
     },
     {
       clave: 'acciones',
@@ -97,7 +107,7 @@ export default function PantallaMateriales() {
             href={`/inventario/materiales/${encodeURIComponent(fila.codigo)}`}
             variante="ghost"
             className="btn-icono"
-            title="Ver la ficha y el historial de movimientos"
+            title={`Ver detalle de ${fila.nombre}`}
           >
             <CIcon icon={cilDescription} />
           </BotonEnlace>
@@ -105,7 +115,7 @@ export default function PantallaMateriales() {
             href={`/inventario/materiales/${encodeURIComponent(fila.codigo)}/editar`}
             variante="ghost"
             className="btn-icono"
-            title="Editar"
+            title={`Editar ${fila.nombre}`}
           >
             <CIcon icon={cilPencil} />
           </BotonEnlace>
@@ -114,7 +124,7 @@ export default function PantallaMateriales() {
             color="danger"
             className="btn-icono"
             onClick={() => setAEliminar(fila)}
-            title="Eliminar"
+            title={`Eliminar ${fila.nombre}`}
           >
             <CIcon icon={cilTrash} />
           </CButton>
@@ -162,7 +172,7 @@ export default function PantallaMateriales() {
               setFiltroStock('');
             }}
             cargando={cargando}
-            textoVacio="Todavia no hay materiales cargados."
+            textoVacio="Todavía no hay materiales cargados."
           />
 
           {materiales.some((fila) => fila.bajoMinimo) && (

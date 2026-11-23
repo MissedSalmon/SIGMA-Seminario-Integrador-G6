@@ -29,7 +29,7 @@
  *     />
  *   </CModalFooter>
  */
-import { CButton } from '@coreui/react';
+import { CButton, CSpinner } from '@coreui/react';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 
 export default function BotonesAccion({
@@ -55,7 +55,15 @@ export default function BotonesAccion({
         onClick={alAceptar}
         disabled={procesando || deshabilitado}
       >
-        {procesando ? textoProcesando : texto}
+        {procesando ? (
+          <>
+            {/* Se nota que esta trabajando, no sólo que cambió el texto. */}
+            <CSpinner size="sm" className="me-2" aria-hidden="true" />
+            {textoProcesando}
+          </>
+        ) : (
+          texto
+        )}
       </CButton>
 
       {hrefCancelar ? (

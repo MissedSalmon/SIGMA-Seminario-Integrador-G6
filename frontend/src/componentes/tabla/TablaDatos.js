@@ -18,7 +18,7 @@
  *     placeholderBusqueda="Buscar edificio..."
  *     filtros={[ ... ver abajo ... ]}
  *     cargando={cargando}
- *     textoVacio="Todavia no hay edificios cargados."
+ *     textoVacio="Todavía no hay edificios cargados."
  *   />
  *
  * `claseFila` (opcional): funcion que devuelve una clase CSS para resaltar una fila.
@@ -69,9 +69,10 @@ import { CButton, CButtonGroup, CFormInput, CTable, CTableBody, CTableDataCell, 
 import CIcon from '@coreui/icons-react';
 import { cilChevronLeft, cilChevronRight, cilSearch, cilX } from '@coreui/icons';
 
-import { EsqueletoFilas, SinDatos } from '@/componentes/EstadoTabla.js';
+import { EsqueletoFilas, SinDatos, SinResultados } from '@/componentes/EstadoTabla.js';
 import CampoFecha from '@/componentes/formulario/CampoFecha.js';
 import CampoLista from '@/componentes/formulario/CampoLista.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 const TAMANO_PAGINA = 10;
 
@@ -91,17 +92,19 @@ export default function TablaDatos({
   filtros = [],
   alLimpiar,
   cargando = false,
-  textoVacio = 'Todavia no hay datos cargados.',
+  textoVacio = 'Todavía no hay datos cargados.',
   /** Lo que va entre los filtros y la tabla (por ejemplo, gráficos que dependen de los mismos filtros). */
   antesDeLaTabla = null,
 }) {
-  const [busqueda, setBusqueda] = useState('');
+  const [busqueda, setBusqueda] = useFiltroPersistente('busqueda', '');
   const [paginaPedida, setPaginaPedida] = useState(1);
 
   // Para que cada desplegable tenga su propio id, aunque haya dos tablas.
   const idFiltros = useId();
 
-  const hayFiltrosAplicados = filtros.some((filtro) => filtro.valor !== '' && filtro.valor != null);
+  const hayBusquedaAplicada = busqueda.trim() !== '';
+  const hayFiltrosDesplegables = filtros.some((filtro) => filtro.valor !== '' && filtro.valor != null);
+  const hayFiltrosAplicados = hayFiltrosDesplegables || hayBusquedaAplicada;
 
   const filasFiltradas = useMemo(() => {
     const texto = busqueda.trim().toLowerCase();
@@ -180,13 +183,14 @@ export default function TablaDatos({
                 )
               )}
 
-              {alLimpiar && hayFiltrosAplicados && (
+              {(alLimpiar || hayBusquedaAplicada) && hayFiltrosAplicados && (
                 <CButton
                   color="secondary"
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    alLimpiar();
+                    alLimpiar?.();
+                    setBusqueda('');
                     setPaginaPedida(1);
                   }}
                   title="Quitar todos los filtros"
@@ -197,19 +201,64 @@ export default function TablaDatos({
               )}
             </>
           )}
+
+          {filtros.length === 0 && hayBusquedaAplicada && (
+            <CButton
+              color="secondary"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setBusqueda('');
+                setPaginaPedida(1);
+              }}
+              title="Limpiar búsqueda"
+            >
+              <CIcon icon={cilX} size="sm" className="me-1" />
+              Limpiar
+            </CButton>
+          )}
         </div>
 
-        <span className="sigma-tabla-conteo">
-          {filasFiltradas.length} {filasFiltradas.length === 1 ? 'resultado' : 'resultados'}
+        {/*
+          Mientras carga no hay cantidad que mostrar: "0 resultados" engañaría.
+          Con algo escrito en el buscador se dice cuantos quedan de cuantos
+          ("3 de 33"), asi se sabe que la lista esta recortada.
+        */}
+        <span className="sigma-tabla-conteo" aria-live="polite">
+          {cargando
+            ? 'Cargando…'
+            : busqueda.trim() && filasFiltradas.length !== filas.length
+              ? `${filasFiltradas.length} de ${filas.length}`
+              : `${filasFiltradas.length} ${filasFiltradas.length === 1 ? 'resultado' : 'resultados'}`}
         </span>
       </div>
 
       {antesDeLaTabla}
 
-      {!cargando && filas.length === 0 ? (
+      {/*
+        Sin registros y sin filtros: todavia no se cargo nada (talonario en
+        blanco). Con filtros o busqueda y sin resultados: se dice que se busco
+        y se ofrece la salida, en lugar de decir que no hay datos cargados.
+      */}
+      {!cargando && filas.length === 0 && !hayFiltrosDesplegables ? (
         <SinDatos texto={textoVacio} />
       ) : !cargando && filasFiltradas.length === 0 ? (
-        <SinDatos texto="No se encontró ningún resultado para la búsqueda." />
+        <SinResultados
+          busqueda={busqueda.trim()}
+          alBorrarBusqueda={() => {
+            setBusqueda('');
+            setPaginaPedida(1);
+          }}
+          alQuitarFiltros={
+            alLimpiar && hayFiltrosDesplegables
+              ? () => {
+                  alLimpiar();
+                  setBusqueda('');
+                  setPaginaPedida(1);
+                }
+              : undefined
+          }
+        />
       ) : (
         <>
           <CTable hover responsive align="middle" className="mb-0">
@@ -243,7 +292,7 @@ export default function TablaDatos({
           {totalPaginas > 1 && (
             <div className="sigma-tabla-paginacion">
               <span className="sigma-tabla-conteo">
-                Pagina {pagina} de {totalPaginas}
+                Página {pagina} de {totalPaginas}
               </span>
               <CButtonGroup size="sm">
                 <CButton
@@ -252,8 +301,8 @@ export default function TablaDatos({
                   className="btn-icono"
                   disabled={pagina === 1}
                   onClick={() => setPaginaPedida(pagina - 1)}
-                  title="Pagina anterior"
-                  aria-label="Pagina anterior"
+                  title="Página anterior"
+                  aria-label="Página anterior"
                 >
                   <CIcon icon={cilChevronLeft} />
                 </CButton>
@@ -263,8 +312,8 @@ export default function TablaDatos({
                   className="btn-icono"
                   disabled={pagina === totalPaginas}
                   onClick={() => setPaginaPedida(pagina + 1)}
-                  title="Pagina siguiente"
-                  aria-label="Pagina siguiente"
+                  title="Página siguiente"
+                  aria-label="Página siguiente"
                 >
                   <CIcon icon={cilChevronRight} />
                 </CButton>

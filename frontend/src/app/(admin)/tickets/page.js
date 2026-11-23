@@ -18,17 +18,25 @@ import { CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilDescription } from '@coreui/icons';
 
+import ReferenciaEtapas from '@/componentes/estados/ReferenciaEtapas.js';
+import Talon from '@/componentes/Talon.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
+import { useSesion } from '@/componentes/layout/ContextoSesion.js';
 import EtiquetaEstadoTicket from '@/componentes/tickets/EtiquetaEstadoTicket.js';
 import { listarActivos } from '@/servicios/activos.js';
 import { listarAreas } from '@/servicios/areas.js';
 import { listarTickets, listarEstadosDeTicket } from '@/servicios/tickets.js';
 import { formatearFechaHora, inicioDelDia, finDelDia } from '@/utils/fechas.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 export default function PantallaTickets() {
+  // El ticket lo registra el autorizado, que es quien reporta el problema (19/11/2026).
+  const { usuario } = useSesion();
+  const accionAgregar = usuario?.rol === 'autorizado' ? { direccion: '/tickets/agregar' } : undefined;
+
   const [tickets, setTickets] = useState([]);
 
   // Lo que hay para elegir en los desplegables. Se carga una sola vez.
@@ -36,11 +44,11 @@ export default function PantallaTickets() {
   const [activos, setActivos] = useState([]);
   const [areas, setAreas] = useState([]);
 
-  const [filtroEstado, setFiltroEstado] = useState('');
-  const [filtroDesde, setFiltroDesde] = useState('');
-  const [filtroHasta, setFiltroHasta] = useState('');
-  const [filtroActivo, setFiltroActivo] = useState('');
-  const [filtroArea, setFiltroArea] = useState('');
+  const [filtroEstado, setFiltroEstado] = useFiltroPersistente('estado', '');
+  const [filtroDesde, setFiltroDesde] = useFiltroPersistente('desde', '');
+  const [filtroHasta, setFiltroHasta] = useFiltroPersistente('hasta', '');
+  const [filtroActivo, setFiltroActivo] = useFiltroPersistente('activo', '');
+  const [filtroArea, setFiltroArea] = useFiltroPersistente('area', '');
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
@@ -101,7 +109,7 @@ export default function PantallaTickets() {
     {
       clave: 'id',
       encabezado: '#',
-      render: (ticket) => <span className="fw-semibold">{ticket.id}</span>,
+      render: (ticket) => <Talon numero={ticket.id} />,
     },
     {
       clave: 'estado',
@@ -111,6 +119,7 @@ export default function PantallaTickets() {
     {
       clave: 'fechaAlta',
       encabezado: 'Fecha de alta',
+      ocultarDebajoDe: 'md',
       render: (ticket) => <span className="text-body-secondary">{formatearFechaHora(ticket.fechaAlta)}</span>,
     },
     {
@@ -122,12 +131,15 @@ export default function PantallaTickets() {
           {ticket.activo?.nombreTipo && (
             <span className="text-body-secondary"> — {ticket.activo.nombreTipo}</span>
           )}
+          {/* En el celular la columna de la fecha no se ve: va acá abajo. */}
+          <div className="d-md-none small text-body-secondary">{formatearFechaHora(ticket.fechaAlta)}</div>
         </>
       ),
     },
     {
       clave: 'area',
       encabezado: 'Área',
+      ocultarDebajoDe: 'lg',
       render: (ticket) =>
         ticket.nombreArea ? (
           <span className="text-body-secondary">{ticket.nombreArea}</span>
@@ -138,6 +150,7 @@ export default function PantallaTickets() {
     {
       clave: 'registradoPor',
       encabezado: 'Registrado por',
+      ocultarDebajoDe: 'lg',
       render: (ticket) => (
         <span className="text-body-secondary">
           {ticket.registradoPor?.nombre || ticket.registradoPor?.legajo || '-'}
@@ -166,7 +179,7 @@ export default function PantallaTickets() {
       <EncabezadoPagina
         titulo="Tickets"
         descripcion="Las solicitudes de mantenimiento, de la más reciente a la más antigua."
-        accion={{ direccion: '/tickets/agregar' }}
+        accion={accionAgregar}
       />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
@@ -174,6 +187,7 @@ export default function PantallaTickets() {
       <CCard>
         <CCardBody>
           <TablaDatos
+            antesDeLaTabla={<ReferenciaEtapas className="mt-0 mb-3" de="ticket" estados={tickets.map((ticket) => ticket.estado)} />}
             filas={tickets}
             claveFila={(ticket) => ticket.id}
             columnas={columnas}
@@ -226,7 +240,7 @@ export default function PantallaTickets() {
                 : 'Todavía no hay tickets registrados.'
             }
             accionVacio={
-              hayFiltros ? undefined : { direccion: '/tickets/agregar' }
+              hayFiltros ? undefined : accionAgregar
             }
           />
         </CCardBody>

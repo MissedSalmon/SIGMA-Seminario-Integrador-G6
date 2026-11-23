@@ -9,6 +9,7 @@ import {
   ENUM_ESTADO_TICKET,
   ENUM_PRIORIDAD,
 } from '../utiles/enumerados.js';
+import { nombreDelEspacio } from '../utiles/espacios.js';
 
 /**
  * Ordenes de trabajo (HU-14: crear la OT a partir de un ticket).
@@ -186,6 +187,7 @@ const COLUMNAS = `
     tipo_activo ( tipo_activo_nom ),
     espacio (
       espacio_num,
+      tipo_espacio ( tipo_espacio_nom ),
       edificio ( edificio_nom ),
       area ( area_id, area_nom )
     )
@@ -201,6 +203,7 @@ const COLUMNAS = `
       tipo_activo ( tipo_activo_nom ),
       espacio (
         espacio_num,
+        tipo_espacio ( tipo_espacio_nom ),
         edificio ( edificio_nom ),
         area ( area_id, area_nom )
       )
@@ -221,6 +224,7 @@ const COLUMNAS = `
       ),
       espacio (
         espacio_num,
+        tipo_espacio ( tipo_espacio_nom ),
         edificio (
           edificio_nom
         ),
@@ -342,7 +346,7 @@ function aOrden(fila, asignaciones = []) {
   const mantenimientoPreventivo = fila.mantenimiento_preventivo ?? null;
   const activo = fila.activo ?? ticket?.activo ?? mantenimientoPreventivo?.activo ?? null;
   const espacio = activo?.espacio ?? null;
-  const areas = espacio?.area ?? [];
+  const area = espacio?.area ?? null;
   const autorizado = ticket?.autorizado ?? null;
 
   /*
@@ -391,9 +395,10 @@ function aOrden(fila, asignaciones = []) {
           nombreTipo: activo.tipo_activo?.tipo_activo_nom ?? '',
           nombreEdificio: espacio?.edificio?.edificio_nom ?? '',
           espacio_num: espacio?.espacio_num ?? '',
+          nombreEspacio: nombreDelEspacio(espacio),
         }
       : null,
-    nombreArea: areas.map((area) => area.area_nom).join(' / '),
+    nombreArea: area?.area_nom ?? '',
     registradoPor: autorizado
       ? { legajo: autorizado.autorizado_legajo, nombre: autorizado.autorizado_nom_ape }
       : null,
@@ -780,6 +785,16 @@ async function proximoNumeroDeTarea(idOt) {
 
 /** Deja como unico tecnico de la tarea al que se paso (o a ninguno). */
 async function asignarTecnico(idOt, idTarea, legajoTecnico) {
+  // Si sigue el mismo técnico, la asignación queda como está: conserva su fecha y su estado.
+  const { data: actual, error: errorActual } = await supabase
+    .from('tecnico_asignado_tarea_ot')
+    .select('tecnico_legajo')
+    .eq('ot_id', idOt)
+    .eq('tarea_id', idTarea)
+    .maybeSingle();
+  if (errorActual) throw new Error(errorActual.message);
+  if (legajoTecnico && actual && String(actual.tecnico_legajo) === String(legajoTecnico)) return;
+
   const { error: errorBorrado } = await supabase
     .from('tecnico_asignado_tarea_ot')
     .delete()

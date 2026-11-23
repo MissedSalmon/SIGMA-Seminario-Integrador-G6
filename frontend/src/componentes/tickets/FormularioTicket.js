@@ -23,22 +23,20 @@
  * cada <Campo> con una marca chica. Ver src/componentes/formulario/Campo.js.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { CAlert, CButton, CCard, CCardBody, CFormLabel } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilExternalLink, cilImagePlus, cilTrash, cilWarning } from '@coreui/icons';
 
+import ReferenciaEtapas from '@/componentes/estados/ReferenciaEtapas.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Campo from '@/componentes/formulario/Campo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
-import { listarActivos } from '@/servicios/activos.js';
 import { subirEvidencia, TAMANO_MAXIMO } from '@/servicios/evidencias.js';
-import { listarTickets } from '@/servicios/tickets.js';
+import { listarActivosReportables, listarTickets } from '@/servicios/tickets.js';
 import EtiquetaEstadoTicket from '@/componentes/tickets/EtiquetaEstadoTicket.js';
 import { formatearFechaHora, hoyLegible } from '@/utils/fechas.js';
-
-/** Un activo retirado ya no se mantiene, así que no puede recibir un ticket. */
-const ESTADO_RETIRADO = 'Retirado';
 
 /*
  * Los estados en los que un ticket ya termino su camino. Todo lo demas
@@ -58,6 +56,7 @@ function pesoLegible(bytes) {
 }
 
 export default function FormularioTicket({ onGuardar }) {
+  const router = useRouter();
   const { mostrarToast } = useToast();
 
   const [codigoActivo, setCodigoActivo] = useState('');
@@ -77,7 +76,7 @@ export default function FormularioTicket({ onGuardar }) {
   const [errorFoto, setErrorFoto] = useState('');
   const refArchivo = useRef(null);
 
-  const [activos, setActivos] = useState([]);
+  const [activos, setActivos] = useState(null);
 
   /*
    * Los tickets sin terminar que ya tiene el activo elegido, para avisar antes
@@ -91,10 +90,10 @@ export default function FormularioTicket({ onGuardar }) {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
-  // Los activos que se pueden reportar.
+  // Sólo los activos de las áreas del autorizado (sin los retirados, que filtra la API).
   useEffect(() => {
-    listarActivos()
-      .then((lista) => setActivos(lista.filter((activo) => activo.estado !== ESTADO_RETIRADO)))
+    listarActivosReportables()
+      .then(setActivos)
       .catch((fallo) => setError(fallo.message));
   }, []);
 
@@ -172,7 +171,7 @@ export default function FormularioTicket({ onGuardar }) {
       return;
     }
     if (archivo.size > TAMANO_MAXIMO) {
-      setErrorFoto(`La foto pesa ${pesoLegible(archivo.size)} y el maximo son 5 MB.`);
+      setErrorFoto(`La foto pesa ${pesoLegible(archivo.size)} y el máximo son 5 MB.`);
       return;
     }
 
@@ -195,14 +194,6 @@ export default function FormularioTicket({ onGuardar }) {
     return () => URL.revokeObjectURL(miniatura);
   }, [miniatura]);
 
-  function limpiar() {
-    setCodigoActivo('');
-    setDescripcion('');
-    setRevisado(false);
-    quitarFoto();
-    olvidarTicketsEnProceso();
-  }
-
   async function manejarEnvio(evento) {
     evento.preventDefault();
     setRevisado(true);
@@ -214,14 +205,15 @@ export default function FormularioTicket({ onGuardar }) {
       // La foto va primero: al ticket se le guarda su direccion, no el archivo.
       const direccionFoto = foto ? await subirEvidencia(foto) : null;
 
-      await onGuardar({
+      const nuevo = await onGuardar({
         codigoActivo,
         descripcion: descripcion.trim(),
         evidencia: direccionFoto,
       });
 
-      mostrarToast({ tipo: 'exito', mensaje: 'Se registró el ticket.' });
-      limpiar();
+      // Vuelve al listado, donde el ticket nuevo queda primero (21/11/2026).
+      mostrarToast({ tipo: 'exito', mensaje: `Se registró el ticket #${nuevo.id}.` });
+      router.push('/tickets');
     } catch (fallo) {
       setError(fallo.message);
     } finally {
@@ -229,7 +221,7 @@ export default function FormularioTicket({ onGuardar }) {
     }
   }
 
-  const opcionesActivos = activos.map((activo) => ({
+  const opcionesActivos = (activos ?? []).map((activo) => ({
     valor: activo.codigo,
     texto: activo.nombreTipo ? `${activo.codigo} - ${activo.nombreTipo}` : activo.codigo,
   }));
@@ -240,8 +232,6 @@ export default function FormularioTicket({ onGuardar }) {
         <Aviso mensaje={error} onCerrar={() => setError('')} />
 
         <form noValidate onSubmit={manejarEnvio}>
-          <h2 className="sigma-seccion-titulo"></h2>
-
           <div className="sigma-campos mb-4">
             <Campo
               id="fechaDeHoy"
@@ -270,6 +260,13 @@ export default function FormularioTicket({ onGuardar }) {
               error={errores.codigoActivo}
             />
           </div>
+
+          {activos?.length === 0 && (
+            <CAlert color="info">
+              No hay activos para reportar en tu área. Pedile al administrador que le asigne un espacio
+              con activos.
+            </CAlert>
+          )}
 
           {ticketsEnProceso.length > 0 && (
             <CAlert color="warning" className="d-flex flex-column gap-2">
@@ -322,6 +319,9 @@ export default function FormularioTicket({ onGuardar }) {
                     </li>
                   ))}
                 </ul>
+              )}
+              {verTicketsEnProceso && (
+                <ReferenciaEtapas de="ticket" estados={ticketsEnProceso.map((ticket) => ticket.estado)} />
               )}
             </CAlert>
           )}

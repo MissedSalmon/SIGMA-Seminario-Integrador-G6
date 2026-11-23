@@ -13,12 +13,14 @@
  *   - Mientras está en ejecución puede cargar la falla que encontró. Es
  *     opcional: se puede finalizar sin falla (10/11/2026).
  *   - "Finalizar tarea": pasa a Finalizada. Si era la última de la OT, la OT
- *     se finaliza sola y el ticket se cierra (HU-26).
+ *     se finaliza sola y el ticket se cierra (HU-26). Después vuelve al listado
+ *     de tareas asignadas (21/11/2026).
  *
  * La OT y el activo no llevan enlace: sus pantallas son del administrador y el
  * técnico no tiene acceso.
  */
 import { use, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   CButton,
   CCard,
@@ -41,6 +43,9 @@ import {
 import CIcon from '@coreui/icons-react';
 import { cilArrowLeft, cilCheckCircle, cilMediaPlay, cilPlus } from '@coreui/icons';
 
+import ReferenciaEtapas from '@/componentes/estados/ReferenciaEtapas.js';
+import Dato from '@/componentes/Dato.js';
+import Talon from '@/componentes/Talon.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
@@ -52,6 +57,7 @@ import DialogoHerramienta from '@/componentes/tareas/DialogoHerramienta.js';
 import DialogoFalla from '@/componentes/tareas/DialogoFalla.js';
 import DialogoMaterial from '@/componentes/tareas/DialogoMaterial.js';
 import ObservacionesTarea from '@/componentes/tareas/ObservacionesTarea.js';
+import PreguntaEstadoActivo from '@/componentes/tareas/PreguntaEstadoActivo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import {
   finalizarTarea,
@@ -60,20 +66,12 @@ import {
   obtenerMiTarea,
   quitarFallaDeTarea,
 } from '@/servicios/tareas.js';
-import { formatearFecha, formatearFechaHora, soloFechaLegible } from '@/utils/fechas.js';
+import { formatearFecha, formatearFechaHora, hoyTexto, soloFechaLegible } from '@/utils/fechas.js';
+import { textoDelPiso } from '@/utils/pisos.js';
 
+import { useVolverA } from '@/utils/volverA.js';
 /** Una tarea en estos estados todavía no empezó: se puede iniciar. */
 const ESTADOS_SIN_EMPEZAR = ['Creada', 'Asignada', 'Pendiente'];
-
-/** Una etiqueta chica arriba y el dato abajo. */
-function Dato({ etiqueta, children }) {
-  return (
-    <div className="mb-3">
-      <div className="text-body-secondary small">{etiqueta}</div>
-      <div>{children ?? '-'}</div>
-    </div>
-  );
-}
 
 /** Texto en gris e itálica para decir que algo no está. */
 function SinDato({ children }) {
@@ -81,8 +79,11 @@ function SinDato({ children }) {
 }
 
 export default function PantallaDetalleMiTarea({ params }) {
+  // Si se llegó desde una notificación, se vuelve a /notificaciones.
+  const volverA = useVolverA('/tareas');
   const { idOt, idTarea } = use(params);
   const { mostrarToast } = useToast();
+  const router = useRouter();
 
   const [tarea, setTarea] = useState(null);
   const [herramientas, setHerramientas] = useState({ mias: [], disponibles: [] });
@@ -94,6 +95,11 @@ export default function PantallaDetalleMiTarea({ params }) {
   const [ventana, setVentana] = useState(null);
   const [procesando, setProcesando] = useState(false);
   const [errorVentana, setErrorVentana] = useState('');
+
+  // Si es la última tarea de la OT, al finalizar se elige cómo queda el activo (22/11/2026).
+  const [cierraLaOrden, setCierraLaOrden] = useState(false);
+  const [estadoActivo, setEstadoActivo] = useState('');
+  const [revisadoFinal, setRevisadoFinal] = useState(false);
 
   useEffect(() => {
     let vigente = true;
@@ -117,6 +123,19 @@ export default function PantallaDetalleMiTarea({ params }) {
     setVentana(nombre);
   }
 
+  /** Se vuelve a preguntar si es la última: otro técnico pudo terminar la suya mientras tanto. */
+  async function abrirFinalizar() {
+    setEstadoActivo('');
+    setRevisadoFinal(false);
+    try {
+      const actual = await obtenerMiTarea(idOt, idTarea);
+      setCierraLaOrden(Boolean(actual.cierraLaOrden && actual.activo));
+    } catch {
+      setCierraLaOrden(false);
+    }
+    abrir('finalizar');
+  }
+
   function cerrar() {
     if (!procesando) setVentana(null);
   }
@@ -136,21 +155,22 @@ export default function PantallaDetalleMiTarea({ params }) {
   }
 
   async function confirmarFinalizacion() {
+    setRevisadoFinal(true);
+    if (cierraLaOrden && !estadoActivo) return;
+
     setProcesando(true);
     setErrorVentana('');
     try {
-      const respuesta = await finalizarTarea(idOt, idTarea);
-      setTarea(respuesta.tarea);
-      setVentana(null);
+      const respuesta = await finalizarTarea(idOt, idTarea, cierraLaOrden ? estadoActivo : undefined);
       mostrarToast({
         tipo: 'exito',
         mensaje: respuesta.ordenFinalizada
-          ? `La tarea quedó finalizada. Era la última: la OT #${idOt} se finalizó y el ticket se cerró.`
+          ? `La tarea quedó finalizada. Era la última: la OT #${idOt} se finalizó, el ticket se cerró y el activo quedó ${estadoActivo || 'Operativo'}.`
           : 'La tarea quedó finalizada.',
       });
+      router.push(volverA);
     } catch (fallo) {
       setErrorVentana(fallo.message);
-    } finally {
       setProcesando(false);
     }
   }
@@ -172,7 +192,9 @@ export default function PantallaDetalleMiTarea({ params }) {
   const sinEmpezar = tarea && ESTADOS_SIN_EMPEZAR.includes(tarea.estado);
   const enEjecucion = tarea?.estado === 'En ejecución';
 
-  const hoy = new Date().toISOString().slice(0, 10);
+  // El dia de la maquina, no el de UTC: despues de las 21 en Argentina UTC ya es manana,
+  // y una tarea preventiva se podria iniciar un dia antes.
+  const hoy = hoyTexto();
   const esPreventiva = tarea?.ot?.origen === 'Mantenimiento preventivo';
   let motivoBloqueoInicio = null;
   if (esPreventiva) {
@@ -183,8 +205,10 @@ export default function PantallaDetalleMiTarea({ params }) {
     }
   }
 
+  // En el celular la accion principal queda fija abajo, al alcance del pulgar
+  // (clase sigma-accion-principal en globals.css). En la PC va en el encabezado.
   const acciones = tarea && (sinEmpezar || enEjecucion) && (
-    <div className="d-flex flex-column align-items-end">
+    <div className="sigma-accion-principal d-flex flex-column align-items-end">
       {sinEmpezar && (
         <span title={motivoBloqueoInicio || undefined}>
           <CButton
@@ -203,7 +227,7 @@ export default function PantallaDetalleMiTarea({ params }) {
         </span>
       )}
       {enEjecucion && (
-        <CButton color="primary" onClick={() => abrir('finalizar')}>
+        <CButton color="primary" onClick={abrirFinalizar}>
           <CIcon icon={cilCheckCircle} className="me-2" />
           Finalizar tarea
         </CButton>
@@ -213,7 +237,19 @@ export default function PantallaDetalleMiTarea({ params }) {
 
   return (
     <>
-      <EncabezadoPagina titulo={`Tarea ${idTarea} de la OT #${idOt}`} accionesExtra={acciones} />
+      <EncabezadoPagina
+        titulo={
+          <span className="sigma-titulo-con-sello">
+            <span>
+              Tarea {idTarea} de la OT <span className="sigma-titulo-numero">#{idOt}</span>
+            </span>
+            {tarea && <EtiquetaEstadoOT estado={tarea.estado} />}
+          </span>
+        }
+        accionesExtra={acciones}
+      />
+      {/* Que significa el color de cada sello (regla 6). */}
+      <ReferenciaEtapas de="tarea" className="mt-0 mb-3" estados={[tarea?.estado]} />
 
       <Aviso mensaje={error} />
 
@@ -235,9 +271,6 @@ export default function PantallaDetalleMiTarea({ params }) {
                         <Dato etiqueta="Prioridad">
                           <EtiquetaPrioridad prioridad={tarea.prioridad} />
                         </Dato>
-                      </CCol>
-                      <CCol sm={6}>
-                        <Dato etiqueta="Estado">{tarea.estado}</Dato>
                       </CCol>
                       <CCol sm={6}>
                         <Dato etiqueta="Fecha prevista de inicio">
@@ -293,7 +326,7 @@ export default function PantallaDetalleMiTarea({ params }) {
                             <Dato etiqueta="Espacio">
                               {tarea.ubicacion?.espacio || <SinDato>-</SinDato>}
                               {tarea.ubicacion?.piso && (
-                                <span className="text-body-secondary"> (piso {tarea.ubicacion.piso})</span>
+                                <span className="text-body-secondary"> ({textoDelPiso(tarea.ubicacion.piso)})</span>
                               )}
                             </Dato>
                           </CCol>
@@ -310,7 +343,9 @@ export default function PantallaDetalleMiTarea({ params }) {
                   <CCardBody>
                     {tarea.ot ? (
                       <>
-                        <Dato etiqueta="Número">#{tarea.ot.id}</Dato>
+                        <Dato etiqueta="Número">
+                          <Talon numero={tarea.ot.id} />
+                        </Dato>
                         <Dato etiqueta="Descripción">{tarea.ot.descripcion}</Dato>
                         <CRow>
                           <CCol sm={6}>
@@ -367,7 +402,9 @@ export default function PantallaDetalleMiTarea({ params }) {
                                   <span className="fw-semibold">{material.codigo}</span>
                                   <span className="text-body-secondary"> — {material.nombre}</span>
                                 </CTableDataCell>
-                                <CTableDataCell className="text-end">{material.cantidad}</CTableDataCell>
+                                <CTableDataCell className="text-end">
+                                  {material.cantidad} {material.unidadMedida}
+                                </CTableDataCell>
                                 <CTableDataCell className="text-body-secondary text-nowrap">
                                   {formatearFechaHora(material.fecha)}
                                 </CTableDataCell>
@@ -477,8 +514,9 @@ export default function PantallaDetalleMiTarea({ params }) {
         )
       )}
 
-      <div className="mt-2 mb-4">
-        <BotonEnlace href="/tareas" color="secondary" variante="outline">
+      {/* Lugar para que la accion fija del celular no tape el final de la pantalla. */}
+      <div className={`mt-2 mb-4${acciones ? ' sigma-espacio-accion' : ''}`}>
+        <BotonEnlace href={volverA} color="secondary" variante="outline">
           <CIcon icon={cilArrowLeft} className="me-2" />
           Volver al listado
         </BotonEnlace>
@@ -518,9 +556,18 @@ export default function PantallaDetalleMiTarea({ params }) {
         </CModalHeader>
         <CModalBody>
           <Aviso mensaje={errorVentana} />
-          <p className="mb-0">
+          <p className={cierraLaOrden ? undefined : 'mb-0'}>
             La tarea pasa a <strong>Finalizada</strong>.
           </p>
+          {cierraLaOrden && (
+            <PreguntaEstadoActivo
+              idOt={idOt}
+              codigoActivo={tarea?.activo?.codigo}
+              valor={estadoActivo}
+              alCambiar={setEstadoActivo}
+              revisado={revisadoFinal}
+            />
+          )}
         </CModalBody>
         <CModalFooter>
           <BotonesAccion

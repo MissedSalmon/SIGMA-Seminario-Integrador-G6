@@ -8,24 +8,27 @@
  * herramienta), igual que materiales va una fila por consumo. Primero las que
  * tiene todavía y después las devueltas, de la más nueva a la más vieja.
  *
- * Es sólo de consulta: la columna «Acción» se sacó el 10/11/2026. Las
- * herramientas se devuelven desde el detalle de la tarea. Reemplaza a la fila por herramienta con la
- * ventana "Ver OT" (22/10/2026).
+ * La que tiene todavía se puede devolver desde acá, con «Devolver», además de
+ * desde el detalle de la tarea (vuelve el 21/11/2026; se había sacado el
+ * 10/11/2026). Reemplaza a la fila por herramienta con la ventana "Ver OT"
+ * (22/10/2026).
  *
  * La tarea queda guardada sólo cuando la herramienta se toma desde una tarea.
  * Las que asignó el administrador desde el depósito, y los préstamos de antes
  * del 22/10/2026, aparecen como "Sin tarea registrada".
  */
 import { useEffect, useMemo, useState } from 'react';
-import { CCard, CCardBody } from '@coreui/react';
+import { CButton, CCard, CCardBody } from '@coreui/react';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
+import DialogoHerramienta from '@/componentes/tareas/DialogoHerramienta.js';
 import EtiquetaEstadoPrestamo from '@/componentes/tareas/EtiquetaEstadoPrestamo.js';
 import TareaDelHistorial from '@/componentes/tareas/TareaDelHistorial.js';
 import { listarHistorialHerramientas } from '@/servicios/tareas.js';
 import { formatearFecha } from '@/utils/fechas.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 const ESTADOS = ['En uso', 'Devuelta'];
 
@@ -38,14 +41,17 @@ export default function PantallaHerramientasUtilizadas() {
   const [prestamos, setPrestamos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
-  const [filtroEstado, setFiltroEstado] = useState('');
+  const [filtroEstado, setFiltroEstado] = useFiltroPersistente('estado', '');
+  const [aDevolver, setADevolver] = useState(null);
+  // Se suma 1 para volver a pedir la lista después de una devolución.
+  const [recarga, setRecarga] = useState(0);
 
   useEffect(() => {
     listarHistorialHerramientas()
       .then((filas) => setPrestamos([...filas].sort(compararPrestamos)))
       .catch((fallo) => setError(fallo.message))
       .finally(() => setCargando(false));
-  }, []);
+  }, [recarga]);
 
   const filtrados = useMemo(
     () =>
@@ -102,6 +108,17 @@ export default function PantallaHerramientasUtilizadas() {
       encabezado: 'Tarea',
       render: (prestamo) => <TareaDelHistorial fila={prestamo} />,
     },
+    {
+      clave: 'acciones',
+      encabezado: 'Acciones',
+      alinearDerecha: true,
+      render: (prestamo) =>
+        prestamo.enUso && (
+          <CButton color="secondary" variant="outline" size="sm" onClick={() => setADevolver(prestamo)}>
+            Devolver
+          </CButton>
+        ),
+    },
   ];
 
   return (
@@ -136,6 +153,17 @@ export default function PantallaHerramientasUtilizadas() {
           />
         </CCardBody>
       </CCard>
+
+      {aDevolver && (
+        <DialogoHerramienta
+          aDevolver={aDevolver}
+          onCerrar={() => setADevolver(null)}
+          onGuardado={() => {
+            setADevolver(null);
+            setRecarga((numero) => numero + 1);
+          }}
+        />
+      )}
     </>
   );
 }

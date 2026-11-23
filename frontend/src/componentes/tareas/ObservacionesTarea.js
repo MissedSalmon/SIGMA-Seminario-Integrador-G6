@@ -12,6 +12,7 @@ import { formatearFechaHora } from '@/utils/fechas.js';
  * tarjeta propia: va adentro de la tarjeta "Qué hay que hacer" del detalle,
  * separada por una línea.
  */
+// Sin onGuardado sólo se listan: el administrador las consulta, no las escribe.
 export default function ObservacionesTarea({ idOt, idTarea, observaciones, onGuardado }) {
   const [texto, setTexto] = useState('');
   const [guardando, setGuardando] = useState(false);
@@ -60,16 +61,18 @@ export default function ObservacionesTarea({ idOt, idTarea, observaciones, onGua
           ))}
         </ol>
       )}
-      <form onSubmit={guardar} aria-busy={guardando}>
-        <Campo id="observacion" etiqueta="Nueva observación" tipo="area"
-          valor={texto} alCambiar={setTexto} maxLength={500} obligatorio deshabilitado={guardando} />
-        <div className="small text-body-secondary mb-3">Hasta 500 caracteres.</div>
-        <Aviso mensaje={error} />
-        <p role="status">{confirmacion}</p>
-        <CButton type="submit" color="primary" disabled={guardando}>
-          {guardando ? 'Guardando...' : 'Guardar'}
-        </CButton>
-      </form>
+      {onGuardado && (
+        <form onSubmit={guardar} aria-busy={guardando}>
+          <Campo id="observacion" etiqueta="Nueva observación" tipo="area"
+            valor={texto} alCambiar={setTexto} maxLength={500} obligatorio deshabilitado={guardando} />
+          <div className="small text-body-secondary mb-3">Hasta 500 caracteres.</div>
+          <Aviso mensaje={error} />
+          <p role="status">{confirmacion}</p>
+          <CButton type="submit" color="primary" disabled={guardando}>
+            {guardando ? 'Guardando...' : 'Guardar'}
+          </CButton>
+        </form>
+      )}
     </section>
   );
 }

@@ -22,6 +22,7 @@
 import { use, useEffect, useState } from 'react';
 import {
   CButton,
+  CButtonGroup,
   CCard,
   CCardBody,
   CCardHeader,
@@ -42,39 +43,26 @@ import {
   CTableRow,
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilArrowLeft, cilDescription, cilPencil, cilPlus, cilTrash } from '@coreui/icons';
+import { cilArrowLeft, cilDescription, cilPencil, cilPlus } from '@coreui/icons';
 
+import ReferenciaEtapas from '@/componentes/estados/ReferenciaEtapas.js';
+import Dato from '@/componentes/Dato.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import BotonesAccion from '@/componentes/BotonesAccion.js';
-import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
 import Campo from '@/componentes/formulario/Campo.js';
 import EtiquetaEstadoOT from '@/componentes/ordenes/EtiquetaEstadoOT.js';
 import EtiquetaPrioridad from '@/componentes/ordenes/EtiquetaPrioridad.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
-import {
-  obtenerOrden,
-  actualizarOrden,
-  eliminarTarea,
-  listarPrioridades,
-} from '@/servicios/ordenesTrabajo.js';
+import { obtenerOrden, actualizarOrden, listarPrioridades } from '@/servicios/ordenesTrabajo.js';
 import { formatearFechaHora } from '@/utils/fechas.js';
 import { comoHoraMinuto } from '@/utils/duracion.js';
 
+import { useVolverA } from '@/utils/volverA.js';
 /** Una OT en estos estados ya no se planifica. */
 const ESTADOS_CERRADOS = ['Finalizada', 'Cancelada'];
-
-/** Un renglón "etiqueta: valor" de la ficha. */
-function Dato({ etiqueta, children }) {
-  return (
-    <div className="mb-3">
-      <div className="text-body-secondary small">{etiqueta}</div>
-      <div>{children ?? '-'}</div>
-    </div>
-  );
-}
 
 /** Texto en gris e itálica para decir que algo no está. */
 function SinDato({ children }) {
@@ -89,6 +77,8 @@ function soloFechaLegible(iso) {
 }
 
 export default function PantallaDetalleOrdenTrabajo({ params }) {
+  // Si se llegó desde una notificación, se vuelve a /notificaciones.
+  const volverA = useVolverA('/ordenes-trabajo');
   const { id } = use(params);
   const { mostrarToast } = useToast();
 
@@ -97,9 +87,6 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
   const [error, setError] = useState('');
 
   const [guardando, setGuardando] = useState(false);
-
-  const [tareaAEliminar, setTareaAEliminar] = useState(null);
-  const [eliminando, setEliminando] = useState(false);
 
   const [modalDescripcion, setModalDescripcion] = useState(false);
   const [descripcion, setDescripcion] = useState('');
@@ -125,22 +112,6 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
   }, []);
 
   const cerrada = orden ? ESTADOS_CERRADOS.includes(orden.estado) : false;
-
-  async function confirmarEliminar() {
-    setEliminando(true);
-
-    try {
-      const actualizada = await eliminarTarea(orden.id, tareaAEliminar.idTarea);
-      setOrden(actualizada);
-      setTareaAEliminar(null);
-      mostrarToast({ tipo: 'exito', mensaje: `Se eliminó la tarea ${tareaAEliminar.idTarea}.` });
-    } catch (fallo) {
-      setError(fallo.message);
-      setTareaAEliminar(null);
-    } finally {
-      setEliminando(false);
-    }
-  }
 
   function abrirDescripcion() {
     setDescripcion(orden.descripcion ?? '');
@@ -196,7 +167,24 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
 
   return (
     <>
-      <EncabezadoPagina titulo={orden ? `Orden de trabajo #${orden.id}` : 'Orden de trabajo'} />
+      <EncabezadoPagina titulo={
+          orden ? (
+            <span className="sigma-titulo-con-sello">
+              <span>
+                Orden de trabajo <span className="sigma-titulo-numero">#{orden.id}</span>
+              </span>
+              <EtiquetaEstadoOT estado={orden.estado} />
+            </span>
+          ) : (
+            'Orden de trabajo'
+          )
+        } />
+      {/* Que significa el color de cada sello (regla 6). */}
+      <ReferenciaEtapas
+        className="mt-0 mb-3"
+        de="tarea"
+        estados={[orden?.estado, ...(orden?.tareas ?? []).map((tarea) => tarea.estado)]}
+      />
 
       <Aviso mensaje={error} onCerrar={() => setError('')} />
 
@@ -219,11 +207,6 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
                   </CCardHeader>
                   <CCardBody>
                     <CRow>
-                      <CCol sm={4}>
-                        <Dato etiqueta="Estado">
-                          <EtiquetaEstadoOT estado={orden.estado} />
-                        </Dato>
-                      </CCol>
                       <CCol sm={4}>
                         <Dato etiqueta="Prioridad">
                           <div className="d-flex align-items-center gap-2">
@@ -318,7 +301,7 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
                         <CCol sm={6}>
                           <Dato etiqueta="Ubicación">
                             {orden.activo.nombreEdificio || orden.activo.espacio_num
-                              ? `${orden.activo.nombreEdificio} — Espacio ${orden.activo.espacio_num}`
+                              ? `${orden.activo.nombreEdificio} — ${orden.activo.nombreEspacio}`
                               : '-'}
                           </Dato>
                         </CCol>
@@ -366,7 +349,7 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
                         <CTableHeaderCell>Duración</CTableHeaderCell>
                         <CTableHeaderCell>Estado</CTableHeaderCell>
                         <CTableHeaderCell>Falla</CTableHeaderCell>
-                        {!cerrada && <CTableHeaderCell className="text-end">Acciones</CTableHeaderCell>}
+                        <CTableHeaderCell className="text-end">Acciones</CTableHeaderCell>
                       </CTableRow>
                     </CTableHead>
 
@@ -403,7 +386,9 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
                             {comoHoraMinuto(tarea.horasEstimadas) || '-'}
                           </CTableDataCell>
 
-                          <CTableDataCell className="text-body-secondary">{tarea.estado}</CTableDataCell>
+                          <CTableDataCell>
+                            <EtiquetaEstadoOT estado={tarea.estado} />
+                          </CTableDataCell>
 
                           <CTableDataCell style={{ minWidth: '12rem' }}>
                             {tarea.falla ? (
@@ -416,31 +401,28 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
                             )}
                           </CTableDataCell>
 
-                          {!cerrada && (
-                            <CTableDataCell className="text-end text-nowrap">
+                          <CTableDataCell className="text-end text-nowrap">
+                            <CButtonGroup size="sm">
                               <BotonEnlace
-                                href={`/ordenes-trabajo/${orden.id}/tareas/${tarea.idTarea}/editar`}
-                                color="secondary"
-                                variante="outline"
-                                tamano="sm"
-                                className="me-2"
-                                title="Editar la tarea"
-                                aria-label={`Editar la tarea ${tarea.idTarea}`}
+                                href={`/ordenes-trabajo/${orden.id}/tareas/${tarea.idTarea}`}
+                                variante="ghost"
+                                className="btn-icono"
+                                title={`Ver detalle de la tarea ${tarea.idTarea}`}
                               >
-                                <CIcon icon={cilPencil} size="sm" />
+                                <CIcon icon={cilDescription} />
                               </BotonEnlace>
-                              <CButton
-                                color="danger"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setTareaAEliminar(tarea)}
-                                title="Eliminar la tarea"
-                                aria-label={`Eliminar la tarea ${tarea.idTarea}`}
-                              >
-                                <CIcon icon={cilTrash} size="sm" />
-                              </CButton>
-                            </CTableDataCell>
-                          )}
+                              {!cerrada && (
+                                <BotonEnlace
+                                  href={`/ordenes-trabajo/${orden.id}/tareas/${tarea.idTarea}/editar`}
+                                  variante="ghost"
+                                  className="btn-icono"
+                                  title={`Editar la tarea ${tarea.idTarea}`}
+                                >
+                                  <CIcon icon={cilPencil} />
+                                </BotonEnlace>
+                              )}
+                            </CButtonGroup>
+                          </CTableDataCell>
                         </CTableRow>
                       ))}
                     </CTableBody>
@@ -448,21 +430,6 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
                 )}
               </CCardBody>
             </CCard>
-
-            <DialogoEliminar
-              visible={Boolean(tareaAEliminar)}
-              titulo="Eliminar la tarea"
-              eliminando={eliminando}
-              onConfirmar={confirmarEliminar}
-              onCancelar={() => setTareaAEliminar(null)}
-            >
-              {tareaAEliminar && (
-                <p className="mb-0">
-                  Se va a eliminar la tarea <strong>{tareaAEliminar.idTarea}</strong> de esta orden:
-                  &quot;{tareaAEliminar.descripcion}&quot;.
-                </p>
-              )}
-            </DialogoEliminar>
 
             <CModal visible={modalPrioridad} onClose={() => !guardando && setModalPrioridad(false)} alignment="center">
               <CModalHeader>
@@ -519,7 +486,7 @@ export default function PantallaDetalleOrdenTrabajo({ params }) {
       )}
 
       <div className="mt-2 mb-4">
-        <BotonEnlace href="/ordenes-trabajo" color="secondary" variante="outline">
+        <BotonEnlace href={volverA} color="secondary" variante="outline">
           <CIcon icon={cilArrowLeft} className="me-2" />
           Volver al listado
         </BotonEnlace>

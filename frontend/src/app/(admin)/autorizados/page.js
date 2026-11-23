@@ -23,12 +23,13 @@ import {
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { listarAreas } from '@/servicios/areas.js';
 import { listarAutorizados, eliminarAutorizado } from '@/servicios/autorizados.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 export default function PantallaAutorizados() {
   const [autorizados, setAutorizados] = useState([]);
   const [areas, setAreas] = useState([]);
-  const [filtroArea, setFiltroArea] = useState('');
-  const [filtroEstado, setFiltroEstado] = useState('');
+  const [filtroArea, setFiltroArea] = useFiltroPersistente('area', '');
+  const [filtroEstado, setFiltroEstado] = useFiltroPersistente('estado', '');
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
@@ -160,8 +161,8 @@ export default function PantallaAutorizados() {
             cargando={cargando}
             textoVacio={
               filtroArea || filtroEstado
-                ? 'No hay usuarios autorizados con ese filtro.'
-                : 'Todavía no hay usuarios autorizados cargados.'
+                ? 'No hay solicitantes con ese filtro.'
+                : 'Todavía no hay solicitantes cargados.'
             }
             accionVacio={filtroArea || filtroEstado ? undefined : { direccion: '/autorizados/agregar' }}
           />

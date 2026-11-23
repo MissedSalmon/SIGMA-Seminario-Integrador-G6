@@ -44,12 +44,14 @@ import {
 import CIcon from '@coreui/icons-react';
 import { cilChartPie, cilDescription, cilSearch, cilX } from '@coreui/icons';
 
+import ReferenciaEtapas from '@/componentes/estados/ReferenciaEtapas.js';
 import Aviso from '@/componentes/Aviso.js';
 import { Cargando, SinDatos } from '@/componentes/EstadoTabla.js';
 import CampoLista from '@/componentes/formulario/CampoLista.js';
 import EtiquetaEstadoTicket from '@/componentes/tickets/EtiquetaEstadoTicket.js';
 import { listarAreasConMayorIncidencia } from '@/servicios/estadisticas.js';
 import { listarTiposFalla } from '@/servicios/ordenesTrabajo.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 /** Los períodos del filtro, en meses hacia atrás desde hoy. */
 const PERIODOS = [
@@ -100,9 +102,9 @@ function porcentaje(parte, total) {
 export default function RankingAreasIncidencia() {
   const [areas, setAreas] = useState([]);
   const [tiposFalla, setTiposFalla] = useState([]);
-  const [busqueda, setBusqueda] = useState('');
-  const [filtroPeriodo, setFiltroPeriodo] = useState('');
-  const [filtroFalla, setFiltroFalla] = useState('');
+  const [busqueda, setBusqueda] = useFiltroPersistente('incidencia-busqueda', '');
+  const [filtroPeriodo, setFiltroPeriodo] = useFiltroPersistente('incidencia-periodo', '');
+  const [filtroFalla, setFiltroFalla] = useFiltroPersistente('incidencia-falla', '');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [vista, setVista] = useState('grafico');
@@ -178,6 +180,7 @@ export default function RankingAreasIncidencia() {
 
   const maximo = Math.max(1, ...areasVisibles.map((area) => area.cantidadFallas));
   const hayFiltros = Boolean(filtroPeriodo || filtroFalla);
+  const hayBusqueda = busqueda.trim() !== '';
 
   return (
     <CCard className="mt-4">
@@ -243,7 +246,7 @@ export default function RankingAreasIncidencia() {
               textoVacio="Todas"
               ancho={9}
             />
-            {hayFiltros && (
+            {(hayFiltros || hayBusqueda) && (
               <CButton
                 color="secondary"
                 variant="ghost"
@@ -251,6 +254,7 @@ export default function RankingAreasIncidencia() {
                 onClick={() => {
                   setFiltroPeriodo('');
                   setFiltroFalla('');
+                  setBusqueda('');
                 }}
                 title="Quitar todos los filtros"
               >
@@ -558,6 +562,7 @@ function DetalleArea({ area, onCerrar }) {
             </CTable>
           </>
         )}
+        <ReferenciaEtapas />
       </CModalBody>
     </CModal>
   );

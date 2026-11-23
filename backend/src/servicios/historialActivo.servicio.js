@@ -89,7 +89,7 @@ async function asignacionesDe(idsOt) {
 async function materialesDe(idsOt) {
   const { data, error } = await supabase
     .from('tarea_ot_consume_material')
-    .select('ot_id, tarea_id, mat_cod, tamat_cant, material ( mat_nom )')
+    .select('ot_id, tarea_id, mat_cod, tamat_cant, material ( mat_nom, mat_unidad_medida )')
     .in('ot_id', idsOt);
 
   if (error) throw errorDeBase(error, 'de los materiales consumidos');
@@ -130,6 +130,7 @@ function aIntervencion(fila, asignaciones, materiales, observaciones) {
         materiales: materiales.filter(esta).map((material) => ({
           codigo: material.mat_cod,
           nombre: material.material?.mat_nom ?? material.mat_cod,
+          unidadMedida: material.material?.mat_unidad_medida ?? 'unidad',
           cantidad: Number(material.tamat_cant),
         })),
         observaciones: observaciones

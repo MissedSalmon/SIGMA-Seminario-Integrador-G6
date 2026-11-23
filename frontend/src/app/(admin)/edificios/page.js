@@ -128,7 +128,7 @@ export default function PantallaEdificios() {
             buscarPor={['nombre', 'direccion']}
             placeholderBusqueda="Buscar por nombre o dirección"
             cargando={cargando}
-            textoVacio="Todavia no hay edificios cargados."
+            textoVacio="Todavía no hay edificios cargados."
           />
         </CCardBody>
       </CCard>

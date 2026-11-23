@@ -135,6 +135,13 @@ export const navegacion = [
   },
   {
     tipo: 'item',
+    texto: 'Áreas',
+    direccion: '/areas',
+    icono: cilSitemap,
+    roles: ['administrador'],
+  },
+  {
+    tipo: 'item',
     texto: 'Tipos de espacio',
     direccion: '/espacios/tipos',
     icono: cilTags,
@@ -145,13 +152,6 @@ export const navegacion = [
     texto: 'Listado de espacios',
     direccion: '/espacios',
     icono: cilRoom,
-    roles: ['administrador'],
-  },
-  {
-    tipo: 'item',
-    texto: 'Áreas',
-    direccion: '/areas',
-    icono: cilSitemap,
     roles: ['administrador'],
   },
 

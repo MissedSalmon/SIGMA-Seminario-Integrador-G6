@@ -28,6 +28,7 @@ import { Cargando } from '@/componentes/EstadoTabla.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarEdificios } from '@/servicios/edificios.js';
 import { listarTiposDeEspacio } from '@/servicios/espacios.js';
+import { PISOS } from '@/utils/pisos.js';
 
 /*
  * Las dimensiones se guardan como un texto solo (8 x 6 m), igual que en el
@@ -232,10 +233,11 @@ export default function FormularioEspacio({ espacio = null, onGuardar }) {
             <Campo
               id="piso"
               etiqueta="Piso"
+              tipo="lista"
               valor={piso}
               alCambiar={setPiso}
-              placeholder="Planta baja"
-              maxLength={50}
+              opciones={PISOS}
+              placeholder="Elegir piso"
               ancho={12}
               revisado={revisado}
             />
@@ -245,7 +247,7 @@ export default function FormularioEspacio({ espacio = null, onGuardar }) {
               etiqueta="Número"
               valor={numero}
               alCambiar={setNumero}
-              placeholder="12"
+              placeholder="1.1"
               maxLength={20}
               ancho={6}
               revisado={revisado}
