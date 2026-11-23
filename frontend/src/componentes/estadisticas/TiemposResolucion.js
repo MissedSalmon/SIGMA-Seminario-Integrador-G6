@@ -40,6 +40,7 @@ import { Cargando, SinDatos } from '@/componentes/EstadoTabla.js';
 import CampoFecha from '@/componentes/formulario/CampoFecha.js';
 import { obtenerTiemposResolucion } from '@/servicios/estadisticas.js';
 import { finDelDia, hoyTexto, inicioDelDia, soloFechaLegible } from '@/utils/fechas.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 import { horasConUnDecimal, textoTiempo } from '@/utils/duracion.js';
 
 /** Los desgloses: el botón, la columna y de dónde salen las filas. */
@@ -62,10 +63,10 @@ function textoPeriodo(desde, hasta) {
 
 export default function TiemposResolucion() {
   const [datos, setDatos] = useState(null);
-  const [desde, setDesde] = useState('');
-  const [hasta, setHasta] = useState('');
-  const [busqueda, setBusqueda] = useState('');
-  const [desglose, setDesglose] = useState(DESGLOSES[0].clave);
+  const [desde, setDesde] = useFiltroPersistente('resolucion-desde', '');
+  const [hasta, setHasta] = useFiltroPersistente('resolucion-hasta', '');
+  const [busqueda, setBusqueda] = useFiltroPersistente('resolucion-busqueda', '');
+  const [desglose, setDesglose] = useFiltroPersistente('resolucion-desglose', DESGLOSES[0].clave);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
@@ -74,6 +75,7 @@ export default function TiemposResolucion() {
   // tipear: el control de verdad es este.
   const periodoInvalido = Boolean(desde && hasta && desde > hasta);
   const hayFiltros = Boolean(desde || hasta);
+  const hayBusqueda = busqueda.trim() !== '';
 
   useEffect(() => {
     if (periodoInvalido) return undefined;
@@ -164,7 +166,7 @@ export default function TiemposResolucion() {
               minimo={desde}
               maximo={hoy}
             />
-            {hayFiltros && (
+            {(hayFiltros || hayBusqueda) && (
               <CButton
                 color="secondary"
                 variant="ghost"
@@ -172,6 +174,7 @@ export default function TiemposResolucion() {
                 onClick={() => {
                   setDesde('');
                   setHasta('');
+                  setBusqueda('');
                 }}
                 title="Quitar todos los filtros"
               >

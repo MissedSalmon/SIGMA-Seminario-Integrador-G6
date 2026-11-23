@@ -18,15 +18,15 @@ import EtiquetaEstadoPlan from '@/componentes/planes/EtiquetaEstadoPlan.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarPlanes, darDeBajaPlan } from '@/servicios/planesMantenimiento.js';
 import { listarTiposActivos } from '@/servicios/tiposActivos.js';
-import { useEstadoGuardado } from '@/utils/estadoGuardado.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 export default function PantallaPlanesMantenimiento() {
   const { mostrarToast } = useToast();
 
   const [planes, setPlanes] = useState([]);
   const [tiposActivos, setTiposActivos] = useState([]);
-  const [filtroTipo, setFiltroTipo] = useEstadoGuardado('filtroTipo', '');
-  const [filtroEstado, setFiltroEstado] = useEstadoGuardado('filtroEstado', 'activo');
+  const [filtroTipo, setFiltroTipo] = useFiltroPersistente('tipo', '');
+  const [filtroEstado, setFiltroEstado] = useFiltroPersistente('estado', 'activo');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 

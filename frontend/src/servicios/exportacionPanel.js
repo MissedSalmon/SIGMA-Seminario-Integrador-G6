@@ -461,30 +461,85 @@ export function generarDocumentoPdf(payloadPanel) {
   });
 
   const rawAreas = datos.areasIncidencia;
+  const tiposConFallas = Array.isArray(rawAreas?.porTipoActivo) ? rawAreas.porTipoActivo : [];
+  const activosConFallas = Array.isArray(rawAreas?.porActivo) ? rawAreas.porActivo : [];
   const areas = Array.isArray(rawAreas) ? rawAreas : (rawAreas?.ranking ?? []);
-  bloque({
-    titulo: 'Áreas con más incidencias',
-    detalle: 'Fallas registradas en el período, según el área del activo. Si dos áreas comparten un espacio, la falla cuenta para las dos.',
-    columnas: [
-      { titulo: 'Área', ancho: 50 },
-      { titulo: 'Edificio', ancho: 32 },
-      { titulo: '', barra: true },
-      { titulo: 'Fallas', ancho: 15, alinear: 'right' },
-      { titulo: 'Tickets', ancho: 15, alinear: 'right' },
-      { titulo: '%', ancho: 17, alinear: 'right' },
-    ],
-    filas: areas.map((a) => ({
-      valorBarra: a.cantidadFallas ?? a.fallas,
-      celdas: [
-        a.nombreArea ?? a.nombre ?? 'Sin área',
-        a.nombreEdificio || '-',
-        '',
-        numero(a.cantidadFallas ?? a.fallas),
-        numero(a.cantidadTickets ?? a.tickets),
-        porcentaje(a.porcentaje),
+
+  if (tiposConFallas.length > 0 || activosConFallas.length > 0 || areas.length === 0) {
+    bloque({
+      titulo: 'Tipos de activos con más fallas',
+      detalle: 'Fallas registradas por los técnicos en las tareas del período, agrupadas por categoría de activo.',
+      columnas: [
+        { titulo: 'Tipo de activo', ancho: 64 },
+        { titulo: '', barra: true },
+        { titulo: 'Activos', ancho: 18, alinear: 'right' },
+        { titulo: 'Tickets', ancho: 18, alinear: 'right' },
+        { titulo: 'Fallas', ancho: 18, alinear: 'right' },
+        { titulo: '%', ancho: 18, alinear: 'right' },
       ],
-    })),
-  });
+      filas: tiposConFallas.map((t) => ({
+        valorBarra: t.cantidadFallas,
+        celdas: [
+          t.nombreTipoActivo ?? 'Sin tipo',
+          '',
+          numero(t.cantidadActivos),
+          numero(t.cantidadTickets),
+          numero(t.cantidadFallas),
+          porcentaje(t.porcentaje),
+        ],
+      })),
+    });
+
+    if (activosConFallas.length > 0) {
+      bloque({
+        titulo: 'Activos con más fallas',
+        detalle: 'Equipos específicos con fallas diagnosticadas en las tareas del período.',
+        columnas: [
+          { titulo: 'Activo', ancho: 46 },
+          { titulo: 'Área / Ubicación', ancho: 44 },
+          { titulo: '', barra: true },
+          { titulo: 'Tickets', ancho: 16, alinear: 'right' },
+          { titulo: 'Fallas', ancho: 16, alinear: 'right' },
+          { titulo: '%', ancho: 17, alinear: 'right' },
+        ],
+        filas: activosConFallas.map((a) => ({
+          valorBarra: a.cantidadFallas,
+          celdas: [
+            a.etiqueta ?? a.codigoActivo ?? '-',
+            [a.nombreArea, a.nombreEdificio, a.nombreEspacio].filter(Boolean).join(' · ') || '-',
+            '',
+            numero(a.cantidadTickets),
+            numero(a.cantidadFallas),
+            porcentaje(a.porcentaje),
+          ],
+        })),
+      });
+    }
+  } else {
+    bloque({
+      titulo: 'Áreas con más incidencias',
+      detalle: 'Fallas registradas en el período, según el área del activo.',
+      columnas: [
+        { titulo: 'Área', ancho: 50 },
+        { titulo: 'Edificio', ancho: 32 },
+        { titulo: '', barra: true },
+        { titulo: 'Fallas', ancho: 15, alinear: 'right' },
+        { titulo: 'Tickets', ancho: 15, alinear: 'right' },
+        { titulo: '%', ancho: 17, alinear: 'right' },
+      ],
+      filas: areas.map((a) => ({
+        valorBarra: a.cantidadFallas ?? a.fallas,
+        celdas: [
+          a.nombreArea ?? a.nombre ?? 'Sin área',
+          a.nombreEdificio || '-',
+          '',
+          numero(a.cantidadFallas ?? a.fallas),
+          numero(a.cantidadTickets ?? a.tickets),
+          porcentaje(a.porcentaje),
+        ],
+      })),
+    });
+  }
 
   const tiempos = datos.tiemposResolucion ?? {};
   const promedioGeneral = tiempos.general?.promedioSegundos;

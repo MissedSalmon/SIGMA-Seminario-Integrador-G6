@@ -16,14 +16,14 @@ import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { eliminarPlantilla, listarPlantillas } from '@/servicios/plantillasTareas.js';
 import { listarEspecialidades } from '@/servicios/especialidades.js';
-import { useEstadoGuardado } from '@/utils/estadoGuardado.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 export default function PantallaPlantillas() {
   const { mostrarToast } = useToast();
 
   const [plantillas, setPlantillas] = useState([]);
   const [especialidades, setEspecialidades] = useState([]);
-  const [filtroEspecialidad, setFiltroEspecialidad] = useEstadoGuardado('filtroEspecialidad', '');
+  const [filtroEspecialidad, setFiltroEspecialidad] = useFiltroPersistente('especialidad', '');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 

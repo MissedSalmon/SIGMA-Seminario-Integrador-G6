@@ -19,6 +19,7 @@ import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarEdificios } from '@/servicios/edificios.js';
 import { listarEspacios, eliminarEspacio } from '@/servicios/espacios.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 import { textoDelPiso } from '@/utils/pisos.js';
 import { useEstadoGuardado } from '@/utils/estadoGuardado.js';
 
@@ -27,7 +28,7 @@ export default function PantallaEspacios() {
 
   const [espacios, setEspacios] = useState([]);
   const [edificios, setEdificios] = useState([]);
-  const [filtroEdificio, setFiltroEdificio] = useEstadoGuardado('filtroEdificio', '');
+  const [filtroEdificio, setFiltroEdificio] = useFiltroPersistente('edificio', '');
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');

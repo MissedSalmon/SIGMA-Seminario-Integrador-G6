@@ -21,15 +21,15 @@ import Aviso from '@/componentes/Aviso.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { listarRemitos, listarTiposComprobante } from '@/servicios/remitos.js';
 import { aFechaCalendario, soloFechaLegible } from '@/utils/fechas.js';
-import { useEstadoGuardado } from '@/utils/estadoGuardado.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 export default function PantallaRemitos() {
   const [remitos, setRemitos] = useState([]);
 
   const [tiposComprobante, setTiposComprobante] = useState(['Remito', 'Factura']);
-  const [filtroComprobante, setFiltroComprobante] = useEstadoGuardado('filtroComprobante', '');
-  const [filtroDesde, setFiltroDesde] = useEstadoGuardado('filtroDesde', '');
-  const [filtroHasta, setFiltroHasta] = useEstadoGuardado('filtroHasta', '');
+  const [filtroComprobante, setFiltroComprobante] = useFiltroPersistente('comprobante', '');
+  const [filtroDesde, setFiltroDesde] = useFiltroPersistente('desde', '');
+  const [filtroHasta, setFiltroHasta] = useFiltroPersistente('hasta', '');
   const maximoDesde = filtroHasta
     ? aFechaCalendario(filtroHasta)?.subtract({ days: 1 }).toString() ?? ''
     : '';

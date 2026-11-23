@@ -72,7 +72,7 @@ import { cilChevronLeft, cilChevronRight, cilSearch, cilX } from '@coreui/icons'
 import { EsqueletoFilas, SinDatos, SinResultados } from '@/componentes/EstadoTabla.js';
 import CampoFecha from '@/componentes/formulario/CampoFecha.js';
 import CampoLista from '@/componentes/formulario/CampoLista.js';
-import { useEstadoGuardado } from '@/utils/estadoGuardado.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 const TAMANO_PAGINA = 10;
 
@@ -96,15 +96,15 @@ export default function TablaDatos({
   /** Lo que va entre los filtros y la tabla (por ejemplo, gráficos que dependen de los mismos filtros). */
   antesDeLaTabla = null,
 }) {
-  // El buscador y la pagina se recuerdan, igual que los filtros de cada pantalla:
-  // al volver de un detalle, el listado aparece como se lo dejo.
-  const [busqueda, setBusqueda] = useEstadoGuardado('tabla:busqueda', '');
-  const [paginaPedida, setPaginaPedida] = useEstadoGuardado('tabla:pagina', 1);
+  const [busqueda, setBusqueda] = useFiltroPersistente('busqueda', '');
+  const [paginaPedida, setPaginaPedida] = useState(1);
 
   // Para que cada desplegable tenga su propio id, aunque haya dos tablas.
   const idFiltros = useId();
 
-  const hayFiltrosAplicados = filtros.some((filtro) => filtro.valor !== '' && filtro.valor != null);
+  const hayBusquedaAplicada = busqueda.trim() !== '';
+  const hayFiltrosDesplegables = filtros.some((filtro) => filtro.valor !== '' && filtro.valor != null);
+  const hayFiltrosAplicados = hayFiltrosDesplegables || hayBusquedaAplicada;
 
   const filasFiltradas = useMemo(() => {
     const texto = busqueda.trim().toLowerCase();
@@ -183,13 +183,14 @@ export default function TablaDatos({
                 )
               )}
 
-              {alLimpiar && hayFiltrosAplicados && (
+              {(alLimpiar || hayBusquedaAplicada) && hayFiltrosAplicados && (
                 <CButton
                   color="secondary"
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    alLimpiar();
+                    alLimpiar?.();
+                    setBusqueda('');
                     setPaginaPedida(1);
                   }}
                   title="Quitar todos los filtros"
@@ -199,6 +200,22 @@ export default function TablaDatos({
                 </CButton>
               )}
             </>
+          )}
+
+          {filtros.length === 0 && hayBusquedaAplicada && (
+            <CButton
+              color="secondary"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setBusqueda('');
+                setPaginaPedida(1);
+              }}
+              title="Limpiar búsqueda"
+            >
+              <CIcon icon={cilX} size="sm" className="me-1" />
+              Limpiar
+            </CButton>
           )}
         </div>
 
@@ -223,7 +240,7 @@ export default function TablaDatos({
         blanco). Con filtros o busqueda y sin resultados: se dice que se busco
         y se ofrece la salida, en lugar de decir que no hay datos cargados.
       */}
-      {!cargando && filas.length === 0 && !hayFiltrosAplicados ? (
+      {!cargando && filas.length === 0 && !hayFiltrosDesplegables ? (
         <SinDatos texto={textoVacio} />
       ) : !cargando && filasFiltradas.length === 0 ? (
         <SinResultados
@@ -233,9 +250,10 @@ export default function TablaDatos({
             setPaginaPedida(1);
           }}
           alQuitarFiltros={
-            alLimpiar && hayFiltrosAplicados
+            alLimpiar && hayFiltrosDesplegables
               ? () => {
                   alLimpiar();
+                  setBusqueda('');
                   setPaginaPedida(1);
                 }
               : undefined

@@ -21,11 +21,11 @@ import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { useSesion } from '@/componentes/layout/ContextoSesion.js';
 import { listarAlertasStock } from '@/servicios/inventario.js';
 import { listarNotificaciones } from '@/servicios/notificaciones.js';
-import { useEstadoGuardado } from '@/utils/estadoGuardado.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 function AlertasDeStock() {
   const [alertas, setAlertas] = useState([]);
-  const [categoria, setCategoria] = useEstadoGuardado('filtroCategoria', '');
+  const [categoria, setCategoria] = useFiltroPersistente('categoria', '');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 

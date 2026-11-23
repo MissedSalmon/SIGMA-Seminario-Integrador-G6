@@ -28,7 +28,7 @@ import EtiquetaEstadoPrestamo from '@/componentes/tareas/EtiquetaEstadoPrestamo.
 import TareaDelHistorial from '@/componentes/tareas/TareaDelHistorial.js';
 import { listarHistorialHerramientas } from '@/servicios/tareas.js';
 import { formatearFecha } from '@/utils/fechas.js';
-import { useEstadoGuardado } from '@/utils/estadoGuardado.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 const ESTADOS = ['En uso', 'Devuelta'];
 
@@ -41,7 +41,7 @@ export default function PantallaHerramientasUtilizadas() {
   const [prestamos, setPrestamos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
-  const [filtroEstado, setFiltroEstado] = useState('');
+  const [filtroEstado, setFiltroEstado] = useFiltroPersistente('estado', '');
   const [aDevolver, setADevolver] = useState(null);
   // Se suma 1 para volver a pedir la lista después de una devolución.
   const [recarga, setRecarga] = useState(0);

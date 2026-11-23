@@ -42,6 +42,7 @@ import GraficoChart, { COLORES_GRAFICO } from '@/componentes/estadisticas/Grafic
 import TalonesAbiertos from '@/componentes/ordenes/TalonesAbiertos.js';
 import { obtenerPanelCompleto } from '@/servicios/estadisticas.js';
 import { hoyTexto } from '@/utils/fechas.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 import { textoTiempo } from '@/utils/duracion.js';
 
 const PRESETS_PERIODO = [
@@ -103,10 +104,127 @@ function Pendiente({ rotulo, cantidad, accion, href }) {
   );
 }
 
+const TOP_FALLAS = 5;
+
+const MODOS_FALLAS = [
+  { clave: 'tipos', label: 'Tipos de activo' },
+  { clave: 'activos', label: 'Activos' },
+];
+
+/**
+ * Si el payload sólo trajo el ranking por áreas con sus incidencias, reconstruye
+ * los rankings por tipo de activo y por activo específico con las mismas reglas del backend.
+ */
+function extraerRankingsFallas(areasIncidencia, rankingAreas) {
+  if (Array.isArray(areasIncidencia?.porTipoActivo) && Array.isArray(areasIncidencia?.porActivo)) {
+    return {
+      porTipoActivo: areasIncidencia.porTipoActivo,
+      porActivo: areasIncidencia.porActivo,
+    };
+  }
+
+  const fallasVistas = new Set();
+  const porTipo = new Map();
+  const porActivo = new Map();
+
+  for (const area of rankingAreas ?? []) {
+    const nombreArea = area?.nombreArea ?? 'Sin área';
+    for (const inc of area?.incidencias ?? []) {
+      const claveFalla = inc.idFalla ?? `${inc.idOt}-${inc.idTarea}-${inc.codigoActivo}`;
+      if (fallasVistas.has(claveFalla)) continue;
+      fallasVistas.add(claveFalla);
+
+      const tipoLimpio = (inc.nombreTipoActivo ?? '').trim();
+      const sinTipo = !tipoLimpio;
+      const nombreTipoActivo = sinTipo ? 'Sin tipo' : tipoLimpio;
+      const claveTipo = sinTipo ? '__sin_tipo__' : nombreTipoActivo;
+
+      if (!porTipo.has(claveTipo)) {
+        porTipo.set(claveTipo, {
+          nombreTipoActivo,
+          sinTipo,
+          cantidadFallas: 0,
+          activos: new Set(),
+          tickets: new Set(),
+        });
+      }
+      const gTipo = porTipo.get(claveTipo);
+      gTipo.cantidadFallas += 1;
+      if (inc.codigoActivo) gTipo.activos.add(inc.codigoActivo);
+      if (inc.ticket?.id != null) gTipo.tickets.add(inc.ticket.id);
+
+      if (inc.codigoActivo) {
+        if (!porActivo.has(inc.codigoActivo)) {
+          porActivo.set(inc.codigoActivo, {
+            codigoActivo: inc.codigoActivo,
+            nombreTipoActivo,
+            nombreArea,
+            nombreEdificio: inc.nombreEdificio || area?.nombreEdificio || '',
+            nombreEspacio: inc.nombreEspacio || (inc.numeroEspacio ? `Espacio ${inc.numeroEspacio}` : ''),
+            cantidadFallas: 0,
+            tickets: new Set(),
+          });
+        }
+        const gActivo = porActivo.get(inc.codigoActivo);
+        gActivo.cantidadFallas += 1;
+        if (inc.ticket?.id != null) gActivo.tickets.add(inc.ticket.id);
+      }
+    }
+  }
+
+  const total = fallasVistas.size;
+  const pct = (cant) => (total > 0 ? Math.round((cant / total) * 1000) / 10 : 0);
+
+  return {
+    porTipoActivo: [...porTipo.values()]
+      .map((g) => ({
+        nombreTipoActivo: g.nombreTipoActivo,
+        sinTipo: g.sinTipo,
+        cantidadFallas: g.cantidadFallas,
+        cantidadActivos: g.activos.size,
+        cantidadTickets: g.tickets.size,
+        porcentaje: pct(g.cantidadFallas),
+      }))
+      .sort((a, b) => {
+        if (a.sinTipo !== b.sinTipo) return a.sinTipo ? 1 : -1;
+        return (
+          b.cantidadFallas - a.cantidadFallas ||
+          b.cantidadActivos - a.cantidadActivos ||
+          b.cantidadTickets - a.cantidadTickets ||
+          a.nombreTipoActivo.localeCompare(b.nombreTipoActivo, 'es')
+        );
+      })
+      .map(({ sinTipo: _s, ...item }, idx) => ({ posicion: idx + 1, ...item })),
+    porActivo: [...porActivo.values()]
+      .map((g) => ({
+        codigoActivo: g.codigoActivo,
+        nombreTipoActivo: g.nombreTipoActivo,
+        etiqueta:
+          g.nombreTipoActivo && g.nombreTipoActivo !== 'Sin tipo'
+            ? `${g.codigoActivo} · ${g.nombreTipoActivo}`
+            : g.codigoActivo,
+        nombreArea: g.nombreArea,
+        nombreEdificio: g.nombreEdificio,
+        nombreEspacio: g.nombreEspacio,
+        cantidadFallas: g.cantidadFallas,
+        cantidadTickets: g.tickets.size,
+        porcentaje: pct(g.cantidadFallas),
+      }))
+      .sort(
+        (a, b) =>
+          b.cantidadFallas - a.cantidadFallas ||
+          b.cantidadTickets - a.cantidadTickets ||
+          a.codigoActivo.localeCompare(b.codigoActivo, 'es')
+      )
+      .map((item, idx) => ({ posicion: idx + 1, ...item })),
+  };
+}
+
 export default function PantallaPanelAdministrador() {
-  const [preset, setPreset] = useState('180d');
-  const [desde, setDesde] = useState(() => restarDias(hoyTexto(), 180));
-  const [hasta, setHasta] = useState(() => hoyTexto());
+  const [preset, setPreset] = useFiltroPersistente('preset', '180d');
+  const [desde, setDesde] = useFiltroPersistente('desde', restarDias(hoyTexto(), 180));
+  const [hasta, setHasta] = useFiltroPersistente('hasta', hoyTexto());
+  const [modoFallas, setModoFallas] = useFiltroPersistente('panel-modo-fallas', 'tipos');
 
   const [panelPayload, setPanelPayload] = useState(null);
   const [cargando, setCargando] = useState(true);
@@ -210,6 +328,10 @@ export default function PantallaPanelAdministrador() {
   const cargaTec = datos.cargaTecnicos ?? {};
   const areas = datos.areasIncidencia ?? {};
   const rankingAreas = Array.isArray(areas) ? areas : (areas.ranking ?? []);
+  const { porTipoActivo: rankingTiposActivo, porActivo: rankingActivos } = extraerRankingsFallas(areas, rankingAreas);
+  const esVistaTipos = modoFallas !== 'activos';
+  const listaActivaFallas = esVistaTipos ? rankingTiposActivo : rankingActivos;
+  const topFallas = listaActivaFallas.slice(0, TOP_FALLAS);
   const cobertura = resumen.coberturaPreventiva ?? {};
   const tiposSinPlan = cobertura.tiposSinPlan?.length ?? Math.max(0, (cobertura.totalTipos ?? 0) - (cobertura.tiposConPlan ?? 0));
   const materialesBajos = resumen.materialesBajoMinimo?.items ?? [];
@@ -617,19 +739,154 @@ export default function PantallaPanelAdministrador() {
                   id="grafico-areas-incidencias"
                   tipo="bar"
                   horizontal={true}
-                  titulo="Áreas con más incidencias"
-                  subtitulo="Cantidad de fallas registradas en activos de cada área."
-                  mensajeVacio="Sin incidencias en el período seleccionado"
+                  titulo={esVistaTipos ? 'Tipos de activos con más fallas' : 'Activos con más fallas'}
+                  mensajeVacio="Sin fallas registradas en el período seleccionado"
+                  controlesEncabezado={
+                    <div
+                      className="sigma-segmentos sigma-segmentos--compacto"
+                      role="group"
+                      aria-label="Agrupar fallas por tipo de activo o por activo"
+                    >
+                      {MODOS_FALLAS.map((m) => (
+                        <button
+                          key={m.clave}
+                          type="button"
+                          className="sigma-segmento"
+                          aria-pressed={(esVistaTipos ? 'tipos' : 'activos') === m.clave}
+                          onClick={() => setModoFallas(m.clave)}
+                        >
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
+                  }
                   data={{
-                    labels: rankingAreas.slice(0, 8).map((a) => a.nombreArea ?? a.nombre) ?? [],
+                    labels: topFallas.map((item) =>
+                      esVistaTipos
+                        ? item.nombreTipoActivo
+                        : (item.etiqueta ?? `${item.codigoActivo} · ${item.nombreTipoActivo}`)
+                    ),
                     datasets: [
                       {
                         label: 'Fallas registradas',
-                        data: rankingAreas.slice(0, 8).map((a) => a.cantidadFallas ?? a.fallas) ?? [],
+                        data: topFallas.map((item) => item.cantidadFallas),
+                        backgroundColor: COLORES_GRAFICO.petroleo,
+                        borderColor: COLORES_GRAFICO.petroleo,
+                        detalles: topFallas.map((item) =>
+                          esVistaTipos
+                            ? `${contar(item.cantidadActivos, 'activo afectado', 'activos afectados')} · ${contar(item.cantidadTickets, 'ticket', 'tickets')} · ${porcentaje(item.porcentaje)}`
+                            : `${[item.nombreArea, item.nombreEdificio, item.nombreEspacio].filter(Boolean).join(' · ')} · ${contar(item.cantidadTickets, 'ticket', 'tickets')} · ${porcentaje(item.porcentaje)}`
+                        ),
                       },
                     ],
                   }}
-                  altura={Math.max(200, Math.min(rankingAreas.length, 8) * 44 + 70)}
+                  tablaCompleta={
+                    esVistaTipos
+                      ? {
+                          etiquetaTotal:
+                            rankingTiposActivo.length === 1
+                              ? 'tipo de activo con fallas'
+                              : 'tipos de activo con fallas',
+                          columnas: [
+                            { clave: 'posicion', titulo: '#', render: (f) => f.posicion },
+                            {
+                              clave: 'nombreTipoActivo',
+                              titulo: 'Tipo de activo',
+                              clase: 'fw-semibold',
+                              render: (f) => f.nombreTipoActivo,
+                            },
+                            {
+                              clave: 'cantidadActivos',
+                              titulo: 'Activos afectados',
+                              alinear: 'end',
+                              render: (f) => numero(f.cantidadActivos, 0),
+                            },
+                            {
+                              clave: 'cantidadTickets',
+                              titulo: 'Tickets',
+                              alinear: 'end',
+                              render: (f) => numero(f.cantidadTickets, 0),
+                            },
+                            {
+                              clave: 'cantidadFallas',
+                              titulo: 'Fallas',
+                              alinear: 'end',
+                              clase: 'fw-semibold',
+                              render: (f) => numero(f.cantidadFallas, 0),
+                            },
+                            {
+                              clave: 'porcentaje',
+                              titulo: '% del total',
+                              alinear: 'end',
+                              clase: 'text-body-secondary',
+                              render: (f) => porcentaje(f.porcentaje),
+                            },
+                          ],
+                          filas: rankingTiposActivo.map((item) => ({
+                            ...item,
+                            clave: item.nombreTipoActivo,
+                          })),
+                        }
+                      : {
+                          etiquetaTotal:
+                            rankingActivos.length === 1 ? 'activo con fallas' : 'activos con fallas',
+                          columnas: [
+                            { clave: 'posicion', titulo: '#', render: (f) => f.posicion },
+                            {
+                              clave: 'codigoActivo',
+                              titulo: 'Activo',
+                              render: (f) => (
+                                <div>
+                                  <Link
+                                    href={`/activos/${encodeURIComponent(f.codigoActivo)}`}
+                                    className="fw-semibold text-decoration-none"
+                                  >
+                                    {f.codigoActivo}
+                                  </Link>
+                                  <div className="small text-body-secondary">{f.nombreTipoActivo}</div>
+                                </div>
+                              ),
+                            },
+                            {
+                              clave: 'ubicacion',
+                              titulo: 'Área y ubicación',
+                              render: (f) => (
+                                <div>
+                                  <div className="fw-medium">{f.nombreArea || 'Sin área'}</div>
+                                  <div className="small text-body-secondary">
+                                    {[f.nombreEdificio, f.nombreEspacio].filter(Boolean).join(' · ') || '-'}
+                                  </div>
+                                </div>
+                              ),
+                            },
+                            {
+                              clave: 'cantidadTickets',
+                              titulo: 'Tickets',
+                              alinear: 'end',
+                              render: (f) => numero(f.cantidadTickets, 0),
+                            },
+                            {
+                              clave: 'cantidadFallas',
+                              titulo: 'Fallas',
+                              alinear: 'end',
+                              clase: 'fw-semibold',
+                              render: (f) => numero(f.cantidadFallas, 0),
+                            },
+                            {
+                              clave: 'porcentaje',
+                              titulo: '% del total',
+                              alinear: 'end',
+                              clase: 'text-body-secondary',
+                              render: (f) => porcentaje(f.porcentaje),
+                            },
+                          ],
+                          filas: rankingActivos.map((item) => ({
+                            ...item,
+                            clave: item.codigoActivo,
+                          })),
+                        }
+                  }
+                  altura={Math.max(200, Math.min(topFallas.length, TOP_FALLAS) * 44 + 70)}
                 />
               </CCol>
 

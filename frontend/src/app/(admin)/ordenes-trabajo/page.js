@@ -27,7 +27,7 @@ import EtiquetaPrioridad from '@/componentes/ordenes/EtiquetaPrioridad.js';
 import { listarActivos } from '@/servicios/activos.js';
 import { listarOrdenes, listarEstadosDeOrden, listarPrioridades } from '@/servicios/ordenesTrabajo.js';
 import { formatearFechaHora, inicioDelDia, finDelDia } from '@/utils/fechas.js';
-import { useEstadoGuardado } from '@/utils/estadoGuardado.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 export default function PantallaOrdenesTrabajo() {
   const [ordenes, setOrdenes] = useState([]);
@@ -37,11 +37,11 @@ export default function PantallaOrdenesTrabajo() {
   const [prioridades, setPrioridades] = useState([]);
   const [activos, setActivos] = useState([]);
 
-  const [filtroEstado, setFiltroEstado] = useEstadoGuardado('filtroEstado', '');
-  const [filtroPrioridad, setFiltroPrioridad] = useEstadoGuardado('filtroPrioridad', '');
-  const [filtroActivo, setFiltroActivo] = useEstadoGuardado('filtroActivo', '');
-  const [filtroDesde, setFiltroDesde] = useEstadoGuardado('filtroDesde', '');
-  const [filtroHasta, setFiltroHasta] = useEstadoGuardado('filtroHasta', '');
+  const [filtroEstado, setFiltroEstado] = useFiltroPersistente('estado', '');
+  const [filtroPrioridad, setFiltroPrioridad] = useFiltroPersistente('prioridad', '');
+  const [filtroActivo, setFiltroActivo] = useFiltroPersistente('activo', '');
+  const [filtroDesde, setFiltroDesde] = useFiltroPersistente('desde', '');
+  const [filtroHasta, setFiltroHasta] = useFiltroPersistente('hasta', '');
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');

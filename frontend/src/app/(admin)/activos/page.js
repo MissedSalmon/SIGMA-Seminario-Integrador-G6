@@ -24,6 +24,7 @@ import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { listarEspacios } from '@/servicios/espacios.js';
 import { listarTiposActivos } from '@/servicios/tiposActivos.js';
 import { listarActivos, darDeBajaActivo } from '@/servicios/activos.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 import {
   CDropdown,
   CDropdownToggle,
@@ -43,9 +44,9 @@ export default function PantallaActivos() {
   const [tipos, setTipos] = useState([]);
 
   // El espacio se guarda como "edificio|numero" porque su clave son dos datos.
-  const [filtroEspacio, setFiltroEspacio] = useEstadoGuardado('filtroEspacio', '');
-  const [filtroTipo, setFiltroTipo] = useEstadoGuardado('filtroTipo', '');
-  const [filtroEstado, setFiltroEstado] = useEstadoGuardado('filtroEstado', '');
+  const [filtroEspacio, setFiltroEspacio] = useFiltroPersistente('espacio', '');
+  const [filtroTipo, setFiltroTipo] = useFiltroPersistente('tipo', '');
+  const [filtroEstado, setFiltroEstado] = useFiltroPersistente('estado', '');
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');

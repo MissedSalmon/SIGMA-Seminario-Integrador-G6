@@ -27,16 +27,16 @@ import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { eliminarItem, listarItems } from '@/servicios/inventario.js';
-import { useEstadoGuardado } from '@/utils/estadoGuardado.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 const ESTADOS = ['Disponible', 'En uso', 'Fuera de servicio'];
 
 export default function PantallaHerramientas() {
   const { mostrarToast } = useToast();
   const [herramientas, setHerramientas] = useState([]);
-  const [categoria, setCategoria] = useEstadoGuardado('filtroCategoria', '');
-  const [estado, setEstado] = useEstadoGuardado('filtroEstado', '');
-  const [tecnico, setTecnico] = useEstadoGuardado('filtroTecnico', '');
+  const [categoria, setCategoria] = useFiltroPersistente('categoria', '');
+  const [estado, setEstado] = useFiltroPersistente('estado', '');
+  const [tecnico, setTecnico] = useFiltroPersistente('tecnico', '');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [aEliminar, setAEliminar] = useState(null);

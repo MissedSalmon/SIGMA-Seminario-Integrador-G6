@@ -15,12 +15,12 @@ import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { eliminarTipoInventario, listarTiposInventario } from '@/servicios/inventario.js';
-import { useEstadoGuardado } from '@/utils/estadoGuardado.js';
+import { useFiltroPersistente } from '@/utils/filtros.js';
 
 export default function PantallaTiposInventario() {
   const { mostrarToast } = useToast();
   const [tipos, setTipos] = useState([]);
-  const [clase, setClase] = useEstadoGuardado('filtroClase', '');
+  const [clase, setClase] = useFiltroPersistente('clase', '');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [aEliminar, setAEliminar] = useState(null);
