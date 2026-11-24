@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'supersecret123');
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
 function normalizarRol(rol) {
   if (rol === null || rol === undefined) return null;
