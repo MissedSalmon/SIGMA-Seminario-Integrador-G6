@@ -15,6 +15,9 @@ import { nombreDelEspacio } from '../utiles/espacios.js';
  */
 export const ESTADOS = ENUM_ESTADO_TICKET.textos;
 export const ESTADO_INICIAL = 'Creado';
+const SEPARADOR_MOTIVO_RECHAZO = '\n\n--- MOTIVO DE RECHAZO ---\n';
+export const MOTIVO_RECHAZO_ACTIVO_RETIRADO =
+  'Rechazado automáticamente porque el activo se encuentra actualmente retirado.';
 
 /** El texto del estado guardado en la base. */
 function normalizarEstado(codigo) {
@@ -93,11 +96,10 @@ function aTicket(fila) {
 
   let descripcion = fila.ticket_desc;
   let motivoRechazo = null;
-  const separador = '\n\n--- MOTIVO DE RECHAZO ---\n';
-  if (descripcion && descripcion.includes(separador)) {
-    const partes = descripcion.split(separador);
+  if (descripcion && descripcion.includes(SEPARADOR_MOTIVO_RECHAZO)) {
+    const partes = descripcion.split(SEPARADOR_MOTIVO_RECHAZO);
     descripcion = partes[0];
-    motivoRechazo = partes.slice(1).join(separador);
+    motivoRechazo = partes.slice(1).join(SEPARADOR_MOTIVO_RECHAZO);
   }
 
   return {
@@ -184,10 +186,45 @@ export async function obtenerTodos(filtros = {}, usuario = null) {
   const { data, error } = await consulta;
   if (error) throw new Error(error.message);
 
-  return data.map(aTicket);
+  const tickets = data.map(aTicket);
+  const actualizados = await Promise.all(
+    tickets.map((ticket) =>
+      debeRechazarsePorActivoRetirado(ticket)
+        ? aplicarRechazo(ticket, MOTIVO_RECHAZO_ACTIVO_RETIRADO)
+        : ticket
+    )
+  );
+
+  if (filtros.estado && filtros.estado !== 'Rechazado') {
+    return actualizados.filter((ticket) => ticket.estado === filtros.estado);
+  }
+
+  return actualizados;
 }
 
-export async function obtenerPorId(id, usuario = null) {
+function debeRechazarsePorActivoRetirado(ticket) {
+  return ticket.estado === ESTADO_INICIAL && ticket.activo?.estado === 'Retirado';
+}
+
+async function aplicarRechazo(ticket, motivo) {
+  const { data, error } = await supabase
+    .from('ticket')
+    .update({
+      ticket_estado: ENUM_ESTADO_TICKET.codigo('Rechazado'),
+      ticket_desc: ticket.descripcion + SEPARADOR_MOTIVO_RECHAZO + motivo,
+    })
+    .eq('ticket_id', ticket.id)
+    .select(COLUMNAS)
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return aTicket(data);
+}
+
+async function buscarPorId(id) {
   const { data, error } = await supabase
     .from('ticket')
     .select(COLUMNAS)
@@ -197,14 +234,55 @@ export async function obtenerPorId(id, usuario = null) {
   if (error) throw new Error(error.message);
   if (!data) throw noEncontrado(`No existe el ticket ${id}.`);
 
-  const ticket = aTicket(data);
+  return aTicket(data);
+}
+
+export async function obtenerPorId(id, usuario = null) {
+  const ticket = await buscarPorId(id);
 
   // Si es un usuario autorizado, solo puede ver tickets de su propia autoría
   if (usuario?.rol === 'autorizado' && ticket.registradoPor?.legajo !== usuario.identificador) {
     throw noEncontrado(`No existe el ticket ${id}.`);
   }
 
+  if (debeRechazarsePorActivoRetirado(ticket)) {
+    return aplicarRechazo(ticket, MOTIVO_RECHAZO_ACTIVO_RETIRADO);
+  }
+
   return ticket;
+}
+
+/**
+ * Rechaza automáticamente todos los tickets pendientes de validación ("Creado")
+ * asociados a un activo que pasó a estado "Retirado".
+ */
+export async function rechazarPendientesDeActivoRetirado(codigoActivo) {
+  const { data: pendientes, error } = await supabase
+    .from('ticket')
+    .select('ticket_id, ticket_desc')
+    .eq('activo_codigo', codigoActivo)
+    .eq('ticket_estado', ENUM_ESTADO_TICKET.codigo(ESTADO_INICIAL));
+
+  if (error) throw new Error(error.message);
+  if (!pendientes || pendientes.length === 0) return 0;
+
+  let rechazados = 0;
+  for (const fila of pendientes) {
+    const descripcionBase = (fila.ticket_desc ?? '').split(SEPARADOR_MOTIVO_RECHAZO)[0];
+    const { error: errorUpdate } = await supabase
+      .from('ticket')
+      .update({
+        ticket_estado: ENUM_ESTADO_TICKET.codigo('Rechazado'),
+        ticket_desc: descripcionBase + SEPARADOR_MOTIVO_RECHAZO + MOTIVO_RECHAZO_ACTIVO_RETIRADO,
+      })
+      .eq('ticket_id', fila.ticket_id)
+      .eq('ticket_estado', ENUM_ESTADO_TICKET.codigo(ESTADO_INICIAL));
+
+    if (errorUpdate) throw new Error(errorUpdate.message);
+    rechazados += 1;
+  }
+
+  return rechazados;
 }
 
 /**
@@ -295,10 +373,14 @@ export async function crear(datos, usuario = null) {
  * mano con el boton "Crear OT".
  */
 export async function validar(id) {
-  const ticket = await obtenerPorId(id);
+  const ticket = await buscarPorId(id);
 
   if (ticket.estado !== ESTADO_INICIAL) {
     throw datoInvalido(`El ticket solo se puede validar si está en estado ${ESTADO_INICIAL}. Estado actual: ${ticket.estado}`);
+  }
+
+  if (ticket.activo?.estado === 'Retirado') {
+    return aplicarRechazo(ticket, MOTIVO_RECHAZO_ACTIVO_RETIRADO);
   }
 
   const { error } = await supabase
@@ -322,7 +404,7 @@ export async function validar(id) {
   }
 
   // Se vuelve a leer para devolver el ticket ya con su OT.
-  return obtenerPorId(id);
+  return buscarPorId(id);
 }
 
 /**
@@ -335,25 +417,11 @@ export async function rechazar(id, motivo) {
     throw datoInvalido('Debe indicar el motivo del rechazo.');
   }
 
-  const ticket = await obtenerPorId(id);
-  
+  const ticket = await buscarPorId(id);
+
   if (ticket.estado !== ESTADO_INICIAL) {
     throw datoInvalido(`El ticket solo se puede rechazar si está en estado ${ESTADO_INICIAL}. Estado actual: ${ticket.estado}`);
   }
 
-  const { data, error } = await supabase
-    .from('ticket')
-    .update({
-      ticket_estado: ENUM_ESTADO_TICKET.codigo('Rechazado'),
-      ticket_desc: ticket.descripcion + '\n\n--- MOTIVO DE RECHAZO ---\n' + motivoLimpio
-    })
-    .eq('ticket_id', id)
-    .select(COLUMNAS)
-    .single();
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return aTicket(data);
+  return aplicarRechazo(ticket, motivoLimpio);
 }

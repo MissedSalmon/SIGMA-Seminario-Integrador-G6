@@ -133,11 +133,25 @@ export default function PantallaDetalleTicket({ params }) {
     setError('');
     setErrorValidar('');
 
+    let ticketActualizado;
     try {
-      await validarTicket(id);
+      ticketActualizado = await validarTicket(id);
     } catch (err) {
       setErrorValidar(err.message);
       setProcesando(false);
+      return;
+    }
+
+    if (ticketActualizado?.estado === 'Rechazado') {
+      mostrarToast({
+        tipo: 'aviso',
+        mensaje:
+          ticketActualizado.motivoRechazo ||
+          'El ticket fue rechazado automáticamente porque el activo se encuentra actualmente retirado.',
+      });
+      setModalValidarVisible(false);
+      setProcesando(false);
+      setTicket(ticketActualizado);
       return;
     }
 
