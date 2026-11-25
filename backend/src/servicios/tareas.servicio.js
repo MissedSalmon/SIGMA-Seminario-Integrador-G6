@@ -776,7 +776,7 @@ export async function quitarFalla(legajo, idOt, idTarea) {
  * de servicio, no aparece.
  */
 export async function listarHerramientas(legajo) {
-  const herramientas = await inventario.obtenerItems('Herramienta');
+  const herramientas = await inventario.obtenerUnidadesHerramienta();
 
   const resumen = (herramienta) => ({
     codigo: herramienta.codigo,

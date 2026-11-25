@@ -1,35 +1,13 @@
 'use client';
 
-/**
- * /inventario/herramientas/TO-201 - la ficha de una herramienta (HU-16).
- *
- * Sus datos (estado y a que tecnico esta asignada) y, debajo, dos historiales:
- *   - el de asignaciones: que tecnico la tuvo, desde cuando y hasta cuando;
- *   - el de ingresos: cada renglon viene de un remito.
- * Van separados porque cuentan cosas distintas: una asignacion o una
- * devolucion no cambian ningun numero del deposito.
- *
- * Desde aca tambien se asigna a un tecnico o se registra la devolucion
- * (devolucion del Sprint 3). Y se cambia su estado: una disponible se pone
- * fuera de servicio, y una fuera de servicio se vuelve a poner en servicio
- * (por ejemplo, despues de repararla).
- */
 import { use, useEffect, useState } from 'react';
 import {
+  CButton,
+  CButtonGroup,
   CCard,
   CCardBody,
   CCardHeader,
   CCol,
-  CDropdown,
-  CDropdownDivider,
-  CDropdownItem,
-  CDropdownMenu,
-  CDropdownToggle,
-  CModal,
-  CModalBody,
-  CModalFooter,
-  CModalHeader,
-  CModalTitle,
   CRow,
   CTable,
   CTableBody,
@@ -39,227 +17,194 @@ import {
   CTableRow,
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilActionUndo, cilArrowLeft, cilCheckCircle, cilPencil, cilTrash, cilUserFollow } from '@coreui/icons';
+import { cilArrowLeft, cilDescription, cilPencil, cilPlus, cilTrash } from '@coreui/icons';
 
-import Dato from '@/componentes/Dato.js';
-import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
-import BotonesAccion from '@/componentes/BotonesAccion.js';
+import Dato from '@/componentes/Dato.js';
+import DialogoEliminar from '@/componentes/DialogoEliminar.js';
+import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import { Cargando, SinDatos } from '@/componentes/EstadoTabla.js';
-import DialogoAsignacion from '@/componentes/inventario/DialogoAsignacion.js';
+import DialogoIngresoHerramienta from '@/componentes/inventario/DialogoIngresoHerramienta.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
-import {
-  eliminarItem,
-  listarAsignaciones,
-  listarMovimientos,
-  obtenerItem,
-  ponerEnServicio,
-} from '@/servicios/inventario.js';
-import { formatearFechaHora, soloFechaLegible } from '@/utils/fechas.js';
+import { eliminarItem, listarMovimientos, obtenerItem } from '@/servicios/inventario.js';
+import { soloFechaLegible } from '@/utils/fechas.js';
 
-/** Texto en gris e itálica para decir que algo no está. */
 function SinDato({ children }) {
   return <span className="text-body-tertiary fst-italic">{children}</span>;
 }
 
-export default function PantallaFichaItem({ params }) {
+export default function PantallaFichaHerramienta({ params }) {
   const { codigo } = use(params);
-
-  // El codigo viaja en la direccion, asi que puede venir escapado ("AC%2D014").
-  const codigoItem = decodeURIComponent(codigo);
-
-  const [item, setItem] = useState(null);
+  const codigoModelo = decodeURIComponent(codigo);
+  const { mostrarToast } = useToast();
+  const [modelo, setModelo] = useState(null);
   const [movimientos, setMovimientos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
-  const [asignaciones, setAsignaciones] = useState([]);
-  const [asignando, setAsignando] = useState(false);
-  // El cambio de estado que se esta confirmando: 'fuera' (ponerla fuera de
-  // servicio), 'servicio' (volver a ponerla en servicio) o null.
-  const [cambioEstado, setCambioEstado] = useState(null);
-  const [cambiandoEstado, setCambiandoEstado] = useState(false);
+  const [ingresoManual, setIngresoManual] = useState(false);
+  const [unidadADarDeBaja, setUnidadADarDeBaja] = useState(null);
+  const [dandoDeBaja, setDandoDeBaja] = useState(false);
   const [recarga, setRecarga] = useState(0);
-  const { mostrarToast } = useToast();
 
-  async function confirmarCambioEstado() {
-    setCambiandoEstado(true);
-    try {
-      if (cambioEstado === 'fuera') {
-        // La baja de una herramienta no la borra: la pasa a Fuera de servicio.
-        await eliminarItem(item.codigo);
-        mostrarToast({ tipo: 'exito', mensaje: `"${item.nombre}" quedó fuera de servicio.` });
-      } else {
-        await ponerEnServicio(item.codigo);
-        mostrarToast({ tipo: 'exito', mensaje: `"${item.nombre}" volvió a estar en servicio.` });
+  useEffect(() => {
+    async function cargar() {
+      try {
+        const [ficha, historialIngresos] = await Promise.all([obtenerItem(codigoModelo), listarMovimientos(codigoModelo)]);
+        setModelo(ficha);
+        setMovimientos(historialIngresos);
+      } catch (fallo) {
+        setError(fallo.message);
+      } finally {
+        setCargando(false);
       }
-      setRecarga((numero) => numero + 1);
+    }
+    cargar();
+  }, [codigoModelo, recarga]);
+
+  async function darDeBaja() {
+    setDandoDeBaja(true);
+    try {
+      await eliminarItem(unidadADarDeBaja.codigo);
+      mostrarToast({ tipo: 'exito', mensaje: `La herramienta ${unidadADarDeBaja.codigo} quedó fuera de servicio.` });
+      setRecarga((valor) => valor + 1);
     } catch (fallo) {
       setError(fallo.message);
     } finally {
-      setCambioEstado(null);
-      setCambiandoEstado(false);
+      setUnidadADarDeBaja(null);
+      setDandoDeBaja(false);
     }
   }
 
-  useEffect(() => {
-    Promise.all([obtenerItem(codigoItem), listarMovimientos(codigoItem), listarAsignaciones(codigoItem)])
-      .then(([ficha, historial, prestamos]) => {
-        setItem(ficha);
-        setMovimientos(historial);
-        setAsignaciones(prestamos);
-      })
-      .catch((fallo) => setError(fallo.message))
-      .finally(() => setCargando(false));
-  }, [codigoItem, recarga]);
+  function ingresoGuardado() {
+    setIngresoManual(false);
+    setRecarga((valor) => valor + 1);
+  }
 
+  const unidades = modelo?.unidades ?? [];
   return (
     <>
-      {/* Las acciones de la ficha van arriba a la derecha, como en el resto de las pantallas. */}
       <EncabezadoPagina
-        titulo={item ? item.nombre : 'Ficha del ítem'}
-        descripcion={item ? `${item.codigo} — ${item.clase}` : undefined}
+        titulo={modelo?.nombre ?? 'Detalle de herramienta'}
         accionesExtra={
-          item && (
+          modelo && (
             <>
               <BotonEnlace
-                href={`/inventario/herramientas/${encodeURIComponent(item.codigo)}/editar`}
+                href={`/inventario/herramientas/${encodeURIComponent(modelo.codigo)}/editar`}
                 color="secondary"
                 variante="outline"
               >
                 <CIcon icon={cilPencil} className="me-2" />
                 Editar
               </BotonEnlace>
-              <CDropdown placement="bottom-end">
-                <CDropdownToggle color="secondary" variant="outline">
-                  Opciones
-                </CDropdownToggle>
-                <CDropdownMenu className="shadow-sm border" style={{ minWidth: '14rem' }}>
-                  {/* Fuera de servicio no se asigna: lo que se puede hacer es volver a ponerla en servicio. */}
-                  {item.estado === 'Fuera de servicio' ? (
-                    <CDropdownItem
-                      as="button"
-                      className="d-flex align-items-center gap-2 py-2"
-                      onClick={() => setCambioEstado('servicio')}
-                    >
-                      <CIcon icon={cilCheckCircle} />
-                      Poner en servicio
-                    </CDropdownItem>
-                  ) : (
-                    <CDropdownItem
-                      as="button"
-                      className="d-flex align-items-center gap-2 py-2"
-                      onClick={() => setAsignando(true)}
-                    >
-                      <CIcon icon={item.legajoTecnico ? cilActionUndo : cilUserFollow} />
-                      {item.legajoTecnico ? 'Registrar la devolución' : 'Asignar a un técnico'}
-                    </CDropdownItem>
-                  )}
-                  {/* Sólo una disponible: si la tiene un técnico, primero se devuelve. */}
-                  {item.estado === 'Disponible' && (
-                    <>
-                      <CDropdownDivider className="my-1" />
-                      <CDropdownItem
-                        as="button"
-                        className="d-flex align-items-center gap-2 py-2 text-danger"
-                        onClick={() => setCambioEstado('fuera')}
-                      >
-                        <CIcon icon={cilTrash} />
-                        Dar de baja
-                      </CDropdownItem>
-                    </>
-                  )}
-                </CDropdownMenu>
-              </CDropdown>
+              <CButton color="primary" onClick={() => setIngresoManual(true)}>
+                <CIcon icon={cilPlus} className="me-2" />
+                Agregar
+              </CButton>
             </>
           )
         }
       />
 
-      <Aviso mensaje={error} />
+      <Aviso mensaje={error} onCerrar={() => setError('')} />
 
       {cargando ? (
-        <Cargando texto="Cargando el ítem..." />
+        <Cargando texto="Cargando el modelo..." />
       ) : (
-        item && (
+        modelo && (
           <>
             <CCard className="mb-4">
-              <CCardHeader className="fw-semibold">Datos del ítem</CCardHeader>
+              <CCardHeader className="fw-semibold">Datos del modelo</CCardHeader>
               <CCardBody>
                 <CRow>
                   <CCol sm={6} lg={3}>
-                    <Dato etiqueta="Código">
-                      <span className="fw-semibold">{item.codigo}</span>
+                    <Dato etiqueta="Código del modelo">
+                      <span className="fw-semibold text-nowrap">{modelo.codigo}</span>
                     </Dato>
                   </CCol>
                   <CCol sm={6} lg={3}>
-                    <Dato etiqueta="Clase">{item.clase}</Dato>
+                    <Dato etiqueta="Categoría">{modelo.nombreTipo || <SinDato>Sin categoría</SinDato>}</Dato>
                   </CCol>
-                  <CCol sm={6} lg={3}>
-                    <Dato etiqueta="Tipo">
-                      {item.nombreTipo || <SinDato>Sin tipo</SinDato>}
-                    </Dato>
+                  <CCol sm={12} lg={6}>
+                    <Dato etiqueta="Descripción">{modelo.descripcion || <SinDato>Sin descripción.</SinDato>}</Dato>
                   </CCol>
-                  <CCol sm={6} lg={3}>
-                    <Dato etiqueta="Estado">{item.estado}</Dato>
-                  </CCol>
-                  <CCol sm={6} lg={3}>
-                    <Dato etiqueta="Asignada a">
-                      {item.tecnico ? (
-                        <>
-                          {item.tecnico}
-                          {item.asignadaDesde && (
-                            <span className="text-body-secondary small">
-                              {' '}
-                              desde el {soloFechaLegible(item.asignadaDesde)}
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        <SinDato>Nadie</SinDato>
-                      )}
-                    </Dato>
-                  </CCol>
-
-                  <CCol sm={12}>
-                    <Dato etiqueta="Descripción">
-                      {item.descripcion || <SinDato>Sin descripción.</SinDato>}
-                    </Dato>
-                  </CCol>
+                  <CCol xs={6} lg={3}><Dato etiqueta="Disponibles">{modelo.stockActual}</Dato></CCol>
+                  <CCol xs={6} lg={3}><Dato etiqueta="En uso">{modelo.cantidadEnUso}</Dato></CCol>
+                  <CCol xs={6} lg={3}><Dato etiqueta="Fuera de servicio">{modelo.cantidadFueraDeServicio}</Dato></CCol>
+                  <CCol xs={6} lg={3}><Dato etiqueta="Unidades registradas">{modelo.cantidadTotal}</Dato></CCol>
                 </CRow>
               </CCardBody>
             </CCard>
 
             <CCard className="mb-4">
-              <CCardHeader className="fw-semibold">Historial de asignaciones</CCardHeader>
+              <CCardHeader className="fw-semibold">Unidades</CCardHeader>
               <CCardBody>
-                {asignaciones.length === 0 ? (
-                  <SinDatos texto="Todavía no se le asignó a ningún técnico." />
+                {unidades.length === 0 ? (
+                  <SinDatos texto="Todavía no hay unidades de este modelo. Registrá un ingreso manual o cargá un remito." />
                 ) : (
                   <div className="table-responsive">
                     <CTable hover align="middle" className="mb-0">
                       <CTableHead>
                         <CTableRow>
+                          <CTableHeaderCell>Código</CTableHeaderCell>
+                          <CTableHeaderCell>Estado</CTableHeaderCell>
                           <CTableHeaderCell>Técnico</CTableHeaderCell>
-                          <CTableHeaderCell>Asignada</CTableHeaderCell>
-                          <CTableHeaderCell>Devuelta</CTableHeaderCell>
+                          <CTableHeaderCell>Fecha de alta</CTableHeaderCell>
+                          <CTableHeaderCell>Origen</CTableHeaderCell>
+                          <CTableHeaderCell className="text-end">Acciones</CTableHeaderCell>
                         </CTableRow>
                       </CTableHead>
-
                       <CTableBody>
-                        {asignaciones.map((asignacion) => (
-                          <CTableRow key={`${asignacion.legajo}-${asignacion.desde}`}>
-                            <CTableDataCell>
-                              <span className="fw-semibold">{asignacion.tecnico ?? asignacion.legajo}</span>
-                              <span className="text-body-secondary"> — legajo {asignacion.legajo}</span>
+                        {unidades.map((unidad) => (
+                          <CTableRow key={unidad.codigo}>
+                            <CTableDataCell className="fw-semibold text-nowrap">{unidad.codigo}</CTableDataCell>
+                            <CTableDataCell className="text-nowrap">{unidad.estado}</CTableDataCell>
+                            <CTableDataCell>{unidad.tecnico || '-'}</CTableDataCell>
+                            <CTableDataCell className="text-nowrap">
+                              {unidad.fechaAlta ? soloFechaLegible(unidad.fechaAlta) : <SinDato>Sin registrar</SinDato>}
                             </CTableDataCell>
-                            <CTableDataCell>{formatearFechaHora(asignacion.desde)}</CTableDataCell>
                             <CTableDataCell>
-                              {asignacion.hasta ? (
-                                formatearFechaHora(asignacion.hasta)
+                              {unidad.idRemito ? (
+                                <BotonEnlace
+                                  href={`/inventario/remitos/${unidad.idRemito}`}
+                                  color="secondary"
+                                  variante="ghost"
+                                  className="p-0 text-nowrap"
+                                >
+                                  Remito #{unidad.idRemito}
+                                </BotonEnlace>
+                              ) : unidad.fechaAlta ? (
+                                <span className="text-nowrap">Ingreso manual</span>
                               ) : (
-                                <SinDato>En uso</SinDato>
+                                <SinDato>Sin registrar</SinDato>
                               )}
+                            </CTableDataCell>
+                            <CTableDataCell className="text-end text-nowrap">
+                              <CButtonGroup size="sm">
+                                <BotonEnlace
+                                  href={`/inventario/herramientas/${encodeURIComponent(modelo.codigo)}/${encodeURIComponent(unidad.codigo)}`}
+                                  variante="ghost"
+                                  className="btn-icono"
+                                  title={`Ver detalle de ${unidad.codigo}`}
+                                >
+                                  <CIcon icon={cilDescription} />
+                                </BotonEnlace>
+                                {/* Sólo se da de baja una disponible; el hueco mantiene alineada la columna. */}
+                                {unidad.estado === 'Disponible' ? (
+                                  <CButton
+                                    variant="ghost"
+                                    color="danger"
+                                    className="btn-icono"
+                                    onClick={() => setUnidadADarDeBaja(unidad)}
+                                    title={`Dar de baja ${unidad.codigo}`}
+                                    aria-label={`Dar de baja ${unidad.codigo}`}
+                                  >
+                                    <CIcon icon={cilTrash} />
+                                  </CButton>
+                                ) : (
+                                  <span className="btn-icono" aria-hidden="true" />
+                                )}
+                              </CButtonGroup>
                             </CTableDataCell>
                           </CTableRow>
                         ))}
@@ -274,7 +219,7 @@ export default function PantallaFichaItem({ params }) {
               <CCardHeader className="fw-semibold">Historial de ingresos</CCardHeader>
               <CCardBody>
                 {movimientos.length === 0 ? (
-                  <SinDatos texto="Todavía no hay ingresos registrados para esta herramienta." />
+                  <SinDatos texto="Todavía no hay ingresos registrados para este modelo." />
                 ) : (
                   <div className="table-responsive">
                     <CTable hover align="middle" className="mb-0">
@@ -287,47 +232,25 @@ export default function PantallaFichaItem({ params }) {
                           <CTableHeaderCell>Registrado por</CTableHeaderCell>
                         </CTableRow>
                       </CTableHead>
-
                       <CTableBody>
                         {movimientos.map((movimiento) => (
                           <CTableRow key={movimiento.id}>
-                            <CTableDataCell>
-                              <span className="fw-semibold">
-                                {soloFechaLegible(movimiento.fecha)}
-                              </span>
-                            </CTableDataCell>
-                            <CTableDataCell>
-                              <span className="text-body-secondary">{movimiento.tipo}</span>
-                            </CTableDataCell>
-                            <CTableDataCell>
-                              {/*
-                                El signo dice para donde fue el stock. No es un
-                                color: es el mismo texto gris que el resto.
-                              */}
-                              <span className="text-body-secondary">
-                                {movimiento.tipo === 'Ingreso' ? '+' : '−'}
-                                {movimiento.cantidad}
-                              </span>
-                            </CTableDataCell>
+                            <CTableDataCell className="text-nowrap">{soloFechaLegible(movimiento.fecha)}</CTableDataCell>
+                            <CTableDataCell>{movimiento.tipo}</CTableDataCell>
+                            <CTableDataCell>+{movimiento.cantidad}</CTableDataCell>
                             <CTableDataCell>
                               {movimiento.idRemito ? (
                                 <BotonEnlace
                                   href={`/inventario/remitos/${movimiento.idRemito}`}
                                   color="secondary"
                                   variante="ghost"
-                                  tamano="sm"
-                                  className="p-0"
+                                  className="p-0 text-nowrap"
                                 >
-                                  Remito #{movimiento.idRemito}
-                                  {movimiento.proveedor && ` — ${movimiento.proveedor}`}
+                                  Remito #{movimiento.idRemito} ({movimiento.proveedor})
                                 </BotonEnlace>
-                              ) : (
-                                <SinDato>Consumo en una tarea</SinDato>
-                              )}
+                              ) : <SinDato>Sin comprobante</SinDato>}
                             </CTableDataCell>
-                            <CTableDataCell>
-                              {movimiento.usuario ?? <SinDato>Sin registrar</SinDato>}
-                            </CTableDataCell>
+                            <CTableDataCell>{movimiento.usuario ?? <SinDato>Sin registrar</SinDato>}</CTableDataCell>
                           </CTableRow>
                         ))}
                       </CTableBody>
@@ -340,58 +263,30 @@ export default function PantallaFichaItem({ params }) {
         )
       )}
 
-      <div className="d-flex flex-wrap align-items-center gap-2 mt-2 mb-4">
+      <div className="mt-2 mb-4">
         <BotonEnlace href="/inventario/herramientas" color="secondary" variante="outline">
           <CIcon icon={cilArrowLeft} className="me-2" />
           Volver al listado
         </BotonEnlace>
       </div>
 
-      <CModal
-        visible={Boolean(cambioEstado)}
-        onClose={() => !cambiandoEstado && setCambioEstado(null)}
-        alignment="center"
-      >
-        <CModalHeader>
-          <CModalTitle>
-            {cambioEstado === 'fuera' ? 'Dar de baja' : 'Poner en servicio'}
-          </CModalTitle>
-        </CModalHeader>
-        <CModalBody>
-          {cambioEstado === 'fuera' ? (
-            <p className="mb-0">
-              <strong>{item?.nombre}</strong> ({item?.codigo}) pasa a estado{' '}
-              <strong>Fuera de servicio</strong> y ya no se puede asignar.
-            </p>
-          ) : (
-            <p className="mb-0">
-              <strong>{item?.nombre}</strong> ({item?.codigo}) vuelve a estar{' '}
-              <strong>Disponible</strong> y se puede asignar otra vez a un técnico.
-            </p>
-          )}
-        </CModalBody>
-        <CModalFooter>
-          <BotonesAccion
-            texto={cambioEstado === 'fuera' ? 'Dar de baja' : 'Poner en servicio'}
-            textoProcesando="Guardando..."
-            color={cambioEstado === 'fuera' ? 'danger' : 'primary'}
-            procesando={cambiandoEstado}
-            alAceptar={confirmarCambioEstado}
-            alCancelar={() => setCambioEstado(null)}
-          />
-        </CModalFooter>
-      </CModal>
-
-      {asignando && (
-        <DialogoAsignacion
-          herramienta={item}
-          onCerrar={() => setAsignando(false)}
-          onGuardado={() => {
-            setAsignando(false);
-            setRecarga((numero) => numero + 1);
-          }}
-        />
+      {ingresoManual && (
+        <DialogoIngresoHerramienta modelo={modelo} onCerrar={() => setIngresoManual(false)} onGuardado={ingresoGuardado} />
       )}
+
+      <DialogoEliminar
+        visible={Boolean(unidadADarDeBaja)}
+        titulo="Dar de baja"
+        texto="Dar de baja"
+        textoProcesando="Dando de baja..."
+        eliminando={dandoDeBaja}
+        onConfirmar={darDeBaja}
+        onCancelar={() => !dandoDeBaja && setUnidadADarDeBaja(null)}
+      >
+        <p className="mb-0">
+          La herramienta <strong>{unidadADarDeBaja?.codigo}</strong> quedará fuera de servicio.
+        </p>
+      </DialogoEliminar>
     </>
   );
 }

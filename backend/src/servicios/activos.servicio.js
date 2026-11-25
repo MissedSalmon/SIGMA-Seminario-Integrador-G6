@@ -3,6 +3,7 @@ import { datoInvalido, noEncontrado, conflicto } from '../utiles/errores.js';
 import { ENUM_ESTADO_ACTIVO } from '../utiles/enumerados.js';
 import { nombreDelEspacio } from '../utiles/espacios.js';
 import { generarOtsPreventivas } from './programacionPreventiva.servicio.js';
+import { rechazarPendientesDeActivoRetirado } from './tickets.servicio.js';
 
 // En la base el estado es un numero; la traduccion esta en utiles/enumerados.js.
 export const ESTADOS = ENUM_ESTADO_ACTIVO.textos;
@@ -241,6 +242,10 @@ export async function actualizar(codigo, datos) {
   if (error) throw new Error(error.message);
   if (!data) throw noEncontrado(`No existe el activo "${codigo}".`);
 
+  if (estado === ESTADO_BAJA) {
+    await rechazarPendientesDeActivoRetirado(codigo);
+  }
+
   return aActivo(data);
 }
 
@@ -260,6 +265,8 @@ export async function darDeBaja(codigo) {
 
   if (error) throw new Error(error.message);
   if (!data) throw noEncontrado(`No existe el activo "${codigo}".`);
+
+  await rechazarPendientesDeActivoRetirado(codigo);
 
   return aActivo(data);
 }

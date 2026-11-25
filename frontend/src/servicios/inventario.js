@@ -16,6 +16,12 @@ export async function obtenerItem(codigo) {
   return data.datos;
 }
 
+/** Da de alta manualmente una o más unidades de un modelo. */
+export async function registrarIngresoHerramienta(codigoModelo, ingreso) {
+  const { data } = await api.post(`/inventario/${encodeURIComponent(codigoModelo)}/unidades`, ingreso);
+  return data.datos;
+}
+
 export async function crearItem(item) {
   const { data } = await api.post('/inventario', item);
   return data.datos;

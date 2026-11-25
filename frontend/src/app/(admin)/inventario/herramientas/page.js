@@ -1,100 +1,42 @@
 'use client';
 
-/**
- * /inventario/herramientas - catalogo y estado de herramientas del deposito
- * (HU-15 y HU-16). Una herramienta se maneja distinto que un material (no
- * lleva stock, se presta y se devuelve), por eso tiene su propia pantalla en
- * vez de compartir el listado.
- *
- * Muestra el estado de cada herramienta (Disponible, En uso o Fuera de
- * servicio) y, si esta en uso, el tecnico que la tiene.
- *
- * Devolucion del Sprint 3:
- *   - Asignar la herramienta a un tecnico y registrar la devolucion se hace
- *     desde su ficha; aca solo se ve quien la tiene.
- *   - Una herramienta no se borra: el tacho la "da de baja" y pasa a Fuera de
- *     servicio. Mientras la tenga un tecnico no se puede: primero se devuelve.
- */
+/** Lista los modelos de herramientas y la cantidad de unidades en cada estado. */
 import { useEffect, useState } from 'react';
-import { CButton, CButtonGroup, CCard, CCardBody } from '@coreui/react';
+import { CButtonGroup, CCard, CCardBody } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilDescription, cilPencil, cilTrash } from '@coreui/icons';
+import { cilDescription, cilPencil } from '@coreui/icons';
 
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
 import Aviso from '@/componentes/Aviso.js';
-import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import TablaDatos from '@/componentes/tabla/TablaDatos.js';
-import { useToast } from '@/componentes/toast/ContextoToast.js';
-import { eliminarItem, listarItems } from '@/servicios/inventario.js';
+import { listarItems } from '@/servicios/inventario.js';
 import { useFiltroPersistente } from '@/utils/filtros.js';
 
-const ESTADOS = ['Disponible', 'En uso', 'Fuera de servicio'];
-
 export default function PantallaHerramientas() {
-  const { mostrarToast } = useToast();
   const [herramientas, setHerramientas] = useState([]);
   const [categoria, setCategoria] = useFiltroPersistente('categoria', '');
-  const [estado, setEstado] = useFiltroPersistente('estado', '');
-  const [tecnico, setTecnico] = useFiltroPersistente('tecnico', '');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
-  const [aEliminar, setAEliminar] = useState(null);
-  const [eliminando, setEliminando] = useState(false);
-  const [recarga, setRecarga] = useState(0);
 
   useEffect(() => {
     listarItems('Herramienta')
       .then(setHerramientas)
       .catch((fallo) => setError(fallo.message))
       .finally(() => setCargando(false));
-  }, [recarga]);
-
-  async function confirmarBaja() {
-    setEliminando(true);
-    try {
-      await eliminarItem(aEliminar.codigo);
-      mostrarToast({ tipo: 'exito', mensaje: `"${aEliminar.nombre}" quedó fuera de servicio.` });
-      setAEliminar(null);
-      setRecarga((numero) => numero + 1);
-    } catch (fallo) {
-      setError(fallo.message);
-      setAEliminar(null);
-    } finally {
-      setEliminando(false);
-    }
-  }
-
-  /*
-   * Una herramienta asignada no se puede dar de baja: se avisa enseguida, sin
-   * abrir la confirmacion. La API tambien lo controla.
-   */
-  function pedirBaja(fila) {
-    if (fila.legajoTecnico) {
-      setError(`"${fila.nombre}" está asignada a ${fila.tecnico}. Primero hay que registrar la devolución.`);
-      return;
-    }
-    setAEliminar(fila);
-  }
+  }, []);
 
   const filasVisibles = herramientas
-    .filter((fila) => !categoria || fila.nombreTipo === categoria)
-    .filter((fila) => !estado || fila.estado === estado)
-    .filter((fila) => !tecnico || fila.tecnico === tecnico);
+    .filter((fila) => !categoria || fila.nombreTipo === categoria);
 
   const categorias = [...new Set(herramientas.map((fila) => fila.nombreTipo).filter(Boolean))].sort((a, b) =>
     a.localeCompare(b, 'es')
   );
-  // Solo los tecnicos que hoy tienen alguna herramienta prestada, sin repetir.
-  const tecnicos = [...new Set(herramientas.map((fila) => fila.tecnico).filter(Boolean))].sort((a, b) =>
-    a.localeCompare(b, 'es')
-  );
-
   const columnas = [
     {
       clave: 'codigo',
-      encabezado: 'Código',
-      render: (fila) => <span className="fw-semibold">{fila.codigo}</span>,
+      encabezado: 'Código del modelo',
+      render: (fila) => <span className="fw-semibold text-nowrap">{fila.codigo}</span>,
     },
     { clave: 'nombre', encabezado: 'Nombre', render: (fila) => fila.nombre },
     {
@@ -102,8 +44,17 @@ export default function PantallaHerramientas() {
       encabezado: 'Categoría',
       render: (fila) => <span className="text-body-secondary">{fila.nombreTipo || '-'}</span>,
     },
-    { clave: 'estado', encabezado: 'Estado', render: (fila) => fila.estado },
-    { clave: 'tecnico', encabezado: 'Técnico', render: (fila) => fila.tecnico || '-' },
+    {
+      clave: 'stockActual',
+      encabezado: 'Disponibles',
+      render: (fila) => <span className="fw-semibold">{fila.stockActual}</span>,
+    },
+    { clave: 'cantidadEnUso', encabezado: 'En uso', render: (fila) => fila.cantidadEnUso },
+    {
+      clave: 'cantidadFueraDeServicio',
+      encabezado: 'Fuera de servicio',
+      render: (fila) => fila.cantidadFueraDeServicio,
+    },
     {
       clave: 'acciones',
       encabezado: 'Acciones',
@@ -126,18 +77,6 @@ export default function PantallaHerramientas() {
           >
             <CIcon icon={cilPencil} />
           </BotonEnlace>
-          {/* Una herramienta fuera de servicio ya no se da de baja. */}
-          {fila.estado !== 'Fuera de servicio' && (
-            <CButton
-              variant="ghost"
-              color="danger"
-              className="btn-icono"
-              onClick={() => pedirBaja(fila)}
-              title={`Dar de baja ${fila.nombre}`}
-            >
-              <CIcon icon={cilTrash} />
-            </CButton>
-          )}
         </CButtonGroup>
       ),
     },
@@ -155,7 +94,7 @@ export default function PantallaHerramientas() {
             filas={filasVisibles}
             claveFila={(fila) => fila.codigo}
             columnas={columnas}
-            buscarPor={['codigo', 'nombre', 'descripcion', 'nombreTipo', 'tecnico']}
+            buscarPor={['codigo', 'nombre', 'descripcion', 'nombreTipo']}
             placeholderBusqueda="Buscar por código, nombre o categoría"
             filtros={[
               // Solo tiene sentido si ya hay mas de una categoria cargada.
@@ -169,50 +108,14 @@ export default function PantallaHerramientas() {
                     },
                   ]
                 : []),
-              {
-                etiqueta: 'Estado',
-                valor: estado,
-                alCambiar: setEstado,
-                opciones: ESTADOS.map((texto) => ({ valor: texto, texto })),
-              },
-              // Solo tiene sentido cuando hay alguna herramienta prestada.
-              ...(tecnicos.length > 0
-                ? [
-                    {
-                      etiqueta: 'Técnico',
-                      valor: tecnico,
-                      alCambiar: setTecnico,
-                      opciones: tecnicos.map((nombre) => ({ valor: nombre, texto: nombre })),
-                    },
-                  ]
-                : []),
             ]}
-            alLimpiar={() => {
-              setCategoria('');
-              setEstado('');
-              setTecnico('');
-            }}
+            alLimpiar={() => setCategoria('')}
             cargando={cargando}
-            textoVacio="Todavía no hay herramientas cargadas."
+            textoVacio="Todavía no hay modelos de herramientas cargados."
           />
         </CCardBody>
       </CCard>
 
-      <DialogoEliminar
-        visible={Boolean(aEliminar)}
-        texto="Dar de baja"
-        textoProcesando="Dando de baja..."
-        eliminando={eliminando}
-        onConfirmar={confirmarBaja}
-        onCancelar={() => setAEliminar(null)}
-      >
-        <p className="mb-0">
-          Se va a dar de baja <strong>{aEliminar?.nombre}</strong>.
-        </p>
-        <p className="text-body-secondary mt-2 mb-0">
-          Pasa a estado <strong>Fuera de servicio</strong> y ya no se puede asignar.
-        </p>
-      </DialogoEliminar>
     </>
   );
 }
