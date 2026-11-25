@@ -178,7 +178,16 @@ function armarMigas(direccion) {
       } else if (indice === tramos.length - 1) {
         // Las demas fichas se titulan con un nombre que la miga no conoce.
         migas.push({ texto: 'Detalle', direccion: acumulada, ultima: true });
+      } else if (padre === '/inventario/herramientas') {
+        // La ficha del modelo, con la de una de sus herramientas colgada debajo.
+        migas.push({ texto: 'Detalle', direccion: acumulada, ultima: false });
       }
+      return;
+    }
+
+    // La ficha de una herramienta: /inventario/herramientas/HER-EL01/HE-000.
+    if (padre.startsWith('/inventario/herramientas/') && indice === 3 && !NOMBRES_COMUNES[tramo]) {
+      migas.push({ texto: `Herramienta ${decodeURIComponent(tramo)}`, direccion: acumulada, ultima: true });
       return;
     }
 

@@ -3131,10 +3131,3 @@ body {
   z-index: 1050;
   transition: all 0.1s ease;
 }
-
-.sigma-accion-unidad {
-  width: 9rem;
-  min-width: 9rem;
-  justify-content: center;
-  white-space: normal;
-}

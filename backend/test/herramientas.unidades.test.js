@@ -5,7 +5,9 @@ jest.unstable_mockModule('../src/config/supabase.js', () => ({
 }));
 
 const { supabase } = await import('../src/config/supabase.js');
-const { obtenerItems, registrarIngresoHerramienta } = await import('../src/servicios/inventario.servicio.js');
+const { obtenerItemCatalogo, obtenerItems, registrarIngresoHerramienta } = await import(
+  '../src/servicios/inventario.servicio.js'
+);
 
 function consulta(filas) {
   const respuesta = { data: filas, error: null };
@@ -95,6 +97,33 @@ test('el catálogo cuenta unidades disponibles, en uso y fuera de servicio', asy
       cantidadFueraDeServicio: 1,
     }),
   ]);
+});
+
+test('el código de una unidad devuelve esa herramienta y no su modelo', async () => {
+  const { unidades } = prepararDeposito();
+  supabase.from.mockImplementation((tabla) => {
+    if (tabla === 'herramienta') return consulta([unidades[1]]);
+    if (tabla === 'tecnico_utiliza_herramienta') {
+      return consulta([
+        {
+          herr_cod: 'HE-001',
+          tecnico_legajo: '123',
+          tec_herr_fecha_prest: '2026-11-23T12:00:00Z',
+          tecnico: { tecnico_nom_ape: 'Ana Técnica' },
+        },
+      ]);
+    }
+    return consulta([]);
+  });
+
+  await expect(obtenerItemCatalogo('HE-001')).resolves.toMatchObject({
+    codigo: 'HE-001',
+    codigoModelo: 'TAL-01',
+    estado: 'En uso',
+    tecnico: 'Ana Técnica',
+    legajoTecnico: '123',
+    fechaAlta: '2026-11-21',
+  });
 });
 
 test('el ingreso manual exige una cantidad positiva antes de llamar a la base', async () => {

@@ -36,7 +36,7 @@ export default function PantallaHerramientas() {
     {
       clave: 'codigo',
       encabezado: 'Código del modelo',
-      render: (fila) => <span className="fw-semibold">{fila.codigo}</span>,
+      render: (fila) => <span className="fw-semibold text-nowrap">{fila.codigo}</span>,
     },
     { clave: 'nombre', encabezado: 'Nombre', render: (fila) => fila.nombre },
     {
