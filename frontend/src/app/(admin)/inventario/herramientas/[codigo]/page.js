@@ -8,11 +8,6 @@ import {
   CCardBody,
   CCardHeader,
   CCol,
-  CModal,
-  CModalBody,
-  CModalFooter,
-  CModalHeader,
-  CModalTitle,
   CRow,
   CTable,
   CTableBody,
@@ -21,24 +16,19 @@ import {
   CTableHeaderCell,
   CTableRow,
 } from '@coreui/react';
+import CIcon from '@coreui/icons-react';
+import { cilArrowLeft, cilDescription, cilPencil, cilPlus, cilTrash } from '@coreui/icons';
 
 import Aviso from '@/componentes/Aviso.js';
 import BotonEnlace from '@/componentes/BotonEnlace.js';
-import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Dato from '@/componentes/Dato.js';
+import DialogoEliminar from '@/componentes/DialogoEliminar.js';
 import EncabezadoPagina from '@/componentes/EncabezadoPagina.js';
 import { Cargando, SinDatos } from '@/componentes/EstadoTabla.js';
-import DialogoAsignacion from '@/componentes/inventario/DialogoAsignacion.js';
 import DialogoIngresoHerramienta from '@/componentes/inventario/DialogoIngresoHerramienta.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
-import {
-  eliminarItem,
-  listarAsignaciones,
-  listarMovimientos,
-  obtenerItem,
-  ponerEnServicio,
-} from '@/servicios/inventario.js';
-import { formatearFechaHora, soloFechaLegible } from '@/utils/fechas.js';
+import { eliminarItem, listarMovimientos, obtenerItem } from '@/servicios/inventario.js';
+import { soloFechaLegible } from '@/utils/fechas.js';
 
 function SinDato({ children }) {
   return <span className="text-body-tertiary fst-italic">{children}</span>;
@@ -50,14 +40,11 @@ export default function PantallaFichaHerramienta({ params }) {
   const { mostrarToast } = useToast();
   const [modelo, setModelo] = useState(null);
   const [movimientos, setMovimientos] = useState([]);
-  const [historialActivo, setHistorialActivo] = useState({ codigo: null, asignaciones: [] });
-  const [historialSeleccionado, setHistorialSeleccionado] = useState('');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
-  const [asignando, setAsignando] = useState(null);
   const [ingresoManual, setIngresoManual] = useState(false);
-  const [unidadParaCambiar, setUnidadParaCambiar] = useState(null);
-  const [cambiandoEstado, setCambiandoEstado] = useState(false);
+  const [unidadADarDeBaja, setUnidadADarDeBaja] = useState(null);
+  const [dandoDeBaja, setDandoDeBaja] = useState(false);
   const [recarga, setRecarga] = useState(0);
 
   useEffect(() => {
@@ -75,35 +62,18 @@ export default function PantallaFichaHerramienta({ params }) {
     cargar();
   }, [codigoModelo, recarga]);
 
-  useEffect(() => {
-    if (!historialSeleccionado) return;
-    listarAsignaciones(historialSeleccionado)
-      .then((asignaciones) => setHistorialActivo({ codigo: historialSeleccionado, asignaciones }))
-      .catch((fallo) => setError(fallo.message))
-  }, [historialSeleccionado, recarga]);
-
-  async function cambiarEstado(unidad) {
-    setCambiandoEstado(true);
+  async function darDeBaja() {
+    setDandoDeBaja(true);
     try {
-      if (unidad.estado === 'Disponible') {
-        await eliminarItem(unidad.codigo);
-        mostrarToast({ tipo: 'exito', mensaje: `La unidad ${unidad.codigo} quedó fuera de servicio.` });
-      } else {
-        await ponerEnServicio(unidad.codigo);
-        mostrarToast({ tipo: 'exito', mensaje: `La unidad ${unidad.codigo} volvió a estar disponible.` });
-      }
+      await eliminarItem(unidadADarDeBaja.codigo);
+      mostrarToast({ tipo: 'exito', mensaje: `La herramienta ${unidadADarDeBaja.codigo} quedó fuera de servicio.` });
       setRecarga((valor) => valor + 1);
     } catch (fallo) {
       setError(fallo.message);
     } finally {
-      setUnidadParaCambiar(null);
-      setCambiandoEstado(false);
+      setUnidadADarDeBaja(null);
+      setDandoDeBaja(false);
     }
-  }
-
-  function unidadGuardada() {
-    setAsignando(null);
-    setRecarga((valor) => valor + 1);
   }
 
   function ingresoGuardado() {
@@ -112,30 +82,26 @@ export default function PantallaFichaHerramienta({ params }) {
   }
 
   const unidades = modelo?.unidades ?? [];
-  const historialCargando = historialActivo.codigo !== historialSeleccionado;
   return (
     <>
       <EncabezadoPagina
         titulo={modelo?.nombre ?? 'Detalle de herramienta'}
-        descripcion={modelo ? `Código del modelo: ${modelo.codigo} — ${modelo.nombreTipo || 'Sin categoría'}` : undefined}
         accionesExtra={
           modelo && (
-            <div className="d-flex flex-wrap gap-2">
+            <>
               <BotonEnlace
                 href={`/inventario/herramientas/${encodeURIComponent(modelo.codigo)}/editar`}
                 color="secondary"
                 variante="outline"
               >
-                Editar modelo
+                <CIcon icon={cilPencil} className="me-2" />
+                Editar
               </BotonEnlace>
-              <CButton
-                color="primary"
-                onClick={() => setIngresoManual(true)}
-                title="Agregar unidades mediante un ingreso manual"
-              >
+              <CButton color="primary" onClick={() => setIngresoManual(true)}>
+                <CIcon icon={cilPlus} className="me-2" />
                 Agregar
               </CButton>
-            </div>
+            </>
           )
         }
       />
@@ -148,14 +114,24 @@ export default function PantallaFichaHerramienta({ params }) {
         modelo && (
           <>
             <CCard className="mb-4">
-              <CCardHeader className="fw-semibold">Existencias del modelo</CCardHeader>
+              <CCardHeader className="fw-semibold">Datos del modelo</CCardHeader>
               <CCardBody>
                 <CRow>
-                  <CCol sm={6} lg={3}><Dato etiqueta="Disponibles">{modelo.stockActual}</Dato></CCol>
-                  <CCol sm={6} lg={3}><Dato etiqueta="En uso">{modelo.cantidadEnUso}</Dato></CCol>
-                  <CCol sm={6} lg={3}><Dato etiqueta="Fuera de servicio">{modelo.cantidadFueraDeServicio}</Dato></CCol>
-                  <CCol sm={6} lg={3}><Dato etiqueta="Unidades registradas">{modelo.cantidadTotal}</Dato></CCol>
-                  <CCol sm={12}><Dato etiqueta="Descripción">{modelo.descripcion || <SinDato>Sin descripción.</SinDato>}</Dato></CCol>
+                  <CCol sm={6} lg={3}>
+                    <Dato etiqueta="Código del modelo">
+                      <span className="fw-semibold text-nowrap">{modelo.codigo}</span>
+                    </Dato>
+                  </CCol>
+                  <CCol sm={6} lg={3}>
+                    <Dato etiqueta="Categoría">{modelo.nombreTipo || <SinDato>Sin categoría</SinDato>}</Dato>
+                  </CCol>
+                  <CCol sm={12} lg={6}>
+                    <Dato etiqueta="Descripción">{modelo.descripcion || <SinDato>Sin descripción.</SinDato>}</Dato>
+                  </CCol>
+                  <CCol xs={6} lg={3}><Dato etiqueta="Disponibles">{modelo.stockActual}</Dato></CCol>
+                  <CCol xs={6} lg={3}><Dato etiqueta="En uso">{modelo.cantidadEnUso}</Dato></CCol>
+                  <CCol xs={6} lg={3}><Dato etiqueta="Fuera de servicio">{modelo.cantidadFueraDeServicio}</Dato></CCol>
+                  <CCol xs={6} lg={3}><Dato etiqueta="Unidades registradas">{modelo.cantidadTotal}</Dato></CCol>
                 </CRow>
               </CCardBody>
             </CCard>
@@ -181,64 +157,52 @@ export default function PantallaFichaHerramienta({ params }) {
                       <CTableBody>
                         {unidades.map((unidad) => (
                           <CTableRow key={unidad.codigo}>
-                            <CTableDataCell className="fw-semibold">{unidad.codigo}</CTableDataCell>
-                            <CTableDataCell>{unidad.estado}</CTableDataCell>
+                            <CTableDataCell className="fw-semibold text-nowrap">{unidad.codigo}</CTableDataCell>
+                            <CTableDataCell className="text-nowrap">{unidad.estado}</CTableDataCell>
                             <CTableDataCell>{unidad.tecnico || '-'}</CTableDataCell>
-                            <CTableDataCell>
+                            <CTableDataCell className="text-nowrap">
                               {unidad.fechaAlta ? soloFechaLegible(unidad.fechaAlta) : <SinDato>Sin registrar</SinDato>}
                             </CTableDataCell>
                             <CTableDataCell>
                               {unidad.idRemito ? (
-                                <BotonEnlace href={`/inventario/remitos/${unidad.idRemito}`} color="secondary" variante="ghost" tamano="sm">
+                                <BotonEnlace
+                                  href={`/inventario/remitos/${unidad.idRemito}`}
+                                  color="secondary"
+                                  variante="ghost"
+                                  className="p-0 text-nowrap"
+                                >
                                   Remito #{unidad.idRemito}
                                 </BotonEnlace>
                               ) : unidad.fechaAlta ? (
-                                <span>Ingreso manual</span>
+                                <span className="text-nowrap">Ingreso manual</span>
                               ) : (
                                 <SinDato>Sin registrar</SinDato>
                               )}
                             </CTableDataCell>
-                            <CTableDataCell className="text-end">
+                            <CTableDataCell className="text-end text-nowrap">
                               <CButtonGroup size="sm">
-                                <CButton
-                                  color="secondary"
-                                  variant="outline"
-                                  className="sigma-accion-unidad"
-                                  onClick={() => {
-                                    setHistorialSeleccionado((actual) => actual === unidad.codigo ? '' : unidad.codigo);
-                                  }}
+                                <BotonEnlace
+                                  href={`/inventario/herramientas/${encodeURIComponent(modelo.codigo)}/${encodeURIComponent(unidad.codigo)}`}
+                                  variante="ghost"
+                                  className="btn-icono"
+                                  title={`Ver detalle de ${unidad.codigo}`}
                                 >
-                                  Historial
-                                </CButton>
-                                {unidad.estado !== 'Fuera de servicio' && (
+                                  <CIcon icon={cilDescription} />
+                                </BotonEnlace>
+                                {/* Sólo se da de baja una disponible; el hueco mantiene alineada la columna. */}
+                                {unidad.estado === 'Disponible' ? (
                                   <CButton
-                                    color="secondary"
-                                    variant="outline"
-                                    className="sigma-accion-unidad"
-                                    onClick={() => setAsignando(unidad)}
+                                    variant="ghost"
+                                    color="danger"
+                                    className="btn-icono"
+                                    onClick={() => setUnidadADarDeBaja(unidad)}
+                                    title={`Dar de baja ${unidad.codigo}`}
+                                    aria-label={`Dar de baja ${unidad.codigo}`}
                                   >
-                                    {unidad.legajoTecnico ? 'Devolver' : 'Asignar'}
+                                    <CIcon icon={cilTrash} />
                                   </CButton>
-                                )}
-                                {unidad.estado === 'Disponible' && (
-                                  <CButton
-                                    color="secondary"
-                                    variant="outline"
-                                    className="sigma-accion-unidad"
-                                    onClick={() => setUnidadParaCambiar(unidad)}
-                                  >
-                                    Dar de baja
-                                  </CButton>
-                                )}
-                                {unidad.estado === 'Fuera de servicio' && (
-                                  <CButton
-                                    color="secondary"
-                                    variant="outline"
-                                    className="sigma-accion-unidad"
-                                    onClick={() => setUnidadParaCambiar(unidad)}
-                                  >
-                                    Poner en servicio
-                                  </CButton>
+                                ) : (
+                                  <span className="btn-icono" aria-hidden="true" />
                                 )}
                               </CButtonGroup>
                             </CTableDataCell>
@@ -250,45 +214,6 @@ export default function PantallaFichaHerramienta({ params }) {
                 )}
               </CCardBody>
             </CCard>
-
-            {historialSeleccionado && (
-              <CCard className="mb-4">
-                <CCardHeader className="d-flex justify-content-between align-items-center fw-semibold">
-                  Historial de asignaciones — {historialSeleccionado}
-                  <CButton size="sm" color="secondary" variant="ghost" onClick={() => setHistorialSeleccionado('')}>
-                    Cerrar
-                  </CButton>
-                </CCardHeader>
-                <CCardBody>
-                  {historialCargando ? (
-                    <Cargando texto="Cargando el historial..." />
-                  ) : historialActivo.asignaciones.length === 0 ? (
-                    <SinDatos texto="Esta unidad todavía no fue asignada." />
-                  ) : (
-                    <div className="table-responsive">
-                      <CTable hover align="middle" className="mb-0">
-                        <CTableHead>
-                          <CTableRow>
-                            <CTableHeaderCell>Técnico</CTableHeaderCell>
-                            <CTableHeaderCell>Asignada</CTableHeaderCell>
-                            <CTableHeaderCell>Devuelta</CTableHeaderCell>
-                          </CTableRow>
-                        </CTableHead>
-                        <CTableBody>
-                          {historialActivo.asignaciones.map((fila) => (
-                            <CTableRow key={`${fila.legajo}-${fila.desde}`}>
-                              <CTableDataCell>{fila.tecnico ?? fila.legajo} — legajo {fila.legajo}</CTableDataCell>
-                              <CTableDataCell>{formatearFechaHora(fila.desde)}</CTableDataCell>
-                              <CTableDataCell>{fila.hasta ? formatearFechaHora(fila.hasta) : 'En uso'}</CTableDataCell>
-                            </CTableRow>
-                          ))}
-                        </CTableBody>
-                      </CTable>
-                    </div>
-                  )}
-                </CCardBody>
-              </CCard>
-            )}
 
             <CCard className="mb-4">
               <CCardHeader className="fw-semibold">Historial de ingresos</CCardHeader>
@@ -310,13 +235,18 @@ export default function PantallaFichaHerramienta({ params }) {
                       <CTableBody>
                         {movimientos.map((movimiento) => (
                           <CTableRow key={movimiento.id}>
-                            <CTableDataCell>{soloFechaLegible(movimiento.fecha)}</CTableDataCell>
+                            <CTableDataCell className="text-nowrap">{soloFechaLegible(movimiento.fecha)}</CTableDataCell>
                             <CTableDataCell>{movimiento.tipo}</CTableDataCell>
                             <CTableDataCell>+{movimiento.cantidad}</CTableDataCell>
                             <CTableDataCell>
                               {movimiento.idRemito ? (
-                                <BotonEnlace href={`/inventario/remitos/${movimiento.idRemito}`} color="secondary" variante="ghost" tamano="sm">
-                                  Remito #{movimiento.idRemito} — {movimiento.proveedor}
+                                <BotonEnlace
+                                  href={`/inventario/remitos/${movimiento.idRemito}`}
+                                  color="secondary"
+                                  variante="ghost"
+                                  className="p-0 text-nowrap"
+                                >
+                                  Remito #{movimiento.idRemito} ({movimiento.proveedor})
                                 </BotonEnlace>
                               ) : <SinDato>Sin comprobante</SinDato>}
                             </CTableDataCell>
@@ -329,46 +259,34 @@ export default function PantallaFichaHerramienta({ params }) {
                 )}
               </CCardBody>
             </CCard>
-
-            <BotonEnlace href="/inventario/herramientas" color="secondary" variante="outline">
-              Volver al listado
-            </BotonEnlace>
           </>
         )
       )}
 
-      {asignando && (
-        <DialogoAsignacion herramienta={asignando} onCerrar={() => setAsignando(null)} onGuardado={unidadGuardada} />
-      )}
+      <div className="mt-2 mb-4">
+        <BotonEnlace href="/inventario/herramientas" color="secondary" variante="outline">
+          <CIcon icon={cilArrowLeft} className="me-2" />
+          Volver al listado
+        </BotonEnlace>
+      </div>
+
       {ingresoManual && (
         <DialogoIngresoHerramienta modelo={modelo} onCerrar={() => setIngresoManual(false)} onGuardado={ingresoGuardado} />
       )}
 
-      <CModal
-        visible={Boolean(unidadParaCambiar)}
-        onClose={() => !cambiandoEstado && setUnidadParaCambiar(null)}
-        alignment="center"
+      <DialogoEliminar
+        visible={Boolean(unidadADarDeBaja)}
+        titulo="Dar de baja"
+        texto="Dar de baja"
+        textoProcesando="Dando de baja..."
+        eliminando={dandoDeBaja}
+        onConfirmar={darDeBaja}
+        onCancelar={() => !dandoDeBaja && setUnidadADarDeBaja(null)}
       >
-        <CModalHeader>
-          <CModalTitle>{unidadParaCambiar?.estado === 'Disponible' ? 'Dar de baja' : 'Poner en servicio'}</CModalTitle>
-        </CModalHeader>
-        <CModalBody>
-          <p className="mb-0">
-            La unidad <strong>{unidadParaCambiar?.codigo}</strong> {unidadParaCambiar?.estado === 'Disponible'
-              ? 'quedará fuera de servicio.'
-              : 'volverá a estar disponible.'}
-          </p>
-        </CModalBody>
-        <CModalFooter>
-          <BotonesAccion
-            texto={unidadParaCambiar?.estado === 'Disponible' ? 'Dar de baja' : 'Poner en servicio'}
-            textoProcesando={unidadParaCambiar?.estado === 'Disponible' ? 'Dando de baja...' : 'Actualizando...'}
-            procesando={cambiandoEstado}
-            alAceptar={() => cambiarEstado(unidadParaCambiar)}
-            alCancelar={() => setUnidadParaCambiar(null)}
-          />
-        </CModalFooter>
-      </CModal>
+        <p className="mb-0">
+          La herramienta <strong>{unidadADarDeBaja?.codigo}</strong> quedará fuera de servicio.
+        </p>
+      </DialogoEliminar>
     </>
   );
 }

@@ -397,6 +397,15 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 >   1000 herramientas registradas.
 > - La base se actualiza con `supabase/migrations/20261124120000_herramientas_por_unidad.sql`
 >   y `supabase/migrations/20261124190000_codigo_unico_herramientas.sql`.
+> - **25/11/2026:** los modelos armados por la migración quedaron con códigos `LEGACY-<uuid>`.
+>   Se renombran como los materiales: `HER-` + dos letras de la categoría + número
+>   (`HER-EL01` eléctricas, `HER-ME01` medición, `HER-MA01` manuales). Los modelos que cargó
+>   alguien a mano (por ejemplo `ESC-01`) no se tocan. Migración
+>   `supabase/migrations/20261125120000_codigo_modelos_herramienta.sql`.
+> - **25/11/2026:** cada herramienta tiene su ficha (`/inventario/herramientas/HER-EL01/HE-000`).
+>   En la tabla de unidades del modelo sólo van «Ver detalle» y «Dar de baja», como en el resto
+>   de los listados. Asignar, devolver, poner en servicio y el historial de asignaciones están en
+>   la ficha de la herramienta. `GET /api/inventario/HE-000` devuelve esa herramienta, no su modelo.
 
 > **Decisiones del 06/11/2026 (corrección del sprint anterior: ajustes de stock):**
 > - **El stock de un material se puede ajustar a mano**, sin remito y sin tarea: un

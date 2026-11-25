@@ -170,10 +170,10 @@ export async function obtenerItem(codigo) {
 export async function obtenerItemCatalogo(codigo) {
   const material = await buscarMaterial(codigo);
   if (material) return aMaterial(material);
-  let modelo = await buscarModeloHerramienta(codigo);
+  const modelo = await buscarModeloHerramienta(codigo);
   if (!modelo) {
     const unidad = await buscarHerramienta(codigo);
-    if (unidad?.herr_modelo_cod) modelo = await buscarModeloHerramienta(unidad.herr_modelo_cod);
+    if (unidad) return aHerramienta(unidad, await obtenerPrestamosAbiertos(codigo));
   }
   if (modelo) {
     const unidades = await obtenerUnidadesHerramienta(codigo);
