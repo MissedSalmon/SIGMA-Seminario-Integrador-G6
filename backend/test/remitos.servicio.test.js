@@ -1,5 +1,5 @@
 /**
- * Pruebas del servicio de remitos (HU-16: ingreso de materiales por remito).
+ * Pruebas del servicio de remitos (HU-16: ingreso por remito).
  *
  * Se prueba lo que decide el backend antes de tocar la base: que no pase un
  * remito mal cargado, que no se cuele un item que no esta en el catalogo, y
@@ -39,22 +39,43 @@ function remitoValido(cambios = {}) {
 }
 
 /**
- * Hace que el catalogo conteste que existen los codigos que se le pasen. Es la
- * cadena from('inventarioitem').select(...).in(...).
+ * Simula los catálogos de materiales, modelos y unidades físicas.
  */
-function catalogoCon(codigos) {
-  const materiales = {
-    select: jest.fn(() => materiales),
-    in: jest.fn(() =>
-      Promise.resolve({ data: codigos.map((codigo) => ({ mat_cod: codigo, mat_nom: codigo })), error: null })
+function catalogoCon(codigosMateriales, codigosModelos = []) {
+  const crearTabla = (filas, columna) => {
+    const consulta = {
+      select: jest.fn(() => consulta),
+      in: jest.fn((_columna, valores) =>
+        Promise.resolve({
+          data: filas.filter((fila) => valores.includes(fila[columna])),
+          error: null,
+        })
+      ),
+    };
+    return consulta;
+  };
+  const tablas = {
+    material: crearTabla(
+      codigosMateriales.map((codigo) => ({
+        mat_cod: codigo,
+        mat_nom: codigo,
+        mat_stock_actual: 0,
+        mat_unidad_medida: 'unidad',
+      })),
+      'mat_cod'
     ),
+    herramienta_modelo: crearTabla(
+      codigosModelos.map((codigo) => ({
+        herr_modelo_cod: codigo,
+        herr_modelo_nom: codigo,
+        herramienta: [],
+      })),
+      'herr_modelo_cod'
+    ),
+    herramienta: crearTabla([], 'herr_cod'),
   };
-  const herramientas = {
-    select: jest.fn(() => herramientas),
-    in: jest.fn(() => Promise.resolve({ data: [], error: null })),
-  };
-  supabase.from.mockImplementation((tabla) => (tabla === 'herramienta' ? herramientas : materiales));
-  return materiales;
+  supabase.from.mockImplementation((tabla) => tablas[tabla] ?? tablas.material);
+  return tablas;
 }
 
 afterEach(() => {
@@ -165,11 +186,20 @@ describe('crear: lo que se revisa antes de tocar la base', () => {
 
     expect(supabase.rpc).not.toHaveBeenCalled();
   });
+
+  test('exige un número de serie por unidad de herramienta', async () => {
+    catalogoCon([], ['TO-201']);
+
+    await expect(
+      crear(remitoValido({ items: [{ codigo: 'TO-201', cantidad: 2, unidades: [{ serie: 'TO-1' }] }] }))
+    ).rejects.toThrow('Cargá un número de serie distinto por cada unidad de "TO-201".');
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
 });
 
 describe('crear: lo que se le manda a la base', () => {
   test('llama a registrar_remito con los datos del remito y sus ítems', async () => {
-    catalogoCon(['CA-111', 'TO-201']);
+    const tablas = catalogoCon(['CA-111'], ['TO-201']);
     // El primer rpc devuelve el id del remito; despues el servicio lo relee.
     supabase.rpc.mockResolvedValue({ data: 7, error: null });
 
@@ -194,7 +224,7 @@ describe('crear: lo que se le manda a la base', () => {
             },
             {
               inventarioitemcod: 'TO-201',
-              remito_item_cant: 50,
+              remito_item_cant: 2,
             },
           ],
         },
@@ -202,10 +232,8 @@ describe('crear: lo que se le manda a la base', () => {
       }),
     };
 
-    const catalogo = supabase.from('material');
-    const herramientas = supabase.from('herramienta');
     supabase.from.mockImplementation((tabla) =>
-      tabla === 'remito' ? lectura : tabla === 'herramienta' ? herramientas : catalogo
+      tabla === 'remito' ? lectura : tablas[tabla] ?? tablas.material
     );
 
     const remito = await crear(
@@ -213,7 +241,7 @@ describe('crear: lo que se le manda a la base', () => {
         numero: '0001-00012345',
         items: [
           { codigo: 'CA-111', cantidad: 10 },
-          { codigo: 'TO-201', cantidad: 50 },
+          { codigo: 'TO-201', cantidad: 2, unidades: [{ serie: 'TO-201-1' }, { serie: 'TO-201-2' }] },
         ],
       })
     );
@@ -223,7 +251,7 @@ describe('crear: lo que se le manda a la base', () => {
       p_fecha_recepcion: hoy(),
       p_items: [
         { codigo: 'CA-111', cantidad: 10 },
-        { codigo: 'TO-201', cantidad: 50 },
+        { codigo: 'TO-201', cantidad: 2, unidades: [{ serie: 'TO-201-1' }, { serie: 'TO-201-2' }] },
       ],
       p_num: '0001-00012345',
       p_obs: null,
@@ -233,7 +261,7 @@ describe('crear: lo que se le manda a la base', () => {
 
     // Los dos numeros que muestra el listado sin abrir el remito.
     expect(remito.cantidadItems).toBe(2);
-    expect(remito.totalUnidades).toBe(60);
+    expect(remito.totalUnidades).toBe(12);
   });
 
   test('el mensaje que levanta la función de Postgres llega tal cual', async () => {

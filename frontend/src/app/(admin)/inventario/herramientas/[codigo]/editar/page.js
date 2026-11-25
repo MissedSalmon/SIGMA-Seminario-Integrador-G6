@@ -33,7 +33,7 @@ export default function PantallaEditarHerramienta({ params }) {
           <FormularioMaterialHerramienta
             clase="Herramienta"
             articulo={articulo}
-            onGuardar={(datos) => actualizarItem(codigoBuscado, datos)}
+            onGuardar={(datos) => actualizarItem(articulo.codigo, datos)}
           />
         )
       )}

@@ -4,9 +4,8 @@ import { ENUM_ESTADO_HERRAMIENTA } from '../utiles/enumerados.js';
 import { controlarTecnicoActivo } from './usuarios.servicio.js';
 
 /**
- * Catalogo del deposito (HU-15): materiales (se consumen) y herramientas (se
- * prestan y se devuelven). Cada clase tiene su tabla (material y herramienta);
- * el codigo es unico entre las dos.
+ * Catálogo del depósito (HU-15): materiales (se consumen) y modelos de
+ * herramientas, cuyas unidades físicas se prestan y se devuelven por separado.
  */
 const CLASES = ['Material', 'Herramienta'];
 const UNIDADES_MEDIDA = ['par', 'unidad', 'metro', 'pulgada', 'kilogramo', 'litro', 'metro cuadrado'];
@@ -96,6 +95,7 @@ function aHerramienta(fila, prestamos = new Map()) {
   const estadoGuardado = normalizarEstado(fila.herr_estado);
   return {
     codigo: fila.herr_cod,
+    codigoModelo: fila.herr_modelo_cod ?? null,
     nombre: fila.herr_nom,
     descripcion: fila.herr_desc || '',
     idTipo: fila.inventariotipoid,
@@ -108,10 +108,13 @@ function aHerramienta(fila, prestamos = new Map()) {
     tecnico: prestamo?.nombre ?? null,
     legajoTecnico: prestamo?.legajo ?? null,
     asignadaDesde: prestamo?.desde ?? null,
+    fechaAlta: fila.herr_fecha_alta ?? null,
+    idRemito: fila.remito_id ?? null,
   };
 }
 
 const COLUMNAS = '*, inventariotipo (inventariotiponom)';
+const COLUMNAS_MODELO = '*, inventariotipo (inventariotiponom)';
 
 async function verificarTipo(idTipo, clase) {
   const { data, error } = await supabase
@@ -144,6 +147,16 @@ async function buscarHerramienta(codigo) {
   return data;
 }
 
+async function buscarModeloHerramienta(codigo) {
+  const { data, error } = await supabase
+    .from('herramienta_modelo')
+    .select(COLUMNAS_MODELO)
+    .eq('herr_modelo_cod', codigo)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 /** Devuelve el item con ese codigo, sea material o herramienta. */
 export async function obtenerItem(codigo) {
   const material = await buscarMaterial(codigo);
@@ -151,6 +164,82 @@ export async function obtenerItem(codigo) {
   const herramienta = await buscarHerramienta(codigo);
   if (herramienta) return aHerramienta(herramienta, await obtenerPrestamosAbiertos(codigo));
   throw noEncontrado(`No existe el código "${codigo}" en el depósito.`);
+}
+
+/** Devuelve una fila del catálogo: un material o un modelo de herramienta. */
+export async function obtenerItemCatalogo(codigo) {
+  const material = await buscarMaterial(codigo);
+  if (material) return aMaterial(material);
+  let modelo = await buscarModeloHerramienta(codigo);
+  if (!modelo) {
+    const unidad = await buscarHerramienta(codigo);
+    if (unidad?.herr_modelo_cod) modelo = await buscarModeloHerramienta(unidad.herr_modelo_cod);
+  }
+  if (modelo) {
+    const unidades = await obtenerUnidadesHerramienta(codigo);
+    const disponibles = unidades.filter((unidad) => unidad.estado === 'Disponible').length;
+    return {
+      codigo: modelo.herr_modelo_cod,
+      nombre: modelo.herr_modelo_nom,
+      descripcion: modelo.herr_modelo_desc || '',
+      idTipo: modelo.inventariotipoid,
+      nombreTipo: modelo.inventariotipo?.inventariotiponom || '',
+      clase: 'Herramienta',
+      stockActual: disponibles,
+      cantidadTotal: unidades.length,
+      cantidadEnUso: unidades.filter((unidad) => unidad.estado === 'En uso').length,
+      cantidadFueraDeServicio: unidades.filter((unidad) => unidad.estado === 'Fuera de servicio').length,
+      unidades,
+    };
+  }
+  throw noEncontrado(`No existe el código "${codigo}" en el depósito.`);
+}
+
+/** Unidades físicas de un modelo (o todas), cada una identificada por su serie. */
+export async function obtenerUnidadesHerramienta(codigoModelo = null) {
+  let consulta = supabase
+    .from('herramienta')
+    .select(`${COLUMNAS}, herr_modelo_cod, herr_fecha_alta, remito_id`)
+    .order('herr_cod');
+  if (codigoModelo) consulta = consulta.eq('herr_modelo_cod', codigoModelo);
+  const [{ data, error }, prestamos] = await Promise.all([consulta, obtenerPrestamosAbiertos()]);
+  if (error) throw new Error(error.message);
+  return data.map((fila) => aHerramienta(fila, prestamos));
+}
+
+/** Registra el ingreso manual de unidades con serie y fecha de alta. */
+export async function registrarIngresoHerramienta(codigoModelo, datos = {}) {
+  const fecha = texto(datos.fecha);
+  if (!fecha) throw datoInvalido('Hay que indicar la fecha del ingreso.');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha) || Number.isNaN(Date.parse(fecha))) {
+    throw datoInvalido(`"${fecha}" no es una fecha válida.`);
+  }
+  if (fecha > new Date().toISOString().slice(0, 10)) {
+    throw datoInvalido('La fecha del ingreso no puede ser posterior a hoy.');
+  }
+  if (!Array.isArray(datos.series) || datos.series.length === 0) {
+    throw datoInvalido('Cargá al menos un número de serie o inventario.');
+  }
+  const series = datos.series.map((serie) => texto(serie));
+  if (series.some((serie) => !serie)) {
+    throw datoInvalido('Cada unidad necesita un número de serie o inventario.');
+  }
+  if (series.some((serie) => serie.length > 50)) {
+    throw datoInvalido('El número de serie o inventario puede tener hasta 50 caracteres.');
+  }
+  if (new Set(series).size !== series.length) {
+    throw datoInvalido('Hay números de serie repetidos en el ingreso.');
+  }
+
+  const { error } = await supabase.rpc('registrar_ingreso_herramienta_manual', {
+    p_modelo_cod: codigoModelo,
+    p_fecha: fecha,
+    p_series: series.map((serie) => ({ serie })),
+  });
+  if (error?.code === 'P0001') throw datoInvalido(error.message);
+  if (error?.code === DUPLICADO) throw conflicto('Uno de los números de serie ya está registrado.');
+  if (error) throw errorDeBase(error, 'del ingreso manual de herramientas');
+  return obtenerItemCatalogo(codigoModelo);
 }
 
 export async function obtenerUnidadesMedida() {
@@ -254,7 +343,9 @@ export async function actualizarTipo(id, datos) {
 }
 
 export async function eliminarTipo(id) {
-  const usados = (await contar('material', 'inventariotipoid', id)) + (await contar('herramienta', 'inventariotipoid', id));
+  const usados =
+    (await contar('material', 'inventariotipoid', id)) +
+    (await contar('herramienta_modelo', 'inventariotipoid', id));
   if (usados) throw conflicto('No se puede eliminar un tipo que tiene materiales o herramientas asociados.');
   const tipo = await obtenerTipo(id);
   const { error } = await supabase.from('inventariotipo').delete().eq('inventariotipoid', id);
@@ -272,12 +363,46 @@ export async function obtenerItems(clase) {
     items.push(...data.map(aMaterial));
   }
   if (clase !== 'Material') {
-    const [{ data, error }, prestamos] = await Promise.all([
-      supabase.from('herramienta').select(COLUMNAS),
-      obtenerPrestamosAbiertos(),
-    ]);
+    const { data, error } = await supabase.from('herramienta_modelo').select(COLUMNAS_MODELO);
     if (error) throw new Error(error.message);
-    items.push(...data.map((fila) => aHerramienta(fila, prestamos)));
+    const unidades = await obtenerUnidadesHerramienta();
+    const porModelo = new Map();
+    for (const unidad of unidades) {
+      const conteo = porModelo.get(unidad.codigoModelo) ?? {
+        disponibles: 0,
+        enUso: 0,
+        fueraDeServicio: 0,
+      };
+      if (unidad.estado === 'Disponible') conteo.disponibles += 1;
+      if (unidad.estado === 'En uso') conteo.enUso += 1;
+      if (unidad.estado === 'Fuera de servicio') conteo.fueraDeServicio += 1;
+      porModelo.set(unidad.codigoModelo, conteo);
+    }
+    items.push(
+      ...data.map((fila) => {
+        const conteo = porModelo.get(fila.herr_modelo_cod) ?? {
+          disponibles: 0,
+          enUso: 0,
+          fueraDeServicio: 0,
+        };
+        return {
+          codigo: fila.herr_modelo_cod,
+          nombre: fila.herr_modelo_nom,
+          descripcion: fila.herr_modelo_desc || '',
+          idTipo: fila.inventariotipoid,
+          nombreTipo: fila.inventariotipo?.inventariotiponom || '',
+          clase: 'Herramienta',
+          estado: null,
+          stockActual: conteo.disponibles,
+          cantidadTotal: conteo.disponibles + conteo.enUso + conteo.fueraDeServicio,
+          cantidadEnUso: conteo.enUso,
+          cantidadFueraDeServicio: conteo.fueraDeServicio,
+          tecnico: null,
+          legajoTecnico: null,
+          asignadaDesde: null,
+        };
+      })
+    );
   }
 
   return items.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
@@ -343,8 +468,12 @@ export async function crearItem(datos) {
   const item = leerDatos(datos);
   await verificarTipo(item.idTipo, item.clase);
 
-  const [material, herramienta] = await Promise.all([buscarMaterial(codigo), buscarHerramienta(codigo)]);
-  if (material || herramienta) {
+  const [material, herramienta, modelo] = await Promise.all([
+    buscarMaterial(codigo),
+    buscarHerramienta(codigo),
+    buscarModeloHerramienta(codigo),
+  ]);
+  if (material || herramienta || modelo) {
     throw conflicto(`Ya existe un material o una herramienta con el código "${codigo}".`);
   }
 
@@ -369,16 +498,22 @@ export async function crearItem(datos) {
   }
 
   const { data, error } = await supabase
-    .from('herramienta')
-    .insert({ herr_cod: codigo, herr_nom: item.nombre, herr_desc: item.descripcion, inventariotipoid: item.idTipo, herr_estado: ENUM_ESTADO_HERRAMIENTA.codigo('Disponible') })
+    .from('herramienta_modelo')
+    .insert({
+      herr_modelo_cod: codigo,
+      herr_modelo_nom: item.nombre,
+      herr_modelo_desc: item.descripcion,
+      inventariotipoid: item.idTipo,
+    })
     .select(COLUMNAS)
     .single();
   if (error) throw new Error(error.message);
-  return aHerramienta(data);
+  return obtenerItemCatalogo(data.herr_modelo_cod);
 }
 
 export async function actualizarItem(codigo, datos) {
-  const actual = await obtenerItem(codigo);
+  const actual = await obtenerItemCatalogo(codigo);
+  const codigoCatalogo = actual.codigo;
   if (datos.clase !== actual.clase) throw datoInvalido('La clase no se puede cambiar después del alta.');
   const item = leerDatos(datos);
   await verificarTipo(item.idTipo, item.clase);
@@ -394,7 +529,7 @@ export async function actualizarItem(codigo, datos) {
         inventariotipoid: item.idTipo,
         mat_stock_min: item.stockMinimo,
       })
-      .eq('mat_cod', codigo)
+      .eq('mat_cod', codigoCatalogo)
       .select(COLUMNAS)
       .single();
     if (error?.code === '23514') throw errorDeBase({ code: 'PGRST205' }, 'de las unidades de medida');
@@ -402,14 +537,15 @@ export async function actualizarItem(codigo, datos) {
     return aMaterial(data);
   }
 
-  const { data, error } = await supabase
-    .from('herramienta')
-    .update({ herr_nom: item.nombre, herr_desc: item.descripcion, inventariotipoid: item.idTipo })
-    .eq('herr_cod', codigo)
-    .select(COLUMNAS)
-    .single();
-  if (error) throw new Error(error.message);
-  return aHerramienta(data);
+  const { error } = await supabase.rpc('actualizar_modelo_herramienta', {
+    p_codigo: codigoCatalogo,
+    p_nombre: item.nombre,
+    p_descripcion: item.descripcion,
+    p_tipo_id: item.idTipo,
+  });
+  if (error?.code === 'P0001') throw datoInvalido(error.message);
+  if (error) throw errorDeBase(error, 'del modelo de herramienta');
+  return obtenerItemCatalogo(codigoCatalogo);
 }
 /**
  * El historial de movimientos de un item (HU-16), del mas nuevo al mas viejo.
@@ -422,7 +558,8 @@ export async function actualizarItem(codigo, datos) {
 export async function obtenerMovimientos(codigo) {
   // Que el item exista: si no, el historial vacio no se distingue de un codigo
   // mal escrito.
-  await obtenerItem(codigo);
+  const item = await obtenerItemCatalogo(codigo);
+  const codigoCatalogo = item.codigo;
 
   const { data, error } = await supabase
     .from('inventariomovimiento')
@@ -439,7 +576,7 @@ export async function obtenerMovimientos(codigo) {
         remito_proveedor
       )
     `)
-    .eq('inventarioitemcod', codigo)
+    .eq('inventarioitemcod', codigoCatalogo)
     .order('inventariomovimientofecha', { ascending: false })
     .order('inventariomovimientoid', { ascending: false });
 
@@ -504,10 +641,18 @@ export async function registrarAjuste(codigo, datos = {}, usuario = null) {
     throw datoInvalido('La observación puede tener hasta 500 caracteres.');
   }
 
-  const item = await obtenerItem(codigo);
-  if (item.clase !== 'Material') {
+  const [material, herramienta, modelo] = await Promise.all([
+    buscarMaterial(codigo),
+    buscarHerramienta(codigo),
+    buscarModeloHerramienta(codigo),
+  ]);
+  if (!material && !herramienta && !modelo) {
+    throw noEncontrado(`No existe el código "${codigo}" en el depósito.`);
+  }
+  if (!material) {
     throw datoInvalido('Una herramienta no tiene stock: si se rompe o se pierde, se da de baja y queda fuera de servicio.');
   }
+  const item = aMaterial(material);
   if (tipo === 'Salida' && cantidad > item.stockActual) {
     throw datoInvalido(
       `No hay stock suficiente de "${item.nombre}": quedan ${item.stockActual} y querés descontar ${cantidad}.`
@@ -529,7 +674,7 @@ export async function registrarAjuste(codigo, datos = {}, usuario = null) {
     throw errorDeBase(error, 'de los ajustes de stock');
   }
 
-  return obtenerItem(codigo);
+  return aMaterial(await buscarMaterial(codigo));
 }
 
 /**

@@ -6,9 +6,8 @@
  * ingreso al deposito es el mismo, lo unico que cambia es el papel.
  *
  * El remito es el comprobante con el que el deposito recibe la mercaderia. Al
- * confirmarlo suben los stocks y queda anotado un movimiento de Ingreso por
- * cada item, para poder reconstruir despues como llego el stock al numero que
- * se ve hoy.
+ * confirmarlo sube el stock de materiales y se crea una unidad por cada serie
+ * de herramienta. Queda anotado un movimiento de Ingreso por cada item.
  *
  * EL REMITO NO DA DE ALTA ITEMS. Solo se puede ingresar algo que ya este en el
  * catalogo del deposito (HU-13). Si el item no existe, primero hay que darlo de
@@ -28,7 +27,7 @@
  * linea y vale aunque alguien la llame por afuera del backend.
  */
 import { supabase } from '../config/supabase.js';
-import { datoInvalido, errorDeBase, noEncontrado } from '../utiles/errores.js';
+import { conflicto, datoInvalido, errorDeBase, noEncontrado } from '../utiles/errores.js';
 
 /** Con que papel puede llegar la mercaderia. */
 export const TIPOS_COMPROBANTE = ['Remito', 'Factura'];
@@ -63,7 +62,7 @@ const COLUMNAS = `
  * Los datos de cada codigo, sea material o herramienta. El catalogo vive en dos
  * tablas y el codigo es unico entre las dos, asi que no hay una clave foranea
  * que las una: se buscan por separado. Devuelve un Map
- * codigo -> { nombre, clase, unidadMedida, stockActual }. Las herramientas no llevan stock.
+ * codigo -> { nombre, clase, unidadMedida, stockActual }.
  */
 async function detallesDeItems(codigos) {
   const detalles = new Map();
@@ -71,7 +70,10 @@ async function detallesDeItems(codigos) {
 
   const [materiales, herramientas] = await Promise.all([
     supabase.from('material').select('mat_cod, mat_nom, mat_stock_actual, mat_unidad_medida').in('mat_cod', codigos),
-    supabase.from('herramienta').select('herr_cod, herr_nom').in('herr_cod', codigos),
+    supabase
+      .from('herramienta_modelo')
+      .select('herr_modelo_cod, herr_modelo_nom')
+      .in('herr_modelo_cod', codigos),
   ]);
 
   if (materiales.error) throw new Error(materiales.error.message);
@@ -86,7 +88,12 @@ async function detallesDeItems(codigos) {
     });
   }
   for (const fila of herramientas.data) {
-    detalles.set(fila.herr_cod, { nombre: fila.herr_nom, clase: 'Herramienta', unidadMedida: null, stockActual: null });
+    detalles.set(fila.herr_modelo_cod, {
+      nombre: fila.herr_modelo_nom,
+      clase: 'Herramienta',
+      unidadMedida: null,
+      stockActual: null,
+    });
   }
 
   return detalles;
@@ -127,7 +134,7 @@ function aRemito(fila, detalles) {
 
 /**
  * Revisa los renglones que llegaron de la pantalla y los deja listos para la
- * funcion de Postgres: { codigo, cantidad }.
+ * funcion de Postgres: { codigo, cantidad, unidades? }.
  */
 function leerItems(valor) {
   if (!Array.isArray(valor) || valor.length === 0) {
@@ -160,7 +167,10 @@ function leerItems(valor) {
       throw datoInvalido(`La cantidad de "${codigo}" tiene que ser mayor que cero.`);
     }
 
-    return { codigo, cantidad };
+    const unidades = Array.isArray(renglon?.unidades)
+      ? renglon.unidades.map((unidad) => texto(unidad?.serie ?? unidad))
+      : [];
+    return { codigo, cantidad, unidades };
   });
 }
 
@@ -182,6 +192,45 @@ async function verificarItems(items) {
         .join(', ')} no ${faltan.length === 1 ? 'está' : 'están'} en el catálogo del depósito. ` +
         'Hay que darlo de alta antes de cargar el ingreso.'
     );
+  }
+
+  const series = items.flatMap((item) =>
+    enCatalogo.get(item.codigo)?.clase === 'Herramienta' ? item.unidades : []
+  );
+  const herramientaConCantidadIncorrecta = items.find((item) => {
+    const detalle = enCatalogo.get(item.codigo);
+    return detalle?.clase === 'Herramienta' && item.unidades.length !== item.cantidad;
+  });
+  if (herramientaConCantidadIncorrecta) {
+    throw datoInvalido(
+      `Cargá un número de serie distinto por cada unidad de "${enCatalogo.get(herramientaConCantidadIncorrecta.codigo).nombre}".`
+    );
+  }
+  if (series.some((serie) => !serie)) {
+    throw datoInvalido('Cada herramienta necesita un número de serie o inventario.');
+  }
+  if (series.some((serie) => serie.length > 50)) {
+    throw datoInvalido('El número de serie o inventario puede tener hasta 50 caracteres.');
+  }
+  if (new Set(series).size !== series.length) {
+    throw datoInvalido('Hay números de serie repetidos en el ingreso.');
+  }
+
+  if (series.length) {
+    const [herramientas, materiales, modelos] = await Promise.all([
+      supabase.from('herramienta').select('herr_cod').in('herr_cod', series),
+      supabase.from('material').select('mat_cod').in('mat_cod', series),
+      supabase.from('herramienta_modelo').select('herr_modelo_cod').in('herr_modelo_cod', series),
+    ]);
+    if (herramientas.error) throw new Error(herramientas.error.message);
+    if (materiales.error) throw new Error(materiales.error.message);
+    const existentes = new Set([
+      ...(herramientas.data ?? []).map((fila) => fila.herr_cod),
+      ...(materiales.data ?? []).map((fila) => fila.mat_cod),
+      ...(modelos.data ?? []).map((fila) => fila.herr_modelo_cod),
+    ]);
+    const repetida = series.find((serie) => existentes.has(serie));
+    if (repetida) throw datoInvalido(`El identificador "${repetida}" ya está registrado.`);
   }
 }
 
@@ -280,7 +329,11 @@ export async function crear(datos) {
   const { data, error } = await supabase.rpc('registrar_remito', {
     p_proveedor: proveedor,
     p_fecha_recepcion: fechaRecepcion.slice(0, 10),
-    p_items: items,
+    p_items: items.map((item) => ({
+      codigo: item.codigo,
+      cantidad: item.cantidad,
+      ...(item.unidades.length ? { unidades: item.unidades.map((serie) => ({ serie })) } : {}),
+    })),
     p_num: numero,
     p_obs: texto(datos?.observaciones),
     // Todavia no hay login: cuando lo haya, aca va el usuario de la sesion.
@@ -296,6 +349,9 @@ export async function crear(datos) {
      */
     if (error.code === 'P0001') {
       throw datoInvalido(error.message);
+    }
+    if (error.code === '23505') {
+      throw conflicto('Uno de los números de serie ya está registrado.');
     }
 
     throw errorDeBase(error, 'del remito');

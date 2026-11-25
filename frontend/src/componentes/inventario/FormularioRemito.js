@@ -60,7 +60,14 @@ const LARGO_NUMERO = 13;
 let proximoRenglon = 0;
 function renglonVacio() {
   proximoRenglon += 1;
-  return { clave: proximoRenglon, codigo: '', cantidad: '' };
+  return { clave: proximoRenglon, codigo: '', cantidad: '', series: '' };
+}
+
+function leerSeries(texto) {
+  return texto
+    .split(/\r?\n/)
+    .map((serie) => serie.trim())
+    .filter(Boolean);
 }
 
 export default function FormularioRemito({ onGuardar }) {
@@ -76,7 +83,7 @@ export default function FormularioRemito({ onGuardar }) {
 
   // El primer renglon lleva la clave 0 fija: si saliera del contador, el
   // servidor y el navegador le darian numeros distintos y React avisaria.
-  const [renglones, setRenglones] = useState(() => [{ clave: 0, codigo: '', cantidad: '' }]);
+  const [renglones, setRenglones] = useState(() => [{ clave: 0, codigo: '', cantidad: '', series: '' }]);
 
   const [catalogo, setCatalogo] = useState([]);
   const [cargandoCatalogo, setCargandoCatalogo] = useState(true);
@@ -141,6 +148,7 @@ export default function FormularioRemito({ onGuardar }) {
 
     renglones.forEach((renglon) => {
       const cantidad = String(renglon.cantidad).trim();
+      const item = catalogo.find((fila) => fila.codigo === renglon.codigo);
 
       if (!renglon.codigo) {
         // Un renglon del todo vacio no molesta: se descarta al confirmar.
@@ -160,14 +168,39 @@ export default function FormularioRemito({ onGuardar }) {
       } else if (!Number.isInteger(Number(cantidad)) || Number(cantidad) <= 0) {
         encontrados[`cantidad-${renglon.clave}`] = 'Tiene que ser un número entero mayor que cero.';
       }
+
+      if (item?.clase === 'Herramienta' && cantidad !== '' && Number.isInteger(Number(cantidad)) && Number(cantidad) > 0) {
+        const series = leerSeries(renglon.series);
+        if (series.length !== Number(cantidad)) {
+          encontrados[`series-${renglon.clave}`] = `Cargá ${cantidad} números de serie, uno por cada unidad.`;
+        } else if (new Set(series).size !== series.length) {
+          encontrados[`series-${renglon.clave}`] = 'No repitas números de serie en el mismo renglón.';
+        }
+      }
     });
+
+    const seriesIngresadas = renglones.flatMap((renglon) =>
+      catalogo.find((fila) => fila.codigo === renglon.codigo)?.clase === 'Herramienta'
+        ? leerSeries(renglon.series)
+        : []
+    );
+    if (new Set(seriesIngresadas).size !== seriesIngresadas.length) {
+      renglones.forEach((renglon) => {
+        if (
+          catalogo.find((fila) => fila.codigo === renglon.codigo)?.clase === 'Herramienta' &&
+          leerSeries(renglon.series).length
+        ) {
+          encontrados[`series-${renglon.clave}`] = 'No repitas números de serie en el ingreso.';
+        }
+      });
+    }
 
     if (!hayAlgunItem) {
       encontrados.items = 'Tiene que tener al menos un ítem.';
     }
 
     return encontrados;
-  }, [tipoComprobante, proveedor, numero, fechaRecepcion, hoy, renglones]);
+  }, [tipoComprobante, proveedor, numero, fechaRecepcion, hoy, renglones, catalogo]);
 
   const hayErrores = Object.keys(errores).length > 0;
 
@@ -207,6 +240,7 @@ export default function FormularioRemito({ onGuardar }) {
             stockActual: item?.stockActual ?? null,
             cantidad,
             stockNuevo: item?.stockActual == null ? null : item.stockActual + cantidad,
+            series: item?.clase === 'Herramienta' ? leerSeries(renglon.series) : [],
           };
         }),
     [renglones, catalogo]
@@ -234,7 +268,11 @@ export default function FormularioRemito({ onGuardar }) {
         numero: numero.trim(),
         fechaRecepcion,
         observaciones: observaciones.trim() || null,
-        items: cargados.map((renglon) => ({ codigo: renglon.codigo, cantidad: renglon.cantidad })),
+        items: cargados.map((renglon) => ({
+          codigo: renglon.codigo,
+          cantidad: renglon.cantidad,
+          ...(renglon.series.length ? { unidades: renglon.series.map((serie) => ({ serie })) } : {}),
+        })),
       });
 
       mostrarToast({
@@ -385,6 +423,18 @@ export default function FormularioRemito({ onGuardar }) {
                           revisado={revisado}
                           error={errores[`item-${renglon.clave}`]}
                         />
+                        {item?.clase === 'Herramienta' && (
+                          <Campo
+                            id={`series-${renglon.clave}`}
+                            etiqueta="Números de serie o inventario"
+                            tipo="area"
+                            valor={renglon.series}
+                            alCambiar={(valor) => cambiarRenglon(renglon.clave, 'series', valor)}
+                            placeholder="Una identificación por línea"
+                            revisado={revisado}
+                            error={errores[`series-${renglon.clave}`]}
+                          />
+                        )}
                       </CTableDataCell>
 
                       <CTableDataCell className="text-center">
@@ -505,6 +555,9 @@ export default function FormularioRemito({ onGuardar }) {
                     </CTableDataCell>
                     <CTableDataCell>
                       +{renglon.cantidad} {renglon.unidadMedida ?? ''}
+                      {renglon.series.length > 0 && (
+                        <div className="small text-body-secondary">{renglon.series.join(', ')}</div>
+                      )}
                     </CTableDataCell>
                     <CTableDataCell className="text-body-secondary">
                       {renglon.stockActual === null ? (
