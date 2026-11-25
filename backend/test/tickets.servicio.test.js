@@ -16,9 +16,16 @@ jest.unstable_mockModule('../src/config/supabase.js', () => ({
 }));
 
 const { supabase } = await import('../src/config/supabase.js');
-const { obtenerTodos, obtenerPorId, crear, ESTADOS, ESTADO_INICIAL } = await import(
-  '../src/servicios/tickets.servicio.js'
-);
+const {
+  obtenerTodos,
+  obtenerPorId,
+  crear,
+  validar,
+  rechazarPendientesDeActivoRetirado,
+  ESTADOS,
+  ESTADO_INICIAL,
+  MOTIVO_RECHAZO_ACTIVO_RETIRADO,
+} = await import('../src/servicios/tickets.servicio.js');
 
 /** Una fila de ticket como la devuelve la base, para no repetirla en cada prueba. */
 function filaTicket(cambios = {}) {
@@ -67,6 +74,7 @@ function consultaQueDevuelve(data) {
     gte: jest.fn(() => cadena),
     lte: jest.fn(() => cadena),
     insert: jest.fn(() => cadena),
+    update: jest.fn(() => cadena),
     maybeSingle: jest.fn().mockResolvedValue({ data, error: null }),
     single: jest.fn().mockResolvedValue({ data, error: null }),
     then: (resolver, rechazar) => Promise.resolve({ data, error: null }).then(resolver, rechazar),
@@ -280,5 +288,140 @@ describe('crear', () => {
       crear({ codigoActivo: 'TV-505', descripcion: 'No prende' }, { rol: 'autorizado', identificador: '1234' })
     ).rejects.toMatchObject({ estado: 400 });
     expect(ticket.insert).not.toHaveBeenCalled();
+  });
+});
+
+describe('rechazo automático por activo retirado', () => {
+  test('validar rechaza automáticamente un ticket Creado cuyo activo está Retirado', async () => {
+    const ticketCreadoRetirado = filaTicket({
+      ticket_id: 12,
+      ticket_estado: 1, // Creado
+      ticket_desc: 'No enfría',
+      orden_trabajo: [],
+      activo: {
+        activo_codigo: 'AC-010',
+        activo_estado: 4, // Retirado
+        tipo_activo: { tipo_activo_nom: 'Aires' },
+        espacio: { espacio_id: 2, espacio_num: '1', edificio: { edificio_nom: 'Central' }, area: null },
+      },
+    });
+    const ticketRechazado = filaTicket({
+      ...ticketCreadoRetirado,
+      ticket_estado: 7, // Rechazado
+      ticket_desc: `No enfría\n\n--- MOTIVO DE RECHAZO ---\n${MOTIVO_RECHAZO_ACTIVO_RETIRADO}`,
+    });
+
+    const consultaLectura = consultaQueDevuelve(ticketCreadoRetirado);
+    const consultaUpdate = consultaQueDevuelve(ticketRechazado);
+    supabase.from
+      .mockReturnValueOnce(consultaLectura)
+      .mockReturnValueOnce(consultaUpdate);
+
+    const resultado = await validar(12);
+
+    expect(consultaUpdate.update).toHaveBeenCalledWith({
+      ticket_estado: 7,
+      ticket_desc: `No enfría\n\n--- MOTIVO DE RECHAZO ---\n${MOTIVO_RECHAZO_ACTIVO_RETIRADO}`,
+    });
+    expect(resultado.estado).toBe('Rechazado');
+    expect(resultado.motivoRechazo).toBe(MOTIVO_RECHAZO_ACTIVO_RETIRADO);
+    expect(resultado.ot).toBeNull();
+  });
+
+  test('obtenerPorId rechaza automáticamente un ticket Creado existente cuyo activo está Retirado', async () => {
+    const ticketCreadoRetirado = filaTicket({
+      ticket_id: 15,
+      ticket_estado: 1, // Creado
+      ticket_desc: 'Cable cortado',
+      orden_trabajo: [],
+      activo: {
+        activo_codigo: 'PC-099',
+        activo_estado: 4, // Retirado
+        tipo_activo: { tipo_activo_nom: 'PC' },
+        espacio: { espacio_id: 2, espacio_num: '1', edificio: { edificio_nom: 'Central' }, area: null },
+      },
+    });
+    const ticketRechazado = filaTicket({
+      ...ticketCreadoRetirado,
+      ticket_estado: 7, // Rechazado
+      ticket_desc: `Cable cortado\n\n--- MOTIVO DE RECHAZO ---\n${MOTIVO_RECHAZO_ACTIVO_RETIRADO}`,
+    });
+
+    const consultaLectura = consultaQueDevuelve(ticketCreadoRetirado);
+    const consultaUpdate = consultaQueDevuelve(ticketRechazado);
+    supabase.from
+      .mockReturnValueOnce(consultaLectura)
+      .mockReturnValueOnce(consultaUpdate);
+
+    const resultado = await obtenerPorId(15);
+
+    expect(consultaUpdate.update).toHaveBeenCalledWith({
+      ticket_estado: 7,
+      ticket_desc: `Cable cortado\n\n--- MOTIVO DE RECHAZO ---\n${MOTIVO_RECHAZO_ACTIVO_RETIRADO}`,
+    });
+    expect(resultado.estado).toBe('Rechazado');
+    expect(resultado.motivoRechazo).toBe(MOTIVO_RECHAZO_ACTIVO_RETIRADO);
+  });
+
+  test('obtenerTodos rechaza automáticamente tickets Creado cuyo activo está Retirado y respeta el filtro de estado', async () => {
+    const ticketCreadoRetirado = filaTicket({
+      ticket_id: 20,
+      ticket_estado: 1, // Creado
+      ticket_desc: 'Sin imagen',
+      orden_trabajo: [],
+      activo: {
+        activo_codigo: 'TV-01',
+        activo_estado: 4, // Retirado
+        tipo_activo: { tipo_activo_nom: 'TV' },
+        espacio: { espacio_id: 2, espacio_num: '1', edificio: { edificio_nom: 'Central' }, area: null },
+      },
+    });
+    const ticketRechazado = filaTicket({
+      ...ticketCreadoRetirado,
+      ticket_estado: 7,
+      ticket_desc: `Sin imagen\n\n--- MOTIVO DE RECHAZO ---\n${MOTIVO_RECHAZO_ACTIVO_RETIRADO}`,
+    });
+
+    const consultaLista = consultaQueDevuelve([ticketCreadoRetirado]);
+    const consultaUpdate = consultaQueDevuelve(ticketRechazado);
+    supabase.from
+      .mockReturnValueOnce(consultaLista)
+      .mockReturnValueOnce(consultaUpdate);
+
+    const resultado = await obtenerTodos({ estado: 'Creado' });
+
+    expect(consultaUpdate.update).toHaveBeenCalledWith({
+      ticket_estado: 7,
+      ticket_desc: `Sin imagen\n\n--- MOTIVO DE RECHAZO ---\n${MOTIVO_RECHAZO_ACTIVO_RETIRADO}`,
+    });
+    expect(resultado).toEqual([]);
+  });
+
+  test('rechazarPendientesDeActivoRetirado rechaza todos los tickets Creado del activo', async () => {
+    const consultaPendientes = consultaQueDevuelve([
+      { ticket_id: 31, ticket_desc: 'No prende' },
+      { ticket_id: 32, ticket_desc: 'Hace chispas' },
+    ]);
+    const consultaUpdate1 = consultaQueDevuelve(null);
+    const consultaUpdate2 = consultaQueDevuelve(null);
+
+    supabase.from
+      .mockReturnValueOnce(consultaPendientes)
+      .mockReturnValueOnce(consultaUpdate1)
+      .mockReturnValueOnce(consultaUpdate2);
+
+    const cantidad = await rechazarPendientesDeActivoRetirado('AC-014');
+
+    expect(cantidad).toBe(2);
+    expect(consultaPendientes.eq).toHaveBeenCalledWith('activo_codigo', 'AC-014');
+    expect(consultaPendientes.eq).toHaveBeenCalledWith('ticket_estado', 1);
+    expect(consultaUpdate1.update).toHaveBeenCalledWith({
+      ticket_estado: 7,
+      ticket_desc: `No prende\n\n--- MOTIVO DE RECHAZO ---\n${MOTIVO_RECHAZO_ACTIVO_RETIRADO}`,
+    });
+    expect(consultaUpdate2.update).toHaveBeenCalledWith({
+      ticket_estado: 7,
+      ticket_desc: `Hace chispas\n\n--- MOTIVO DE RECHAZO ---\n${MOTIVO_RECHAZO_ACTIVO_RETIRADO}`,
+    });
   });
 });

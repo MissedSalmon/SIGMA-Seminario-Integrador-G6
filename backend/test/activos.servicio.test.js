@@ -46,6 +46,7 @@ function consultaQueDevuelve(data) {
     in: jest.fn(() => cadena),
     maybeSingle: jest.fn().mockResolvedValue({ data, error: null }),
     single: jest.fn().mockResolvedValue({ data, error: null }),
+    then: (resolver, rechazar) => Promise.resolve({ data, error: null }).then(resolver, rechazar),
   };
   return cadena;
 }
@@ -101,19 +102,56 @@ describe('actualizar', () => {
       })
     ).rejects.toThrow('no es un estado que se pueda poner a mano');
   });
+
+  test('si se pasa el activo a Retirado, rechaza sus tickets pendientes', async () => {
+    const cadenaUpdateActivo = consultaQueDevuelve(filaActivo({ activo_estado: 4 }));
+    const cadenaTicketsPendientes = consultaQueDevuelve([
+      { ticket_id: 7, ticket_desc: 'Pierde agua' },
+    ]);
+    const cadenaUpdateTicket = consultaQueDevuelve(null);
+
+    supabase.from
+      .mockReturnValueOnce(consultaQueDevuelve(filaActivo())) // obtenerPorId
+      .mockReturnValueOnce(consultaQueDevuelve({ tipo_activo_id: 1 })) // verificarTipo
+      .mockReturnValueOnce(consultaQueDevuelve({ edificio_id: 1 })) // obtenerEdificioDeEspacio
+      .mockReturnValueOnce(cadenaUpdateActivo) // update activo
+      .mockReturnValueOnce(cadenaTicketsPendientes) // select tickets pendientes
+      .mockReturnValueOnce(cadenaUpdateTicket); // update ticket
+
+    const resultado = await actualizar('AC-014', {
+      idTipoActivo: 1,
+      espacio_id: 12,
+      estado: 'Retirado',
+    });
+
+    expect(resultado.estado).toBe('Retirado');
+    expect(cadenaUpdateTicket.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ticket_estado: 7,
+        ticket_desc: expect.stringContaining('actualmente retirado'),
+      })
+    );
+  });
 });
 
 describe('darDeBaja', () => {
-  test('pasa el activo a Retirado en vez de borrarlo', async () => {
+  test('pasa el activo a Retirado en vez de borrarlo y rechaza sus tickets pendientes', async () => {
     const cadenaUpdate = consultaQueDevuelve(
       filaActivo({ activo_estado: 4 })
     );
+    const cadenaTicketsPendientes = consultaQueDevuelve([
+      { ticket_id: 9, ticket_desc: 'No arranca' },
+    ]);
+    const cadenaUpdateTicket = consultaQueDevuelve(null);
 
     // Primera llamada: obtenerPorId (select...maybeSingle)
-    // Segunda llamada: update (la cadena de update)
+    // Segunda llamada: update activo
+    // Tercera y cuarta: rechazo automático de tickets pendientes
     supabase.from
       .mockReturnValueOnce(consultaQueDevuelve(filaActivo()))   // obtenerPorId
-      .mockReturnValueOnce(cadenaUpdate);                        // update
+      .mockReturnValueOnce(cadenaUpdate)                        // update activo
+      .mockReturnValueOnce(cadenaTicketsPendientes)             // select tickets pendientes
+      .mockReturnValueOnce(cadenaUpdateTicket);                 // update ticket
 
     const resultado = await darDeBaja('AC-014');
 
@@ -124,6 +162,12 @@ describe('darDeBaja', () => {
       })
     );
     expect(cadenaUpdate.delete).not.toHaveBeenCalled();
+    expect(cadenaUpdateTicket.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ticket_estado: 7, // Rechazado
+        ticket_desc: expect.stringContaining('actualmente retirado'),
+      })
+    );
     expect(resultado.estado).toBe('Retirado');
   });
 

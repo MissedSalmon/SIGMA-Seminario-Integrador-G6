@@ -377,6 +377,27 @@ una OT en ejecución), rojo = Fuera de servicio (no funciona), gris = Retirado (
 > - Un técnico que tiene o tuvo herramientas asignadas no se puede eliminar, para no perder
 >   ese historial.
 
+> **Decisión del 24/11/2026 (inventario de herramientas por unidad):**
+> Esta decisión actualiza el listado y la ficha definidos el 03/10/2026: el listado pasa a ser
+> por modelo y las acciones se hacen sobre una unidad dentro de su detalle.
+> - El catálogo guarda **modelos** de herramienta y cada unidad física guarda su propio
+>   código individual. El código del catálogo identifica el modelo; el código de la unidad
+>   tiene el formato `HE-000`, `HE-001`, etc., y se genera automáticamente.
+> - El stock disponible se calcula contando las unidades en estado «Disponible». La ficha del
+>   modelo muestra también las unidades «En uso» y «Fuera de servicio».
+> - Cada unidad conserva su fecha de alta y, si ingresó por remito o factura, el comprobante.
+>   Los ingresos manuales piden fecha y cantidad; los remitos también piden cantidad. El
+>   sistema asigna un código a cada unidad.
+> - Las unidades cargadas antes de este cambio se agrupan en modelos por nombre, categoría y
+>   descripción, y reciben los códigos `HE-000` en orden ascendente. Su fecha de alta queda
+>   sin registrar si no hay un ingreso previo que la permita reconstruir.
+> - La asignación y devolución se hacen por unidad. El historial sigue guardando cada préstamo
+>   en `tecnico_utiliza_herramienta`.
+> - Los códigos `HE-000` a `HE-999` quedan reservados para las unidades, con un máximo de
+>   1000 herramientas registradas.
+> - La base se actualiza con `supabase/migrations/20261124120000_herramientas_por_unidad.sql`
+>   y `supabase/migrations/20261124190000_codigo_unico_herramientas.sql`.
+
 > **Decisiones del 06/11/2026 (corrección del sprint anterior: ajustes de stock):**
 > - **El stock de un material se puede ajustar a mano**, sin remito y sin tarea: un
 >   **ingreso** suma unidades que no vienen de una compra y un **egreso** descuenta las que no
@@ -746,7 +767,7 @@ Agrupadas por tema, para tener el mapa general:
 | **Prioridad** | Nivel de importancia que el administrador le pone a la OT. |
 | **Proveedor** | Quien le vende materiales y herramientas a la facultad. |
 | **Remito** | Uno de los comprobantes del ingreso de materiales al depósito. El otro es la **factura**. |
-| **Stock** | Cantidad disponible de un material. |
+| **Stock** | Cantidad disponible de un material o de unidades de herramienta. |
 | **Stock mínimo** | Cantidad mínima que hay que tener. Al llegar, el sistema avisa. |
 | **Tarea (de OT)** | Actividad concreta dentro de una OT. Cuando todas están completas, la OT se finaliza. Siempre sale de una tarea estándar (plantilla); su descripción se puede ajustar (decisión del 26/09/2026). El técnico asignado tiene que tener la especialidad de la plantilla (02/11/2026). |
 | **Técnico** | Personal de la facultad que ejecuta las tareas. |

@@ -14,10 +14,8 @@
  *
  * Los materiales no llevan fecha de vencimiento (devolucion del Sprint 3).
  *
- * Lo que el formulario NO pide: el estado. Lo pone el sistema (todo lo que
- * entra al deposito entra disponible) y despues lo mueven la asignacion a un
- * tecnico y la baja, no esta pantalla. En la edicion se muestra, para verlo,
- * pero no se toca.
+ * El estado y el código individual se asignan por unidad desde el detalle del
+ * modelo o desde un ingreso. Este formulario crea o edita el modelo del catálogo.
  *
  * Los campos usan <Campo>, asi que las cajas miden lo que mide su contenido y
  * la validacion marca cada campo en chico, sin pintar toda la caja de verde o
@@ -187,10 +185,10 @@ export default function FormularioMaterialHerramienta({ clase, articulo = null, 
 
             <Campo
               id="codigo"
-              etiqueta="Código"
+              etiqueta={esMaterial ? 'Código' : 'Código del modelo'}
               valor={codigo}
               alCambiar={setCodigo}
-              placeholder="MAT-014"
+              placeholder={esMaterial ? 'MAT-014' : 'MOD-TAL-001'}
               obligatorio
               maxLength={50}
               deshabilitado={editando}
@@ -248,19 +246,6 @@ export default function FormularioMaterialHerramienta({ clase, articulo = null, 
                   </CButton>
                 </div>
               </>
-            )}
-
-            {/* El estado solo existe para una herramienta: un material no lo tiene. */}
-            {editando && !esMaterial && (
-              <Campo
-                id="estado"
-                etiqueta="Estado"
-                valor={articulo.estado ?? 'Disponible'}
-                alCambiar={() => {}}
-                soloLectura
-                deshabilitado
-                ancho={12}
-              />
             )}
 
             <Campo

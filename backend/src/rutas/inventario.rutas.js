@@ -28,6 +28,7 @@ router.put('/:codigo', inventario.actualizarItem);
 router.post('/:codigo/ajustes', soloAdministrador, inventario.registrarAjuste);
 // Asignar una herramienta a un tecnico, registrar que la devolvio y ver quien la tuvo.
 router.get('/:codigo/asignaciones', inventario.listarAsignaciones);
+router.post('/:codigo/unidades', inventario.registrarIngresoHerramienta);
 router.post('/:codigo/asignacion', inventario.asignarHerramienta);
 router.delete('/:codigo/asignacion', inventario.devolverHerramienta);
 // Volver a poner en servicio una herramienta dada de baja.

@@ -6,9 +6,8 @@
  * ingreso al deposito es el mismo, lo unico que cambia es el papel.
  *
  * El remito es el comprobante con el que el deposito recibe la mercaderia. Al
- * confirmarlo suben los stocks y queda anotado un movimiento de Ingreso por
- * cada item, para poder reconstruir despues como llego el stock al numero que
- * se ve hoy.
+ * confirmarlo sube el stock de materiales y genera un código para cada unidad
+ * de herramienta. Queda anotado un movimiento de Ingreso por cada item.
  *
  * EL REMITO NO DA DE ALTA ITEMS. Solo se puede ingresar algo que ya este en el
  * catalogo del deposito (HU-13). Si el item no existe, primero hay que darlo de
@@ -28,7 +27,7 @@
  * linea y vale aunque alguien la llame por afuera del backend.
  */
 import { supabase } from '../config/supabase.js';
-import { datoInvalido, errorDeBase, noEncontrado } from '../utiles/errores.js';
+import { conflicto, datoInvalido, errorDeBase, noEncontrado } from '../utiles/errores.js';
 
 /** Con que papel puede llegar la mercaderia. */
 export const TIPOS_COMPROBANTE = ['Remito', 'Factura'];
@@ -63,7 +62,7 @@ const COLUMNAS = `
  * Los datos de cada codigo, sea material o herramienta. El catalogo vive en dos
  * tablas y el codigo es unico entre las dos, asi que no hay una clave foranea
  * que las una: se buscan por separado. Devuelve un Map
- * codigo -> { nombre, clase, unidadMedida, stockActual }. Las herramientas no llevan stock.
+ * codigo -> { nombre, clase, unidadMedida, stockActual }.
  */
 async function detallesDeItems(codigos) {
   const detalles = new Map();
@@ -71,7 +70,10 @@ async function detallesDeItems(codigos) {
 
   const [materiales, herramientas] = await Promise.all([
     supabase.from('material').select('mat_cod, mat_nom, mat_stock_actual, mat_unidad_medida').in('mat_cod', codigos),
-    supabase.from('herramienta').select('herr_cod, herr_nom').in('herr_cod', codigos),
+    supabase
+      .from('herramienta_modelo')
+      .select('herr_modelo_cod, herr_modelo_nom')
+      .in('herr_modelo_cod', codigos),
   ]);
 
   if (materiales.error) throw new Error(materiales.error.message);
@@ -86,7 +88,12 @@ async function detallesDeItems(codigos) {
     });
   }
   for (const fila of herramientas.data) {
-    detalles.set(fila.herr_cod, { nombre: fila.herr_nom, clase: 'Herramienta', unidadMedida: null, stockActual: null });
+    detalles.set(fila.herr_modelo_cod, {
+      nombre: fila.herr_modelo_nom,
+      clase: 'Herramienta',
+      unidadMedida: null,
+      stockActual: null,
+    });
   }
 
   return detalles;
@@ -160,6 +167,10 @@ function leerItems(valor) {
       throw datoInvalido(`La cantidad de "${codigo}" tiene que ser mayor que cero.`);
     }
 
+    if (renglon && Object.hasOwn(renglon, 'unidades')) {
+      throw datoInvalido('Los códigos de las unidades de herramienta se generan automáticamente.');
+    }
+
     return { codigo, cantidad };
   });
 }
@@ -183,6 +194,7 @@ async function verificarItems(items) {
         'Hay que darlo de alta antes de cargar el ingreso.'
     );
   }
+
 }
 
 /** Los remitos, del mas nuevo al mas viejo por fecha de recepcion. */
@@ -296,6 +308,9 @@ export async function crear(datos) {
      */
     if (error.code === 'P0001') {
       throw datoInvalido(error.message);
+    }
+    if (error.code === '23505') {
+      throw conflicto('No se pudo generar un código único para una herramienta.');
     }
 
     throw errorDeBase(error, 'del remito');

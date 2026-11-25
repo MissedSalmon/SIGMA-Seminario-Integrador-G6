@@ -56,6 +56,7 @@ jest.unstable_mockModule('../src/config/supabase.js', () => ({
 
 jest.unstable_mockModule('../src/servicios/inventario.servicio.js', () => ({
   obtenerItems: jest.fn(),
+  obtenerUnidadesHerramienta: jest.fn(),
   obtenerItem: jest.fn(),
   asignarHerramienta: jest.fn(),
   devolverHerramienta: jest.fn(),
@@ -562,7 +563,7 @@ describe('historial', () => {
 
 describe('herramientas', () => {
   test('separa las que tengo a mi nombre de las disponibles', async () => {
-    inventario.obtenerItems.mockResolvedValue([
+    inventario.obtenerUnidadesHerramienta.mockResolvedValue([
       { codigo: 'HER-1', nombre: 'Taladro', estado: 'En uso', legajoTecnico: '2030', asignadaDesde: '2026-10-10' },
       { codigo: 'HER-2', nombre: 'Escalera', estado: 'Disponible', legajoTecnico: null },
       { codigo: 'HER-3', nombre: 'Amoladora', estado: 'En uso', legajoTecnico: '1025' },
@@ -577,7 +578,7 @@ describe('herramientas', () => {
 
   test('tomar una herramienta la asigna al técnico de la sesión', async () => {
     laTareaEsta({ estadoTarea: 3 });
-    inventario.obtenerItems.mockResolvedValue([]);
+    inventario.obtenerUnidadesHerramienta.mockResolvedValue([]);
 
     await tareas.tomarHerramienta('2030', 9, 1, 'HER-2');
 

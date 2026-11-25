@@ -141,6 +141,7 @@ export default function FormularioRemito({ onGuardar }) {
 
     renglones.forEach((renglon) => {
       const cantidad = String(renglon.cantidad).trim();
+      const item = catalogo.find((fila) => fila.codigo === renglon.codigo);
 
       if (!renglon.codigo) {
         // Un renglon del todo vacio no molesta: se descarta al confirmar.
@@ -167,7 +168,7 @@ export default function FormularioRemito({ onGuardar }) {
     }
 
     return encontrados;
-  }, [tipoComprobante, proveedor, numero, fechaRecepcion, hoy, renglones]);
+  }, [tipoComprobante, proveedor, numero, fechaRecepcion, hoy, renglones, catalogo]);
 
   const hayErrores = Object.keys(errores).length > 0;
 
@@ -202,6 +203,7 @@ export default function FormularioRemito({ onGuardar }) {
             clave: renglon.clave,
             codigo: renglon.codigo,
             nombre: item?.nombre ?? renglon.codigo,
+            clase: item?.clase ?? '',
             unidadMedida: item?.unidadMedida ?? null,
             // Las herramientas no llevan stock: les queda en null.
             stockActual: item?.stockActual ?? null,
@@ -234,7 +236,10 @@ export default function FormularioRemito({ onGuardar }) {
         numero: numero.trim(),
         fechaRecepcion,
         observaciones: observaciones.trim() || null,
-        items: cargados.map((renglon) => ({ codigo: renglon.codigo, cantidad: renglon.cantidad })),
+        items: cargados.map((renglon) => ({
+          codigo: renglon.codigo,
+          cantidad: renglon.cantidad,
+        })),
       });
 
       mostrarToast({
@@ -526,6 +531,11 @@ export default function FormularioRemito({ onGuardar }) {
             Al guardar, el stock sube y el movimiento queda registrado. El comprobante no se
             puede modificar después.
           </p>
+          {cargados.some((renglon) => renglon.clase === 'Herramienta') && (
+            <p className="text-body-secondary mt-2 mb-0">
+              Los códigos de las herramientas se asignan automáticamente en orden consecutivo (HE-000, HE-001, etc.).
+            </p>
+          )}
         </CModalBody>
 
         <CModalFooter>
