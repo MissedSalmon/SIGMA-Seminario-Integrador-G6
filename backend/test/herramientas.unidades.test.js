@@ -11,6 +11,7 @@ function consulta(filas) {
   const respuesta = { data: filas, error: null };
   const cadena = {
     then: (resolver, rechazar) => Promise.resolve(respuesta).then(resolver, rechazar),
+    maybeSingle: jest.fn().mockResolvedValue({ data: filas[0] ?? null, error: null }),
   };
   for (const metodo of ['select', 'eq', 'order', 'is']) {
     cadena[metodo] = jest.fn(() => cadena);
@@ -30,7 +31,7 @@ function prepararDeposito() {
   ];
   const unidades = [
     {
-      herr_cod: 'SER-01',
+      herr_cod: 'HE-000',
       herr_modelo_cod: 'TAL-01',
       herr_nom: 'Taladro',
       herr_estado: 1,
@@ -40,7 +41,7 @@ function prepararDeposito() {
       inventariotipo: { inventariotiponom: 'Eléctricas' },
     },
     {
-      herr_cod: 'SER-02',
+      herr_cod: 'HE-001',
       herr_modelo_cod: 'TAL-01',
       herr_nom: 'Taladro',
       herr_estado: 2,
@@ -50,7 +51,7 @@ function prepararDeposito() {
       inventariotipo: { inventariotiponom: 'Eléctricas' },
     },
     {
-      herr_cod: 'SER-03',
+      herr_cod: 'HE-002',
       herr_modelo_cod: 'TAL-01',
       herr_nom: 'Taladro',
       herr_estado: 3,
@@ -62,7 +63,7 @@ function prepararDeposito() {
   ];
   const prestamos = [
     {
-      herr_cod: 'SER-02',
+      herr_cod: 'HE-001',
       tecnico_legajo: '123',
       tec_herr_fecha_prest: '2026-11-23T12:00:00Z',
       tecnico: { tecnico_nom_ape: 'Ana Técnica' },
@@ -96,9 +97,22 @@ test('el catálogo cuenta unidades disponibles, en uso y fuera de servicio', asy
   ]);
 });
 
-test('el ingreso manual valida que haya series antes de llamar a la base', async () => {
+test('el ingreso manual exige una cantidad positiva antes de llamar a la base', async () => {
   await expect(
-    registrarIngresoHerramienta('TAL-01', { fecha: '2026-11-20', series: ['SER-1', 'SER-1'] })
-  ).rejects.toMatchObject({ estado: 400, message: 'Hay números de serie repetidos en el ingreso.' });
+    registrarIngresoHerramienta('TAL-01', { fecha: '2026-11-20', cantidad: 0 })
+  ).rejects.toMatchObject({ estado: 400, message: 'La cantidad tiene que ser un número entero mayor que cero.' });
   expect(supabase.rpc).not.toHaveBeenCalled();
+});
+
+test('el ingreso manual envía la cantidad y genera los códigos en la base', async () => {
+  prepararDeposito();
+  supabase.rpc.mockResolvedValue({ data: null, error: null });
+
+  await registrarIngresoHerramienta('TAL-01', { fecha: '2026-11-20', cantidad: 2 });
+
+  expect(supabase.rpc).toHaveBeenCalledWith('registrar_ingreso_herramienta_manual', {
+    p_modelo_cod: 'TAL-01',
+    p_fecha: '2026-11-20',
+    p_cantidad: 2,
+  });
 });

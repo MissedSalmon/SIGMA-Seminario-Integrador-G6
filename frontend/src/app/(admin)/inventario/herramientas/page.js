@@ -35,7 +35,7 @@ export default function PantallaHerramientas() {
   const columnas = [
     {
       clave: 'codigo',
-      encabezado: 'Código',
+      encabezado: 'Código del modelo',
       render: (fila) => <span className="fw-semibold">{fila.codigo}</span>,
     },
     { clave: 'nombre', encabezado: 'Nombre', render: (fila) => fila.nombre },

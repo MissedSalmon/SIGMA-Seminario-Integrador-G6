@@ -14,8 +14,8 @@
  *
  * Los materiales no llevan fecha de vencimiento (devolucion del Sprint 3).
  *
- * El estado y las series se cargan por unidad desde el detalle del modelo o
- * desde un ingreso. Este formulario crea o edita el modelo del catálogo.
+ * El estado y el código individual se asignan por unidad desde el detalle del
+ * modelo o desde un ingreso. Este formulario crea o edita el modelo del catálogo.
  *
  * Los campos usan <Campo>, asi que las cajas miden lo que mide su contenido y
  * la validacion marca cada campo en chico, sin pintar toda la caja de verde o
@@ -185,10 +185,10 @@ export default function FormularioMaterialHerramienta({ clase, articulo = null, 
 
             <Campo
               id="codigo"
-              etiqueta="Código"
+              etiqueta={esMaterial ? 'Código' : 'Código del modelo'}
               valor={codigo}
               alCambiar={setCodigo}
-              placeholder={esMaterial ? 'MAT-014' : 'HER-001'}
+              placeholder={esMaterial ? 'MAT-014' : 'MOD-TAL-001'}
               obligatorio
               maxLength={50}
               deshabilitado={editando}

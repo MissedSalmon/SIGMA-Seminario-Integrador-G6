@@ -195,7 +195,7 @@ export async function obtenerItemCatalogo(codigo) {
   throw noEncontrado(`No existe el código "${codigo}" en el depósito.`);
 }
 
-/** Unidades físicas de un modelo (o todas), cada una identificada por su serie. */
+/** Unidades físicas de un modelo (o todas), cada una identificada por su código. */
 export async function obtenerUnidadesHerramienta(codigoModelo = null) {
   let consulta = supabase
     .from('herramienta')
@@ -207,9 +207,10 @@ export async function obtenerUnidadesHerramienta(codigoModelo = null) {
   return data.map((fila) => aHerramienta(fila, prestamos));
 }
 
-/** Registra el ingreso manual de unidades con serie y fecha de alta. */
+/** Registra el ingreso manual de unidades con fecha de alta. */
 export async function registrarIngresoHerramienta(codigoModelo, datos = {}) {
   const fecha = texto(datos.fecha);
+  const cantidad = Number(datos.cantidad);
   if (!fecha) throw datoInvalido('Hay que indicar la fecha del ingreso.');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha) || Number.isNaN(Date.parse(fecha))) {
     throw datoInvalido(`"${fecha}" no es una fecha válida.`);
@@ -217,27 +218,17 @@ export async function registrarIngresoHerramienta(codigoModelo, datos = {}) {
   if (fecha > new Date().toISOString().slice(0, 10)) {
     throw datoInvalido('La fecha del ingreso no puede ser posterior a hoy.');
   }
-  if (!Array.isArray(datos.series) || datos.series.length === 0) {
-    throw datoInvalido('Cargá al menos un número de serie o inventario.');
-  }
-  const series = datos.series.map((serie) => texto(serie));
-  if (series.some((serie) => !serie)) {
-    throw datoInvalido('Cada unidad necesita un número de serie o inventario.');
-  }
-  if (series.some((serie) => serie.length > 50)) {
-    throw datoInvalido('El número de serie o inventario puede tener hasta 50 caracteres.');
-  }
-  if (new Set(series).size !== series.length) {
-    throw datoInvalido('Hay números de serie repetidos en el ingreso.');
+  if (!Number.isInteger(cantidad) || cantidad <= 0) {
+    throw datoInvalido('La cantidad tiene que ser un número entero mayor que cero.');
   }
 
   const { error } = await supabase.rpc('registrar_ingreso_herramienta_manual', {
     p_modelo_cod: codigoModelo,
     p_fecha: fecha,
-    p_series: series.map((serie) => ({ serie })),
+    p_cantidad: cantidad,
   });
   if (error?.code === 'P0001') throw datoInvalido(error.message);
-  if (error?.code === DUPLICADO) throw conflicto('Uno de los números de serie ya está registrado.');
+  if (error?.code === DUPLICADO) throw conflicto('No se pudo generar un código único para una herramienta.');
   if (error) throw errorDeBase(error, 'del ingreso manual de herramientas');
   return obtenerItemCatalogo(codigoModelo);
 }
@@ -465,6 +456,9 @@ function leerDatos(datos) {
 export async function crearItem(datos) {
   const codigo = texto(datos.codigo);
   if (!codigo) throw datoInvalido('El código es obligatorio.');
+  if (/^HE-\d{3}$/.test(codigo)) {
+    throw datoInvalido('Los códigos HE-000 a HE-999 están reservados para las unidades de herramienta.');
+  }
   const item = leerDatos(datos);
   await verificarTipo(item.idTipo, item.clase);
 

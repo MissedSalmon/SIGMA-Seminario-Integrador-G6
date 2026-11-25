@@ -9,32 +9,24 @@ import Campo from '@/componentes/formulario/Campo.js';
 import { registrarIngresoHerramienta } from '@/servicios/inventario.js';
 import { hoyTexto } from '@/utils/fechas.js';
 
-function leerSeries(texto) {
-  return texto
-    .split(/\r?\n/)
-    .map((serie) => serie.trim())
-    .filter(Boolean);
-}
-
 export default function DialogoIngresoHerramienta({ modelo, onCerrar, onGuardado }) {
   const [fecha, setFecha] = useState(hoyTexto());
-  const [seriesTexto, setSeriesTexto] = useState('');
+  const [cantidad, setCantidad] = useState('');
   const [revisado, setRevisado] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
-  const series = leerSeries(seriesTexto);
   const fechaInvalida = !fecha || fecha > hoyTexto();
-  const seriesInvalidas = series.length === 0 || new Set(series).size !== series.length;
+  const cantidadInvalida = !Number.isInteger(Number(cantidad)) || Number(cantidad) <= 0;
 
   async function guardar() {
     setRevisado(true);
     setError('');
-    if (fechaInvalida || seriesInvalidas) return;
+    if (fechaInvalida || cantidadInvalida) return;
 
     setGuardando(true);
     try {
-      const actualizada = await registrarIngresoHerramienta(modelo.codigo, { fecha, series });
+      const actualizada = await registrarIngresoHerramienta(modelo.codigo, { fecha, cantidad: Number(cantidad) });
       onGuardado(actualizada);
     } catch (fallo) {
       setError(fallo.message);
@@ -52,6 +44,7 @@ export default function DialogoIngresoHerramienta({ modelo, onCerrar, onGuardado
         <p>
           <strong>{modelo.nombre}</strong> ({modelo.codigo})
         </p>
+        <p>Cada unidad recibe automáticamente un código con el formato HE-000, HE-001, etc.</p>
         <div className="sigma-campos">
           <Campo
             id="fechaIngresoHerramienta"
@@ -65,21 +58,16 @@ export default function DialogoIngresoHerramienta({ modelo, onCerrar, onGuardado
             error={revisado && fechaInvalida ? 'Indicá una fecha válida que no sea posterior a hoy.' : ''}
           />
           <Campo
-            id="seriesHerramienta"
-            etiqueta="Números de serie o inventario"
-            tipo="area"
-            valor={seriesTexto}
-            alCambiar={setSeriesTexto}
-            placeholder="Una identificación por línea"
+            id="cantidadHerramientas"
+            etiqueta="Cantidad"
+            tipo="numero"
+            valor={cantidad}
+            alCambiar={setCantidad}
+            min={1}
+            ancho={6}
             obligatorio
             revisado={revisado}
-            error={
-              revisado && seriesInvalidas
-                ? series.length === 0
-                  ? 'Cargá al menos una unidad.'
-                  : 'No repitas números de serie.'
-                : ''
-            }
+            error={revisado && cantidadInvalida ? 'Indicá una cantidad entera mayor que cero.' : ''}
           />
         </div>
       </CModalBody>

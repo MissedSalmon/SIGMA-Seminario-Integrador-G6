@@ -187,12 +187,12 @@ describe('crear: lo que se revisa antes de tocar la base', () => {
     expect(supabase.rpc).not.toHaveBeenCalled();
   });
 
-  test('exige un número de serie por unidad de herramienta', async () => {
+  test('rechaza códigos de unidad ingresados manualmente', async () => {
     catalogoCon([], ['TO-201']);
 
     await expect(
       crear(remitoValido({ items: [{ codigo: 'TO-201', cantidad: 2, unidades: [{ serie: 'TO-1' }] }] }))
-    ).rejects.toThrow('Cargá un número de serie distinto por cada unidad de "TO-201".');
+    ).rejects.toThrow('Los códigos de las unidades de herramienta se generan automáticamente.');
     expect(supabase.rpc).not.toHaveBeenCalled();
   });
 });
@@ -241,7 +241,7 @@ describe('crear: lo que se le manda a la base', () => {
         numero: '0001-00012345',
         items: [
           { codigo: 'CA-111', cantidad: 10 },
-          { codigo: 'TO-201', cantidad: 2, unidades: [{ serie: 'TO-201-1' }, { serie: 'TO-201-2' }] },
+          { codigo: 'TO-201', cantidad: 2 },
         ],
       })
     );
@@ -251,7 +251,7 @@ describe('crear: lo que se le manda a la base', () => {
       p_fecha_recepcion: hoy(),
       p_items: [
         { codigo: 'CA-111', cantidad: 10 },
-        { codigo: 'TO-201', cantidad: 2, unidades: [{ serie: 'TO-201-1' }, { serie: 'TO-201-2' }] },
+        { codigo: 'TO-201', cantidad: 2 },
       ],
       p_num: '0001-00012345',
       p_obs: null,

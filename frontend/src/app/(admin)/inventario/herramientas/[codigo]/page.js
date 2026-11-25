@@ -117,7 +117,7 @@ export default function PantallaFichaHerramienta({ params }) {
     <>
       <EncabezadoPagina
         titulo={modelo?.nombre ?? 'Detalle de herramienta'}
-        descripcion={modelo ? `${modelo.codigo} — ${modelo.nombreTipo || 'Sin categoría'}` : undefined}
+        descripcion={modelo ? `Código del modelo: ${modelo.codigo} — ${modelo.nombreTipo || 'Sin categoría'}` : undefined}
         accionesExtra={
           modelo && (
             <div className="d-flex flex-wrap gap-2">
@@ -170,7 +170,7 @@ export default function PantallaFichaHerramienta({ params }) {
                     <CTable hover align="middle" className="mb-0">
                       <CTableHead>
                         <CTableRow>
-                          <CTableHeaderCell>Número de serie o inventario</CTableHeaderCell>
+                          <CTableHeaderCell>Código</CTableHeaderCell>
                           <CTableHeaderCell>Estado</CTableHeaderCell>
                           <CTableHeaderCell>Técnico</CTableHeaderCell>
                           <CTableHeaderCell>Fecha de alta</CTableHeaderCell>
@@ -203,6 +203,7 @@ export default function PantallaFichaHerramienta({ params }) {
                                 <CButton
                                   color="secondary"
                                   variant="outline"
+                                  className="sigma-accion-unidad"
                                   onClick={() => {
                                     setHistorialSeleccionado((actual) => actual === unidad.codigo ? '' : unidad.codigo);
                                   }}
@@ -210,17 +211,32 @@ export default function PantallaFichaHerramienta({ params }) {
                                   Historial
                                 </CButton>
                                 {unidad.estado !== 'Fuera de servicio' && (
-                                  <CButton color="secondary" variant="outline" onClick={() => setAsignando(unidad)}>
+                                  <CButton
+                                    color="secondary"
+                                    variant="outline"
+                                    className="sigma-accion-unidad"
+                                    onClick={() => setAsignando(unidad)}
+                                  >
                                     {unidad.legajoTecnico ? 'Devolver' : 'Asignar'}
                                   </CButton>
                                 )}
                                 {unidad.estado === 'Disponible' && (
-                                  <CButton color="secondary" variant="outline" onClick={() => setUnidadParaCambiar(unidad)}>
+                                  <CButton
+                                    color="secondary"
+                                    variant="outline"
+                                    className="sigma-accion-unidad"
+                                    onClick={() => setUnidadParaCambiar(unidad)}
+                                  >
                                     Dar de baja
                                   </CButton>
                                 )}
                                 {unidad.estado === 'Fuera de servicio' && (
-                                  <CButton color="secondary" variant="outline" onClick={() => setUnidadParaCambiar(unidad)}>
+                                  <CButton
+                                    color="secondary"
+                                    variant="outline"
+                                    className="sigma-accion-unidad"
+                                    onClick={() => setUnidadParaCambiar(unidad)}
+                                  >
                                     Poner en servicio
                                   </CButton>
                                 )}
