@@ -110,9 +110,11 @@ export async function obtenerTareaDeOrden(idOrden, idTarea) {
   return data.datos;
 }
 
-export async function eliminarTarea(idOrden, idTarea) {
-  const { data } = await api.delete(`/ordenes-trabajo/${idOrden}/tareas/${idTarea}`);
-  return data.datos;
+export async function eliminarTarea(idOrden, idTarea, estadoActivo) {
+  const { data } = await api.delete(`/ordenes-trabajo/${idOrden}/tareas/${idTarea}`, {
+    ...(estadoActivo ? { data: { estadoActivo } } : {}),
+  });
+  return { orden: data.datos, ordenFinalizada: Boolean(data.ordenFinalizada) };
 }
 
 /* Las tareas de un prestador externo: las inicia y las finaliza el administrador. */
