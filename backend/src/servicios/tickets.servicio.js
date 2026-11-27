@@ -286,6 +286,36 @@ export async function rechazarPendientesDeActivoRetirado(codigoActivo) {
 }
 
 /**
+ * Los espacios de las áreas del autorizado, para que al crear un ticket elija
+ * primero el espacio y después un activo de ese espacio.
+ */
+export async function espaciosQuePuedeReportar(legajo) {
+  const { data, error } = await supabase
+    .from('espacio')
+    .select(
+      `
+      espacio_id,
+      espacio_num,
+      tipo_espacio ( tipo_espacio_nom ),
+      edificio ( edificio_nom ),
+      area!inner ( autorizado_legajo )
+    `
+    )
+    .eq('area.autorizado_legajo', legajo);
+  if (error) throw new Error(error.message);
+
+  return (data ?? [])
+    .map((espacio) => ({
+      id: espacio.espacio_id,
+      nombre: nombreDelEspacio(espacio),
+      nombreEdificio: espacio.edificio?.edificio_nom ?? '',
+    }))
+    .sort((a, b) =>
+      `${a.nombreEdificio} - ${a.nombre}`.localeCompare(`${b.nombreEdificio} - ${b.nombre}`, 'es')
+    );
+}
+
+/**
  * Los activos que el autorizado puede reportar: los de todos los espacios de
  * su área, menos los retirados (19/11/2026; varios espacios desde el 21/11/2026).
  */
@@ -301,7 +331,7 @@ export async function activosQuePuedeReportar(legajo) {
 
   const { data, error } = await supabase
     .from('activo')
-    .select('activo_codigo, activo_estado, tipo_activo ( tipo_activo_nom )')
+    .select('activo_codigo, activo_estado, espacio_id, tipo_activo ( tipo_activo_nom )')
     .in('espacio_id', espacios)
     .neq('activo_estado', ENUM_ESTADO_ACTIVO.codigo('Retirado'))
     .order('activo_codigo');
@@ -310,6 +340,7 @@ export async function activosQuePuedeReportar(legajo) {
   return (data ?? []).map((activo) => ({
     codigo: activo.activo_codigo,
     nombreTipo: activo.tipo_activo?.tipo_activo_nom ?? '',
+    idEspacio: activo.espacio_id ?? null,
   }));
 }
 

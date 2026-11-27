@@ -112,8 +112,10 @@ export default function PantallaDetalleTareaOT({ params }) {
   // Sin responsable se asigna desde acá, sin pasar por «Editar» (22/11/2026).
   const puedeAsignar = otAbierta && !tarea?.responsable && sinEmpezar;
 
-  // Si es la última tarea de la OT, al finalizar se elige cómo queda el activo (22/11/2026).
+  // Si es la última tarea de la OT (al finalizar o al eliminar), se elige cómo queda el activo.
   const preguntarEstadoActivo = ventana === 'finalizar' && Boolean(tarea?.cierraLaOrden && tarea?.activo);
+  const preguntarEstadoActivoAlEliminar =
+    ventana === 'eliminar' && Boolean(tarea?.cierraAlEliminar && tarea?.activo);
   const [estadoActivo, setEstadoActivo] = useState('');
   const [revisadoFinal, setRevisadoFinal] = useState(false);
 
@@ -161,10 +163,24 @@ export default function PantallaDetalleTareaOT({ params }) {
   }
 
   async function confirmarEliminar() {
+    setRevisadoFinal(true);
+    if (preguntarEstadoActivoAlEliminar && !estadoActivo) return;
+
     setProcesando(true);
     try {
-      await eliminarTarea(id, idTarea);
-      mostrarToast({ tipo: 'exito', mensaje: `Se eliminó la tarea ${idTarea}.` });
+      const { ordenFinalizada } = await eliminarTarea(
+        id,
+        idTarea,
+        preguntarEstadoActivoAlEliminar ? estadoActivo : undefined
+      );
+      mostrarToast({
+        tipo: 'exito',
+        mensaje: ordenFinalizada
+          ? tarea?.ot?.idTicket
+            ? `Se eliminó la tarea ${idTarea}. Como no quedan tareas pendientes, la OT #${id} se finalizó, el ticket se cerró y el activo quedó ${estadoActivo || 'Operativo'}.`
+            : `Se eliminó la tarea ${idTarea}. Como no quedan tareas pendientes, la OT #${id} se finalizó y el activo quedó ${estadoActivo || 'Operativo'}.`
+          : `Se eliminó la tarea ${idTarea}.`,
+      });
       router.push(`/ordenes-trabajo/${id}`);
     } catch (fallo) {
       setError(fallo.message);
@@ -514,9 +530,33 @@ export default function PantallaDetalleTareaOT({ params }) {
         onCancelar={cerrar}
       >
         {tarea && (
-          <p className="mb-0">
-            Se va a eliminar la tarea <strong>{idTarea}</strong> de esta orden: &quot;{tarea.descripcion}&quot;.
-          </p>
+          <>
+            <p className={tarea.cierraAlEliminar ? undefined : 'mb-0'}>
+              Se va a eliminar la tarea <strong>{idTarea}</strong> de esta orden: &quot;{tarea.descripcion}&quot;.
+            </p>
+            {preguntarEstadoActivoAlEliminar ? (
+              <PreguntaEstadoActivo
+                idOt={id}
+                codigoActivo={tarea.activo.codigo}
+                valor={estadoActivo}
+                alCambiar={setEstadoActivo}
+                revisado={revisadoFinal}
+                mensaje={
+                  <>
+                    Al eliminarla no quedan tareas pendientes: la OT <strong>#{id}</strong> se finaliza
+                    {tarea.ot?.idTicket ? ' y el ticket se cierra.' : '.'}
+                  </>
+                }
+              />
+            ) : (
+              tarea.cierraAlEliminar && (
+                <p className="mb-0">
+                  Al eliminarla no quedan tareas pendientes: la OT <strong>#{id}</strong> se finaliza
+                  {tarea.ot?.idTicket ? ' y el ticket se cierra.' : '.'}
+                </p>
+              )
+            )}
+          </>
         )}
       </DialogoEliminar>
 

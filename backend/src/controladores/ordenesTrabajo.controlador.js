@@ -136,17 +136,24 @@ export async function actualizarTarea(req, res) {
 export async function obtenerTarea(req, res) {
   const id = leerId(req);
   const idTarea = leerNumeroDeTarea(req);
-  const tarea = await obtenerDetalleParaAdministrador(id, idTarea);
-  const cierraLaOrden = await tareasServicio.cierraLaOrden(id, idTarea);
-  res.json({ ok: true, datos: { ...tarea, cierraLaOrden } });
+  const [tarea, cierraLaOrden, cierraAlEliminar] = await Promise.all([
+    obtenerDetalleParaAdministrador(id, idTarea),
+    tareasServicio.cierraLaOrden(id, idTarea),
+    ordenesServicio.cierraAlEliminar(id, idTarea),
+  ]);
+  res.json({ ok: true, datos: { ...tarea, cierraLaOrden, cierraAlEliminar } });
 }
 
 /** DELETE /api/ordenes-trabajo/5/tareas/2 */
 export async function eliminarTarea(req, res) {
   const idTarea = leerNumeroDeTarea(req);
-  const orden = await ordenesServicio.eliminarTarea(leerId(req), idTarea);
+  const { orden, ordenFinalizada } = await ordenesServicio.eliminarTarea(
+    leerId(req),
+    idTarea,
+    req.body?.estadoActivo
+  );
 
-  res.json({ ok: true, datos: orden, mensaje: `Se eliminó la tarea ${idTarea}.` });
+  res.json({ ok: true, datos: orden, ordenFinalizada, mensaje: `Se eliminó la tarea ${idTarea}.` });
 }
 
 /** POST /api/ordenes-trabajo/5/tareas/2/iniciar (sólo tareas de un prestador) */

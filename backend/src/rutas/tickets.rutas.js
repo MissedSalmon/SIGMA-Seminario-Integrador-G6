@@ -17,8 +17,9 @@ const router = Router();
 // Toda ruta de tickets requiere sesión activa.
 router.use(validarSesion);
 
-// /estados va ANTES que /:id, si no Express lo toma como un id.
+// /estados, /espacios y /activos van ANTES que /:id, si no Express los toma como un id.
 router.get('/estados', tickets.listarEstados);
+router.get('/espacios', protegerPorRol(['autorizado']), tickets.listarEspaciosReportables);
 router.get('/activos', protegerPorRol(['autorizado']), tickets.listarActivosReportables);
 
 // Listar: administrador ve todos; autorizado ve solo los suyos (filtrado en el servicio).

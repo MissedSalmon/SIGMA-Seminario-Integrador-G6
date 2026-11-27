@@ -64,6 +64,12 @@ export async function listarEstados(req, res) {
   res.json({ ok: true, datos: ESTADOS });
 }
 
+/** GET /api/tickets/espacios: los espacios de las áreas del autorizado de la sesión. */
+export async function listarEspaciosReportables(req, res) {
+  const espacios = await ticketsServicio.espaciosQuePuedeReportar(req.usuario.identificador);
+  res.json({ ok: true, datos: espacios });
+}
+
 /** GET /api/tickets/activos: los activos que el autorizado de la sesión puede reportar. */
 export async function listarActivosReportables(req, res) {
   const activos = await ticketsServicio.activosQuePuedeReportar(req.usuario.identificador);

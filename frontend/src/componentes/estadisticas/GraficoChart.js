@@ -97,6 +97,14 @@ const COLOR_POR_NOMBRE = {
   Media: COLORES_GRAFICO.aviso,
   Baja: COLORES_GRAFICO.apagado,
   'Sin prioridad': COLORES_GRAFICO.neutroClaro,
+  // Estados de tickets (mismos tonos que etapas.js / --sigma-tono-*).
+  Creado: COLORES_GRAFICO.aviso,
+  Validado: COLORES_GRAFICO.curso,
+  Asignado: COLORES_GRAFICO.curso,
+  'En ejecución': COLORES_GRAFICO.curso,
+  Finalizado: COLORES_GRAFICO.exito,
+  Cerrado: COLORES_GRAFICO.apagado,
+  Rechazado: COLORES_GRAFICO.peligro,
 };
 
 /** Paleta para porciones sin un significado propio (por ejemplo, correctivas y preventivas). */
@@ -107,8 +115,8 @@ const PALETA_SIGMA = [
   COLORES_GRAFICO.neutroClaro,
 ];
 
-/** Los colores de las porciones: el del estado si lo tiene, si no el de la paleta. */
-function coloresDePorciones(etiquetas = []) {
+/** Los colores de las porciones o barras: el del estado si lo tiene, si no el de la paleta. */
+export function coloresPorNombre(etiquetas = []) {
   return etiquetas.map((etiqueta, indice) => COLOR_POR_NOMBRE[etiqueta] ?? PALETA_SIGMA[indice % PALETA_SIGMA.length]);
 }
 
@@ -227,7 +235,7 @@ export default function GraficoChart({
 
     return {
       ...ds,
-      backgroundColor: ds.backgroundColor ?? (esTorta ? coloresDePorciones(data?.labels) : color),
+      backgroundColor: ds.backgroundColor ?? (esTorta ? coloresPorNombre(data?.labels) : color),
       borderColor: esTorta ? '#fff' : borderColor,
       borderWidth: ds.borderWidth ?? (esTorta ? 2 : tipo === 'bar' ? 0 : 2),
       ...(tipo === 'bar' ? { borderRadius: 4, maxBarThickness: 32 } : {}),

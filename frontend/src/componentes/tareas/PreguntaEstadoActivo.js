@@ -9,11 +9,15 @@ import Campo from '@/componentes/formulario/Campo.js';
 
 export const OPCIONES_ESTADO_ACTIVO = ['Operativo', 'Fuera de servicio'];
 
-export default function PreguntaEstadoActivo({ idOt, codigoActivo, valor, alCambiar, revisado }) {
+export default function PreguntaEstadoActivo({ idOt, codigoActivo, valor, alCambiar, revisado, mensaje }) {
   return (
     <>
       <p>
-        Es la última tarea: la OT <strong>#{idOt}</strong> se finaliza y el ticket se cierra.
+        {mensaje ?? (
+          <>
+            Es la última tarea: la OT <strong>#{idOt}</strong> se finaliza y el ticket se cierra.
+          </>
+        )}
       </p>
       <Campo
         id="estadoActivo"

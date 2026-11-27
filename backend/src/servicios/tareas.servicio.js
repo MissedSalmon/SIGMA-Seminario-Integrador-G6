@@ -33,7 +33,17 @@ import {
 } from '../utiles/enumerados.js';
 import * as inventario from './inventario.servicio.js';
 import { observacionesDeLaTarea } from './observaciones.servicio.js';
-import { guardarFalla, obtenerPorId as obtenerOrden, validarDatosFalla } from './ordenesTrabajo.servicio.js';
+import {
+  ESTADOS_ACTIVO_AL_CERRAR,
+  finalizarOrdenSiTermino,
+  guardarFalla,
+  leerEstadoActivoAlCerrar,
+  obtenerPorId as obtenerOrden,
+  ordenConActivo,
+  validarDatosFalla,
+} from './ordenesTrabajo.servicio.js';
+
+export { ESTADOS_ACTIVO_AL_CERRAR };
 
 /** De mas urgente a menos: con este orden se ofrecen en el filtro. */
 export const PRIORIDADES = ENUM_PRIORIDAD.textos;
@@ -330,27 +340,6 @@ const codigosTarea = (estados) => estados.map((estado) => ENUM_ESTADO_TAREA.codi
 const codigosOt = (estados) => estados.map((estado) => ENUM_ESTADO_OT.codigo(estado));
 const codigosTicket = (estados) => estados.map((estado) => ENUM_ESTADO_TICKET.codigo(estado));
 
-/** La OT con el codigo del activo, salga de un ticket o de un preventivo. */
-async function ordenConActivo(idOt) {
-  const { data, error } = await supabase
-    .from('orden_trabajo')
-    .select(
-      'ot_id, ot_estado, ticket_id, activo_codigo, ticket ( activo_codigo ), mantenimiento_preventivo ( activo_codigo )'
-    )
-    .eq('ot_id', idOt)
-    .maybeSingle();
-
-  if (error) throw errorDeBase(error, 'de la orden de trabajo');
-  if (!data) throw noEncontrado(`No existe la orden de trabajo ${idOt}.`);
-
-  return {
-    idOt: data.ot_id,
-    idTicket: data.ticket_id,
-    codigoActivo:
-      data.activo_codigo ?? data.ticket?.activo_codigo ?? data.mantenimiento_preventivo?.activo_codigo ?? null,
-  };
-}
-
 /** Cambia el estado de la asignacion del tecnico a esa tarea. */
 async function cambiarAsignacion(legajo, idOt, idTarea, estado) {
   const { error } = await supabase
@@ -380,41 +369,6 @@ async function cambiarEstadoTarea(idOt, idTarea, desde, hacia) {
   if (!data || data.length === 0) {
     throw conflicto('La tarea cambió de estado mientras tanto. Volvé a abrirla para ver cómo quedó.');
   }
-}
-
-/**
- * Si el activo tiene OTRA orden de trabajo en ejecucion. Hace falta para no
- * devolverlo a Operativo mientras todavia lo estan arreglando por otra OT.
- */
-async function activoSigueEnMantenimiento(codigoActivo, idOtQueTermina) {
-  const enEjecucion = ENUM_ESTADO_OT.codigo('En ejecución');
-
-  const [porOrden, porTicket, porPreventivo] = await Promise.all([
-    supabase
-      .from('orden_trabajo')
-      .select('ot_id')
-      .eq('ot_estado', enEjecucion)
-      .eq('activo_codigo', codigoActivo)
-      .neq('ot_id', idOtQueTermina),
-    supabase
-      .from('orden_trabajo')
-      .select('ot_id, ticket!inner ( activo_codigo )')
-      .eq('ot_estado', enEjecucion)
-      .eq('ticket.activo_codigo', codigoActivo)
-      .neq('ot_id', idOtQueTermina),
-    supabase
-      .from('orden_trabajo')
-      .select('ot_id, mantenimiento_preventivo!inner ( activo_codigo )')
-      .eq('ot_estado', enEjecucion)
-      .eq('mantenimiento_preventivo.activo_codigo', codigoActivo)
-      .neq('ot_id', idOtQueTermina),
-  ]);
-
-  if (porOrden.error) throw errorDeBase(porOrden.error, 'de las órdenes de trabajo');
-  if (porTicket.error) throw errorDeBase(porTicket.error, 'de las órdenes de trabajo');
-  if (porPreventivo.error) throw errorDeBase(porPreventivo.error, 'de las órdenes de trabajo');
-
-  return (porOrden.data ?? []).length + (porTicket.data ?? []).length + (porPreventivo.data ?? []).length > 0;
 }
 
 /**
@@ -495,33 +449,6 @@ async function arrastrarInicio(idOt) {
 }
 
 /**
- * Si ya no le queda ninguna tarea por hacer, la OT se finaliza sola (HU-26):
- *
- *   la OT                -> Finalizada, con su fecha de cierre
- *   el ticket            -> Cerrado, con su fecha de cierre
- *   el activo            -> Operativo (salvo Retirado, o que otra OT lo siga arreglando)
- *
- * "No le queda nada" es que todas sus tareas esten Finalizadas o Canceladas, y
- * al menos una Finalizada: una OT con todo cancelado no se trabajo.
- *
- * Devuelve true si la cerro.
- */
-/**
- * Cómo puede quedar el activo al cerrarse su OT (22/11/2026). Quien finaliza
- * la última tarea lo elige: el arreglo puede no haber alcanzado.
- */
-export const ESTADOS_ACTIVO_AL_CERRAR = ['Operativo', 'Fuera de servicio'];
-
-/** El estado elegido, o null si no se eligió ninguno. */
-function leerEstadoActivoAlCerrar(estado) {
-  if (estado === undefined || estado === null || estado === '') return null;
-  if (!ESTADOS_ACTIVO_AL_CERRAR.includes(estado)) {
-    throw datoInvalido(`El activo puede quedar ${ESTADOS_ACTIVO_AL_CERRAR.join(' o ')}, no "${estado}".`);
-  }
-  return estado;
-}
-
-/**
  * Si al finalizar esta tarea se cierra la OT: todas las demás ya están
  * Finalizadas o Canceladas. Sirve para preguntar antes cómo queda el activo.
  */
@@ -532,57 +459,6 @@ export async function cierraLaOrden(idOt, idTarea) {
   return (data ?? [])
     .filter((fila) => fila.tarea_id !== idTarea)
     .every((fila) => ['Finalizada', 'Cancelada'].includes(ENUM_ESTADO_TAREA.texto(fila.tarea_estado)));
-}
-
-async function finalizarOrdenSiTermino(idOt, estadoElegido = null) {
-  const { data: tareas, error: errorTareas } = await supabase
-    .from('tarea_ot')
-    .select('tarea_estado')
-    .eq('ot_id', idOt);
-  if (errorTareas) throw errorDeBase(errorTareas, 'de las tareas');
-
-  const estados = (tareas ?? []).map((fila) => ENUM_ESTADO_TAREA.texto(fila.tarea_estado));
-  const termino =
-    estados.length > 0 &&
-    estados.every((estado) => ['Finalizada', 'Cancelada'].includes(estado)) &&
-    estados.includes('Finalizada');
-  if (!termino) return false;
-
-  const ahora = new Date().toISOString();
-
-  // Solo si la OT no estaba ya cerrada: si dos tecnicos terminan a la vez, la
-  // cierra uno solo.
-  const { data: cerrada, error: errorOrden } = await supabase
-    .from('orden_trabajo')
-    .update({ ot_estado: ENUM_ESTADO_OT.codigo('Finalizada'), ot_fecha_cierre: ahora })
-    .eq('ot_id', idOt)
-    .not('ot_estado', 'in', `(${codigosOt(ESTADOS_OT_CERRADOS).join(',')})`)
-    .select('ot_id');
-  if (errorOrden) throw errorDeBase(errorOrden, 'de la orden de trabajo');
-  if (!cerrada || cerrada.length === 0) return false;
-
-  const orden = await ordenConActivo(idOt);
-
-  if (orden.idTicket) {
-    const { error } = await supabase
-      .from('ticket')
-      .update({ ticket_estado: ENUM_ESTADO_TICKET.codigo('Cerrado'), ticket_fecha_cierre: ahora })
-      .eq('ticket_id', orden.idTicket)
-      .neq('ticket_estado', ENUM_ESTADO_TICKET.codigo('Rechazado'));
-    if (error) throw errorDeBase(error, 'del ticket');
-  }
-
-  // Si otra OT lo sigue arreglando, queda En mantenimiento: lo decide quien cierre esa.
-  if (orden.codigoActivo && !(await activoSigueEnMantenimiento(orden.codigoActivo, idOt))) {
-    const { error } = await supabase
-      .from('activo')
-      .update({ activo_estado: ENUM_ESTADO_ACTIVO.codigo(estadoElegido ?? 'Operativo') })
-      .eq('activo_codigo', orden.codigoActivo)
-      .neq('activo_estado', ENUM_ESTADO_ACTIVO.codigo('Retirado'));
-    if (error) throw errorDeBase(error, 'del activo');
-  }
-
-  return true;
 }
 
 /**

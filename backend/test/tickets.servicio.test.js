@@ -21,6 +21,8 @@ const {
   obtenerPorId,
   crear,
   validar,
+  espaciosQuePuedeReportar,
+  activosQuePuedeReportar,
   rechazarPendientesDeActivoRetirado,
   ESTADOS,
   ESTADO_INICIAL,
@@ -423,5 +425,52 @@ describe('rechazo automático por activo retirado', () => {
       ticket_estado: 7,
       ticket_desc: `Hace chispas\n\n--- MOTIVO DE RECHAZO ---\n${MOTIVO_RECHAZO_ACTIVO_RETIRADO}`,
     });
+  });
+});
+
+describe('espacios y activos reportables', () => {
+  test('espaciosQuePuedeReportar devuelve los espacios del área del autorizado ordenados', async () => {
+    const consulta = consultaQueDevuelve([
+      {
+        espacio_id: 8,
+        espacio_num: '201',
+        tipo_espacio: { tipo_espacio_nom: 'Laboratorio' },
+        edificio: { edificio_nom: 'Edificio Norte' },
+      },
+      {
+        espacio_id: 3,
+        espacio_num: '101',
+        tipo_espacio: { tipo_espacio_nom: 'Aula' },
+        edificio: { edificio_nom: 'Edificio Central' },
+      },
+    ]);
+    supabase.from.mockReturnValue(consulta);
+
+    const espacios = await espaciosQuePuedeReportar('1234');
+
+    expect(supabase.from).toHaveBeenCalledWith('espacio');
+    expect(consulta.eq).toHaveBeenCalledWith('area.autorizado_legajo', '1234');
+    expect(espacios).toEqual([
+      { id: 3, nombre: 'Aula 101', nombreEdificio: 'Edificio Central' },
+      { id: 8, nombre: 'Laboratorio 201', nombreEdificio: 'Edificio Norte' },
+    ]);
+  });
+
+  test('activosQuePuedeReportar incluye el idEspacio de cada activo', async () => {
+    const consultas = {
+      espacio: consultaQueDevuelve([{ espacio_id: 3 }, { espacio_id: 8 }]),
+      activo: consultaQueDevuelve([
+        { activo_codigo: 'AC-001', activo_estado: 1, espacio_id: 3, tipo_activo: { tipo_activo_nom: 'Aire' } },
+        { activo_codigo: 'PC-002', activo_estado: 1, espacio_id: 8, tipo_activo: { tipo_activo_nom: 'PC' } },
+      ]),
+    };
+    supabase.from.mockImplementation((tabla) => consultas[tabla]);
+
+    const activos = await activosQuePuedeReportar('1234');
+
+    expect(activos).toEqual([
+      { codigo: 'AC-001', nombreTipo: 'Aire', idEspacio: 3 },
+      { codigo: 'PC-002', nombreTipo: 'PC', idEspacio: 8 },
+    ]);
   });
 });

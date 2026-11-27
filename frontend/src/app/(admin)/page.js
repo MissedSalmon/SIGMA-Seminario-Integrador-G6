@@ -38,7 +38,7 @@ import AvisoPlanesPorVencer from '@/componentes/planes/AvisoPlanesPorVencer.js';
 import Aviso from '@/componentes/Aviso.js';
 import { Cargando } from '@/componentes/EstadoTabla.js';
 import CampoFecha from '@/componentes/formulario/CampoFecha.js';
-import GraficoChart, { COLORES_GRAFICO } from '@/componentes/estadisticas/GraficoChart.js';
+import GraficoChart, { COLORES_GRAFICO, coloresPorNombre } from '@/componentes/estadisticas/GraficoChart.js';
 import TalonesAbiertos from '@/componentes/ordenes/TalonesAbiertos.js';
 import { obtenerPanelCompleto } from '@/servicios/estadisticas.js';
 import { hoyTexto } from '@/utils/fechas.js';
@@ -746,6 +746,7 @@ export default function PantallaPanelAdministrador() {
                       {
                         label: 'Cantidad de tickets',
                         data: evolucion.porEstado?.map((e) => e.cantidad) ?? [],
+                        backgroundColor: coloresPorNombre(evolucion.porEstado?.map((e) => e.nombre) ?? []),
                       },
                     ],
                   }}

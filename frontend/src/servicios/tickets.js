@@ -18,6 +18,12 @@ export async function registrarTicket(ticket) {
  * @param {string} [filtros.codigoActivo]
  * @param {number|string} [filtros.idArea]
  */
+/** Los espacios de las áreas del autorizado de la sesión, para filtrar los activos al crear un ticket. */
+export async function listarEspaciosReportables() {
+  const { data } = await api.get('/tickets/espacios');
+  return data.datos;
+}
+
 /** Los activos de las áreas del autorizado de la sesión: son los únicos que puede reportar. */
 export async function listarActivosReportables() {
   const { data } = await api.get('/tickets/activos');
