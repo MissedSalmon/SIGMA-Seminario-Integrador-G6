@@ -34,7 +34,11 @@ import BotonesAccion from '@/componentes/BotonesAccion.js';
 import Campo from '@/componentes/formulario/Campo.js';
 import { useToast } from '@/componentes/toast/ContextoToast.js';
 import { subirEvidencia, TAMANO_MAXIMO } from '@/servicios/evidencias.js';
-import { listarActivosReportables, listarTickets } from '@/servicios/tickets.js';
+import {
+  listarActivosReportables,
+  listarEspaciosReportables,
+  listarTickets,
+} from '@/servicios/tickets.js';
 import EtiquetaEstadoTicket from '@/componentes/tickets/EtiquetaEstadoTicket.js';
 import { formatearFechaHora, hoyLegible } from '@/utils/fechas.js';
 
@@ -59,6 +63,7 @@ export default function FormularioTicket({ onGuardar }) {
   const router = useRouter();
   const { mostrarToast } = useToast();
 
+  const [idEspacio, setIdEspacio] = useState('');
   const [codigoActivo, setCodigoActivo] = useState('');
   const [descripcion, setDescripcion] = useState('');
 
@@ -76,6 +81,7 @@ export default function FormularioTicket({ onGuardar }) {
   const [errorFoto, setErrorFoto] = useState('');
   const refArchivo = useRef(null);
 
+  const [espacios, setEspacios] = useState(null);
   const [activos, setActivos] = useState(null);
 
   /*
@@ -90,10 +96,13 @@ export default function FormularioTicket({ onGuardar }) {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
-  // Sólo los activos de las áreas del autorizado (sin los retirados, que filtra la API).
+  // Sólo los espacios y activos de las áreas del autorizado (sin los retirados, que filtra la API).
   useEffect(() => {
-    listarActivosReportables()
-      .then(setActivos)
+    Promise.all([listarEspaciosReportables(), listarActivosReportables()])
+      .then(([listaEspacios, listaActivos]) => {
+        setEspacios(listaEspacios);
+        setActivos(listaActivos);
+      })
       .catch((fallo) => setError(fallo.message));
   }, []);
 
@@ -129,6 +138,7 @@ export default function FormularioTicket({ onGuardar }) {
   const errores = useMemo(() => {
     const encontrados = {};
 
+    if (!idEspacio) encontrados.idEspacio = 'Elegí el espacio.';
     if (!codigoActivo) encontrados.codigoActivo = 'Elegí el activo que falló.';
 
     if (!descripcion.trim()) {
@@ -138,9 +148,19 @@ export default function FormularioTicket({ onGuardar }) {
     if (errorFoto) encontrados.foto = errorFoto;
 
     return encontrados;
-  }, [codigoActivo, descripcion, errorFoto]);
+  }, [idEspacio, codigoActivo, descripcion, errorFoto]);
 
   const hayErrores = Object.keys(errores).length > 0;
+
+  /*
+   * Al cambiar el espacio, se limpia el activo elegido y sus tickets en proceso,
+   * porque los activos mostrados dependen del espacio seleccionado.
+   */
+  function elegirEspacio(nuevoIdEspacio) {
+    setIdEspacio(nuevoIdEspacio);
+    setCodigoActivo('');
+    olvidarTicketsEnProceso();
+  }
 
   /*
    * Se eligio otro activo: lo que se habia encontrado del anterior ya no sirve.
@@ -221,7 +241,17 @@ export default function FormularioTicket({ onGuardar }) {
     }
   }
 
-  const opcionesActivos = (activos ?? []).map((activo) => ({
+  const opcionesEspacios = (espacios ?? []).map((espacio) => ({
+    valor: String(espacio.id),
+    texto: espacio.nombreEdificio ? `${espacio.nombreEdificio} - ${espacio.nombre}` : espacio.nombre,
+  }));
+
+  const activosDelEspacio = useMemo(() => {
+    if (!idEspacio || !activos) return [];
+    return activos.filter((activo) => String(activo.idEspacio) === String(idEspacio));
+  }, [activos, idEspacio]);
+
+  const opcionesActivos = activosDelEspacio.map((activo) => ({
     valor: activo.codigo,
     texto: activo.nombreTipo ? `${activo.codigo} - ${activo.nombreTipo}` : activo.codigo,
   }));
@@ -247,25 +277,48 @@ export default function FormularioTicket({ onGuardar }) {
 
           <div className="sigma-campos mb-4">
             <Campo
+              id="idEspacio"
+              etiqueta="Espacio"
+              tipo="buscador"
+              valor={idEspacio}
+              alCambiar={elegirEspacio}
+              opciones={opcionesEspacios}
+              placeholder="Buscar espacio..."
+              obligatorio
+              deshabilitado={espacios?.length === 0}
+              ancho={30}
+              revisado={revisado}
+              error={errores.idEspacio}
+            />
+
+            <Campo
               id="codigoActivo"
               etiqueta="Activo"
               tipo="buscador"
               valor={codigoActivo}
               alCambiar={elegirActivo}
               opciones={opcionesActivos}
-              placeholder="Buscar activo..."
+              placeholder={idEspacio ? 'Buscar activo...' : 'Primero elegí un espacio'}
               obligatorio
+              deshabilitado={!idEspacio || activosDelEspacio.length === 0}
               ancho={30}
               revisado={revisado}
               error={errores.codigoActivo}
             />
           </div>
 
-          {activos?.length === 0 && (
+          {espacios?.length === 0 || activos?.length === 0 ? (
             <CAlert color="info">
               No hay activos para reportar en tu área. Pedile al administrador que le asigne un espacio
               con activos.
             </CAlert>
+          ) : (
+            idEspacio &&
+            activosDelEspacio.length === 0 && (
+              <CAlert color="info">
+                Este espacio no tiene activos para reportar. Elegí otro espacio de tu área.
+              </CAlert>
+            )
           )}
 
           {ticketsEnProceso.length > 0 && (
